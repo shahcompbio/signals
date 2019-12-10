@@ -147,7 +147,7 @@ widen_bins <- function(CNbins,
 
 #' @export
 phase_haplotypes <- function(haplotypes){
-  phased_haplotypes <- haplotypes %>%
+  phased_haplotypes <- data.table::as.data.table(haplotypes) %>%
     .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
     .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
     .[, c("allele1", "allele0") := NULL]
