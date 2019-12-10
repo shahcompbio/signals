@@ -1,0 +1,157 @@
+#' Make fixed-width bins
+#'
+#' Make fixed-width bins based on given bin size.
+#'
+#' @param chrom.lengths A named character vector with chromosome lengths. Names correspond to chromosomes.
+#' @param binsize Size of bins in basepairs
+#' @param chromosomes A subset of chromosomes for which the bins are generated.
+#' @return A data frame with chr start and end positions
+#' @export
+getBins <- function(chrom.lengths=hg19_chrlength, binsize=1e6, chromosomes=NULL) {
+
+  chrom.lengths <- chrom.lengths[!is.na(names(chrom.lengths))]
+  chrom.lengths <- chrom.lengths[!is.na(chrom.lengths)]
+  chroms.in.data <- names(chrom.lengths)
+  if (is.null(chromosomes)) {
+    chromosomes <- chroms.in.data
+  }
+  chroms2use <- intersect(chromosomes, chroms.in.data)
+  ## Stop if none of the specified chromosomes exist
+  if (length(chroms2use)==0) {
+    chrstring <- paste0(chromosomes, collapse=', ')
+    stop('Could not find length information for any of the specified chromosomes: ', chrstring)
+  }
+  ## Issue warning for non-existent chromosomes
+  diff <- setdiff(chromosomes, chroms.in.data)
+  if (length(diff)>0) {
+    diffs <- paste0(diff, collapse=', ')
+    warning('Could not find length information for the following chromosomes: ', diffs)
+  }
+
+  ### Making fixed-width bins ###
+
+  message("Making fixed-width bins for bin size ", binsize, " ...")
+  chrom.lengths.floor <- floor(chrom.lengths / binsize) * binsize
+  clfloor2use <- chrom.lengths.floor[chroms2use]
+  clfloor2use <- clfloor2use[clfloor2use >= binsize]
+  if (length(clfloor2use) == 0) {
+    stop("All selected chromosomes are smaller than binsize ", binsize)
+  }
+  bins <- unlist(GenomicRanges::tileGenome(clfloor2use, tilewidth=binsize), use.names=FALSE)
+
+  GenomeInfoDb::seqlevels(bins) <- chroms2use
+  GenomeInfoDb::seqlengths(bins) <- chrom.lengths[GenomeInfoDb::seqlevels(bins)]
+  skipped.chroms <- setdiff(chromosomes, as.character(unique(GenomeInfoDb::seqnames(bins))))
+  bins <- GenomeInfoDb::dropSeqlevels(bins, skipped.chroms, pruning.mode = 'coarse')
+
+  if (length(skipped.chroms)>0) {
+    warning("The following chromosomes are smaller than binsize ", binsize, ": ", paste0(skipped.chroms, collapse=', '))
+  }
+
+
+  bins <- as.data.frame(bins) %>%
+    dplyr::select(-strand) %>% dplyr::rename(chr = seqnames)
+
+  if (any(bins$width!=binsize)) {
+    stop("tileGenome failed")
+  }
+
+  return(bins)
+}
+
+
+
+#' @export
+format_haplotypes <- function(haplotypes, filtern = 0, hmmcopybinsize = 0.5e6){
+  message("Spread data frame...")
+
+  formatted_haplotypes <- haplotypes %>%
+      data.table::as.data.table() %>%
+      .[, allele_id := paste0("allele", allele_id)] %>%
+      data.table::dcast(., ... ~ allele_id, value.var = "readcount", fill = 0L) %>%
+      .[, start := round(start / hmmcopybinsize) * hmmcopybinsize + 1] %>%
+      .[, end := start + hmmcopybinsize - 1] %>%
+      .[, lapply(.SD, sum), by = .(cell_id, chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+      .[, totalcounts := allele1 + allele0]
+
+  message("Phase haplotypes...")
+  phased_haplotypes <- phase_haplotypes(formatted_haplotypes)
+
+  message("Join phased haplotypes...")
+  formatted_haplotypes <- data.table::merge.data.table(formatted_haplotypes, phased_haplotypes)
+
+  message("Reorder haplotypes based on phase...")
+  formatted_haplotypes <- formatted_haplotypes %>%
+    .[, alleleA := ifelse(phase == "allele0", allele1, allele0)] %>%
+    .[, alleleB := ifelse(phase == "allele0", allele0, allele1)] %>%
+    .[totalcounts > filtern, BAF := alleleB / totalcounts] %>%
+    .[, c("allele1", "allele0", "phase") := NULL]
+
+  return(formatted_haplotypes)
+}
+
+#' @export
+widen_haplotypebins <- function(haplotypes, binsize = 5e6){
+  message("Create GRanges objects...")
+  bins <- getBins(binsize = binsize)
+  bins_g <- GenomicRanges::makeGRangesFromDataFrame(bins, keep.extra.columns = TRUE)
+  haplotypes_g <- GenomicRanges::makeGRangesFromDataFrame(haplotypes, keep.extra.columns = TRUE)
+
+  message("Find overlaps...")
+  overlaps <- GenomicRanges::findOverlaps(haplotypes_g, bins_g, ignore.strand = TRUE)
+
+  message("Create new bins coordinates dataframe")
+  bincoords <- data.table::as.data.table(bins_g[S4Vectors::subjectHits(overlaps)]) %>%
+    .[, strand := NULL]
+
+  message("Create haplotypes dataframe and merge with new bin coordinates...")
+  newhaps <- data.table::as.data.table(haplotypes_g[S4Vectors::queryHits(overlaps)]) %>%
+    .[, c("strand", "start", "seqnames", "end", "width") := NULL] %>%
+    dplyr::bind_cols(., bincoords) %>%
+    data.table::setnames(., "seqnames", "chr") %>%
+    data.table::setcolorder(., c("chr", "start", "end", "cell_id"))
+
+  return(newhaps)
+}
+
+#' @export
+widen_bins <- function(CNbins,
+                       binsize = 10e6,
+                       roundstate = TRUE,
+                       genome_coords = hg19_chrlength){
+  message("Create GRanges objects...")
+  bins <- getBins(genome_coords, binsize = binsize)
+  bins_g <- GenomicRanges::makeGRangesFromDataFrame(bins, keep.extra.columns = TRUE)
+  CNbinstemp_g <- GenomicRanges::makeGRangesFromDataFrame(as.data.frame(CNbins), keep.extra.columns = TRUE)
+
+  message("Find overlaps...")
+  overlaps <- GenomicRanges::findOverlaps(CNbinstemp_g, bins_g, ignore.strand = TRUE)
+
+  message("Create new bins coordinates dataframe")
+  bincoords <- data.table::as.data.table(bins_g[S4Vectors::subjectHits(overlaps)]) %>%
+    .[, strand := NULL]
+
+  message("Create CN dataframe and merge with new bin coordinates...")
+  widerCNbins <- data.table::as.data.table(CNbinstemp_g[S4Vectors::queryHits(overlaps)]) %>%
+    .[, c("strand", "start", "seqnames", "end", "width") := NULL] %>%
+    dplyr::bind_cols(., bincoords) %>%
+    data.table::setnames(., "seqnames", "chr") %>%
+    data.table::setcolorder(., c("chr", "start", "end", "cell_id")) %>%
+    .[, .(state = round(mean(state, na.rm = TRUE)),
+          copy = mean(copy, na.rm = TRUE),
+          reads = sum(reads, na.rm = TRUE)), by = .(chr, start, end, cell_id)]
+
+  return(as.data.frame(widerCNbins))
+}
+
+
+#' @export
+phase_haplotypes <- function(haplotypes){
+  phased_haplotypes <- haplotypes %>%
+    .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+    .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
+    .[, c("allele1", "allele0") := NULL]
+
+  return(phased_haplotypes)
+}
+
