@@ -155,3 +155,28 @@ phase_haplotypes <- function(haplotypes){
   return(phased_haplotypes)
 }
 
+#' @export
+snv_states <- function(SNV, CNbins){
+
+  CN <- CNbins %>%
+    dplyr::rename(chry = chr, starty = start, endy = end, cell_idy = cell_id) %>%
+    as.data.table()
+
+  SNV <- as.data.table(SNV)
+
+  mappedSNVs <- CN[SNV,
+                   on = .(chry == chr, cell_idy == cell_id, starty < start, endy > start)
+                   ]
+  mappedSNVs <- mappedSNVs %>%
+    .[, end := NULL] %>%
+    data.table::setnames(., "chry", "chr") %>%
+    data.table::setnames(., "starty", "start") %>%
+    data.table::setnames(., "cell_idy", "cell_id") %>%
+    data.table::setcolorder(., c("chr", "start","ref", "alt", "cell_id")) %>%
+    .[order(cell_id, chr, start)]
+
+  return(as.data.frame(mappedSNVs))
+}
+
+
+
