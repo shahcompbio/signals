@@ -191,7 +191,7 @@ plotBAFperstate <- function(alleleCN, minpts = 250){
     dplyr::filter(state < 7)
   allASstates$cBAF[is.nan(allASstates$cBAF)] <- 0.0
 
-  forplot <- alleleCNHMM %>%
+  forplot <- alleleCN %>%
     dplyr::group_by(state_AS_phased) %>%
     dplyr::mutate(n = n()) %>%
     dplyr::ungroup() %>%
