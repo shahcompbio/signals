@@ -51,7 +51,11 @@ alleleCN <- callAlleleSpecificCNHMM(CNBAF)
 We'll then plot the results. First we'll plot the BAF vs the CN state, making sure that we see clusters in the expected positions.
 
 ```{r, fig.show='hold', fig.height=4 , fig.width=10}
-plotCNBAF(alleleCN)
+plotCNBAF(CNBAF)
+```
+
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+plotBAFperstate(alleleCN)
 ```
 
 Now we can plot the copy number heatmaps. First we'll plot the normal heatmap based on copy number states. By default the ```plotHeatmap``` function does some clustering using hdbscan, we'll set a seed so we get the same clustering for each of the heatmaps below.
