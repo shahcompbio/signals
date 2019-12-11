@@ -15,7 +15,7 @@ myviterbi <- function(emission, transition, observations) {
   T2 <- matrix(data=0, nrow=numStates, ncol=numObs)
   firstObs <- observations[1]
 
-  probSeq[, 1] = initial + emission[, observations[1]]
+  T1[, 1] = initial + emission[, observations[1]]
 
   for (j in 2:length(observations)){
     for (i in 1:numStates){
