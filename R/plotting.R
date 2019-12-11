@@ -1,5 +1,7 @@
 plottinglist <- function(CNbins){
   #arrange segments in order, generate segment index and reorder CN state factor
+
+  chridx <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
   CNbins <- CNbins %>%
     dplyr::left_join(., chridx, by = c("chr")) %>%
     dplyr::arrange(cell_id, idx, start) %>%
@@ -48,10 +50,11 @@ plotCNprofileBAF <- function(CNbins,
                           pointsize = 1,
                           alphaval = 0.9,
                           maxCN = 10,
-                          BAFcol = "state_min",
+                          cellidx = 1,
+                          BAFcol = "state_phase",
                           statecol = "state"){
   if (is.null(cellid)){
-    cellid <- CNbins$cell_id[1]
+    cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
   }
 
   if (!"BAF" %in% names(CNbins)){
@@ -161,12 +164,11 @@ plotCNBAF <- function(CNBAF, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
     ggplot2::ggplot(ggplot2::aes(y = BAF, x = copy, col = paste0("CN", state))) +
     ggplot2::geom_point(size = pointsize, alpha = 0.2) +
     ggplot2::xlab("Corrected read counts") +
-    #scale_x_log10() +
     cowplot::theme_cowplot() +
     ggplot2::ggtitle(plottitle) +
     ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(alpha=1, size=5))) +
     ggplot2::geom_text(data = ASstates, ggplot2::aes(x = state, y = cBAF, label = state_AS), col = "black") +
-    ggplot2::scale_color_manual(name = "HMM state",
+    ggplot2::scale_color_manual(name = "Copy number \n state",
                        breaks = paste0("CN", seq(0, max(CNBAF$state, na.rm = TRUE), 1)),
                        labels = seq(0, max(CNBAF$state, na.rm = TRUE), 1),
                        values = scCN_cols(paste0("CN", seq(0, max(CNBAF$state, na.rm = TRUE), 1)))) +

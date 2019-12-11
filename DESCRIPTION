@@ -15,5 +15,7 @@ Imports:
     dplyr,
     HMM,
     uwot,
-    dbscan
+    dbscan,
+    gtools,
+    forcats
 RoxygenNote: 6.1.1
