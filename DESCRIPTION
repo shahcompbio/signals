@@ -13,5 +13,7 @@ Imports:
     data.table,
     magrittr,
     dplyr,
-    HMM
+    HMM,
+    uwot,
+    dbscan
 RoxygenNote: 6.1.1

@@ -460,33 +460,6 @@ make_copynumber_heatmap <- function(copynumber,
   return(copynumber_hm)
 }
 
-createCNmatrix <- function(CNbins, field = "state", maxval = 11){
-
-  dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
-
-  cnmatrix <- CNbins %>%
-    dplyr::group_by(chr, start, end) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(segid = paste(chr, start, end, sep = "_")) %>%
-    dplyr::mutate(state = ifelse(state > maxval, maxval, state)) %>%
-    dplyr::select_("segid", "cell_id", field) %>%
-    tidyr::spread_("cell_id", field) %>%
-    as.data.frame()
-  rownames(cnmatrix) <- cnmatrix$segid
-  cnmatrix <- cnmatrix %>%
-    tidyr::separate(segid, c("chr", "start", "end"), "_", remove = F) %>%
-    dplyr::mutate(start = as.integer(start), end = as.integer(end)) %>%
-    dplyr::mutate(width = end-start) %>%
-    dplyr::select(chr, start, end, width, segid, dplyr::everything()) %>%
-    dplyr::left_join(., dfchr) %>%
-    dplyr::arrange(idx, start) %>%
-    dplyr::select(-idx) %>%
-    as.data.frame()
-  rownames(cnmatrix) <- cnmatrix$segid
-  cnmatrix = subset(cnmatrix, select = -c(segid))
-  return(cnmatrix)
-}
-
 #' @export
 createSNVmatrix <- function(SNVs, allcells = NULL, field = "mutation"){
   dfmuts <- SNVs %>%

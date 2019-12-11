@@ -7,12 +7,9 @@ umap_clustering <- function(CNbins,
                             field = "state"){
 
   message("Creating CN matrix...")
-  cnmatrix <- CNbins %>%
-    dplyr::mutate(segid = paste(chr, start, end, sep = "_")) %>%
-    dplyr::select_("segid", "cell_id", field) %>%
-    tidyr::spread_("segid", field) %>%
-    #remove any columns containing NAs
-    dplyr::select_if(~ !any(is.na(.)))
+  cnmatrix <- createCNmatrix(CNbins, na.rm = TRUE, field = field)
+  cnmatrix <- subset(cnmatrix, select = -c(chr, start, end, width))
+  cnmatrix <- t(cnmatrix)
 
   set.seed(seed)
   message('Calculating UMAP dimensionality reduction...')
@@ -25,8 +22,8 @@ umap_clustering <- function(CNbins,
 
   dfumap <- data.frame(umap1 = umapresults$embedding[,1],
                        umap2 = umapresults$embedding[,2],
-                       cell_id = cnmatrix$cell_id)
-  rownames(dfumap) <- cnmatrix$cell_id
+                       cell_id = row.names(cnmatrix))
+  rownames(dfumap) <- row.names(cnmatrix)
 
   message('Clustering cells using hdbscan...')
   hdbscanresults <- dbscan::hdbscan(dfumap[,1:2], minPts = minPts,
@@ -39,7 +36,7 @@ umap_clustering <- function(CNbins,
     dplyr::mutate(clone_id = ifelse(clone_id == "ZZ", "0", clone_id))
 
   tree <- ape::as.phylo(hdbscanresults$hc, use.labels = TRUE)
-  tree$tip.label <- cnmatrix$cell_id[as.numeric(tree$tip.label)]
+  tree$tip.label <- row.names(cnmatrix)[as.numeric(tree$tip.label)]
 
   message(paste0("Identified ", length(unique(dfumap$clone_id)), " clusters"))
   message("Distribution of clusters:")
