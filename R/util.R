@@ -1,3 +1,30 @@
+createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE){
+
+  dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
+
+  CNbins <- data.table::as.data.table(CNbins)
+
+  cnmatrix <- CNbins %>%
+    .[, segid := paste(chr, start, end, sep = "_")] %>%
+    .[, state := fifelse(state > maxval, maxval, state)] %>%
+    .[, width := end - start] %>%
+    #.[, c("segid", "cell_id", field), with = FALSE] %>%
+    #.[, c("chr", "start", "end", field), with = FALSE]
+    data.table::dcast(., chr + start + end + width ~ cell_id, value.var = field, fill = 0L) %>%
+    .[dfchr, on = "chr"] %>%
+    .[order(idx, start)] %>%
+     as.data.frame()
+
+  if (na.rm == TRUE){
+    cnmatrix <- na.omit(cnmatrix)
+  }
+
+  rownames(cnmatrix) <- paste(cnmatrix$chr, cnmatrix$start, cnmatrix$end, sep = "_")
+  cnmatrix = subset(cnmatrix, select = -c(idx))
+  return(cnmatrix)
+}
+
+
 #' Make fixed-width bins
 #'
 #' Make fixed-width bins based on given bin size.
