@@ -18,7 +18,7 @@ myviterbi <- function(emission, transition, observations) {
   probSeq[, 1] = initial + emission[, observations[1]]
 
   for (j in 2:length(observations)){
-    for (i in 1:dim(transition)[1]){
+    for (i in 1:numStates){
       probs <- T1[ , j - 1] + transition[ ,i] + emission[i, observations[j]]
       T1[i, j] <- max(probs)
       T2[i, j] <- which.max(probs)
