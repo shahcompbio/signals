@@ -1,3 +1,8 @@
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
 createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE){
 
   dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
@@ -10,7 +15,7 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE){
     .[, width := end - start] %>%
     #.[, c("segid", "cell_id", field), with = FALSE] %>%
     #.[, c("chr", "start", "end", field), with = FALSE]
-    data.table::dcast(., chr + start + end + width ~ cell_id, value.var = field, fill = 0L) %>%
+    data.table::dcast(., chr + start + end + width ~ cell_id, value.var = field, fill = NA) %>%
     .[dfchr, on = "chr"] %>%
     .[order(idx, start)] %>%
      as.data.frame()

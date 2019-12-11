@@ -1,0 +1,101 @@
+---
+title: "Allele Specific CN inference"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{AlleleSpecificCN}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(schaplotypR)
+```
+
+## Allele specific copy number inference
+This vignette illustrates how to perform allele specific copy number inference with DLP+ data.
+
+## Data
+The data needed to perform the allele specific copy number inference are the HMMcopy bins data and the cell specific haplotype calls.
+
+A small test data set of 200 cells is provided with the package, we'll load this data up and inspect these 2 dataframe.
+
+```{r}
+data(haplotypes)
+data(CNbins)
+```
+
+```{r}
+head(CNbins)
+```
+
+```{r}
+head(haplotypes)
+```
+
+## Allele Specific inference
+
+To perform the allelespecific copy number inference we first need to combined the copy number data and the haplotype calls as well as extend the binsize. We'll use a bin size of 5Mb for this.
+
+```{r}
+CNBAF <- combineBAFCN(haplotypes, CNbins, binsize = 5e6, filtern = 0)
+alleleCN <- callAlleleSpecificCNHMM(CNBAF)
+```
+
+We'll then plot the results. First we'll plot the BAF vs the CN state, making sure that we see clusters in the expected positions.
+
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+plotCNBAF(alleleCN)
+```
+
+Now we can plot the copy number heatmaps. First we'll plot the normal heatmap based on copy number states. By default the ```plotHeatmap``` function does some clustering using hdbscan, we'll set a seed so we get the same clustering for each of the heatmaps below.
+
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+set.seed(1)
+plotHeatmap(alleleCN, plotcol = "state", plottree = FALSE, spacer_cols = 3)
+```
+
+Here is the plot for the allele specific states (note we only differentiate upto copy number 4, these colours need tweaking to make the difference more obvious).
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+set.seed(1)
+plotHeatmap(alleleCN, plotcol = "state_AS", plottree = FALSE, spacer_cols = 3)
+```
+
+This heatmap plots the minor copy number state.
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+plotHeatmap(alleleCN, plotcol = "state_min", plottree = FALSE, spacer_cols = 3)
+```
+
+This plots differences in phase, ie which allele has been gained. When the same locus has different phases, this suggests convergent evolution on a particular state.
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+plotHeatmap(alleleCN, plotcol = "state_phase", plottree = FALSE, spacer_cols = 3)
+```
+
+
+There are also some function to plot per cell BAF and state plots. You can specify a cell, or the default will take the first cell in the data frame.
+```{r, fig.show='hold', fig.height=8, fig.width=10}
+plotCNprofileBAF(alleleCN)
+```
+Here we'll plot and equivalent plot merging across cells
+```{r, fig.show='hold', fig.height=8 , fig.width=10}
+library(tidyverse)
+alleleCN %>%
+    group_by(chr, start, end) %>%
+    summarise(state = schaplotypeR:::Mode(state), 
+              state_min = schaplotypeR:::Mode(state_min), 
+              BAF = median(BAF), 
+              state_phase = schaplotypeR:::Mode(state_phase), 
+              copy = median(copy)) %>%
+    ungroup() %>%
+    mutate(cell_id = "Merged Cells") %>% # add dummy cell id
+    plotCNprofileBAF(.)
+```
+
+
+
