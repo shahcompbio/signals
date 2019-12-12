@@ -1,5 +1,5 @@
 #' @export
-combineBAFCN <- function(haplotypes, CNbins, binsize = 5e6, filtern = 0){
+combineBAFCN <- function(haplotypes, CNbins, binsize = 0.5e6, filtern = 0){
 
   message("Finding overlapping cell IDs between CN data and haplotype data...")
   cellidoverlap <- intersect(CNbins$cell_id, haplotypes$cell_id)
