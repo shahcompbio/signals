@@ -44,7 +44,7 @@ head(haplotypes)
 To perform the allelespecific copy number inference we first need to combined the copy number data and the haplotype calls as well as extend the binsize. We'll use a bin size of 5Mb for this.
 
 ```{r}
-CNBAF <- combineBAFCN(haplotypes, CNbins, binsize = 5e6, filtern = 0)
+CNBAF <- combineBAFCN(haplotypes, CNbins, binsize = 1e6, filtern = 0)
 alleleCN <- callAlleleSpecificCNHMM(CNBAF)
 ```
 
@@ -91,10 +91,10 @@ Here we'll plot and equivalent plot merging across cells
 library(tidyverse)
 alleleCN %>%
     group_by(chr, start, end) %>%
-    summarise(state = schaplotypeR:::Mode(state), 
-              state_min = schaplotypeR:::Mode(state_min), 
+    summarise(state = schaplotypR:::Mode(state), 
+              state_min = schaplotypR:::Mode(state_min), 
               BAF = median(BAF), 
-              state_phase = schaplotypeR:::Mode(state_phase), 
+              state_phase = schaplotypR:::Mode(state_phase), 
               copy = median(copy)) %>%
     ungroup() %>%
     mutate(cell_id = "Merged Cells") %>% # add dummy cell id

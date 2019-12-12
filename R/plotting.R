@@ -177,7 +177,7 @@ plotCNBAF <- function(CNBAF, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
 }
 
 #' @export
-plotBAFperstate <- function(alleleCN, minpts = 250){
+plotBAFperstate <- function(alleleCN, minpts = 250, maxstate = 6){
 
   maj <- seq(0, max(alleleCN$state), 1)
   min <- seq(0, max(alleleCN$state), 1)
@@ -195,7 +195,7 @@ plotBAFperstate <- function(alleleCN, minpts = 250){
     dplyr::group_by(state_AS_phased) %>%
     dplyr::mutate(n = n()) %>%
     dplyr::ungroup() %>%
-    dplyr::filter(state < 7, n > minpts)
+    dplyr::filter(state <= maxstate, n > minpts)
   allASstates <- allASstates %>%
     dplyr::filter(state_AS_phased %in% unique(forplot$state_AS_phased))
 
@@ -212,7 +212,8 @@ plotBAFperstate <- function(alleleCN, minpts = 250){
     cowplot::theme_cowplot() +
     ggplot2::geom_crossbar(data = allASstates, ggplot2::aes(y = cBAF, ymin = cBAF, ymax = cBAF)) +
     ggplot2::xlab("") +
-    ggplot2::theme(legend.position = "bottom")
+    ggplot2::theme(legend.position = "bottom") +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
 
   return(g)
 }
