@@ -13,7 +13,6 @@ Imports:
     data.table,
     magrittr,
     dplyr,
-    HMM,
     uwot,
     dbscan,
     gtools,
