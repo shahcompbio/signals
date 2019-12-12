@@ -16,7 +16,13 @@ Imports:
     uwot,
     dbscan,
     gtools,
-    forcats
+    forcats,
+    ComplexHeatmap,
+    GenomicRanges,
+    cowplot,
+    matrixStats,
+    ape,
+    GenomeInfoDb
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
