@@ -10,7 +10,7 @@ combineBAFCN <- function(haplotypes, CNbins, binsize = 5e6, filtern = 0){
   if (all(cellidoverlap %in% CNbins$cell_id)){
     message(paste0("Number of cells in CN data: ", length(unique(CNbins$cell_id))))
     message("Removing cells from CN data...")
-    CNbins <- CNbins %>% .[cell_id %in% cellidoverlap]
+    CNbins <- CNbins[cell_id %in% cellidoverlap]
   }
 
   if (all(cellidoverlap %in% haplotypes$cell_id)){
@@ -22,18 +22,22 @@ combineBAFCN <- function(haplotypes, CNbins, binsize = 5e6, filtern = 0){
   message("Reformatting haplotypes")
   haplotypes <- haplotypes %>%
     format_haplotypes(.)
+  haplotypes <- data.table::as.data.table(haplotypes)
 
   if (binsize > 0.5e6){
     message("Widening CN bins")
     CNbins <- CNbins %>%
-      widen_bins(., binsize = binsize)
+      widen_bins(., binsize = binsize) %>%
+      data.table::as.data.table(.)
     message("Widening haplotype bins")
     haplotypes <- haplotypes %>%
-      widen_haplotypebins(., binsize = binsize)
+      widen_haplotypebins(., binsize = binsize) %>%
+      data.table::as.data.table(.)
   }
 
   message("Joining bins and haplotypes...")
-  CNbins <- data.table::merge.data.table(CNbins, haplotypes)
+  #CNbins <- data.table::merge.data.table(CNbins, haplotypes)
+  CNbins <- CNbins[haplotypes, on = c("chr", "start", "end", "cell_id")]
 
   message("Calculate BAF per bin...")
   CNBAF <- CNbins %>%
@@ -94,7 +98,7 @@ alleleHMM <- function(n,
                       binstates,
                       minor_cn,
                       loherror = 0.01,
-                      selftransitionprob = 0.9,
+                      selftransitionprob = 0.999,
                       eps = 1e-12){
 
   minor_cn_mat <- t(replicate(length(binstates), minor_cn))
@@ -108,15 +112,8 @@ alleleHMM <- function(n,
   if (eps > 0.0){
     l <- matrix(vapply(l, function(x) matrixStats::logSumExp(c(x, log(eps))), FUN.VALUE = numeric(1)), dim(l)[1], dim(l)[2])
   }
-  l <- exp(l)
-  l <- l / rowSums(l, na.rm = T)
-  l[is.na(l)] <- 0.0
-  l[minor_cn_mat > total_cn_mat] <- 0.0
-
-  eProbs <- l
-  colnames(eProbs) <- paste0(minor_cn)
-  row.names(eProbs) <- paste0(1:length(binstates))
-
+  l[is.na(l)] <- log(0.0)
+  l[minor_cn_mat > total_cn_mat] <- log(0.0)
 
   tProbs <- matrix((1 - selftransitionprob) / (length(minor_cn) -1), length(minor_cn), length(minor_cn))
   diag(tProbs) <- selftransitionprob
@@ -125,13 +122,9 @@ alleleHMM <- function(n,
 
   states <- paste0(minor_cn)
 
-  ihmm <- HMM::initHMM(States = paste0(minor_cn),
-                       Symbols = paste0(1:length(binstates)),
-                       transProbs = tProbs, emissionProbs = t(eProbs))
-  res <- HMM::viterbi(ihmm, paste0(1:length(binstates)))
-  posterior_prob <- HMM::posterior(ihmm, paste0(1:length(binstates)))
+  res <- myviterbi(l, log(tProbs), observations = 1:length(binstates))
 
-  return(list(minorcn = res, posterior_prob = posterior_prob, l = l))
+  return(list(minorcn = res, l = l))
 }
 
 #' @export
@@ -194,11 +187,10 @@ callalleleHMMcell <- function(CNBAF,
                           selftransitionprob = selftransitionprob)
 
   CNBAF$state_min <- as.numeric(hmmresults$minorcn)
-  d1 <- as.numeric(hmmresults$minorcn)
 
-  CNBAF <- CNBAF %>%
+  CNBAF <- data.table::as.data.table(CNBAF) %>%
     .[, Maj := state - state_min] %>%
-    .[, Min = state_min] %>%
+    .[, Min := state_min] %>%
     .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
     .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
     .[, state_min := pmin(Maj, Min)] %>%

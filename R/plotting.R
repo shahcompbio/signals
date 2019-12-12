@@ -176,5 +176,47 @@ plotCNBAF <- function(CNBAF, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
   return(g)
 }
 
+#' @export
+plotBAFperstate <- function(alleleCN, minpts = 250, maxstate = 6){
+
+  maj <- seq(0, max(alleleCN$state), 1)
+  min <- seq(0, max(alleleCN$state), 1)
+
+  allASstates <- expand.grid(state = maj, min = min) %>%
+    dplyr::mutate(cBAF = min / state) %>%
+    dplyr::mutate(state_AS_phased = paste0(state-min, "|", min)) %>%
+    dplyr::mutate(Maj = state-min, Min = min) %>%
+    dplyr::select(-min) %>%
+    dplyr::filter(Maj >= 0, Min >= 0) %>%
+    dplyr::filter(state < 7)
+  allASstates$cBAF[is.nan(allASstates$cBAF)] <- 0.0
+
+  forplot <- alleleCN %>%
+    dplyr::group_by(state_AS_phased) %>%
+    dplyr::mutate(n = n()) %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(state <= maxstate, n > minpts)
+  allASstates <- allASstates %>%
+    dplyr::filter(state_AS_phased %in% unique(forplot$state_AS_phased))
+
+  g <- forplot %>%
+    ggplot2::ggplot(ggplot2::aes(x = forcats::fct_reorder(state_AS_phased, state),
+                                 y = BAF,
+                                 fill = paste0("CN", state))) +
+    ggplot2::geom_violin(scale = "width", col = "white") +
+    ggplot2::geom_boxplot(width = 0.1, outlier.shape = NA, col = "white") +
+    ggplot2::scale_fill_manual(name = "Copy number \n state",
+                                breaks = paste0("CN", seq(0, max(CNBAF$state, na.rm = TRUE), 1)),
+                                labels = seq(0, max(CNBAF$state, na.rm = TRUE), 1),
+                                values = scCN_cols(paste0("CN", seq(0, max(CNBAF$state, na.rm = TRUE), 1)))) +
+    cowplot::theme_cowplot() +
+    ggplot2::geom_crossbar(data = allASstates, ggplot2::aes(y = cBAF, ymin = cBAF, ymax = cBAF)) +
+    ggplot2::xlab("") +
+    ggplot2::theme(legend.position = "bottom") +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+
+  return(g)
+}
+
 
 
