@@ -1,4 +1,4 @@
-Package: schaplotypR
+Package: schnapps
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
@@ -13,9 +13,12 @@ Imports:
     data.table,
     magrittr,
     dplyr,
-    HMM,
     uwot,
     dbscan,
     gtools,
     forcats
 RoxygenNote: 6.1.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

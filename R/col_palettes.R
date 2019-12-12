@@ -29,6 +29,7 @@ scCNstate_colors <- c(
 )
 
 scCNAS_colors <- c(
+  `0|0` = '#3182BD',
   `1|0` = "#9ECAE1",
   `1|1` = "#CCCCCC",
   `2|0` = "#666666",
@@ -43,7 +44,7 @@ scCNAS_colors <- c(
   `8` = "#DD1C77",
   `9` = "#DF65B0",
   `10` = "#C994C7",
-  `11` =  "#D4B9DA"
+  `11+` =  "#D4B9DA"
 )
 
 scCNminorallele_colors <- c(
