@@ -11,7 +11,7 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE){
 
   cnmatrix <- CNbins %>%
     .[, segid := paste(chr, start, end, sep = "_")] %>%
-    .[, state := fifelse(state > maxval, maxval, state)] %>%
+    .[, state := data.table::fifelse(state > maxval, maxval, state)] %>%
     .[, width := end - start] %>%
     #.[, c("segid", "cell_id", field), with = FALSE] %>%
     #.[, c("chr", "start", "end", field), with = FALSE]
@@ -110,7 +110,7 @@ format_haplotypes <- function(haplotypes, filtern = 0, hmmcopybinsize = 0.5e6){
   phased_haplotypes <- phase_haplotypes(formatted_haplotypes)
 
   message("Join phased haplotypes...")
-  formatted_haplotypes <- data.table::merge.data.table(formatted_haplotypes, phased_haplotypes)
+  formatted_haplotypes <- formatted_haplotypes[phased_haplotypes, on = .(chr, start, end, hap_label)]
 
   message("Reorder haplotypes based on phase...")
   formatted_haplotypes <- formatted_haplotypes %>%

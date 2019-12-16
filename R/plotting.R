@@ -188,7 +188,7 @@ plotBAFperstate <- function(alleleCN, minpts = 250, maxstate = 6){
     dplyr::mutate(Maj = state-min, Min = min) %>%
     dplyr::select(-min) %>%
     dplyr::filter(Maj >= 0, Min >= 0) %>%
-    dplyr::filter(state < 7)
+    dplyr::filter(state <= maxstate)
   allASstates$cBAF[is.nan(allASstates$cBAF)] <- 0.0
 
   forplot <- alleleCN %>%
