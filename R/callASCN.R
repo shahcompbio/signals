@@ -37,7 +37,7 @@ combineBAFCN <- function(haplotypes, CNbins, binsize = 0.5e6, filtern = 0){
 
   message("Joining bins and haplotypes...")
   #CNbins <- data.table::merge.data.table(CNbins, haplotypes)
-  CNbins <- CNbins[haplotypes, on = c("chr", "start", "end", "cell_id")]
+  CNbins <- CNbins[haplotypes, on = c("chr", "start", "end", "cell_id"), nomatch=0]
 
   message("Calculate BAF per bin...")
   CNBAF <- CNbins %>%
