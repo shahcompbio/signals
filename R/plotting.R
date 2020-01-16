@@ -206,9 +206,9 @@ plotBAFperstate <- function(alleleCN, minpts = 250, maxstate = 6){
     ggplot2::geom_violin(scale = "width", col = "white") +
     ggplot2::geom_boxplot(width = 0.1, outlier.shape = NA, col = "white") +
     ggplot2::scale_fill_manual(name = "Copy number \n state",
-                                breaks = paste0("CN", seq(0, max(CNBAF$state, na.rm = TRUE), 1)),
-                                labels = seq(0, max(CNBAF$state, na.rm = TRUE), 1),
-                                values = scCN_cols(paste0("CN", seq(0, max(CNBAF$state, na.rm = TRUE), 1)))) +
+                                breaks = paste0("CN", seq(0, max(alleleCN$state, na.rm = TRUE), 1)),
+                                labels = seq(0, max(alleleCN$state, na.rm = TRUE), 1),
+                                values = scCN_cols(paste0("CN", seq(0, max(alleleCN$state, na.rm = TRUE), 1)))) +
     cowplot::theme_cowplot() +
     ggplot2::geom_crossbar(data = allASstates, ggplot2::aes(y = cBAF, ymin = cBAF, ymax = cBAF)) +
     ggplot2::xlab("") +
