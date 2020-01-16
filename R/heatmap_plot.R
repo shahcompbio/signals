@@ -567,7 +567,7 @@ plotHeatmap <- function(CNbins,
   }
 
   message("Creating copy number heatmap...")
-  copynumber <- createCNmatrix(CNbins, field = plotcol)
+  copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = TRUE)
   if (normalize_ploidy == T){
     message("Normalizing ploidy for each cell to 2")
     copynumber <- normalize_cell_ploidy(copynumber)
