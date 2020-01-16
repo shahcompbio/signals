@@ -44,7 +44,7 @@ head(haplotypes)
 To perform the allelespecific copy number inference we first need to combined the copy number data and the haplotype calls as well as extend the binsize. We'll use a bin size of 5Mb for this.
 
 ```{r}
-CNBAF <- combineBAFCN(haplotypes, CNbins, binsize = 1e6, filtern = 0)
+CNBAF <- combineBAFCN(haplotypes, CNbins, binsize = 0.5e6, filtern = 0)
 alleleCN <- callAlleleSpecificCNHMM(CNBAF)
 ```
 
