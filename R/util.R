@@ -192,6 +192,81 @@ phase_haplotypes <- function(haplotypes){
   return(phased_haplotypes)
 }
 
+
+phase_haplotypes2 <- function(haplotypes){
+
+  phased_haplotypes2 <- data.table::as.data.table(formatted_haplotypes) %>%
+    #.[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+    .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")]
+
+  phased_haplotypes3 <- data.table::as.data.table(formatted_haplotypes) %>%
+    .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+    .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
+    as_tibble() %>%
+    arrange(chr, start, hap_label)
+
+  x <- phased_haplotypes2 %>%
+    filter(totalcounts > 2) %>%
+    group_by(chr, start, end, hap_label, phase) %>%
+    summarise(counts = n()) %>%
+    ungroup() %>%
+    pivot_wider(names_from = phase, values_from = counts) %>%
+    tidyr::replace_na(., list(allele1 = 0, allele0 = 0)) %>%
+    mutate(phase = ifelse(allele0 > allele1, "allele0", "allele1")) %>%
+    arrange(chr, start, hap_label)
+
+  message("Join phased haplotypes...")
+  formatted_haplotypes2 <- formatted_haplotypes[phased_haplotypes2, on = .(chr, start, end, hap_label, cell_id)]
+
+  message("Reorder haplotypes based on phase...")
+  formatted_haplotypes2 <- formatted_haplotypes2 %>%
+    .[, alleleA := ifelse(phase == "allele0", allele1, allele0)] %>%
+    .[, alleleB := ifelse(phase == "allele0", allele0, allele1)] %>%
+    .[totalcounts > filtern, BAF := alleleB / totalcounts] %>%
+    .[, c("allele1", "allele0", "phase") := NULL]
+
+
+  dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
+
+  cnmatrix <- formatted_haplotypes2 %>%
+    group_by(chr, start, end, hap_label) %>%
+    mutate(n = n()) %>%
+    ungroup() %>%
+    filter(n > 100) %>%
+    as.data.table() %>%
+    .[, segid := paste(chr, as.integer(start), as.integer(end), hap_label, sep = "_")] %>%
+    #.[, state := data.table::fifelse(state > maxval, maxval, state)] %>%
+    .[, width := end - start] %>%
+    data.table::dcast(., chr + start + end + hap_label + width ~ cell_id, value.var = "alleleA", fill = 0) %>%
+    .[dfchr, on = "chr"] %>%
+    .[order(idx, start)]
+
+  rownames(cnmatrix) <- paste(cnmatrix$chr, as.integer(cnmatrix$start), as.integer(cnmatrix$end), cnmatrix$hap_label, sep = "_")
+  cnmatrix = subset(cnmatrix, select = -c(idx))
+
+  cnmatrix <- subset(cnmatrix, select = -c(chr, start, end, width, hap_label))
+  cnmatrix <- t(cnmatrix)
+
+  umapresults <- uwot::umap(na.omit(as.data.frame(cnmatrix)))
+
+  umapresults <- uwot::umap(cnmatrix,
+                            n_neighbors = 20,
+                            n_components = 2,
+                            min_dist = 0.0,
+                            ret_model = TRUE,
+                            ret_nn = TRUE, pca = 50)
+
+  dfumap <- data.frame(umap1 = umapresults[,1],
+                       umap2 = umapresults[,2],
+                       cell_id = row.names(na.omit(cnmatrix)))
+
+  dfumap %>%
+    ggplot(aes(x = umap1, y = umap1)) +
+    geom_point(alpha = 0.5)
+
+  return(phased_haplotypes)
+}
+
 #' @export
 snv_states <- function(SNV, CNbins){
 
@@ -253,28 +328,33 @@ coord_to_arm <- function(chromosome, position, assembly = "hg19", full = F){
   return(arms)
 }
 
-.mergeSegmentsfun <- function(segs, s, pb, field = "state"){
+.mergeSegmentsfun <- function(segs, s, pb, field_var) {
   pb$tick()$print()
   cellsegs <- dplyr::filter(segs, cell_id == s)
-  segs_g <- GenomicRanges::makeGRangesFromDataFrame(cellsegs, keep.extra.columns = TRUE)
-  segs_g_s <- GenomicRanges::split(segs_g, GenomicRanges::elementMetadata(segs_g)$state)
-  segs_g_s <- GenomicRanges::split(segs_g, GenomicRanges::elementMetadata(segs_g)[["state"]])
-  reducedRanges <- BiocGenerics::unlist(GenomicRanges::reduce(segs_g_s))
-  GenomicRanges::elementMetadata(reducedRanges)[["state"]] <- as.numeric(names(reducedRanges))
-  tempsegs <- as.data.frame(reducedRanges, row.names = NULL) %>%
-    dplyr::rename(chr = seqnames) %>%
-    dplyr::select(-strand, -width) %>%
-    dplyr::mutate(cell_id = s, chr = as.character(chr))
+
+  tempsegs <- cellsegs %>%
+    dplyr::group_by(chr) %>%
+    dplyr::mutate(consecutive = !!field_var == dplyr::lag(!!field_var), n = 1:n()) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(segid = ifelse(consecutive == FALSE | n == 1, n, NA)) %>%
+    tidyr::fill(segid) %>%
+    dplyr::group_by(segid, chr, cell_id, !!field_var) %>%
+    dplyr::summarise(start = dplyr::first(start),
+              end = dplyr::last(end),
+              nbin = dplyr::n()) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-segid)
   return(tempsegs)
 }
 
 #' @export
-create_segments <- function(segs, verbose = TRUE, field = "state"){
+create_segments <- function(segs, field, verbose = TRUE){
+  field_var <- dplyr::enquo(field)
   pb <- dplyr::progress_estimated(length(unique(segs$cell_id)), min_time = 1)
   newsegs <- data.table::rbindlist(lapply(unique(segs$cell_id),
-                                         function(x) .mergeSegmentsfun(segs, x, pb, field = field))) %>%
-    dplyr::select(chr, start, end, cell_id) %>%
-    dplyr::arrange(cell_id, chr, start, dplyr::everything())
+                                          function(x) .mergeSegmentsfun(segs, x, pb, field_var))) %>%
+    dplyr::select(chr, start, end, cell_id, dplyr::everything()) %>%
+    dplyr::arrange(cell_id, chr, start)
   return(newsegs)
 }
 
