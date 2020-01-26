@@ -253,3 +253,28 @@ coord_to_arm <- function(chromosome, position, assembly = "hg19", full = F){
   return(arms)
 }
 
+.mergeSegmentsfun <- function(segs, s, pb, field = "state"){
+  pb$tick()$print()
+  cellsegs <- dplyr::filter(segs, cell_id == s)
+  segs_g <- GenomicRanges::makeGRangesFromDataFrame(cellsegs, keep.extra.columns = TRUE)
+  segs_g_s <- GenomicRanges::split(segs_g, GenomicRanges::elementMetadata(segs_g)$state)
+  segs_g_s <- GenomicRanges::split(segs_g, GenomicRanges::elementMetadata(segs_g)[["state"]])
+  reducedRanges <- BiocGenerics::unlist(GenomicRanges::reduce(segs_g_s))
+  GenomicRanges::elementMetadata(reducedRanges)[["state"]] <- as.numeric(names(reducedRanges))
+  tempsegs <- as.data.frame(reducedRanges, row.names = NULL) %>%
+    dplyr::rename(chr = seqnames) %>%
+    dplyr::select(-strand, -width) %>%
+    dplyr::mutate(cell_id = s, chr = as.character(chr))
+  return(tempsegs)
+}
+
+#' @export
+create_segments <- function(segs, verbose = TRUE, field = "state"){
+  pb <- dplyr::progress_estimated(length(unique(segs$cell_id)), min_time = 1)
+  newsegs <- data.table::rbindlist(lapply(unique(segs$cell_id),
+                                         function(x) .mergeSegmentsfun(segs, x, pb, field = field))) %>%
+    dplyr::select(chr, start, end, cell_id) %>%
+    dplyr::arrange(cell_id, chr, start, dplyr::everything())
+  return(newsegs)
+}
+
