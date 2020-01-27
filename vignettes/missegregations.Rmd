@@ -1,0 +1,91 @@
+---
+title: "Missegregations analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{missegregations}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(schnapps)
+library(tidyverse)
+library(cowplot)
+```
+
+## Allele specific copy number inference
+This vignette illustrates how to perform allele specific copy number inference with DLP+ data.
+
+## Allele Specific inference
+
+To perform the allelespecific copy number inference we first need to combined the copy number data and the haplotype calls as well as extend the binsize. We'll use a bin size of 5Mb for this.
+
+```{r}
+cnbaf <- combineBAFCN(haplotypes, CNbins, binsize = 0.5e6, filtern = 0)
+ascn <- callAlleleSpecificCNHMM(cnbaf, ncores = 10)
+```
+
+
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+cl <- umap_clustering(ascn, minPts = 30)
+ascn_cl <- left_join(ascn, cl$clustering)
+```
+
+Now we can plot the copy number heatmaps. First we'll plot the normal heatmap based on copy number states. By default the ```plotHeatmap``` function does some clustering using hdbscan, we'll set a seed so we get the same clustering for each of the heatmaps below.
+
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+plotHeatmap(ascn, clusters = cl$clustering, plotcol = "state", plottree = FALSE, spacer_cols = 15, reorderclusters = TRUE)
+```
+
+Here is the plot for the allele specific states (note we only differentiate upto copy number 4, these colours need tweaking to make the difference more obvious).
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+ms <- ascn_cl %>%
+  filter(clone_id == "A") %>%
+  missegregations(., perarm = T, cutoff = 0.75)
+```
+
+```{r}
+mscounts <- as.data.table(ms)[, .(count = .N), by = list(chrarm, state_diff)] %>%
+    dcast(., chrarm  ~...) %>% 
+  as.data.frame()
+
+
+mscounts <- ms %>%
+  group_by(chrarm, state_diff) %>%
+  summarise(n = n()) %>%
+  pivot_wider(names_from = "state_diff", values_from = n) %>%
+  select(-`NA`) %>%
+  replace_na(list(gain = 0, loss = 0)) %>%
+  mutate(loss = -loss) %>%
+  pivot_longer(cols = c(gain, loss))
+
+mscounts %>%
+  ggplot(aes(x=chrarm, y=value, fill=name)) + 
+  geom_bar(stat="identity", position="identity") +
+  theme_cowplot()
+```
+```{r}
+
+ascn_cl %>%
+  filter(clone_id == "A") %>%
+  group_by(chr, start, end) %>%
+  summarise(state =schnapps::Mode(state), BAF = median(BAF), 
+            state_phase = schnapps::Mode(state_phase), 
+            state_min = schnapps::Mode(state_min),
+            copy = median(copy)) %>%
+  mutate(cell_id = "A") %>%
+  plotCNprofileBAF(., BAFcol = "state_phase", chrfilt = "18")
+```
+
+```{r}
+ascn_cl %>%
+  filter(clone_id == "A") %>%
+  plotCNprofileBAF(., BAFcol = "state_phase", cellid = "SA922-A90554B-R34-C41")
+```
