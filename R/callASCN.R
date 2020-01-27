@@ -159,13 +159,16 @@ assignalleleHMM <- function(CNBAF,
     .[, state_min := pmin(Maj, Min)] %>%
     .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
     .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
+    .[, phase := c("Balanced", "A", "B")[1 +
+                                           1 * ((Min < Maj)) +
+                                           2 * ((Min > Maj))]] %>%
     .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
                                                                                1 * ((Min < Maj) & (Min != 0)) +
                                                                                2 * ((Min > Maj) & (Maj != 0)) +
                                                                                3 * ((Min < Maj) & (Min == 0)) +
                                                                                4 * ((Min > Maj) & (Maj == 0))]
     ] %>%
-  .[, c("Maj", "Min") := NULL] %>%
+  #.[, c("Maj", "Min") := NULL] %>%
   .[order(cell_id, chr, start)]
 
   return(as.data.frame(CNBAF))
@@ -187,6 +190,7 @@ callalleleHMMcell <- function(CNBAF,
                           selftransitionprob = selftransitionprob)
 
   CNBAF$state_min <- as.numeric(hmmresults$minorcn)
+  CNBAF$allele <- ifelse()
 
   CNBAF <- data.table::as.data.table(CNBAF) %>%
     .[, Maj := state - state_min] %>%
@@ -196,13 +200,16 @@ callalleleHMMcell <- function(CNBAF,
     .[, state_min := pmin(Maj, Min)] %>%
     .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
     .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
+    .[, phase := c("Balanced", "A", "B")[1 +
+                                         1 * ((Min < Maj)) +
+                                         2 * ((Min > Maj))]] %>%
     .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
                                                                                  1 * ((Min < Maj) & (Min != 0)) +
                                                                                  2 * ((Min > Maj) & (Maj != 0)) +
                                                                                  3 * ((Min < Maj) & (Min == 0)) +
                                                                                  4 * ((Min > Maj) & (Maj == 0))]
       ] %>%
-    .[, c("Maj", "Min") := NULL] %>%
+    #.[, c("Maj", "Min") := NULL] %>%
     .[order(cell_id, chr, start)]
 
   return(list(alleleCN = CNBAF, posterior_prob = hmmresults$posterior_prob, l = hmmresults$l))
@@ -248,3 +255,149 @@ callAlleleSpecificCNHMM <- function(CNBAF,
 
   return(as.data.frame(alleleCN))
 }
+
+#' @export
+countsegments <- function(ascn, armlevel = TRUE, binfilter = 10){
+  segments <- create_segments(ascn, phase)
+  segments$chrarm <- paste0(segments$chr, coord_to_arm(segments$chr, segments$start))
+  if (armlevel == TRUE){
+    segments_counts <- segments %>%
+      dplyr::filter(nbin >= binfilter) %>%
+      dplyr::group_by(cell_id, chrarm, phase) %>%
+      dplyr::summarise(n = n()) %>%
+      tidyr::pivot_wider(values_from = n, names_from = phase) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(entB = A * log(A) + B * log(B)) %>%
+      dplyr::arrange(desc(entB)) %>%
+      dplyr::group_by(chrarm) %>%
+      dplyr::filter(dplyr::row_number() == 1) %>%
+      dplyr::ungroup()
+  } else {
+    segments_counts <- segments %>%
+      dplyr::filter(nbin >= binfilter) %>%
+      dplyr::group_by(cell_id, chr, phase) %>%
+      dplyr::summarise(n = n()) %>%
+      tidyr::pivot_wider(values_from = n, names_from = phase) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(entB = A * log(A) + B * log(B)) %>%
+      dplyr::arrange(desc(entB)) %>%
+      dplyr::group_by(chr) %>%
+      dplyr::filter(dplyr::row_number() == 1) %>%
+      dplyr::ungroup()
+  }
+  return(segments_counts)
+}
+
+#' @export
+countchangesegments <- function(ascn, armlevel = TRUE, binfilter = 10){
+  segments <- create_segments(ascn, phase)
+  segments_state <- create_segments(ascn, state)
+  percell <- segments_state %>%
+    dplyr::group_by(chr, cell_id) %>%
+    dplyr::summarise(nstates = n()) %>%
+    dplyr::ungroup()
+  segments$chrarm <- paste0(segments$chr, coord_to_arm(segments$chr, segments$start))
+  if (armlevel == TRUE){
+    segments_counts <- segments %>%
+      dplyr::filter(nbin >= binfilter, phase != "Balanced") %>%
+      dplyr::group_by(cell_id, chrarm) %>%
+      dplyr::mutate(change = phase != lag(phase)) %>%
+      dplyr::summarise(n = sum(change, na.rm = T)) %>%
+      dplyr::ungroup() %>%
+      dplyr::arrange(desc(n)) %>%
+      dplyr::group_by(chrarm) %>%
+      dplyr::filter(dplyr::row_number() == 1) %>%
+      dplyr::ungroup()
+  } else {
+    segments_counts <- segments %>%
+      dplyr::filter(nbin >= binfilter) %>%
+      dplyr::group_by(cell_id, chr) %>%
+      dplyr::mutate(change = (phase != lag(phase)) & (phase != "Balanced")) %>%
+      dplyr::summarise(n = sum(change, na.rm = T)) %>%
+      dplyr::ungroup() %>%
+      dplyr::left_join(percell) %>%
+      dplyr::group_by(chr) %>%
+      dplyr::mutate(filtn = max(5, min(nstates))) %>%
+      dplyr::ungroup() %>%
+      dplyr::filter(nstates <= filtn) %>%
+      dplyr::arrange(desc(n)) %>%
+      dplyr::group_by(chr) %>%
+      dplyr::filter(dplyr::row_number() == 1) %>%
+      dplyr::ungroup()
+  }
+  return(segments_counts)
+}
+
+
+find_switches <- function(ascn, armlevel = FALSE, binfilter = 10){
+  bins <- dplyr::distinct(ascn, chr, start, end)
+  cell_segments <- countchangesegments(ascn, armlevel = armlevel, binfilter = binfilter)
+  bin_switch <- data.frame()
+  for (i in 1:nrow(cell_segments)){
+    print(i)
+    print(cell_segments$chr[i])
+    print(ascn %>%
+            filter(chr == cell_segments$chr[i]) %>%
+            distinct(chr, start, end) %>%
+            dim())
+    if (cell_segments$n[i] < 2){
+      print("filtered")
+      ascn_temp <- ascn %>%
+        dplyr::filter(cell_id == cell_segments$cell_id[i], chr == cell_segments$chr[i]) %>%
+        dplyr::mutate(switch = FALSE) %>%
+        dplyr::select(chr, start, end, phase, switch)
+      print(dim(ascn_temp))
+      bin_switch <- bind_rows(bin_switch, ascn_temp)
+    } else{
+      ascn_temp <- ascn %>%
+        dplyr::filter(cell_id == cell_segments$cell_id[i], chr == cell_segments$chr[i]) %>%
+        dplyr::mutate(switch = ifelse(phase == "B", TRUE, FALSE)) %>%
+        dplyr::select(chr, start, end, phase, switch)
+      bin_switch <- bind_rows(bin_switch, ascn_temp)
+      print(dim(ascn_temp))
+    }
+    print("")
+  }
+  return(bin_switch)
+}
+
+rephase_alleles <- function(ascn){
+  bin_switch <- find_switches(ascn, binfilter = 10)
+  ascn_switch <- as.data.table(ascn)
+
+  ascn_switch <- ascn_switch[bin_switch, on = .(chr, start, end)] %>%
+    .[switch==TRUE, c("Maj", "Min") := .(Min, Maj)] %>%
+    .[switch==TRUE, BAF := 1 - BAF] %>%
+    .[switch==TRUE, c("alleleA", "alleleB") := .(alleleB, alleleA)] %>%
+    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
+    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
+    .[, state_min := pmin(Maj, Min)] %>%
+    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
+    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
+    .[, phase := c("Balanced", "A", "B")[1 +
+                                           1 * ((Min < Maj)) +
+                                           2 * ((Min > Maj))]] %>%
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+                                                                                 1 * ((Min < Maj) & (Min != 0)) +
+                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
+                                                                                 3 * ((Min < Maj) & (Min == 0)) +
+                                                                                 4 * ((Min > Maj) & (Maj == 0))]
+      ] %>%
+    #.[, c("Maj", "Min") := NULL] %>%
+    .[order(cell_id, chr, start)]
+
+  ascn_switch <- as.data.frame(ascn_switch)
+
+  ascn_switch2 <- callAlleleSpecificCNHMM(ascn_switch, ncores = 2)
+  cl <- umap_clustering(ascn, minPts = max(round(0.05 * length(unique(ascn$cell_id))), 2))
+  #ascn <- left_join()
+
+  pdf("~/Downloads/heatmap_2.pdf", width = 25)
+  plotHeatmap(ascn, clusters = cl$clustering, plotcol = "state", plottree = F, reorderclusters = T)
+  plotHeatmap(ascn, clusters = cl$clustering, plotcol = "state_phase", plottree = F, reorderclusters = T)
+  plotHeatmap(ascn_switch2, clusters = cl$clustering, plotcol = "state_phase", plottree = F, reorderclusters = T)
+  dev.off()
+}
+
+
+
