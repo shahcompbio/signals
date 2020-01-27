@@ -253,10 +253,17 @@ get_library_labels <- function(cell_ids) {
   return(labels)
 }
 
-make_left_annot <- function(copynumber, clones) {
+make_left_annot <- function(copynumber, clones, library_mapping = NULL) {
   annot_colours <- list()
 
   library_labels <- get_library_labels(rownames(copynumber))
+  if (!is.null(library_mapping)){
+    library_labels <- unlist(library_mapping[library_labels])
+    if (!all(library_labels %in% names(library_mapping)) == FALSE){
+      warning("Not all library ids present in library to name mapping, using library IDs as annotations...")
+      library_labels <- get_library_labels(rownames(copynumber))
+    }
+  }
   library_levels <- gtools::mixedsort(unique(library_labels))
   annot_colours$Sample <- make_discrete_palette("Set2", library_levels)
   annot_colours$Sample <- annot_colours$Sample[!is.na(annot_colours$Sample)]
@@ -440,7 +447,9 @@ make_bottom_annot <- function(copynumber) {
 make_copynumber_heatmap <- function(copynumber,
                                     clones,
                                     colvals = cn_colours,
-                                    legendname = "Copy Number", ...) {
+                                    legendname = "Copy Number",
+                                    library_mapping = NULL,
+                                    ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
     as.matrix(copynumber),
@@ -451,7 +460,7 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_columns=FALSE,
     show_column_names=FALSE,
     bottom_annotation=make_bottom_annot(copynumber),
-    left_annotation=make_left_annot(copynumber, clones),
+    left_annotation=make_left_annot(copynumber, clones, library_mapping = library_mapping),
     heatmap_legend_param=list(nrow=4),
     use_raster=TRUE,
     raster_quality=5,
@@ -494,6 +503,7 @@ plotHeatmap <- function(CNbins,
                         plotcol = "state",
                         reorderclusters = FALSE,
                         pctcells = 0.05,
+                        library_mapping = NULL,
                         ...){
 
   if (!plotcol %in% names(CNbins)){
@@ -578,7 +588,8 @@ plotHeatmap <- function(CNbins,
   copynumber_hm <- make_copynumber_heatmap(copynumber,
                                            format_clones(as.data.frame(clusters), ordered_cell_ids),
                                            colvals = colvals,
-                                           legendname = legendname)
+                                           legendname = legendname,
+                                           library_mapping = library_mapping)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
   } else {
