@@ -16,50 +16,81 @@ largestfrequencystate <- function(state, cutoff = 0.9){
 #' @export
 missegregations <- function(cn, perarm = FALSE, cutoff = 0.9){
 
+  cn <- as.data.table(cn)
+
   if (perarm == FALSE){
     globalmodevalues <- cn %>%
       as.data.table() %>%
       .[, lapply(.SD, schnapps::Mode), by=list(chr, start, end),
-        .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")] %>%
-      .[, lapply(.SD, schnapps::Mode), by=list(chr),
         .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")]
 
-    percellchrvalues <- cn %>%
-      as.data.table() %>%
-      .[, lapply(.SD, function(x) {largestfrequencystate(x, cutoff = cutoff)}), by=list(chr, cell_id),
-        .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")] %>%
-      .[, state := as.numeric(state)]
+    percellchrvalues <- merge(cn, globalmodevalues, by = c("chr", "start", "end"), all = TRUE, suffixes = c(".cell", ".global")) %>%
+      .[, c("state_diff",
+             "state_phase_diff",
+             "state_min_diff") :=
+          .(state.cell != state.global,
+               state_phase.cell != state_phase.global,
+               state_min.cell != state_min.global)] %>%
+      .[, list(state_diff_count = sum(state_diff),
+               state_phase_diff_count = sum(state_phase_diff),
+               state_min_diff_count = sum(state_min_diff),
+               state.cell = median(state.cell),
+               state.global = median(state.global),
+               state_phase.cell = schnapps::Mode(state_phase.cell),
+               state_phase.global = schnapps::Mode(state_phase.global),
+               state_min.cell = schnapps::Mode(state_min.cell),
+               state_min.global = schnapps::Mode(state_min.global),
+               nbins = .N), by = c("chr", "cell_id")] %>%
+      .[, c("state_diff_freq",
+            "state_phase_diff_freq",
+            "state_min_diff_freq") :=
+            list(state_diff_count / nbins,
+            state_phase_diff_count / nbins,
+            state_min_diff_count / nbins)] %>%
+      .[, c("state",
+            "phase",
+            "state_min") :=
+          list(fifelse(state_diff_freq > cutoff, 1, 0),
+               fifelse(state_phase_diff_freq > cutoff, 1, 0),
+               fifelse(state_min_diff_freq > cutoff, 1, 0))]
 
-    percellchrvalues <- percellchrvalues[globalmodevalues, on = "chr"]
-
-    percellchrvalues[, state_diff := ifelse((state == i.state + 1) | (state == i.state - 1), state - i.state, NA)] %>%
-      .[, state_diff := ifelse(state_diff == -1, "loss", "gain")] %>%
-      .[, state_phase_diff := ifelse((state_phase != i.state_phase) & (!is.na(state_phase)), state_phase, NA) ] %>%
-      .[, state_AS_diff := ifelse((state_AS != i.state_AS) & (!is.na(state_AS)), state_AS, NA) ] %>%
-      .[, state_AS_phased_diff := ifelse((state_AS_phased != i.state_AS_phased)  & (!is.na(state_AS_phased)), state_AS_phased, NA) ]
   } else{
     cn$arm <- coord_to_arm(cn$chr, cn$start)
 
     globalmodevalues <- cn %>%
       as.data.table() %>%
       .[, lapply(.SD, schnapps::Mode), by=list(chr, arm, start, end),
-        .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")] %>%
-      .[, lapply(.SD, schnapps::Mode), by=list(chr, arm),
         .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")]
 
-    percellchrvalues <- cn %>%
-      as.data.table() %>%
-      .[, lapply(.SD, function(x) {largestfrequencystate(x, cutoff = cutoff)}), by=list(chr, arm, cell_id),
-        .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")] %>%
-      .[, state := as.numeric(state)]
-
-    percellchrvalues <- percellchrvalues[globalmodevalues, on = c("chr", "arm")]
-
-    percellchrvalues[, state_diff := ifelse((state == i.state + 1) | (state == i.state - 1), state - i.state, NA)] %>%
-      .[, state_diff := ifelse(state_diff == -1, "loss", "gain")] %>%
-      .[, state_phase_diff := ifelse((state_phase != i.state_phase) & (!is.na(state_phase)), state_phase, NA) ] %>%
-      .[, state_AS_diff := ifelse((state_AS != i.state_AS) & (!is.na(state_AS)), state_AS, NA) ] %>%
-      .[, state_AS_phased_diff := ifelse((state_AS_phased != i.state_AS_phased)  & (!is.na(state_AS_phased)), state_AS_phased, NA) ] %>%
+    percellchrvalues <- merge(cn, globalmodevalues, by = c("chr", "arm", "start", "end"), all = TRUE, suffixes = c(".cell", ".global")) %>%
+      .[, c("state_diff",
+            "state_phase_diff",
+            "state_min_diff") :=
+          .(state.cell != state.global,
+            state_phase.cell != state_phase.global,
+            state_min.cell != state_min.global)] %>%
+      .[, list(state_diff_count = sum(state_diff),
+               state_phase_diff_count = sum(state_phase_diff),
+               state_min_diff_count = sum(state_min_diff),
+               state.cell = median(state.cell),
+               state.global = median(state.global),
+               state_phase.cell = schnapps::Mode(state_phase.cell),
+               state_phase.global = schnapps::Mode(state_phase.global),
+               state_min.cell = schnapps::Mode(state_min.cell),
+               state_min.global = schnapps::Mode(state_min.global),
+               nbins = .N), by = c("chr","arm", "cell_id")] %>%
+      .[, c("state_diff_freq",
+            "state_phase_diff_freq",
+            "state_min_diff_freq") :=
+          list(state_diff_count / nbins,
+               state_phase_diff_count / nbins,
+               state_min_diff_count / nbins)] %>%
+      .[, c("state",
+            "phase",
+            "state_min") :=
+          list(fifelse(state_diff_freq > cutoff, 1, 0),
+               fifelse(state_phase_diff_freq > cutoff, 1, 0),
+               fifelse(state_min_diff_freq > cutoff, 1, 0))] %>%
       .[, chrarm := paste0(chr, arm)]
   }
 
