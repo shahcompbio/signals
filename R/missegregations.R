@@ -1,18 +1,3 @@
-# cnbaf <- combineBAFCN(haplotypes, CNbins)
-# ascn <- callAlleleSpecificCNHMM(cnbaf, ncores = 8)
-#
-# plotHeatmap(ascn, plotcol = "state_phase")
-
-largestfrequencystate <- function(state, cutoff = 0.9){
-  counts <- table(as.character(state))
-  frequency <- counts / sum(counts)
-  chr_state <- names(frequency)[frequency > cutoff]
-  if (length(chr_state) == 0){
-    chr_state <- NA
-  }
-  return(as.character(chr_state))
-}
-
 #' @export
 missegregations <- function(cn, perarm = FALSE, cutoff = 0.9){
 
@@ -135,59 +120,3 @@ plotmissegs <- function(ms, arm = FALSE, yaxis = "Counts"){
   }
 
 }
-
-# countevents <- function(ms, field){
-#   field <- paste0(state, "_diff")
-#   as.data.table(ms)[, .(count = .N), by = list(chrarm, state_diff)] %>%
-#     dcast(., chrarm  ~...)
-# }
-#
-# ascn$arm <- coord_to_arm(ascn$chr, ascn$start)
-#
-# modevalues <- ascn %>%
-#   as.data.table() %>%
-#   .[, c("state") := list(schnapps::Mode(state)), list(chr, start, end)]
-#
-#
-# globalmodevalues <- ascn %>%
-#   as.data.table() %>%
-#   .[, lapply(.SD, schnapps::Mode), by=list(chr, start, end),
-#     .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")] %>%
-#   .[, lapply(.SD, schnapps::Mode), by=list(chr),
-#     .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")]
-#
-# percellmodevalues <- ascn %>%
-#   as.data.table() %>%
-#   .[, lapply(.SD, schnapps::Mode), by=list(chr, cell_id),
-#     .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")]
-#
-# percellchrvalues <- ascn %>%
-#   as.data.table() %>%
-#   .[, lapply(.SD, largestfrequencystate), by=list(chr, cell_id),
-#     .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")] %>%
-#   .[, state := as.numeric(state)]
-#
-# percellchrvalues <- percellchrvalues[globalmodevalues, on = "chr"]
-#
-# percellchrvalues[, state_diff := ifelse((state == i.state + 1) | (state == i.state - 1), state - i.state, NA)] %>%
-#   .[, state_diff := ifelse(state_diff == -1, "gain", "loss")] %>%
-#   .[, state_phase_diff := ifelse((state_phase != i.state_phase) & (!is.na(state_phase)), state_phase, NA) ] %>%
-#   .[, state_AS_diff := ifelse((state_AS != i.state_AS) & (!is.na(state_AS)), state_AS, NA) ] %>%
-#   .[, state_AS_phased_diff := ifelse((state_AS_phased != i.state_AS_phased)  & (!is.na(state_AS_phased)), state_AS_phased, NA) ]
-#
-# head(modevalues)
-#
-# percellchrvalues %>%
-#   as.data.frame() %>%
-#   #group_by(chr) %>%
-#   filter(!is.na(state_diff)) %>%
-#   ggplot(aes(x = state_diff, fill = chr, group = chr)) +
-#   geom_bar(position = "dodge")
-#
-# percellchrvalues %>%
-#   as.data.frame() %>%
-#   #group_by(chr) %>%
-#   filter(!is.na(state_phase_diff)) %>%
-#   ggplot(aes(x = chr, fill = state_phase_diff, group = chr)) +
-#   geom_bar(position = "dodge")
-#
