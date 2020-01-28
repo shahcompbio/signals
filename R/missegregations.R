@@ -22,9 +22,11 @@ missegregations <- function(cn, perarm = FALSE, cutoff = 0.9){
     globalmodevalues <- cn %>%
       as.data.table() %>%
       .[, lapply(.SD, schnapps::Mode), by=list(chr, start, end),
-        .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")]
+        .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")] %>%
+      .[, ploidy := mean(state)]
 
     percellchrvalues <- merge(cn, globalmodevalues, by = c("chr", "start", "end"), all = TRUE, suffixes = c(".cell", ".global")) %>%
+      .[, ploidy.cell := mean(state.cell), by = "cell_id"] %>%
       .[, c("state_diff",
              "state_phase_diff",
              "state_min_diff") :=
@@ -40,7 +42,7 @@ missegregations <- function(cn, perarm = FALSE, cutoff = 0.9){
                state_phase.global = schnapps::Mode(state_phase.global),
                state_min.cell = schnapps::Mode(state_min.cell),
                state_min.global = schnapps::Mode(state_min.global),
-               nbins = .N), by = c("chr", "cell_id")] %>%
+               nbins = .N), by = c("chr", "cell_id", "ploidy.cell", "ploidy")] %>%
       .[, c("state_diff_freq",
             "state_phase_diff_freq",
             "state_min_diff_freq") :=
@@ -60,9 +62,11 @@ missegregations <- function(cn, perarm = FALSE, cutoff = 0.9){
     globalmodevalues <- cn %>%
       as.data.table() %>%
       .[, lapply(.SD, schnapps::Mode), by=list(chr, arm, start, end),
-        .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")]
+        .SDcols=c("state", "state_phase","state_AS", "state_AS_phased", "state_min")] %>%
+      .[, ploidy := mean(state)]
 
     percellchrvalues <- merge(cn, globalmodevalues, by = c("chr", "arm", "start", "end"), all = TRUE, suffixes = c(".cell", ".global")) %>%
+      .[, ploidy.cell := mean(state.cell), by = "cell_id"] %>%
       .[, c("state_diff",
             "state_phase_diff",
             "state_min_diff") :=
@@ -78,7 +82,7 @@ missegregations <- function(cn, perarm = FALSE, cutoff = 0.9){
                state_phase.global = schnapps::Mode(state_phase.global),
                state_min.cell = schnapps::Mode(state_min.cell),
                state_min.global = schnapps::Mode(state_min.global),
-               nbins = .N), by = c("chr","arm", "cell_id")] %>%
+               nbins = .N), by = c("chr","arm", "cell_id", "ploidy.cell", "ploidy")] %>%
       .[, c("state_diff_freq",
             "state_phase_diff_freq",
             "state_min_diff_freq") :=
