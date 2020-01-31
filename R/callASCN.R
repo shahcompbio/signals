@@ -328,6 +328,70 @@ countchangesegments <- function(ascn, armlevel = TRUE, binfilter = 10){
   return(segments_counts)
 }
 
+#' @export
+find_switches2 <- function(ascn, minfrac = 0.05, field = "state"){
+  cl <- umap_clustering(ascn,
+                        max(round(minfrac * length(unique(ascn$cell_id))), 2),
+                        field = field)
+  alleles <- data.table()
+  ascn <- as.data.table(left_join(ascn, cl$clustering))
+  for (cluster in unique(cl$clustering$clone_id)){
+    print(cluster)
+    x <- ascn[clone_id == cluster] %>%
+      .[, list(alleleA = sum(alleleA),
+               alleleB = sum(alleleB),
+               state_phase = schnapps::Mode(state_phase)),
+        by = .(chr, start, end)] %>%
+      #.[, lapply(.SD, sum), by = .(chr, start, end), .SDcols = c("alleleA", "alleleB")] %>%
+      .[, switch := ifelse((alleleA < alleleB) & (state_phase != "Balanced"), TRUE, FALSE)] %>%
+      .[, clone_id := cluster]
+    print(dim(x))
+    alleles <- rbind(alleles, x)
+  }
+
+  bins <- as_tibble(alleles) %>%
+    dplyr::group_by(chr, clone_id) %>%
+    dplyr::summarise(x = sum(switch), nbins = dplyr::n(), binsaltered = sum(state_phase != "Balanced")) %>%
+    dplyr::mutate(f = x / nbins, falt = binsaltered / nbins) %>%
+    dplyr::arrange(dplyr::desc(x)) %>%
+    dplyr::filter(dplyr::row_number() == 1) %>%
+    as.data.table()
+
+  alleles <- alleles[bins, on = .(chr, clone_id)] %>%
+    .[, switch := fifelse(f < 0.1, FALSE, switch)]
+
+  return(as.data.frame(alleles))
+}
+
+
+#' @export
+find_switches_lohcells <- function(ascn, minfrac = 0.05, field = "state"){
+  alleles <- data.table()
+  ascn <- as.data.table(ascn)
+  for (chrom in unique(ascn$chr)){
+    x <- ascn[chr == chrom] %>%
+      .[, c('nbins', "nLOH", "nALOH", "nBLOH", "imbalance") :=
+          list(.N, sum(LOH == "LOH") / .N, sum(state_phase == "A-LOH") / .N,
+               sum(state_phase == "B-LOH") / .N, sum(state_phase != "Balanced") / .N),
+        by = "cell_id"] %>%
+      .[imbalance > 0.9] %>%
+      .[, list(alleleA = sum(alleleA),
+               alleleB = sum(alleleB),
+               state_phase = schnapps::Mode(state_phase),
+               ncells = .N),
+        by = .(chr, start, end)] %>%
+      #.[, lapply(.SD, sum), by = .(chr, start, end), .SDcols = c("alleleA", "alleleB")] %>%
+      .[, switch := ifelse((alleleA < alleleB) & (state_phase != "Balanced"), TRUE, FALSE)]
+    message(paste0("Number of cells with complete imbalance in chr ", chrom,": ", median(x$ncells[1])))
+    if (dim(x)[1] == 0){
+      x <- as.data.table(dplyr::distinct(ascn[chr == chrom], chr, start, end)) %>%
+        .[, switch := FALSE]
+    }
+    alleles <- rbind(alleles, x)
+  }
+
+  return(as.data.frame(alleles))
+}
 
 find_switches <- function(ascn, armlevel = FALSE, binfilter = 10){
   bins <- dplyr::distinct(ascn, chr, start, end)
@@ -361,10 +425,16 @@ find_switches <- function(ascn, armlevel = FALSE, binfilter = 10){
   return(bin_switch)
 }
 
-rephase_alleles <- function(ascn){
-  bin_switch <- find_switches(ascn, binfilter = 10)
+rephase_alleles <- function(ascn, minfrac = 0.01, field = "state", method = "cluster", ...){
+  message("Find switches")
+  if (method == "cluster"){
+    bin_switch <- find_switches2(ascn, minfrac = minfrac, field = field)
+  } else{
+    bin_switch <- find_switches_lohcells(ascn, minfrac = minfrac, field = field)
+  }
   ascn_switch <- as.data.table(ascn)
 
+  message("Rephase")
   ascn_switch <- ascn_switch[bin_switch, on = .(chr, start, end)] %>%
     .[switch==TRUE, c("Maj", "Min") := .(Min, Maj)] %>%
     .[switch==TRUE, BAF := 1 - BAF] %>%
@@ -388,16 +458,42 @@ rephase_alleles <- function(ascn){
 
   ascn_switch <- as.data.frame(ascn_switch)
 
-  ascn_switch2 <- callAlleleSpecificCNHMM(ascn_switch, ncores = 2)
-  cl <- umap_clustering(ascn, minPts = max(round(0.05 * length(unique(ascn$cell_id))), 2))
-  #ascn <- left_join()
+  ascn_switch2 <- callAlleleSpecificCNHMM(ascn_switch, ...)
 
-  pdf("~/Downloads/heatmap_2.pdf", width = 25)
-  plotHeatmap(ascn, clusters = cl$clustering, plotcol = "state", plottree = F, reorderclusters = T)
-  plotHeatmap(ascn, clusters = cl$clustering, plotcol = "state_phase", plottree = F, reorderclusters = T)
-  plotHeatmap(ascn_switch2, clusters = cl$clustering, plotcol = "state_phase", plottree = F, reorderclusters = T)
-  dev.off()
+  return(ascn_switch2)
 }
+
+#
+# cl <- umap_clustering(ascn,
+#                       minPts = max(round(0.05 * length(unique(ascn$cell_id))), 2))
+# ascn_switch <- rephase_alleles(ascn, minfrac = 0.05)
+#
+# pdf("~/Downloads/heatmap_2.pdf", width = 25)
+# plotHeatmap(ascn, clusters = cl$clustering,
+#             plotcol = "state", plottree = F, reorderclusters = T)
+# plotHeatmap(ascn, clusters = cl$clustering,
+#             plotcol = "state_phase", plottree = F, reorderclusters = T)
+# plotHeatmap(ascn_switch, clusters = cl$clustering,
+#             plotcol = "state_phase", plottree = F, reorderclusters = T)
+# dev.off()
+#
+ascn_switch1 <- rephase_alleles(ascn, minfrac = 0.025, field = "Min")
+ascn_switch2 <- rephase_alleles(ascn, method = "loh")
+
+dim(create_segments(ascn, state_phase))
+dim(create_segments(ascn_switch1, state_phase))
+dim(create_segments(ascn_switch2, state_phase))
+
+pdf("~/Downloads/heatmap_4.pdf", width = 25)
+plotHeatmap(ascn, clusters = cl$clustering,
+            plotcol = "state", plottree = F, reorderclusters = T)
+plotHeatmap(ascn, clusters = cl$clustering,
+            plotcol = "state_phase", plottree = F, reorderclusters = T)
+plotHeatmap(ascn_switch1, clusters = cl$clustering,
+            plotcol = "state_phase", plottree = F, reorderclusters = T)
+plotHeatmap(ascn_switch2, clusters = cl$clustering,
+            plotcol = "state_phase", plottree = F, reorderclusters = T)
+dev.off()
 
 
 
