@@ -181,7 +181,6 @@ widen_bins <- function(CNbins,
   return(as.data.frame(widerCNbins))
 }
 
-
 #' @export
 phase_haplotypes <- function(haplotypes){
   phased_haplotypes <- data.table::as.data.table(haplotypes) %>%
