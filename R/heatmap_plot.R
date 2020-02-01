@@ -59,6 +59,20 @@ format_tree <- function(tree, brlen) {
   return(tree)
 }
 
+cell_order_from_tree <- function(tree, clones, cells = NULL){
+  tree <- ape::ladderize(tree, right = TRUE)
+  cellorder <- tree$tip.label[tree$edge[,2]]
+  clones <- as.data.frame(clones)
+  row.names(clones) <- clones$cell_id
+  clones <- clones[cellorder,]
+
+  if (!is.null(cells)){
+    clones <- clones[clones$cell_id %in% cells,]
+  }
+  clones <- clones[!is.na(clones$cell_id),]
+  return(clones)
+}
+
 get_clone_members <- function(clones) {
   clone_members <- list()
   for(c in unique(clones$clone_id)) {
