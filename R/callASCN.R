@@ -369,25 +369,50 @@ find_switches_lohcells <- function(ascn, minfrac = 0.05, field = "state"){
   alleles <- data.table()
   ascn <- as.data.table(ascn)
   for (chrom in unique(ascn$chr)){
+
     x <- ascn[chr == chrom] %>%
       .[, c('nbins', "nLOH", "nALOH", "nBLOH", "imbalance") :=
-          list(.N, sum(LOH == "LOH") / .N, sum(state_phase == "A-LOH") / .N,
-               sum(state_phase == "B-LOH") / .N, sum(state_phase != "Balanced") / .N),
+          list(.N, sum(LOH == "LOH", na.rm = T) / .N, sum(state_phase == "A-LOH", na.rm = T) / .N,
+               sum(state_phase == "B-LOH", na.rm = T) / .N, sum(LOH == "LOH", na.rm = T) / .N),
         by = "cell_id"] %>%
-      .[imbalance > 0.9] %>%
+      .[imbalance > 0.8] %>%
       .[, list(alleleA = sum(alleleA),
                alleleB = sum(alleleB),
                state_phase = schnapps::Mode(state_phase),
                ncells = .N),
         by = .(chr, start, end)] %>%
-      #.[, lapply(.SD, sum), by = .(chr, start, end), .SDcols = c("alleleA", "alleleB")] %>%
-      .[, switch := ifelse((alleleA < alleleB) & (state_phase != "Balanced"), TRUE, FALSE)]
-    message(paste0("Number of cells with complete imbalance in chr ", chrom,": ", median(x$ncells[1])))
-    if (dim(x)[1] == 0){
-      x <- as.data.table(dplyr::distinct(ascn[chr == chrom], chr, start, end)) %>%
-        .[, switch := FALSE]
+      .[, switch := ifelse((alleleA < alleleB) & (state_phase != "Balanced"), TRUE, FALSE)] %>%
+      .[, .(chr, start, end, switch, ncells)]
+
+    message(paste0("Number of cells with complete LOH in chr ", chrom,": ", median(x$ncells[1], na.rm = T)))
+
+    if ((dim(x)[1] > 0) && (median(x$ncells[1]) < 10)){
+      message("Fewer than 10 cells with complete LOH, using imbalance...")
+      x <- ascn[chr == chrom] %>%
+        .[, c('nbins', "nLOH", "nALOH", "nBLOH", "imbalance") :=
+            list(.N, sum(LOH == "LOH", na.rm = T) / .N, sum(state_phase == "A-LOH", na.rm = T) / .N,
+                 sum(state_phase == "B-LOH", na.rm = T) / .N, sum(state_phase != "Balanced", na.rm = T) / .N),
+          by = "cell_id"] %>%
+        .[imbalance > 0.8] %>%
+        .[, list(alleleA = sum(alleleA),
+                 alleleB = sum(alleleB),
+                 state_phase = schnapps::Mode(state_phase),
+                 ncells = .N),
+          by = .(chr, start, end)] %>%
+        .[, switch := ifelse((alleleA < alleleB) & (state_phase != "Balanced"), TRUE, FALSE)]  %>%
+        .[, .(chr, start, end, switch, ncells)]
+      message(paste0("Number of cells with complete imbalance in chr ", chrom,": ", median(x$ncells[1])))
     }
-    alleles <- rbind(alleles, x)
+
+    if ((dim(x)[1] == 0) || (median(x$ncells[1]) < 10)){
+      message("Fewer than 10 cells with some imbalance, insufficient information to identify phasing switches.")
+      x <- as.data.table(dplyr::distinct(ascn[chr == chrom], chr, start, end)) %>%
+        .[, switch := FALSE] %>%
+        .[, ncells := NA]
+    }
+
+     alleles <- rbind(alleles, x)
+
   }
 
   return(as.data.frame(alleles))
