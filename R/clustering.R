@@ -7,7 +7,7 @@ umap_clustering <- function(CNbins,
                             field = "state"){
 
   message("Creating CN matrix...")
-  cnmatrix <- createCNmatrix(CNbins, na.rm = TRUE, field = field)
+  cnmatrix <- createCNmatrix(CNbins, fillna = TRUE, field = field)
   cnmatrix <- subset(cnmatrix, select = -c(chr, start, end, width))
   cnmatrix <- t(cnmatrix)
 
