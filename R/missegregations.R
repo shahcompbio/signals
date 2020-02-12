@@ -98,7 +98,7 @@ missegregations_vscell <- function(cn, cellid = NULL, perarm = FALSE, cutoff = 0
   if (perarm == FALSE){
     globalmodevalues <- cn %>%
       .[cell_id == cellid] %>%
-      .[, ploidy := mean(state)]
+      .[, ploidy := mean(state, na.rm = TRUE)]
     globalmodevalues <- subset(globalmodevalues, select = c("chr", "start", "end", "state", "state_phase", "state_AS_phased", "state_min", "ploidy"))
 
     percellchrvalues <- merge(cn, globalmodevalues, by = c("chr", "start", "end"), all = TRUE, suffixes = c(".cell", ".global")) %>%
@@ -109,11 +109,12 @@ missegregations_vscell <- function(cn, cellid = NULL, perarm = FALSE, cutoff = 0
           .(state.cell != state.global,
             state_phase.cell != state_phase.global,
             state_min.cell != state_min.global)] %>%
+      .[, ploidy := mean(ploidy, na.rm = TRUE)] %>%
       .[, list(state_diff_count = sum(state_diff),
-               state_phase_diff_count = sum(state_phase_diff),
-               state_min_diff_count = sum(state_min_diff),
-               state.cell = median(state.cell),
-               state.global = median(state.global),
+               state_phase_diff_count = sum(state_phase_diff, na.rm = TRUE),
+               state_min_diff_count = sum(state_min_diff, na.rm = TRUE),
+               state.cell = median(state.cell, na.rm = TRUE),
+               state.global = median(state.global, na.rm = TRUE),
                state_phase.cell = schnapps::Mode(state_phase.cell),
                state_phase.global = schnapps::Mode(state_phase.global),
                state_min.cell = schnapps::Mode(state_min.cell),
@@ -137,7 +138,7 @@ missegregations_vscell <- function(cn, cellid = NULL, perarm = FALSE, cutoff = 0
 
     globalmodevalues <- cn %>%
       .[cell_id == cellid] %>%
-      .[, ploidy := mean(state)]
+      .[, ploidy := mean(state, na.rm = TRUE)]
     globalmodevalues <- subset(globalmodevalues, select = c("chr", "start", "end", "arm", "state", "state_phase", "state_AS_phased", "state_min", "ploidy"))
 
     percellchrvalues <- merge(cn, globalmodevalues, by = c("chr", "arm", "start", "end"), all = TRUE, suffixes = c(".cell", ".global")) %>%
@@ -148,11 +149,12 @@ missegregations_vscell <- function(cn, cellid = NULL, perarm = FALSE, cutoff = 0
           .(state.cell != state.global,
             state_phase.cell != state_phase.global,
             state_min.cell != state_min.global)] %>%
-      .[, list(state_diff_count = sum(state_diff),
-               state_phase_diff_count = sum(state_phase_diff),
-               state_min_diff_count = sum(state_min_diff),
-               state.cell = median(state.cell),
-               state.global = median(state.global),
+      .[, ploidy := mean(ploidy, na.rm = TRUE)] %>%
+      .[, list(state_diff_count = sum(state_diff, na.rm = TRUE),
+               state_phase_diff_count = sum(state_phase_diff, na.rm = TRUE),
+               state_min_diff_count = sum(state_min_diff, na.rm = TRUE),
+               state.cell = median(state.cell, na.rm = TRUE),
+               state.global = median(state.global, na.rm = TRUE),
                state_phase.cell = schnapps::Mode(state_phase.cell),
                state_phase.global = schnapps::Mode(state_phase.global),
                state_min.cell = schnapps::Mode(state_min.cell),
