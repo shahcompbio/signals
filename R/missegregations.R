@@ -110,7 +110,7 @@ missegregations_vscell <- function(cn, cellid = NULL, perarm = FALSE, cutoff = 0
             state_phase.cell != state_phase.global,
             state_min.cell != state_min.global)] %>%
       .[, ploidy := mean(ploidy, na.rm = TRUE)] %>%
-      .[, list(state_diff_count = sum(state_diff),
+      .[, list(state_diff_count = sum(state_diff, na.rm = TRUE),
                state_phase_diff_count = sum(state_phase_diff, na.rm = TRUE),
                state_min_diff_count = sum(state_min_diff, na.rm = TRUE),
                state.cell = median(state.cell, na.rm = TRUE),
