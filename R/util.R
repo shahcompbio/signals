@@ -116,7 +116,6 @@ format_haplotypes <- function(haplotypes, filtern = 0, hmmcopybinsize = 0.5e6, p
     message("Phasing based on distribution across all cells")
     phased_haplotypes <- phase_haplotypes(formatted_haplotypes)
   } else {
-    message(paste0("Phasing based on distribution across top ", ncells," cells with highest imbalance"))
     phased_haplotypes <- computehaplotypecounts(formatted_haplotypes, ...)
   }
 
@@ -145,6 +144,7 @@ phase_haplotypes <- function(haplotypes){
 
 #' @export
 computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE){
+  message(paste0("Phasing based on distribution across top ", ncells," cells with highest imbalance"))
   formatted_haplotypes <- haplotypes %>%
     .[, R := fifelse(allele0 == 0 | allele1 == 0, 0, 1)] %>%
     .[, R0 := fifelse(allele0 == 0, "allele0", "allele1")] %>%
