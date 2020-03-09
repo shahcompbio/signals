@@ -1,5 +1,5 @@
 #' @export
-combineBAFCN <- function(haplotypes, CNbins, binsize = 0.5e6, filtern = 0){
+combineBAFCN <- function(haplotypes, CNbins, binsize = 0.5e6, filtern = 0, phasing = "distribution", ...){
 
   message("Finding overlapping cell IDs between CN data and haplotype data...")
   cellidoverlap <- intersect(CNbins$cell_id, haplotypes$cell_id)
@@ -21,7 +21,7 @@ combineBAFCN <- function(haplotypes, CNbins, binsize = 0.5e6, filtern = 0){
 
   message("Reformatting haplotypes")
   haplotypes <- haplotypes %>%
-    format_haplotypes(.)
+    format_haplotypes(., phasing = phasing, ...)
   haplotypes <- data.table::as.data.table(haplotypes)
 
   if (binsize > 0.5e6){

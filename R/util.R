@@ -99,7 +99,7 @@ getBins <- function(chrom.lengths=hg19_chrlength, binsize=1e6, chromosomes=NULL)
 
 
 #' @export
-format_haplotypes <- function(haplotypes, filtern = 0, hmmcopybinsize = 0.5e6){
+format_haplotypes <- function(haplotypes, filtern = 0, hmmcopybinsize = 0.5e6, phasing = "distribution", ...){
   message("Spread data frame...")
 
   formatted_haplotypes <- haplotypes %>%
@@ -112,7 +112,13 @@ format_haplotypes <- function(haplotypes, filtern = 0, hmmcopybinsize = 0.5e6){
       .[, totalcounts := allele1 + allele0]
 
   message("Phase haplotypes...")
-  phased_haplotypes <- phase_haplotypes(formatted_haplotypes)
+  if (phasing == "distribution"){
+    message("Phasing based on distribution across all cells")
+    phased_haplotypes <- phase_haplotypes(formatted_haplotypes)
+  } else {
+    message(paste0("Phasing based on distribution across top ", ncells," cells with highest imbalance"))
+    phased_haplotypes <- computehaplotypecounts(formatted_haplotypes, ...)
+  }
 
   message("Join phased haplotypes...")
   formatted_haplotypes <- formatted_haplotypes[phased_haplotypes, on = .(chr, start, end, hap_label)]
@@ -125,6 +131,62 @@ format_haplotypes <- function(haplotypes, filtern = 0, hmmcopybinsize = 0.5e6){
     .[, c("allele1", "allele0", "phase") := NULL]
 
   return(formatted_haplotypes)
+}
+
+#' @export
+phase_haplotypes <- function(haplotypes){
+  phased_haplotypes <- data.table::as.data.table(haplotypes) %>%
+    .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+    .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
+    .[, c("allele1", "allele0") := NULL]
+
+  return(phased_haplotypes)
+}
+
+#' @export
+computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE){
+  formatted_haplotypes <- haplotypes %>%
+    .[, R := fifelse(allele0 == 0 | allele1 == 0, 0, 1)] %>%
+    .[, R0 := fifelse(allele0 == 0, "allele0", "allele1")] %>%
+    .[, R1 := fifelse(allele1 == 0, "allele1", "allele0")]
+
+  if (arm == FALSE){
+  perchr <- formatted_haplotypes %>%
+    .[, list(meanR = mean(R), meanR0 = schnapps::Mode(R0), meanR1 = schnapps::Mode(R1)),
+      by = c("cell_id", "chr")] %>%
+    #.[, dominant := fifelse(meanR0 < meanR1, "R1", "R0")] %>%
+    setkey("meanR") %>%
+    .[, head(.SD, ncells), by = c("chr")]
+  } else{
+    formatted_haplotypes$arm <- coord_to_arm(formatted_haplotypes$chr, formatted_haplotypes$start)
+    perchr <- formatted_haplotypes %>%
+      .[, list(meanR = mean(R), meanR0 = schnapps::Mode(R0), meanR1 = schnapps::Mode(R1)),
+        by = c("cell_id", "chr", "arm")] %>%
+      #.[, dominant := fifelse(meanR0 < meanR1, "R1", "R0")] %>%
+      setkey("meanR") %>%
+      .[, head(.SD, ncells), by = c("chr", "arm")]
+  }
+
+
+  if (arm == FALSE){
+    limitedhaps <- perchr[formatted_haplotypes, on = c("cell_id", "chr"), nomatch = 0] %>%
+      .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")]
+    phased_haplotypes <- limitedhaps %>%
+      dplyr::group_by(chr, start, end, hap_label) %>%
+      dplyr::summarise(phase = schnapps::Mode(phase), meanR = mean(meanR)) %>%
+      dplyr::ungroup() %>%
+      data.table::as.data.table()
+  } else{
+    limitedhaps <- perchr[formatted_haplotypes, on = c("cell_id", "chr", "arm"), nomatch = 0] %>%
+      .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")]
+    phased_haplotypes <- limitedhaps %>%
+      dplyr::group_by(chr, start, arm, end, hap_label) %>%
+      dplyr::summarise(phase = schnapps::Mode(phase), meanR = mean(meanR)) %>%
+      dplyr::ungroup() %>%
+      data.table::as.data.table()
+  }
+
+  return(phased_haplotypes)
 }
 
 #' @export
@@ -179,16 +241,6 @@ widen_bins <- function(CNbins,
           reads = sum(reads, na.rm = TRUE)), by = .(chr, start, end, cell_id)]
 
   return(as.data.frame(widerCNbins))
-}
-
-#' @export
-phase_haplotypes <- function(haplotypes){
-  phased_haplotypes <- data.table::as.data.table(haplotypes) %>%
-    .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-    .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-    .[, c("allele1", "allele0") := NULL]
-
-  return(phased_haplotypes)
 }
 
 #' @export
