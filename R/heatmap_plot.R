@@ -207,7 +207,7 @@ format_copynumber <- function(copynumber, ordered_cell_ids, spacer_cols=20) {
 format_clones <- function(clones, ordered_cell_ids){
   clonesdf <- dplyr::full_join(clones, data.frame(cell_id=ordered_cell_ids))
   clonesdf[is.na(clonesdf$clone_id), "clone_id"] <- "None"
-  clone_counts <- clones %>% dplyr::group_by(clone_id) %>% dplyr::summarise(count=n())
+  clone_counts <- clones %>% dplyr::group_by(clone_id) %>% dplyr::summarise(count=dplyr::n())
 
   clonesdf <- dplyr::left_join(clonesdf, clone_counts) %>%
     dplyr::mutate(clone_label = paste0(clone_id, " (", count, ")")) %>%
