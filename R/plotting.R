@@ -193,7 +193,7 @@ plotBAFperstate <- function(alleleCN, minpts = 250, maxstate = 6){
 
   forplot <- alleleCN %>%
     dplyr::group_by(state_AS_phased) %>%
-    dplyr::mutate(n = n()) %>%
+    dplyr::mutate(n = dplyr::n()) %>%
     dplyr::ungroup() %>%
     dplyr::filter(state <= maxstate, n > minpts)
   allASstates <- allASstates %>%
