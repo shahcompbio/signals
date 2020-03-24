@@ -43,6 +43,57 @@ plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5){
     guides(colour = ggplot2::guide_legend(ncol = 3))
 }
 
+#' @export
+plotCNprofile <- function(CNbins,
+                         cellid = NULL,
+                         chrfilt = NULL,
+                         pointsize = 1,
+                         alphaval = 0.9,
+                         maxCN = 10,
+                         cellidx = 1,
+                         statecol = "state",
+                         returnlist = FALSE){
+  if (is.null(cellid)){
+    cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
+  }
+
+  statecolpal <- scCNstate_cols()
+
+  message(paste0("Making CN profile and BAF plot for cell - ", cellid))
+
+  if (!is.null(chrfilt)){
+    message(paste0("Filtering for chromosome: ", chrfilt))
+    CNbins <- dplyr::filter(CNbins, chr == chrfilt)
+  }
+
+  pl <- CNbins %>%
+    dplyr::filter(cell_id == cellid) %>%
+    plottinglist(.)
+
+  gCN <- pl$CNbins %>%
+    dplyr::mutate(state = paste0(state)) %>%
+    dplyr::mutate(state_min = paste0(state_min)) %>%
+    ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
+    ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+    ggplot2::scale_color_manual(name = "Allele Specific CN",
+                                breaks = names(statecolpal),
+                                labels = names(statecolpal),
+                                values = statecolpal) +
+    ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                   axis.text.y = ggplot2::element_blank(),
+                   axis.ticks.y = ggplot2::element_blank(),
+                   legend.position = "none") +
+    ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+    ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
+    ggplot2::xlab("Chromosome") +
+    ggplot2::ylab("Copy Number") +
+    cowplot::theme_cowplot() +
+    cowplot::background_grid(major = "x") +
+    ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
+    ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+
+  return(gCN)
+}
 
 
 #' @export
