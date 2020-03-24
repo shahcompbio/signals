@@ -72,7 +72,6 @@ plotCNprofile <- function(CNbins,
 
   gCN <- pl$CNbins %>%
     dplyr::mutate(state = paste0(state)) %>%
-    dplyr::mutate(state_min = paste0(state_min)) %>%
     ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
     ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
     ggplot2::scale_color_manual(name = "Allele Specific CN",
