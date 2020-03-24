@@ -43,6 +43,8 @@ plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5){
     guides(colour = ggplot2::guide_legend(ncol = 3))
 }
 
+
+
 #' @export
 plotCNprofileBAF <- function(CNbins,
                           cellid = NULL,
@@ -52,7 +54,8 @@ plotCNprofileBAF <- function(CNbins,
                           maxCN = 10,
                           cellidx = 1,
                           BAFcol = "state_phase",
-                          statecol = "state"){
+                          statecol = "state",
+                          returnlist = FALSE){
   if (is.null(cellid)){
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
   }
@@ -134,9 +137,15 @@ plotCNprofileBAF <- function(CNbins,
     ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
     ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
 
-  g <- cowplot::plot_grid(gBAF, gCN, align = "v", ncol = 1, rel_heights = c(1, 1.3))
+  g <- cowplot::plot_grid(gBAF, gCN, align = "v", ncol = 1, rel_heights = c(1, 1.2))
 
-  return(g)
+  if (returnlist == TRUE){
+    p <- list(CN = gCN, BAF = gBAF, both = g)
+  } else {
+    p <- g
+  }
+
+  return(p)
 }
 
 #' @export
