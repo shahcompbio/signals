@@ -310,7 +310,7 @@ coord_to_arm <- function(chromosome, position, assembly = "hg19", full = F){
 
   tempsegs <- cellsegs %>%
     dplyr::group_by(chr) %>%
-    dplyr::mutate(consecutive = !!field_var == dplyr::lag(!!field_var), n = 1:n()) %>%
+    dplyr::mutate(consecutive = !!field_var == dplyr::lag(!!field_var), n = 1:dplyr::n()) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(segid = ifelse(consecutive == FALSE | n == 1, n, NA)) %>%
     tidyr::fill(segid) %>%
@@ -324,13 +324,20 @@ coord_to_arm <- function(chromosome, position, assembly = "hg19", full = F){
 }
 
 #' @export
-create_segments <- function(segs, field, verbose = TRUE){
+create_segments <- function(segs, field, verbose = TRUE, ncores = 1){
   field_var <- dplyr::enquo(field)
   pb <- dplyr::progress_estimated(length(unique(segs$cell_id)), min_time = 1)
-  newsegs <- data.table::rbindlist(lapply(unique(segs$cell_id),
-                                          function(x) .mergeSegmentsfun(segs, x, pb, field_var))) %>%
-    dplyr::select(chr, start, end, cell_id, dplyr::everything()) %>%
-    dplyr::arrange(cell_id, chr, start)
+  if (ncores > 1){
+    newsegs <- data.table::rbindlist(parallel::mclapply(unique(segs$cell_id),
+                                            function(x) .mergeSegmentsfun(segs, x, pb, field_var), mc.cores = ncores)) %>%
+      dplyr::select(chr, start, end, cell_id, dplyr::everything()) %>%
+      dplyr::arrange(cell_id, chr, start)
+  } else {
+    newsegs <- data.table::rbindlist(lapply(unique(segs$cell_id),
+                                            function(x) .mergeSegmentsfun(segs, x, pb, field_var))) %>%
+      dplyr::select(chr, start, end, cell_id, dplyr::everything()) %>%
+      dplyr::arrange(cell_id, chr, start)
+  }
   return(newsegs)
 }
 
