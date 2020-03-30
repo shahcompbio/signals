@@ -52,7 +52,8 @@ plotCNprofile <- function(CNbins,
                          maxCN = 10,
                          cellidx = 1,
                          statecol = "state",
-                         returnlist = FALSE){
+                         returnlist = FALSE,
+                         raster = FALSE){
   if (is.null(cellid)){
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
   }
@@ -70,26 +71,50 @@ plotCNprofile <- function(CNbins,
     dplyr::filter(cell_id == cellid) %>%
     plottinglist(.)
 
-  gCN <- pl$CNbins %>%
-    dplyr::mutate(state = paste0(state)) %>%
-    ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
-    ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
-    ggplot2::scale_color_manual(name = "Allele Specific CN",
-                                breaks = names(statecolpal),
-                                labels = names(statecolpal),
-                                values = statecolpal) +
-    ggplot2::theme(axis.title.y = ggplot2::element_blank(),
-                   axis.text.y = ggplot2::element_blank(),
-                   axis.ticks.y = ggplot2::element_blank(),
-                   legend.position = "none") +
-    ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
-    ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
-    ggplot2::xlab("Chromosome") +
-    ggplot2::ylab("Copy Number") +
-    cowplot::theme_cowplot() +
-    cowplot::background_grid(major = "x") +
-    ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
-    ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+  if (raster == TRUE){
+    message("You will need to install ggrastr for the raster = TRUE to work...")
+    gCN <- pl$CNbins %>%
+      dplyr::mutate(state = paste0(state)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggplot2::scale_color_manual(name = "Allele Specific CN",
+                                  breaks = names(statecolpal),
+                                  labels = names(statecolpal),
+                                  values = statecolpal) +
+      ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                     axis.text.y = ggplot2::element_blank(),
+                     axis.ticks.y = ggplot2::element_blank(),
+                     legend.position = "none") +
+      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
+      ggplot2::xlab("Chromosome") +
+      ggplot2::ylab("Copy Number") +
+      cowplot::theme_cowplot() +
+      cowplot::background_grid(major = "x") +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+  } else {
+    gCN <- pl$CNbins %>%
+      dplyr::mutate(state = paste0(state)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
+      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggplot2::scale_color_manual(name = "Allele Specific CN",
+                                  breaks = names(statecolpal),
+                                  labels = names(statecolpal),
+                                  values = statecolpal) +
+      ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                     axis.text.y = ggplot2::element_blank(),
+                     axis.ticks.y = ggplot2::element_blank(),
+                     legend.position = "none") +
+      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
+      ggplot2::xlab("Chromosome") +
+      ggplot2::ylab("Copy Number") +
+      cowplot::theme_cowplot() +
+      cowplot::background_grid(major = "x") +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+  }
 
   return(gCN)
 }
@@ -105,7 +130,8 @@ plotCNprofileBAF <- function(CNbins,
                           cellidx = 1,
                           BAFcol = "state_phase",
                           statecol = "state",
-                          returnlist = FALSE){
+                          returnlist = FALSE,
+                          raster = FALSE){
   if (is.null(cellid)){
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
   }
@@ -139,53 +165,104 @@ plotCNprofileBAF <- function(CNbins,
     dplyr::filter(cell_id == cellid) %>%
     plottinglist(.)
 
-  gBAF <- pl$CNbins %>%
-    dplyr::mutate(state_min = paste0(state_min)) %>%
-    ggplot2::ggplot(ggplot2::aes(x = idxs, y = BAF)) +
-    ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval) +
-    ggplot2::scale_color_manual(name = "CN",
-                                breaks = names(BAFcolpal),
-                                labels = names(BAFcolpal),
-                                values = BAFcolpal) +
-    ggplot2::theme(axis.title.y = ggplot2::element_blank(),
-                   axis.text.y = ggplot2::element_blank(),
-                   axis.ticks.y = ggplot2::element_blank(),
-                   legend.position = "none") +
-    ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
-    ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
-    ggplot2::xlab("Chromosome") +
-    ggplot2::ylab("BAF") +
-    ggplot2::ggtitle(cellid) +
-    cowplot::theme_cowplot() +
-    cowplot::background_grid(major = "x") +
-    ggplot2::geom_hline(yintercept = 0.5, lty = 2, alpha = 0.5) +
-    ggplot2::theme(axis.title.x=ggplot2::element_blank(),
-          axis.text.x=ggplot2::element_blank(),
-          axis.ticks.x=ggplot2::element_blank()) +
-    ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom") +
-    ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2)))
+  if (raster == TRUE){
+    message("You will need to install ggrastr for the raster = TRUE to work...")
+    gBAF <- pl$CNbins %>%
+      dplyr::mutate(state_min = paste0(state_min)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = idxs, y = BAF)) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval) +
+      ggplot2::scale_color_manual(name = "CN",
+                                  breaks = names(BAFcolpal),
+                                  labels = names(BAFcolpal),
+                                  values = BAFcolpal) +
+      ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                     axis.text.y = ggplot2::element_blank(),
+                     axis.ticks.y = ggplot2::element_blank(),
+                     legend.position = "none") +
+      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+      ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
+      ggplot2::xlab("Chromosome") +
+      ggplot2::ylab("BAF") +
+      ggplot2::ggtitle(cellid) +
+      cowplot::theme_cowplot() +
+      cowplot::background_grid(major = "x") +
+      ggplot2::geom_hline(yintercept = 0.5, lty = 2, alpha = 0.5) +
+      ggplot2::theme(axis.title.x=ggplot2::element_blank(),
+            axis.text.x=ggplot2::element_blank(),
+            axis.ticks.x=ggplot2::element_blank()) +
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom") +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2)))
 
-  gCN <- pl$CNbins %>%
-    dplyr::mutate(state = paste0(state)) %>%
-    dplyr::mutate(state_min = paste0(state_min)) %>%
-    ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
-    ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
-    ggplot2::scale_color_manual(name = "Allele Specific CN",
-                                breaks = names(statecolpal),
-                                labels = names(statecolpal),
-                                values = statecolpal) +
-    ggplot2::theme(axis.title.y = ggplot2::element_blank(),
-                   axis.text.y = ggplot2::element_blank(),
-                   axis.ticks.y = ggplot2::element_blank(),
-                   legend.position = "none") +
-    ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
-    ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
-    ggplot2::xlab("Chromosome") +
-    ggplot2::ylab("Copy Number") +
-    cowplot::theme_cowplot() +
-    cowplot::background_grid(major = "x") +
-    ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
-    ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+    gCN <- pl$CNbins %>%
+      dplyr::mutate(state = paste0(state)) %>%
+      dplyr::mutate(state_min = paste0(state_min)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggplot2::scale_color_manual(name = "Allele Specific CN",
+                                  breaks = names(statecolpal),
+                                  labels = names(statecolpal),
+                                  values = statecolpal) +
+      ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                     axis.text.y = ggplot2::element_blank(),
+                     axis.ticks.y = ggplot2::element_blank(),
+                     legend.position = "none") +
+      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
+      ggplot2::xlab("Chromosome") +
+      ggplot2::ylab("Copy Number") +
+      cowplot::theme_cowplot() +
+      cowplot::background_grid(major = "x") +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+    } else {
+      gBAF <- pl$CNbins %>%
+        dplyr::mutate(state_min = paste0(state_min)) %>%
+        ggplot2::ggplot(ggplot2::aes(x = idxs, y = BAF)) +
+        ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval) +
+        ggplot2::scale_color_manual(name = "CN",
+                                    breaks = names(BAFcolpal),
+                                    labels = names(BAFcolpal),
+                                    values = BAFcolpal) +
+        ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                       axis.text.y = ggplot2::element_blank(),
+                       axis.ticks.y = ggplot2::element_blank(),
+                       legend.position = "none") +
+        ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+        ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
+        ggplot2::xlab("Chromosome") +
+        ggplot2::ylab("BAF") +
+        ggplot2::ggtitle(cellid) +
+        cowplot::theme_cowplot() +
+        cowplot::background_grid(major = "x") +
+        ggplot2::geom_hline(yintercept = 0.5, lty = 2, alpha = 0.5) +
+        ggplot2::theme(axis.title.x=ggplot2::element_blank(),
+                       axis.text.x=ggplot2::element_blank(),
+                       axis.ticks.x=ggplot2::element_blank()) +
+        ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom") +
+        ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2)))
+
+      gCN <- pl$CNbins %>%
+        dplyr::mutate(state = paste0(state)) %>%
+        dplyr::mutate(state_min = paste0(state_min)) %>%
+        ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
+        ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+        ggplot2::scale_color_manual(name = "Allele Specific CN",
+                                    breaks = names(statecolpal),
+                                    labels = names(statecolpal),
+                                    values = statecolpal) +
+        ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                       axis.text.y = ggplot2::element_blank(),
+                       axis.ticks.y = ggplot2::element_blank(),
+                       legend.position = "none") +
+        ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+        ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
+        ggplot2::xlab("Chromosome") +
+        ggplot2::ylab("Copy Number") +
+        cowplot::theme_cowplot() +
+        cowplot::background_grid(major = "x") +
+        ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
+        ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+    }
 
   g <- cowplot::plot_grid(gBAF, gCN, align = "v", ncol = 1, rel_heights = c(1, 1.2))
 
