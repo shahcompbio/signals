@@ -97,15 +97,18 @@ make_clone_palette <- function(levels) {
   return(pal)
 }
 
-make_tree_ggplot <- function(tree, clones) {
+make_tree_ggplot <- function(tree, clones, clone_pal = NULL) {
   if(!is.null(clones)) {
     clone_members <- get_clone_members(clones)
     tree <- ggtree::groupOTU(tree, clone_members)
-
     clone_levels <- gtools::mixedsort(unique(clones$clone_id))
-    clone_pal <- make_clone_palette(clone_levels)
+    print("making tree")
+    if (is.null(clone_pal)){
+      clone_pal <- make_clone_palette(clone_levels)
+    }
+    print("adding 0 tree")
     clone_pal[["0"]] <- clone_none_black
-
+    print("added 0 tree")
     tree_aes <- ggplot2::aes(x, y, colour=group)
   } else {
     tree_aes <- ggplot2::aes(x, y)
@@ -262,12 +265,12 @@ get_clone_label_pos <- function(clones) {
 
 get_library_labels <- function(cell_ids) {
   labels <- sapply(strsplit(cell_ids, "-"), function(x) {
-    return(x[2])
+    return(x[1])
   })
   return(labels)
 }
 
-make_left_annot <- function(copynumber, clones, library_mapping = NULL) {
+make_left_annot <- function(copynumber, clones, library_mapping = NULL, clone_pal = NULL) {
   annot_colours <- list()
 
   library_labels <- get_library_labels(rownames(copynumber))
@@ -288,8 +291,10 @@ make_left_annot <- function(copynumber, clones, library_mapping = NULL) {
     clone_levels <- unique(clones$clone_label)
     clone_level_none <- clone_levels[grepl("None", clone_levels)]
     clone_levels <- gtools::mixedsort(clone_levels[!grepl("None", clone_levels)])
+    if (is.null(clone_pal)){
+      clone_pal <- make_clone_palette(clone_levels)
+    }
 
-    clone_pal <- make_clone_palette(clone_levels)
     if(length(clone_level_none > 0)) {
       clone_pal[[clone_level_none]] <- clone_none_black
     }
@@ -463,6 +468,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     colvals = cn_colours,
                                     legendname = "Copy Number",
                                     library_mapping = NULL,
+                                    clone_pal = NULL,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -474,7 +480,7 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_columns=FALSE,
     show_column_names=FALSE,
     bottom_annotation=make_bottom_annot(copynumber),
-    left_annotation=make_left_annot(copynumber, clones, library_mapping = library_mapping),
+    left_annotation=make_left_annot(copynumber, clones, library_mapping = library_mapping, clone_pal = clone_pal),
     heatmap_legend_param=list(nrow=4),
     use_raster=TRUE,
     raster_quality=5,
@@ -518,6 +524,7 @@ plotHeatmap <- function(CNbins,
                         reorderclusters = FALSE,
                         pctcells = 0.05,
                         library_mapping = NULL,
+                        clone_pal = NULL,
                         ...){
 
   if (!plotcol %in% names(CNbins)){
@@ -557,7 +564,7 @@ plotHeatmap <- function(CNbins,
     message("No tree or cluster information provided, clustering using HDBSCAN")
     clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), ...)
     tree <- clustering_results$tree
-    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters))
+    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data
     message("Creating tree...")
     tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
@@ -583,7 +590,7 @@ plotHeatmap <- function(CNbins,
       tree <- format_tree(tree, branch_length)
     }
 
-    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters))
+    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data
 
     message("Creating tree...")
@@ -598,12 +605,17 @@ plotHeatmap <- function(CNbins,
     copynumber <- normalize_cell_ploidy(copynumber)
   }
   copynumber <- format_copynumber(copynumber, ordered_cell_ids, spacer_cols = spacer_cols)
-
+  clones_formatted <- format_clones(as.data.frame(clusters), ordered_cell_ids)
+  if (!is.null(clone_pal)){
+    names(clone_pal) <- dplyr::distinct(clones_formatted, clone_id, clone_label) %>%
+      dplyr::pull(clone_label)
+  }
   copynumber_hm <- make_copynumber_heatmap(copynumber,
-                                           format_clones(as.data.frame(clusters), ordered_cell_ids),
+                                           clones_formatted,
                                            colvals = colvals,
                                            legendname = legendname,
-                                           library_mapping = library_mapping)
+                                           library_mapping = library_mapping,
+                                           clone_pal = clone_pal)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
   } else {
