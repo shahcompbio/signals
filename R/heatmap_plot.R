@@ -607,8 +607,9 @@ plotHeatmap <- function(CNbins,
   copynumber <- format_copynumber(copynumber, ordered_cell_ids, spacer_cols = spacer_cols)
   clones_formatted <- format_clones(as.data.frame(clusters), ordered_cell_ids)
   if (!is.null(clone_pal)){
-    names(clone_pal) <- dplyr::distinct(clones_formatted, clone_id, clone_label) %>%
-      dplyr::pull(clone_label)
+    clones_idx <- dplyr::distinct(clones_formatted, clone_id, clone_label)
+    clone_pal <- clone_pal[clones_idx$clone_id]
+    names(clone_pal) <- clones_idx$clone_label
   }
   copynumber_hm <- make_copynumber_heatmap(copynumber,
                                            clones_formatted,
