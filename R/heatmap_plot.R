@@ -102,13 +102,10 @@ make_tree_ggplot <- function(tree, clones, clone_pal = NULL) {
     clone_members <- get_clone_members(clones)
     tree <- ggtree::groupOTU(tree, clone_members)
     clone_levels <- gtools::mixedsort(unique(clones$clone_id))
-    print("making tree")
     if (is.null(clone_pal)){
       clone_pal <- make_clone_palette(clone_levels)
     }
-    print("adding 0 tree")
     clone_pal[["0"]] <- clone_none_black
-    print("added 0 tree")
     tree_aes <- ggplot2::aes(x, y, colour=group)
   } else {
     tree_aes <- ggplot2::aes(x, y)
@@ -263,17 +260,17 @@ get_clone_label_pos <- function(clones) {
   return(clone_label_pos)
 }
 
-get_library_labels <- function(cell_ids) {
+get_library_labels <- function(cell_ids, idx = 1) {
   labels <- sapply(strsplit(cell_ids, "-"), function(x) {
-    return(x[1])
+    return(x[idx])
   })
   return(labels)
 }
 
-make_left_annot <- function(copynumber, clones, library_mapping = NULL, clone_pal = NULL) {
+make_left_annot <- function(copynumber, clones, library_mapping = NULL, clone_pal = NULL, idx = 1) {
   annot_colours <- list()
 
-  library_labels <- get_library_labels(rownames(copynumber))
+  library_labels <- get_library_labels(rownames(copynumber), idx = idx)
   if (!is.null(library_mapping)){
     library_labels <- unlist(library_mapping[library_labels])
     if (!all(library_labels %in% names(library_mapping)) == FALSE){
@@ -469,6 +466,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     legendname = "Copy Number",
                                     library_mapping = NULL,
                                     clone_pal = NULL,
+                                    sample_label_idx = 1,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -480,7 +478,7 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_columns=FALSE,
     show_column_names=FALSE,
     bottom_annotation=make_bottom_annot(copynumber),
-    left_annotation=make_left_annot(copynumber, clones, library_mapping = library_mapping, clone_pal = clone_pal),
+    left_annotation=make_left_annot(copynumber, clones, library_mapping = library_mapping, clone_pal = clone_pal, idx = sample_label_idx),
     heatmap_legend_param=list(nrow=4),
     use_raster=TRUE,
     raster_quality=5,
@@ -525,6 +523,7 @@ plotHeatmap <- function(CNbins,
                         pctcells = 0.05,
                         library_mapping = NULL,
                         clone_pal = NULL,
+                        sample_label_idx = 1,
                         ...){
 
   if (!plotcol %in% names(CNbins)){
@@ -611,12 +610,14 @@ plotHeatmap <- function(CNbins,
     clone_pal <- clone_pal[clones_idx$clone_id]
     names(clone_pal) <- clones_idx$clone_label
   }
+  clones_formatted<-NULL
   copynumber_hm <- make_copynumber_heatmap(copynumber,
                                            clones_formatted,
                                            colvals = colvals,
                                            legendname = legendname,
                                            library_mapping = library_mapping,
-                                           clone_pal = clone_pal)
+                                           clone_pal = clone_pal,
+                                           sample_label_idx = sample_label_idx)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
   } else {
