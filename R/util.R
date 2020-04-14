@@ -304,40 +304,18 @@ coord_to_arm <- function(chromosome, position, assembly = "hg19", full = F){
   return(arms)
 }
 
-.mergeSegmentsfun <- function(segs, s, pb, field_var) {
-  pb$tick()$print()
-  cellsegs <- dplyr::filter(segs, cell_id == s)
-
-  tempsegs <- cellsegs %>%
-    dplyr::group_by(chr) %>%
-    dplyr::mutate(consecutive = !!field_var == dplyr::lag(!!field_var), n = 1:dplyr::n()) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(segid = ifelse(consecutive == FALSE | n == 1, n, NA)) %>%
-    tidyr::fill(segid) %>%
-    dplyr::group_by(segid, chr, cell_id, !!field_var) %>%
-    dplyr::summarise(start = dplyr::first(start),
-              end = dplyr::last(end),
-              nbin = dplyr::n()) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(-segid)
-  return(tempsegs)
-}
-
 #' @export
-create_segments <- function(segs, field, verbose = TRUE, ncores = 1){
-  field_var <- dplyr::enquo(field)
-  pb <- dplyr::progress_estimated(length(unique(segs$cell_id)), min_time = 1)
-  if (ncores > 1){
-    newsegs <- data.table::rbindlist(parallel::mclapply(unique(segs$cell_id),
-                                            function(x) .mergeSegmentsfun(segs, x, pb, field_var), mc.cores = ncores)) %>%
-      dplyr::select(chr, start, end, cell_id, dplyr::everything()) %>%
-      dplyr::arrange(cell_id, chr, start)
-  } else {
-    newsegs <- data.table::rbindlist(lapply(unique(segs$cell_id),
-                                            function(x) .mergeSegmentsfun(segs, x, pb, field_var))) %>%
-      dplyr::select(chr, start, end, cell_id, dplyr::everything()) %>%
-      dplyr::arrange(cell_id, chr, start)
-  }
+create_segments <- function(segs, field = "state"){
+  newsegs <- CNbins %>%
+    data.table::as.data.table() %>%
+    .[order(cell_id, chr, start)] %>%
+    .[, rlid := data.table::rleid(get(field)), by = cell_id] %>%
+    .[, list(start = min(start),
+             end = max(end),
+             nbin = .N), by = .(cell_id, chr, get(field), rlid)] %>%
+    .[order(cell_id, chr, start)] %>%
+    dplyr::select(cell_id, chr, start, end, dplyr::everything(), -rlid) %>%
+    as.data.frame()
+  setnames(newsegs, "get", field)
   return(newsegs)
 }
-
