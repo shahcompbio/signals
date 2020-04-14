@@ -305,14 +305,14 @@ coord_to_arm <- function(chromosome, position, assembly = "hg19", full = F){
 }
 
 #' @export
-create_segments <- function(segs, field = "state"){
+create_segments <- function(CNbins, field = "state"){
   newsegs <- CNbins %>%
     data.table::as.data.table() %>%
     .[order(cell_id, chr, start)] %>%
     .[, rlid := data.table::rleid(get(field)), by = cell_id] %>%
     .[, list(start = min(start),
              end = max(end),
-             nbin = .N), by = .(cell_id, chr, get(field), rlid)] %>%
+             nbin = data.table::.N), by = .(cell_id, chr, get(field), rlid)] %>%
     .[order(cell_id, chr, start)] %>%
     dplyr::select(cell_id, chr, start, end, dplyr::everything(), -rlid) %>%
     as.data.frame()
