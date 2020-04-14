@@ -609,7 +609,6 @@ plotHeatmap <- function(CNbins,
     clone_pal <- clone_pal[clones_idx$clone_id]
     names(clone_pal) <- clones_idx$clone_label
   }
-  clones_formatted<-NULL
   copynumber_hm <- make_copynumber_heatmap(copynumber,
                                            clones_formatted,
                                            colvals = colvals,
