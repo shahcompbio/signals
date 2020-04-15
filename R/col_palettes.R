@@ -64,6 +64,20 @@ scCNphase_colors <- c(
   `Balanced` = "#D5D5D4"
 )
 
+scBAFstate_colors <- c(
+  `0` = "#006D2C",
+  `0.1` = "#31A354",
+  `0.2` = "#74C476",
+  `0.3` = "#BAE4B3",
+  `0.4` = "#EDF8E9",
+  `0.5` = "white",
+  `0.6` = "#FEEDDE",
+  `0.7` = "#FDBE85",
+  `0.8` = "#FD8D3C",
+  `0.9` = "#E6550D",
+  `1` = "#A63603"
+)
+
 #' @export
 scCN_cols <- function(...) {
   cols <- c(...)
@@ -82,6 +96,16 @@ scCNminorallele_cols <- function(...) {
     return (scCNminorallele_colors)
 
   scCNminorallele_colors[cols]
+}
+
+#' @export
+scBAFstate_cols <- function(...) {
+  cols <- c(...)
+
+  if (is.null(cols))
+    return (scBAFstate_colors)
+
+  scBAFstate_colors[cols]
 }
 
 #' @export
