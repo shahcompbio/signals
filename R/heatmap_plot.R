@@ -9,6 +9,7 @@ cn_colours <- structure(
 cn_colours_loh <- scCNAS_colors
 cn_colours_minorallele <- scCNminorallele_colors
 cn_colours_phase <- scCNphase_colors
+cn_colours_bafstate <- scBAFstate_colors
 
 snv_colours <- structure(
   names = c(0, 1),
@@ -534,6 +535,11 @@ plotHeatmap <- function(CNbins,
   if (plotcol == "state"){
     colvals <- cn_colours
     legendname <- "Copy Number"
+  }
+
+  if (plotcol == "state_BAF"){
+    colvals <- cn_colours_bafstate
+    legendname <- "Allelic Imbalance"
   }
 
   if (plotcol == "state_AS"){

@@ -169,7 +169,9 @@ assignalleleHMM <- function(CNBAF,
                                                                                4 * ((Min > Maj) & (Maj == 0))]
     ] %>%
   #.[, c("Maj", "Min") := NULL] %>%
-  .[order(cell_id, chr, start)]
+  .[order(cell_id, chr, start)] %>%
+  .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+  .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
 
   return(as.data.frame(CNBAF))
 }
@@ -210,7 +212,9 @@ callalleleHMMcell <- function(CNBAF,
                                                                                  4 * ((Min > Maj) & (Maj == 0))]
       ] %>%
     #.[, c("Maj", "Min") := NULL] %>%
-    .[order(cell_id, chr, start)]
+    .[order(cell_id, chr, start)] %>%
+    .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
 
   return(list(alleleCN = CNBAF, posterior_prob = hmmresults$posterior_prob, l = hmmresults$l))
 }
