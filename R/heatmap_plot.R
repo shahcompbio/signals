@@ -41,6 +41,7 @@ normalize_cell_ploidy <- function(copynumber) {
     copynumber[[cell_id]] <- as.integer(ceiling(
       copynumber[[cell_id]] / (state_mode / 2)
     ))
+    copynumber[[cell_id]][copynumber[[cell_id]] > 11] <- 11
   }
   return(copynumber)
 }
