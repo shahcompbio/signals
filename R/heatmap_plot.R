@@ -85,8 +85,8 @@ get_clone_members <- function(clones) {
 }
 
 make_clone_palette <- function(levels) {
-  if (length(levels) <= 12) {
-    pal <- RColorBrewer::brewer.pal(max(length(levels), 3), "Set3")
+  if (length(levels) <= 8) {
+    pal <- RColorBrewer::brewer.pal(max(length(levels), 3), "Dark2")
   } else if (length(levels) <= 20) {
     pal <- clone_palette_20
   } else {
