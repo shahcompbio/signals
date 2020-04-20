@@ -311,8 +311,7 @@ create_segments <- function(CNbins, field = "state"){
     .[order(cell_id, chr, start)] %>%
     .[, rlid := data.table::rleid(get(field)), by = cell_id] %>%
     .[, list(start = min(start),
-             end = max(end),
-             nbin = data.table::.N), by = .(cell_id, chr, get(field), rlid)] %>%
+             end = max(end)), by = .(cell_id, chr, get(field), rlid)] %>%
     .[order(cell_id, chr, start)] %>%
     dplyr::select(cell_id, chr, start, end, dplyr::everything(), -rlid) %>%
     as.data.frame()
