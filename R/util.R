@@ -318,3 +318,17 @@ create_segments <- function(CNbins, field = "state"){
   setnames(newsegs, "get", field)
   return(newsegs)
 }
+
+#' @export
+orderdf <- function(CNbins){
+  dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
+  return(CNbins %>%
+    as.data.table() %>%
+    .[dfchr, on = "chr"] %>%
+    .[order(cell_id, idx, start)] %>%
+    .[, idx := NULL] %>%
+      as.data.frame())
+}
+
+
+
