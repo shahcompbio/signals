@@ -19,11 +19,11 @@ knitr::opts_chunk$set(
 library(schnapps)
 ```
 
-## Allele specific copy number inference
-This vignette illustrates how to perform allele specific copy number inference with DLP+ data. The method should be applicable to any single cell copy number method however.
+## Background
+This vignette illustrates how to perform allele specific copy number inference with DLP+ data. However the method should be generally applicable to any single cell copy number method. The input requirements are discussed below.
 
 ## Data
-The data needed to perform the allele specific copy number inference are the binned copy number data and cell specific haplotype calls. The binned data and the haplotype data should be binned in the same manner.
+The data needed to perform the allele specific copy number inference are the binned copy number data and cell specific haplotype calls. The copy number data and the haplotype data should use the same bins.
 
 A small test data set of 250 cells is provided with the package, we'll load this data and inspect these 2 dataframe.
 
@@ -42,9 +42,9 @@ haplotypes <- format_haplotypes_dlp(haplotypes)
 head(haplotypes)
 ```
 
-## Allele specific inference
+## Inference
 
-The output of `schnapps` is allele specific states per bin. `schnapps` has 2 options to perform this inference, the first `callAlleleSpecificCN`, infers allele specific states using mirrored B allele frequencies as is typically done in bulk whole genome sequencing. This infers states of the form `A|B` where `B < A`. The second option, `callHaplotypeSpecificCN` takes into account the possibility that different alleles may be lost or gained in different cells. This method phases alleles jointly across cells so that these events can be identified.
+The output of `schnapps` is allele specific states per bin. `schnapps` has 2 options to perform this inference, the first, `callAlleleSpecificCN`, infers allele specific states using mirrored B allele frequencies as is typically done in bulk whole genome sequencing. This infers states of the form `A|B` where `B < A`. The second option, `callHaplotypeSpecificCN` takes into account the possibility that different alleles may be lost or gained in different cells. In order to identify these events, `schnapps` clusters cells and infers the haplotype phase based on regions within clusters that have large allelic imbalance. The output for this method thereofore allows for `B>A`.
 
 ### `callAlleleSpecificCN`
 
