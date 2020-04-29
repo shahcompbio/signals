@@ -85,7 +85,8 @@ plotCNprofile <- function(CNbins,
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
-      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels,
+                                guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
@@ -106,7 +107,8 @@ plotCNprofile <- function(CNbins,
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
-      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels,
+                                guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
@@ -179,7 +181,8 @@ plotCNprofileBAF <- function(CNbins,
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
-      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels,
+                                guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("BAF") +
@@ -206,7 +209,8 @@ plotCNprofileBAF <- function(CNbins,
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
-      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels,
+                                guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
@@ -227,7 +231,8 @@ plotCNprofileBAF <- function(CNbins,
                        axis.text.y = ggplot2::element_blank(),
                        axis.ticks.y = ggplot2::element_blank(),
                        legend.position = "none") +
-        ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+        ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels,
+                                  guide = ggplot2::guide_axis(check.overlap = TRUE)) +
         ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
         ggplot2::xlab("Chromosome") +
         ggplot2::ylab("BAF") +
@@ -254,7 +259,8 @@ plotCNprofileBAF <- function(CNbins,
                        axis.text.y = ggplot2::element_blank(),
                        axis.ticks.y = ggplot2::element_blank(),
                        legend.position = "none") +
-        ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels) +
+        ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels,
+                                  guide = ggplot2::guide_axis(check.overlap = TRUE)) +
         ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
         ggplot2::xlab("Chromosome") +
         ggplot2::ylab("Copy Number") +
