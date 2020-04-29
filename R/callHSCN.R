@@ -209,7 +209,7 @@ callalleleHMMcell <- function(CNBAF,
 }
 
 #' @export
-proportion_imbalance <- function(ascn, field = "copy", arm = FALSE){
+proportion_imbalance <- function(ascn, field = "copy", arm = FALSE, minfrac = 0.1){
   cl <- umap_clustering(ascn,
                         max(round(minfrac * length(unique(ascn$cell_id))), 2),
                         field = field)
@@ -278,7 +278,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     selftransitionprob = selftransitionprob,
                                     progressbar = progressbar,
                                     ncores = ncores)
-  ascn$balance <- ifelse(ascn$phase == "Balance", 0, 1)
+
+  ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
   p <- proportion_imbalance(ascn, arm = phasebyarm)
   phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
