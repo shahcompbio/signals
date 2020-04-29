@@ -564,7 +564,7 @@ plotHeatmap <- function(CNbins,
 
   if (is.null(tree) & is.null(clusters)){
     message("No tree or cluster information provided, clustering using HDBSCAN")
-    clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), ...)
+    clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), field = "copy", ...)
     tree <- clustering_results$tree
     tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data
