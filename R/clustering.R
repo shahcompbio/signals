@@ -10,6 +10,7 @@ umap_clustering <- function(CNbins,
   cnmatrix <- createCNmatrix(CNbins, fillna = TRUE, field = field)
   cnmatrix <- subset(cnmatrix, select = -c(chr, start, end, width))
   cnmatrix <- t(cnmatrix)
+  cnmatrix[!is.finite(cnmatrix)] <- 0 # remove non finite values
 
   set.seed(seed)
   message('Calculating UMAP dimensionality reduction...')
