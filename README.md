@@ -24,30 +24,32 @@ allele_data = allele_results['allele_counts']
 
 ## Example
 
-First we need to do some data wrangling to merge the `allele_data` table and the `CNbins` data table so that we get a table that contains BAF and total copy number state values per bin.
+First we need to do some data wrangling to convert the `allele_data` table from long to wide format.
 ``` r
 library(schnapps)
-CNBAF <- combineBAFCN(allele_data, CNbins, binsize = 0.5e6)
+allele_data <- format_haplotypes_dlp(allele_data)
 ```
 
-To ensure that there is signal in the data to perform the inference it is useful to plot the BAF vs CN state. This can be done as follows. If there is signal in the data we should see clusters of points representing different allele-specific states.
-``` r
-plotCNBAF(CNBAF)
-```
-
-Then we can call the allele specific states.
+Then we can call the allele specific states:
 ```r
-alleleCNbins <- callAlleleSpecificCNHMM(CNBAF)
+ascn <- callAlleleSpecificCN(CNbins, haplotypes)
 ```
+
+Or alterantively the haplotype specific states:
+```r
+hscn <- callHaplotypeSpecificCN(CNbins, haplotypes)
+```
+
+See the vignette for more information on the differences between these two outputs.
 
 After performing this inference, to QC the results it is useful to plot a different representation of the BAF. Here we plot the BAF as a function of the inferred states. The black lines indicate where we should see the mean BAF based on the state.
 ``` r
-plotBAFperstate(alleleCNbins)
+plotBAFperstate(ascn, maxstate = 10)
 ```
 
 After having ensured the results make sense, you can plot a heatmap of the states across all cells with the following.
 ```r
-plotHeatmap(alleleCN)
+plotHeatmap(alleleCN, plotcol = "state_BAF")
 ```
 This will cluster the cell using umap and hdbscan.
 
