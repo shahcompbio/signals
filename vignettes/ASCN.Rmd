@@ -1,8 +1,6 @@
 ---
 title: "Allele Specific Copy Number Inference"
-output: 
-  rmarkdown::html_vignette
-    df_print: kable
+output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Allele Specific Copy Number Inference}
   %\VignetteEngine{knitr::rmarkdown}
@@ -12,6 +10,7 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
+  warning=FALSE, message=FALSE, 
   comment = "#>"
 )
 ```
@@ -37,7 +36,7 @@ data(CNbins)
 head(CNbins)
 ```
 
-The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function `r format_haplotypes_dlp` to convert the data to the correct format. 
+The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function `format_haplotypes_dlp` to convert the data to the correct format. 
 ```{r}
 haplotypes <- format_haplotypes_dlp(haplotypes)
 head(haplotypes)
@@ -82,12 +81,12 @@ plotHeatmap(ascn, plotcol = "state_phase", plottree = FALSE, spacer_cols = 15)
 ```
 
 There are also some function to plot per cell BAF and state plots. You can specify a cell, or the default will take the first cell in the data frame.
-```{r, fig.show='hold', fig.height=8, fig.width=10}
+```{r, fig.show='hold', fig.height=5, fig.width=10}
 plotCNprofileBAF(ascn)
 ```
 
 Here we'll plot and equivalent plot merging across cells
-```{r, fig.show='hold', fig.height=8 , fig.width=10}
+```{r, fig.show='hold', fig.height=5 , fig.width=10}
 library(tidyverse)
 ascn %>%
     group_by(chr, start, end) %>%
@@ -123,4 +122,22 @@ In the discrete version of this plot we see similar patterns.
 ```{r, fig.show='hold', fig.height=4 , fig.width=10}
 set.seed(1)
 plotHeatmap(hscn, plotcol = "state_phase", plottree = FALSE, spacer_cols = 15)
+```
+
+```{r, fig.show='hold', fig.height=5, fig.width=10}
+plotCNprofileBAF(hscn)
+```
+
+Here we'll merge all cells and plot together.
+```{r, fig.show='hold', fig.height=5 , fig.width=10}
+hscn %>%
+    group_by(chr, start, end) %>%
+    summarise(state = schnapps:::Mode(state), 
+              state_min = schnapps:::Mode(state_min), 
+              BAF = median(BAF), 
+              state_phase = schnapps:::Mode(state_phase), 
+              copy = median(copy)) %>%
+    ungroup() %>%
+    mutate(cell_id = "Merged Cells") %>% # add dummy cell id
+    plotCNprofileBAF(.)
 ```
