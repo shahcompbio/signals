@@ -96,37 +96,6 @@ getBins <- function(chrom.lengths=hg19_chrlength, binsize=1e6, chromosomes=NULL)
   return(bins)
 }
 
-
-
-#' @export
-format_haplotypes <- function(haplotypes, filtern = 0, hmmcopybinsize = 0.5e6){
-  message("Spread data frame...")
-
-  formatted_haplotypes <- haplotypes %>%
-      data.table::as.data.table() %>%
-      .[, allele_id := paste0("allele", allele_id)] %>%
-      data.table::dcast(., ... ~ allele_id, value.var = "readcount", fill = 0L) %>%
-      .[, start := round(start / hmmcopybinsize) * hmmcopybinsize + 1] %>%
-      .[, end := start + hmmcopybinsize - 1] %>%
-      .[, lapply(.SD, sum), by = .(cell_id, chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-      .[, totalcounts := allele1 + allele0]
-
-  message("Phase haplotypes...")
-  phased_haplotypes <- phase_haplotypes(formatted_haplotypes)
-
-  message("Join phased haplotypes...")
-  formatted_haplotypes <- formatted_haplotypes[phased_haplotypes, on = .(chr, start, end, hap_label)]
-
-  message("Reorder haplotypes based on phase...")
-  formatted_haplotypes <- formatted_haplotypes %>%
-    .[, alleleA := ifelse(phase == "allele0", allele1, allele0)] %>%
-    .[, alleleB := ifelse(phase == "allele0", allele0, allele1)] %>%
-    .[totalcounts > filtern, BAF := alleleB / totalcounts] %>%
-    .[, c("allele1", "allele0", "phase") := NULL]
-
-  return(formatted_haplotypes)
-}
-
 #' @export
 widen_haplotypebins <- function(haplotypes, binsize = 5e6){
   message("Create GRanges objects...")
@@ -179,17 +148,6 @@ widen_bins <- function(CNbins,
           reads = sum(reads, na.rm = TRUE)), by = .(chr, start, end, cell_id)]
 
   return(as.data.frame(widerCNbins))
-}
-
-
-#' @export
-phase_haplotypes <- function(haplotypes){
-  phased_haplotypes <- data.table::as.data.table(haplotypes) %>%
-    .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-    .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-    .[, c("allele1", "allele0") := NULL]
-
-  return(phased_haplotypes)
 }
 
 #' @export
@@ -253,33 +211,31 @@ coord_to_arm <- function(chromosome, position, assembly = "hg19", full = F){
   return(arms)
 }
 
-.mergeSegmentsfun <- function(segs, s, pb, field_var) {
-  pb$tick()$print()
-  cellsegs <- dplyr::filter(segs, cell_id == s)
-
-  tempsegs <- cellsegs %>%
-    dplyr::group_by(chr) %>%
-    dplyr::mutate(consecutive = !!field_var == dplyr::lag(!!field_var), n = 1:n()) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(segid = ifelse(consecutive == FALSE | n == 1, n, NA)) %>%
-    tidyr::fill(segid) %>%
-    dplyr::group_by(segid, chr, cell_id, !!field_var) %>%
-    dplyr::summarise(start = dplyr::first(start),
-              end = dplyr::last(end),
-              nbin = dplyr::n()) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(-segid)
-  return(tempsegs)
+#' @export
+create_segments <- function(CNbins, field = "state"){
+  newsegs <- CNbins %>%
+    data.table::as.data.table() %>%
+    .[order(cell_id, chr, start)] %>%
+    .[, rlid := data.table::rleid(get(field)), by = cell_id] %>%
+    .[, list(start = min(start),
+             end = max(end)), by = .(cell_id, chr, get(field), rlid)] %>%
+    .[order(cell_id, chr, start)] %>%
+    dplyr::select(cell_id, chr, start, end, dplyr::everything(), -rlid) %>%
+    as.data.frame()
+  setnames(newsegs, "get", field)
+  return(newsegs)
 }
 
 #' @export
-create_segments <- function(segs, field, verbose = TRUE){
-  field_var <- dplyr::enquo(field)
-  pb <- dplyr::progress_estimated(length(unique(segs$cell_id)), min_time = 1)
-  newsegs <- data.table::rbindlist(lapply(unique(segs$cell_id),
-                                          function(x) .mergeSegmentsfun(segs, x, pb, field_var))) %>%
-    dplyr::select(chr, start, end, cell_id, dplyr::everything()) %>%
-    dplyr::arrange(cell_id, chr, start)
-  return(newsegs)
+orderdf <- function(CNbins){
+  dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
+  return(CNbins %>%
+    as.data.table() %>%
+    .[dfchr, on = "chr"] %>%
+    .[order(cell_id, idx, start)] %>%
+    .[, idx := NULL] %>%
+      as.data.frame())
 }
+
+
 
