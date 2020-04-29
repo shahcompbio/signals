@@ -32,12 +32,12 @@ allele_data <- format_haplotypes_dlp(allele_data)
 
 Then we can call the allele specific states:
 ```r
-ascn <- callAlleleSpecificCN(CNbins, haplotypes)
+ascn <- callAlleleSpecificCN(CNbins, allele_data)
 ```
 
 Or alterantively the haplotype specific states:
 ```r
-hscn <- callHaplotypeSpecificCN(CNbins, haplotypes)
+hscn <- callHaplotypeSpecificCN(CNbins, allele_data)
 ```
 
 See the vignette for more information on the differences between these two outputs.
