@@ -87,11 +87,8 @@ get_clone_members <- function(clones) {
 make_clone_palette <- function(levels) {
   if (length(levels) <= 8) {
     pal <- RColorBrewer::brewer.pal(max(length(levels), 3), "Dark2")
-  } else if (length(levels) <= 20) {
-    pal <- clone_palette_20
   } else {
-    pal <- clone_palette_20
-    print("WARNING: more clones than palette can accomodate!")
+    pal <- colorRampPalette(brewer.pal(max(length(levels), 3), "Dark2"))(length(levels))
   }
   names(pal) <- levels
   pal <- pal[levels]
