@@ -110,6 +110,7 @@ combineBAFCN <- function(haplotypes,
 
   message("Finding overlapping cell IDs between CN data and haplotype data...")
   cellidoverlap <- intersect(CNbins$cell_id, haplotypes$cell_id)
+  message(paste0("Total number of cells in both CN and haplotypes: " , length(cellidoverlap)))
 
   CNbins <- data.table::as.data.table(CNbins)
   haplotypes <- data.table::as.data.table(haplotypes)
@@ -158,6 +159,8 @@ combineBAFCN <- function(haplotypes,
     .[, n := .N, by = "cell_id"] %>%
     .[n > minbins] %>%
     .[, n := NULL]
+
+  message(paste0("Total number of cells after removing cells with < " , minbins, " bins: ", length(unique(CNBAF$cell_id))))
 
   return(as.data.frame(CNBAF))
 }
