@@ -227,7 +227,7 @@ proportion_imbalance <- function(ascn, field = "copy", arm = FALSE, minfrac = 0.
     prop <- prop[prop[, .I[which.max(propA)], by=chr]$V1]
   }
 
-  return(list(prop = prop, ascn = ascn, cl = cl))
+  return(list(prop = prop, cl = cl))
 }
 
 #' @export
@@ -268,7 +268,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                       selftransitionprob = 0.999,
                                       progressbar = TRUE,
                                       ncores = 1,
-                                      phasebyarm = FALSE) {
+                                      phasebyarm = FALSE,
+                                      minfrac = 0.05) {
 
   cnbaf <- combineBAFCN(haplotypes = haplotypes, CNbins = CNbins)
   ascn <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
@@ -281,7 +282,7 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
-  p <- proportion_imbalance(ascn, arm = phasebyarm)
+  p <- proportion_imbalance(ascn, arm = phasebyarm, minfrac = minfrac)
   phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
                                               prop = p,
                                               phasebyarm = phasebyarm)
