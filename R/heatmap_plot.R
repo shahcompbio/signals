@@ -24,12 +24,14 @@ clone_palette_20 <- c(
 )
 clone_none_black <- "#1B1B1B"
 
-
 calc_state_mode <- function(states) {
   state_levels <- unique(states)
   state_mode <- state_levels[
     which.max(tabulate(match(states, state_levels)))
     ]
+  if (!is.finite(state_mode)){
+    state_mode <- 2
+  }
   return(state_mode)
 }
 
