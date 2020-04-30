@@ -22,7 +22,8 @@ Imports:
     cowplot,
     matrixStats,
     ape,
-    GenomeInfoDb
+    GenomeInfoDb,
+    RColorBrewer
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
