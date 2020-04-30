@@ -211,7 +211,7 @@ callalleleHMMcell <- function(CNBAF,
 #' @export
 proportion_imbalance <- function(ascn, field = "copy", arm = FALSE, minfrac = 0.1){
   cl <- umap_clustering(ascn,
-                        max(round(minfrac * length(unique(ascn$cell_id))), 2),
+                        minPts = max(round(minfrac * length(unique(ascn$cell_id))), 2),
                         field = field)
   alleles <- data.table()
   ascn <- as.data.table(left_join(ascn, cl$clustering))
