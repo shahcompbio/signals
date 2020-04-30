@@ -21,7 +21,6 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, 
   cnmatrix <- cnmatrix %>%
     dplyr::as_tibble() %>%
     tidyr::fill(., names(cnmatrix), .direction = "updown")
-  cnmatrix[!is.finite(cnmatrix)] <- 2 # set non finite values to 2
   }
 
   cnmatrix <- as.data.frame(cnmatrix)
