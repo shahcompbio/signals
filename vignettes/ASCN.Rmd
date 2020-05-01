@@ -36,9 +36,9 @@ data(CNbins)
 head(CNbins)
 ```
 
-The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function `format_haplotypes_dlp` to convert the data to the correct format. 
+The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function `format_haplotypes_dlp` to convert the data to the correct format, this function will also remove any bins present in the haplotypes data frame that is not present in the CNbins data frame.
 ```{r}
-haplotypes <- format_haplotypes_dlp(haplotypes)
+haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
 head(haplotypes)
 ```
 

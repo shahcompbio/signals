@@ -27,7 +27,7 @@ allele_data = allele_results['allele_counts']
 First we need to do some data wrangling to convert the `allele_data` table from long to wide format.
 ``` r
 library(schnapps)
-allele_data <- format_haplotypes_dlp(allele_data)
+allele_data <- format_haplotypes_dlp(allele_data, CNbins)
 ```
 
 Then we can call the allele specific states:

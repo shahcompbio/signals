@@ -1,5 +1,10 @@
 #' @export
-format_haplotypes_dlp <- function(haplotypes, hmmcopybinsize = 0.5e6){
+format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
+
+  bins <- dplyr::distinct(CNbins, chr, start, end) %>%
+    dplyr::mutate(binid = paste(chr, start, end, sep = "_")) %>%
+    pull(binid)
+
   formatted_haplotypes <- haplotypes %>%
     data.table::as.data.table() %>%
     .[, allele_id := paste0("allele", allele_id)] %>%
@@ -7,8 +12,12 @@ format_haplotypes_dlp <- function(haplotypes, hmmcopybinsize = 0.5e6){
     .[, start := round(start / hmmcopybinsize) * hmmcopybinsize + 1] %>%
     .[, end := start + hmmcopybinsize - 1] %>%
     .[, lapply(.SD, sum), by = .(cell_id, chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-    .[, totalcounts := allele1 + allele0]
-  return(formatted_haplotypes)
+    .[, totalcounts := allele1 + allele0] %>%
+    .[, hbinid := paste(chr, start, end, sep = "_")] %>%
+    .[hbinid %in% bins] %>%
+    .[, hbinid := NULL]
+
+  return(as.data.frame(formatted_haplotypes))
 }
 
 #' @export
