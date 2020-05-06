@@ -239,10 +239,10 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
 }
 
 #' @export
-proportion_imbalance <- function(ascn, haplotypes, field = "copy", arm = FALSE, minfrac = 0.1){
+proportion_imbalance <- function(ascn, haplotypes, field = "copy", phasebyarm = FALSE, minfrac = 0.1){
   ncells <- length(unique(ascn$cell_id))
   ncells_for_clustering <- min_cells(haplotypes)
-  message(paste0("Using ", ncells_for_clustering, " for clustering..."))
+  message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
 
   #cluster cells using umap and the "copy" corrected read count value
   cl <- umap_clustering(ascn,
@@ -255,12 +255,14 @@ proportion_imbalance <- function(ascn, haplotypes, field = "copy", arm = FALSE, 
   ascn <- ascn[clone_id != "0"]
 
   #calculate proportion of bins in each chromosome or chrarm that exhibit allelic imbalance
-  if (arm) {
+  if (phasebyarm) {
+    message("Phasing by chromosome arm...")
     ascn$chrarm <- paste0(ascn$chr, coord_to_arm(ascn$chr, ascn$start))
     prop <- ascn %>%
       .[, list(propA = sum(balance) / .N), by = .(chrarm, clone_id)]
     prop <- prop[prop[, .I[which.max(propA)], by=chrarm]$V1]
   } else {
+    message("Phasing by chromosome (not arm level)..")
     prop <- ascn %>%
       .[, list(propA = sum(balance) / .N), by = .(chr, clone_id)]
     prop <- prop[prop[, .I[which.max(propA)], by=chr]$V1]
@@ -321,7 +323,7 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
-  p <- proportion_imbalance(ascn, haplotypes, arm = phasebyarm, minfrac = minfrac)
+  p <- proportion_imbalance(ascn, haplotypes, phasebyarm = phasebyarm, minfrac = minfrac)
   phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
                                               prop = p,
                                               phasebyarm = phasebyarm)
