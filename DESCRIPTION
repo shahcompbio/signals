@@ -22,13 +22,14 @@ Imports:
     cowplot,
     matrixStats,
     ape,
-    GenomeInfoDb,
     RColorBrewer
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
     rmarkdown,
-    testthat (>= 2.1.0)
+    testthat (>= 2.1.0),
+    regioneR,
+    karyoploteR
 VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)
