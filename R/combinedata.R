@@ -3,7 +3,7 @@ format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
 
   bins <- dplyr::distinct(CNbins, chr, start, end) %>%
     dplyr::mutate(binid = paste(chr, start, end, sep = "_")) %>%
-    pull(binid)
+    dplyr::pull(binid)
 
   formatted_haplotypes <- haplotypes %>%
     data.table::as.data.table() %>%

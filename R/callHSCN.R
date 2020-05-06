@@ -208,14 +208,53 @@ callalleleHMMcell <- function(CNBAF,
   return(as.data.frame(alleleCN))
 }
 
+min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
+  nhaps_vec <- c()
+  prop_vec <- c()
+  prop <- seq(0.05, 1.0, 0.01)
+  mycells <- unique(haplotypes$cell_id)
+  ncells <- length(mycells)
+  haplotype_counts <- as.data.table(haplotypes) %>%
+    .[, list(n = .N, nfrac = .N / ncells), by = c("chr", "start", "end", "hap_label")]
+  nhaps <- dim(dplyr::distinct(haplotype_counts, chr, start, hap_label))[1]
+  for (i in prop){
+    samp_cells <- sample(mycells, round(i * length(mycells)))
+    haplotype_counts_temp <- as.data.table(haplotypes %>% dplyr::filter(cell_id %in% samp_cells)) %>%
+      .[, list(n = .N, nfrac = .N / ncells), by = c("chr", "start", "end", "hap_label")]
+    nhaps_temp <- dim(dplyr::distinct(haplotype_counts_temp, chr, start, hap_label))[1]
+    nhaps_vec <- c(nhaps_vec, nhaps_temp)
+    prop_vec <- c(prop_vec, i)
+  }
+
+  df <- data.frame(prop = prop_vec, nhaps = nhaps_vec / nhaps) %>%
+    dplyr::mutate(ncells = round(prop * length(mycells)))
+
+  ncells_forclustering <- df %>%
+    dplyr::filter(nhaps > minfrachaplotypes) %>%
+    dplyr::filter(dplyr::row_number() == 1) %>%
+    dplyr::pull(ncells)
+
+  ncells_forclustering <- max(ncells_forclustering, round(0.05 * length(unique(mycells))))
+  return(ncells_forclustering)
+}
+
 #' @export
-proportion_imbalance <- function(ascn, field = "copy", arm = FALSE, minfrac = 0.1){
+proportion_imbalance <- function(ascn, haplotypes, field = "copy", arm = FALSE, minfrac = 0.1){
+  ncells <- length(unique(ascn$cell_id))
+  ncells_for_clustering <- min_cells(haplotypes)
+  message(paste0("Using ", ncells_for_clustering, " for clustering..."))
+
+  #cluster cells using umap and the "copy" corrected read count value
   cl <- umap_clustering(ascn,
-                        minPts = max(round(minfrac * length(unique(ascn$cell_id))), 2),
+                        minPts = ncells_for_clustering,
                         field = field)
   alleles <- data.table()
-  ascn <- as.data.table(left_join(ascn, cl$clustering))
+  ascn <- as.data.table(dplyr::left_join(ascn, cl$clustering))
 
+  #removed cells that are in the unnassigned group
+  ascn <- ascn[clone_id != "0"]
+
+  #calculate proportion of bins in each chromosome or chrarm that exhibit allelic imbalance
   if (arm) {
     ascn$chrarm <- paste0(ascn$chr, coord_to_arm(ascn$chr, ascn$start))
     prop <- ascn %>%
@@ -282,7 +321,7 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
-  p <- proportion_imbalance(ascn, arm = phasebyarm, minfrac = minfrac)
+  p <- proportion_imbalance(ascn, haplotypes, arm = phasebyarm, minfrac = minfrac)
   phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
                                               prop = p,
                                               phasebyarm = phasebyarm)
