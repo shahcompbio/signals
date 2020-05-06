@@ -46,6 +46,11 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, 
 #' @export
 getBins <- function(chrom.lengths=hg19_chrlength, binsize=1e6, chromosomes=NULL) {
 
+  if (!requireNamespace("GenomeInfoDb", quietly = TRUE)) {
+    stop("Package \"GenomeInfoDb\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+
   chrom.lengths <- chrom.lengths[!is.na(names(chrom.lengths))]
   chrom.lengths <- chrom.lengths[!is.na(chrom.lengths)]
   chroms.in.data <- names(chrom.lengths)
