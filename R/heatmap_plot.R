@@ -526,9 +526,11 @@ plotHeatmap <- function(cn,
                         sample_label_idx = 1,
                         ...){
 
-  stopifnot(is.hscn(cn) | is.ascn(cn))
-  CNbins <- cn$data
-
+  if (is.hscn(cn) | is.ascn(cn)){
+    CNbins <- cn$data
+  } else{
+    CNbins <- cn
+  }
   if (!plotcol %in% names(CNbins)){
     warning(paste0("Column name - ", plotcol, " not in CNbins data frame, using state to plot heatmap"))
     plotcol <- "state"

@@ -88,7 +88,7 @@ plotCNprofileBAF(ascn)
 Here we'll plot and equivalent plot merging across cells
 ```{r, fig.show='hold', fig.height=5 , fig.width=10}
 library(tidyverse)
-ascn %>%
+ascn$data %>%
     group_by(chr, start, end) %>%
     summarise(state = schnapps:::Mode(state), 
               state_min = schnapps:::Mode(state_min), 
@@ -132,7 +132,7 @@ plotCNprofileBAF(hscn)
 
 Here we'll merge all cells and plot together.
 ```{r, fig.show='hold', fig.height=5 , fig.width=10}
-hscn %>%
+hscn$data %>%
     group_by(chr, start, end) %>%
     summarise(state = schnapps:::Mode(state), 
               state_min = schnapps:::Mode(state_min), 
