@@ -705,6 +705,128 @@ plotSNVHeatmap <- function(SNVs,
   return(snv_hm)
 }
 
+.plotHeatmapQC <- function(cn,
+                        tree = NULL,
+                        clusters = NULL,
+                        normalize_ploidy = FALSE,
+                        normalize_tree = FALSE,
+                        branch_length = 1,
+                        spacer_cols=20,
+                        plottree = TRUE,
+                        plotcol = "state",
+                        reorderclusters = FALSE,
+                        pctcells = 0.05,
+                        library_mapping = NULL,
+                        clone_pal = NULL,
+                        sample_label_idx = 1,
+                        ...){
+
+  CNbins <- cn$data
+  p <- cn$phasing
+
+  if (is.null(clusters)){
+    clusters <- p$cl$clustering
+    tree <- p$cl$tree
+  }
+
+  if ("chrarm" %in% names(p$prop)){
+    arm <-TRUE
+  } else {
+    arm <- FALSE
+  }
+
+  if (arm == FALSE){
+    CNbins <- dplyr::left_join(CNbins, p$cl$clustering)
+    CNbins <- dplyr::left_join(CNbins, p$prop)
+  } else{
+    CNbins$chrarm <- paste0(CNbins$chr, schnapps:::coord_to_arm(CNbins$chr, CNbins$start))
+    CNbins <- dplyr::left_join(CNbins, p$cl$clustering)
+    CNbins <- dplyr::left_join(CNbins, p$prop)
+  }
+
+  CNbins <- CNbins %>%
+    mutate(state_BAF = ifelse(is.na(propA), "-1", state_BAF))
+
+  plotcol <- "state_BAF"
+  colvals <- schnapps:::cn_colours_bafstate
+  colvals[["-1"]] <- "gray90"
+  legendname <- "Allelic Imbalance"
+
+  ncells <- length(unique(CNbins$cell_id))
+
+  if (is.null(clusters)){
+    ordered_cell_ids <- paste0(unique(CNbins$cell_id))
+  } else{
+    ordered_cell_ids <- paste0(clusters$cell_id)
+  }
+
+  if (is.null(tree) & is.null(clusters)){
+    message("No tree or cluster information provided, clustering using HDBSCAN")
+    clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), field = "copy", ...)
+    tree <- clustering_results$tree
+    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
+    tree_plot_dat <- tree_ggplot$data
+    message("Creating tree...")
+    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+    ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
+
+    clusters <- clustering_results$clustering %>%
+      dplyr::select(cell_id, clone_id)
+  }
+
+  if (!is.null(clusters)){
+    if (!"clone_id" %in% names(clusters)){
+      stop("No clone_id columns in clusters dataframe, you might need to rename your clusters")
+    }
+    if (reorderclusters == TRUE){
+      message("Reorder clusters dataframe according to clones")
+      clusters <- clusters[gtools::mixedorder(clusters$clone_id), ]
+      ordered_cell_ids <- paste0(clusters$cell_id)
+    }
+  }
+
+  if (plottree == TRUE){
+    if (normalize_tree == T){
+      tree <- format_tree(tree, branch_length)
+    }
+
+    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal)
+    tree_plot_dat <- tree_ggplot$data
+
+    message("Creating tree...")
+    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+    ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
+  }
+
+  message("Creating copy number heatmap...")
+  copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = TRUE)
+  if (normalize_ploidy == T){
+    message("Normalizing ploidy for each cell to 2")
+    copynumber <- normalize_cell_ploidy(copynumber)
+  }
+  copynumber <- format_copynumber(copynumber, ordered_cell_ids, spacer_cols = spacer_cols)
+  clones_formatted <- format_clones(as.data.frame(clusters), ordered_cell_ids)
+  if (!is.null(clone_pal)){
+    clones_idx <- dplyr::distinct(clones_formatted, clone_id, clone_label)
+    clone_pal <- clone_pal[clones_idx$clone_id]
+    names(clone_pal) <- clones_idx$clone_label
+  }
+  copynumber_hm <- make_copynumber_heatmap(copynumber,
+                                           clones_formatted,
+                                           colvals = colvals,
+                                           legendname = legendname,
+                                           library_mapping = library_mapping,
+                                           clone_pal = clone_pal,
+                                           sample_label_idx = sample_label_idx)
+  if (plottree == TRUE){
+    h <- tree_hm + copynumber_hm
+  } else {
+    h <- copynumber_hm
+  }
+
+  return(h)
+}
+
 
 
 
