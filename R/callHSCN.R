@@ -337,5 +337,12 @@ callHaplotypeSpecificCN <- function(CNbins,
                                                progressbar = progressbar,
                                                ncores = ncores)
 
-  return(hscn)
+  # Output
+  out = list()
+  class(out) <- "hscn"
+
+  out[["data"]] <- hscn
+  out[["phasing"]] <- p
+
+  return(out)
 }

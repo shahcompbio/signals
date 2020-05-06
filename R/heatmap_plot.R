@@ -510,7 +510,7 @@ createSNVmatrix <- function(SNVs, allcells = NULL, field = "mutation"){
 }
 
 #' @export
-plotHeatmap <- function(CNbins,
+plotHeatmap <- function(cn,
                         tree = NULL,
                         clusters = NULL,
                         normalize_ploidy = FALSE,
@@ -525,6 +525,9 @@ plotHeatmap <- function(CNbins,
                         clone_pal = NULL,
                         sample_label_idx = 1,
                         ...){
+
+  stopifnot(is.hscn(cn) | is.ascn(cn))
+  CNbins <- cn$data
 
   if (!plotcol %in% names(CNbins)){
     warning(paste0("Column name - ", plotcol, " not in CNbins data frame, using state to plot heatmap"))

@@ -191,5 +191,11 @@ callAlleleSpecificCN <- function(CNbins,
       .[order(cell_id, chr, start)]
   }
 
-  return(as.data.frame(alleleCN))
+  # Output
+  out = list()
+  class(out) <- "ascn"
+
+  out[["data"]] <- as.data.frame(alleleCN)
+
+  return(out)
 }

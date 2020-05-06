@@ -121,7 +121,7 @@ plotCNprofile <- function(CNbins,
 
 
 #' @export
-plotCNprofileBAF <- function(CNbins,
+plotCNprofileBAF <- function(cn,
                           cellid = NULL,
                           chrfilt = NULL,
                           pointsize = 1,
@@ -132,6 +132,9 @@ plotCNprofileBAF <- function(CNbins,
                           statecol = "state",
                           returnlist = FALSE,
                           raster = FALSE){
+  stopifnot(is.hscn(cn) | is.ascn(cn))
+  CNbins <- cn$data
+
   if (is.null(cellid)){
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
   }
@@ -276,7 +279,9 @@ plotCNprofileBAF <- function(CNbins,
 }
 
 #' @export
-plotCNBAF <- function(CNBAF, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
+plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
+  stopifnot(is.hscn(cn) | is.ascn(cn))
+  CNbins <- cn$data
   maj <- seq(1, 11, 1)
   min <- seq(0, 11, 1)
   ASstates <- expand.grid(state = maj, min = min) %>%
@@ -313,7 +318,10 @@ plotCNBAF <- function(CNBAF, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
 }
 
 #' @export
-plotBAFperstate <- function(alleleCN, minpts = 250, maxstate = 6){
+plotBAFperstate <- function(cn, minpts = 250, maxstate = 6){
+
+  stopifnot(is.hscn(cn) | is.ascn(cn))
+  alleleCN <- cn$data
 
   maj <- seq(0, max(alleleCN$state), 1)
   min <- seq(0, max(alleleCN$state), 1)

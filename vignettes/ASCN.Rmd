@@ -100,6 +100,8 @@ ascn %>%
     plotCNprofileBAF(.)
 ```
 
+The object returned by the inference function is of type `ascn`, if you want to pull out the data to use in your own scripts you can just do `ascn$data`. This will return a `data.frame` similar to the input data frames but with additional columns specifying the allele specific states.
+
 ### `callHaplotypeSpecificCN`
 Now we'll do the analysis that phases haplotypes across cells.
 ```{r, message = FALSE}
