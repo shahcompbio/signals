@@ -25,7 +25,7 @@ plotideogram <- function(hscn, cellid = NULL, gene.symbols = NULL, chr = NULL){
     cellid = hscn$data$cell_id[1]
   }
 
-  data_cell <- hscn$data %>% dplyr::filter(cell_id == cells[1])
+  data_cell <- hscn$data %>% dplyr::filter(cell_id == cellid)
   data_cell$col_state <- scCN_cols(paste0("CN", data_cell$state))
   data_cell$col_ASstate <- scCNphase_cols(paste0(data_cell$state_phase))
 
