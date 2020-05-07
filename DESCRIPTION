@@ -29,7 +29,8 @@ Suggests:
     rmarkdown,
     testthat (>= 2.1.0),
     regioneR,
-    karyoploteR
+    karyoploteR,
+    biomaRt
 VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)

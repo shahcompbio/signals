@@ -26,7 +26,7 @@ format_haplotypes <- function(haplotypes,
                               hmmcopybinsize = 0.5e6,
                               phased_haplotypes = NULL,
                               phasing_method = "distribution", ...){
-  message("Spread data frame...")
+  message("Pivot data frame...")
 
   message("Phase haplotypes...")
   if (is.null(phased_haplotypes)){
