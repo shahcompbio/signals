@@ -27,8 +27,18 @@ umap_clustering <- function(CNbins,
   rownames(dfumap) <- row.names(cnmatrix)
 
   message('Clustering cells using hdbscan...')
-  hdbscanresults <- dbscan::hdbscan(dfumap[,1:2], minPts = minPts,
-                                    gen_simplified_tree = TRUE)
+  gentree <- FALSE
+  while(gentree == FALSE){
+    hdbscanresults <- try(dbscan::hdbscan(dfumap[,1:2], minPts = minPts,
+                                      gen_simplified_tree = TRUE))
+    if (class(hdbscanresults) == "try-error"){
+      message("Only 1 cluster found, reducing minPts size by 10...")
+      minPts <- round(minPts - 10)
+      message(paste0("Cluster size = ", minPts))
+    } else{
+      gentree <- TRUE
+    }
+  }
   clusterids <- hdbscanresults$cluster
   clusterids[clusterids == 0] <- 702
   LETTERS702 <- c(LETTERS, sapply(LETTERS, function(x) paste0(x, LETTERS)))
