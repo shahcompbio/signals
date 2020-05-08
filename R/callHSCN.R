@@ -239,7 +239,7 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
 }
 
 #' @export
-proportion_imbalance <- function(ascn, haplotypes, field = "copy", phasebyarm = FALSE, minfrac = 0.1){
+proportion_imbalance <- function(ascn, haplotypes, field = "copy", phasebyarm = FALSE, minfrac = 0.05){
   ncells <- length(unique(ascn$cell_id))
   ncells_for_clustering <- min_cells(haplotypes)
   message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
@@ -304,7 +304,7 @@ phase_haplotypes_bychr <- function(haplotypes, prop, phasebyarm = FALSE){
 callHaplotypeSpecificCN <- function(CNbins,
                                     haplotypes,
                                       eps = 1e-12,
-                                      loherror = 0.01,
+                                      loherror = 0.03,
                                       maxCN = 12,
                                       selftransitionprob = 0.999,
                                       progressbar = TRUE,
@@ -321,6 +321,11 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     progressbar = progressbar,
                                     ncores = ncores)
 
+  infloherror <- ascn %>%
+    dplyr::filter(state_phase == "A-LOH") %>%
+    dplyr::summarise(err = mean(BAF)) %>%
+    dplyr::pull(err)
+
   ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
   p <- proportion_imbalance(ascn, haplotypes, phasebyarm = phasebyarm, minfrac = minfrac)
@@ -333,7 +338,7 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   hscn <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
                                                eps = eps,
-                                               loherror = loherror,
+                                               loherror = infloherror,
                                                maxCN = maxCN,
                                                selftransitionprob = selftransitionprob,
                                                progressbar = progressbar,
@@ -345,6 +350,8 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   out[["data"]] <- hscn
   out[["phasing"]] <- p
+  out[["loherror"]] <- infloherror
+  out[["eps"]] <- eps
 
   return(out)
 }
