@@ -745,7 +745,7 @@ plotSNVHeatmap <- function(SNVs,
   }
 
   CNbins <- CNbins %>%
-    mutate(state_BAF = ifelse(is.na(propA), "-1", state_BAF))
+   dplyr:: mutate(state_BAF = ifelse(is.na(propA), "-1", state_BAF))
 
   plotcol <- "state_BAF"
   colvals <- schnapps:::cn_colours_bafstate

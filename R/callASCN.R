@@ -143,7 +143,7 @@ switch_alleles <- function(cn, pval = 0.05){
 callAlleleSpecificCN <- function(CNbins,
                                  haplotypes,
                                  eps = 1e-12,
-                                 loherror = 0.01,
+                                 loherror = 0.03,
                                  maxCN = 12,
                                  selftransitionprob = 0.999,
                                  progressbar = TRUE,
@@ -164,6 +164,12 @@ callAlleleSpecificCN <- function(CNbins,
                                   selftransitionprob = selftransitionprob,
                                   progressbar = progressbar,
                                   ncores = ncores)
+
+  infloherror <- hscn %>%
+    dplyr::filter(state_phase == "A-LOH") %>%
+    dplyr::summarise(err = mean(BAF)) %>%
+    dplyr::pull(err)
+
   CNBAF <- switch_alleles(hscn)
   minor_cn <- seq(0, maxCN, 1)
 
@@ -178,14 +184,14 @@ callAlleleSpecificCN <- function(CNbins,
   if (ncores > 1){
     alleleCN <- data.table::rbindlist(parallel::mclapply(unique(CNBAF$cell_id),
                                                     function(cell) assignalleleHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
-                                                                                   eps = eps, loherror = loherror,
+                                                                                   eps = eps, loherror = infloherror,
                                                                                    selftransitionprob = selftransitionprob,
                                                                                    pb = pb), mc.cores = ncores)) %>%
       .[order(cell_id, chr, start)]
   } else{
     alleleCN <- data.table::rbindlist(lapply(unique(CNBAF$cell_id),
                                         function(cell) assignalleleHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
-                                                                       eps = eps, loherror = loherror,
+                                                                       eps = eps, loherror = infloherror,
                                                                        selftransitionprob = selftransitionprob,
                                                                        pb = pb))) %>%
       .[order(cell_id, chr, start)]
@@ -196,6 +202,7 @@ callAlleleSpecificCN <- function(CNbins,
   class(out) <- "ascn"
 
   out[["data"]] <- as.data.frame(alleleCN)
+  out[["loherror"]] <- infloherror
 
   return(out)
 }
