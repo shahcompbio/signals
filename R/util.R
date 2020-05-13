@@ -3,6 +3,7 @@ Mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
+#' @export
 createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, fillna = FALSE){
 
   dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
@@ -32,6 +33,27 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, 
   rownames(cnmatrix) <- paste(cnmatrix$chr, as.integer(cnmatrix$start), as.integer(cnmatrix$end), sep = "_")
   cnmatrix = subset(cnmatrix, select = -c(idx))
   return(cnmatrix)
+}
+
+#' @export
+createbreakpointmatrix <- function(segs, transpose = FALSE){
+
+  segs_bin <- segs %>%
+    as.data.table() %>%
+    .[, loci := paste(chr, end - 0.5e6 + 1, end, sep = "_")] %>%
+    .[, row_num := .I] %>% # add row numbers
+    .[, remove_row_num := .I[.N], by=.(cell_id, chr)]  %>% # find last row in each cell_id - chr group
+    .[row_num != remove_row_num] %>%
+    .[, tipInclusionProbabilities := 1] %>%
+    dplyr::select(cell_id, loci, tipInclusionProbabilities)
+
+  segs_mat <- segs_bin %>%
+    data.table::dcast(., loci ~ cell_id, value.var = "tipInclusionProbabilities", fill = 0)
+
+  segs_mat <- as.data.frame(segs_mat)
+  rownames(segs_mat) <- segs_mat$loci
+
+  return(segs_mat)
 }
 
 
