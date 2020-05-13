@@ -24,23 +24,13 @@ plottinglist <- function(CNbins){
 }
 
 #' @export
-plot_umap <- function(clustering, bycol = NULL){
-  ggplot2::ggplot(clustering, ggplot2::aes(x = umap1, y = umap2)) +
-    ggrastr::geom_point_rast(ggplot2::aes_string(col = bycol)) +
-    ggplot2::xlab("UMAP 1") +
-    ggplot2::ylab("UMAP 2") +
-    ggplot2::theme_bw() +
-    guides(colour = ggplot2::guide_legend(ncol = 3))
-}
-
-#' @export
 plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5){
   ggplot2::ggplot(clustering, ggplot2::aes(x = umap1, y = umap2)) +
     ggrastr::geom_point_rast(ggplot2::aes_string(col = bycol), alpha = alphavalue) +
     ggplot2::xlab("UMAP 1") +
     ggplot2::ylab("UMAP 2") +
     ggplot2::theme_bw() +
-    guides(colour = ggplot2::guide_legend(ncol = 3))
+    ggplot2::guides(colour = ggplot2::guide_legend(ncol = 3))
 }
 
 #' @export
