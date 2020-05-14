@@ -111,7 +111,6 @@ computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE){
 #' @export
 combineBAFCN <- function(haplotypes,
                          CNbins,
-                         binsize = 0.5e6,
                          filtern = 0,
                          phased_haplotypes = NULL,
                          minbins = 100,
@@ -142,17 +141,6 @@ combineBAFCN <- function(haplotypes,
                       phasing_method = phasing_method, ...)
   haplotypes <- data.table::as.data.table(haplotypes)
 
-  if (binsize > 0.5e6){
-    message("Widening CN bins")
-    CNbins <- CNbins %>%
-      widen_bins(., binsize = binsize) %>%
-      data.table::as.data.table(.)
-    message("Widening haplotype bins")
-    haplotypes <- haplotypes %>%
-      widen_haplotypebins(., binsize = binsize) %>%
-      data.table::as.data.table(.)
-  }
-
   message("Joining bins and haplotypes...")
   #CNbins <- data.table::merge.data.table(CNbins, haplotypes)
   CNbins <- CNbins[haplotypes, on = c("chr", "start", "end", "cell_id"), nomatch=0]
@@ -161,7 +149,7 @@ combineBAFCN <- function(haplotypes,
   CNBAF <- CNbins %>%
     data.table::as.data.table() %>%
     .[totalcounts > filtern] %>%
-    .[, lapply(.SD, sum), by = .(chr, start, end, cell_id, state, copy, reads), .SDcols = c("alleleA", "alleleB", "totalcounts")] %>%
+    .[, lapply(.SD, sum), by = .(chr, start, end, cell_id, state, copy), .SDcols = c("alleleA", "alleleB", "totalcounts")] %>%
     .[, BAF := alleleB / totalcounts]
 
   CNBAF <- CNBAF %>%

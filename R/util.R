@@ -53,6 +53,11 @@ createbreakpointmatrix <- function(segs, transpose = FALSE){
   segs_mat <- as.data.frame(segs_mat)
   rownames(segs_mat) <- segs_mat$loci
 
+  if (transpose == TRUE){
+    segs_mat <- subset(segs_mat, select = -c(loci))
+    segs_mat <- t(segs_mat)
+  }
+
   return(segs_mat)
 }
 
@@ -171,8 +176,7 @@ widen_bins <- function(CNbins,
     data.table::setnames(., "seqnames", "chr") %>%
     data.table::setcolorder(., c("chr", "start", "end", "cell_id")) %>%
     .[, .(state = round(mean(state, na.rm = TRUE)),
-          copy = mean(copy, na.rm = TRUE),
-          reads = sum(reads, na.rm = TRUE)), by = .(chr, start, end, cell_id)]
+          copy = mean(copy, na.rm = TRUE)), by = .(chr, start, end, cell_id)]
 
   return(as.data.frame(widerCNbins))
 }
@@ -263,6 +267,3 @@ orderdf <- function(CNbins){
     .[, idx := NULL] %>%
       as.data.frame())
 }
-
-
-

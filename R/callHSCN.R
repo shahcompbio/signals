@@ -288,7 +288,7 @@ phase_haplotypes_bychr <- function(haplotypes, prop, phasebyarm = FALSE){
   }  else {
     phased_haplotypes <- data.table()
     for (i in 1:nrow(prop$prop)){
-      phased_haplotypes_temp <- haplotypes[clone_id == prop$prop[i,"clone_id"] & chr == prop$prop[i,"chr"]] %>%
+      phased_haplotypes_temp <- haplotypes[clone_id == prop$prop[i,"clone_id"]$clone_id & chr == prop$prop[i,"chr"]$chr] %>%
         .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
         .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
         .[, c("allele1", "allele0") := NULL]
