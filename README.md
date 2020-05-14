@@ -13,7 +13,7 @@ devtools::install_github("shahcompbio/schnapps")
 
 ## Input data
 
-Below is an example of how to use schnapps with DLP data. You will need the HMM copy results table (`CNbins`) with the following columns: `chr`, `start`,`end`, `cell_id`, `state`, `copy`, as well as cell specific haplotype counts as outputted by [scgenome](https://github.com/shahcompbio/scgenome) with the following command.
+Below is an example of how to use schnapps with DLP data. You will need the HMM copy results table (`CNbins`) with the following columns: `chr`, `start`,`end`, `cell_id`, `state`, `copy`, as well as cell specific haplotype counts as outputted by [scgenome](https://github.com/shahcompbio/scgenome) with the following command. This includes the following columns: `chr`, `start`,`end`, `cell_id`, `hap_label, `allele_id`, `readcount`.
 
 ```py
 allele_results = scgenome.loaders.allele.load_haplotype_allele_data(
@@ -49,7 +49,7 @@ plotBAFperstate(ascn, maxstate = 10)
 
 After having ensured the results make sense, you can plot a heatmap of the states across all cells with the following.
 ```r
-plotHeatmap(alleleCN, plotcol = "state_BAF")
+plotHeatmap(ascn, plotcol = "state_BAF")
 ```
 This will cluster the cell using umap and hdbscan.
 
