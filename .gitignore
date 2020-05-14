@@ -10,3 +10,4 @@ Meta
 schnapps.Rproj
 vignettes/ASCN-phasing.Rmd
 test_data/
+.Rbuildignore
