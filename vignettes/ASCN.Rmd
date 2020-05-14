@@ -143,3 +143,34 @@ hscn$data %>%
     mutate(cell_id = "Merged Cells") %>% # add dummy cell id
     plotCNprofileBAF(.)
 ```
+
+### Dealing with noisy data
+If the coverage per cell is on average low then estimating allele specific copy number can be challenging. This can result in "grainy" heatmaps, noisy cell profiles and inconsistent `plotBAFperstate` plots. One way to overcome this is to use larger bin sizes, `schnapps` provides 2 utility functions to "widen" the bins by taking an average across bins. 
+
+```{r}
+CNbins_wide <- widen_bins(CNbins, binsize = 5e6)
+haplotypes_wide <- widen_haplotypebins(haplotypes, binsize = 5e6)
+
+hscn_wide <- callHaplotypeSpecificCN(CNbins_wide, haplotypes_wide)
+```
+
+
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+plotBAFperstate(hscn_wide, maxstate = 10)
+```
+
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+set.seed(1)
+plotHeatmap(hscn_wide, plotcol = "state_BAF", plottree = FALSE, spacer_cols = 3)
+```
+
+In the discrete version of this plot we see similar patterns. 
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+set.seed(1)
+plotHeatmap(hscn_wide, plotcol = "state_phase", plottree = FALSE, spacer_cols = 3)
+```
+
+```{r, fig.show='hold', fig.height=5, fig.width=10}
+plotCNprofileBAF(hscn_wide)
+```
+
