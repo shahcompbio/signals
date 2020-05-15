@@ -54,7 +54,7 @@ plotCNprofile <- function(CNbins,
 
   if (!is.null(chrfilt)){
     message(paste0("Filtering for chromosome: ", chrfilt))
-    CNbins <- dplyr::filter(CNbins, chr == chrfilt)
+    CNbins <- dplyr::filter(CNbins, chr %in% chrfilt)
   }
 
   pl <- CNbins %>%
@@ -154,7 +154,7 @@ plotCNprofileBAF <- function(cn,
 
   if (!is.null(chrfilt)){
     message(paste0("Filtering for chromosome: ", chrfilt))
-    CNbins <- dplyr::filter(CNbins, chr == chrfilt)
+    CNbins <- dplyr::filter(CNbins, chr %in% chrfilt)
   }
 
   pl <- CNbins %>%
