@@ -428,7 +428,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   out = list()
   class(out) <- "hscn"
 
-  out[["data"]] <- hscn %>% dplyr::filter(state_min > -1) # catch weird bug with bin = -1
+  out[["data"]] <- hscn %>% dplyr::filter(state_min > -1) %>% as.data.frame() # catch weird bug with bin = -1
   out[["phasing"]] <- p
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps
