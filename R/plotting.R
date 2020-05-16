@@ -361,5 +361,71 @@ plotBAFperstate <- function(cn, minpts = 250, maxstate = 6){
   return(g)
 }
 
+randbb <- function (num, pars){
+  depth <- pars[1]
+  p <- pars[2]
+  rho <- pars[3]
+  return(rbetabinom(num, size = depth, prob = p, rho = rho) / depth)
+}
 
+randbin <- function (num, pars){
+  depth <- pars[1]
+  p <- pars[2]
+  return(rbinom(num, size = depth, prob = p) / depth)
+}
+
+plot_density_histogram <- function(dat, mystate, rho){
+  dat <- dat %>%
+    dplyr::filter(state_AS_phased == mystate)
+
+  expBAF <- stringr::str_split(mystate, "\\|")[[1]]
+  expBAF <- as.numeric(expBAF[2]) / (as.numeric(expBAF[1]) + as.numeric(expBAF[2]))
+  print(expBAF)
+
+  BAF_bb <- VGAM::rbetabinom(length(dat$totalcounts), size = dat$totalcounts,
+                             prob = expBAF,
+                             rho = rho) / dat$totalcounts
+  dffit_bb <- data.frame(BAF = BAF_bb,
+                         type = paste("Beta Binomial (rho = ", rho, ")", sep=""))
+
+  BAF_b <- VGAM::rbetabinom(length(dat$totalcounts), size = dat$totalcounts,
+                            prob = expBAF,
+                            rho = 0.0) / dat$totalcounts
+  dffit_b <- data.frame(BAF = BAF_b,
+                        type = paste("Binomial", sep=""))
+
+  g <- ggplot(dat, aes(x = BAF)) +
+    #geom_histogram(aes(k=k,y=k*(..density..)), bins = 100, fill = "azure4",alpha = 0.8) +
+    geom_histogram(aes(y=(..density..)), bins = 90, fill = "azure4",alpha = 0.8) +
+    geom_line(data = dffit_bb, stat="density",aes(BAF, col = type), size = 0.5, adjust = 5) +
+    geom_line(data = dffit_b, stat="density",aes(BAF, col = type), size = 0.5, adjust = 5, linetype = 2) +
+    #geom_density(data = df, aes(VAF), size = 2.0, col = "deepskyblue4") +
+    scale_colour_manual(values=c(alpha("deepskyblue4",0.6), alpha("firebrick4",0.6))) +
+    theme_bw(base_family = 'Helvetica') +
+    xlab("VAF") +
+    ylab("Density") +
+    xlim(c(0.0, 1.0)) +
+    #ylim(c(0,60)) +
+    theme(legend.title = element_blank()) +
+    cowplot::theme_cowplot() +
+    theme(legend.position = "none") +
+    ggtitle(mystate)
+
+  return(g)
+}
+
+plotBBfit <- function(hscn){
+  mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0)
+  x <- table(mydat$state_AS_phased)
+  x <- x / sum(x)
+  x <- x[which(x > 0.01)]
+  gplots <- list()
+  j <- 1
+  for (i in names(x)){
+    gplots[[j]] <- plot_density_histogram(hscn$data, mystate = i, rho = hscn$likelihood$rho)
+    j <- j + 1
+  }
+
+  cowplot::plot_grid(plotlist = gplots, ncol = 3)
+}
 
