@@ -1,0 +1,79 @@
+---
+title: "Allele Specific Copy Number Inference"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Allele Specific Copy Number Inference}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  warning=FALSE, message=FALSE, 
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(schnapps)
+```
+
+## Background
+This vignette demonstrates how to use a beta-binomial model instead of a binomial model for the HMM emission model.
+
+## Inference
+```{r}
+data(haplotypes)
+data(CNbins)
+haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
+hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "binomial")
+
+print(hscn)
+
+hscn_bb <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "betabinomial")
+
+print(hscn_bb)
+
+```
+We see that the model inferred a modest degree of overdispersion in the data.
+
+Below I'll plot the heatmaps for the two output, which in this case are very similar.
+
+### Binomial model
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+plotHeatmap(hscn, plotcol = "state_BAF", plottree = FALSE, spacer_cols = 15)
+```
+
+### Beta-Binomial model
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+plotHeatmap(hscn_bb, plotcol = "state_BAF", plottree = FALSE, spacer_cols = 15)
+```
+
+### QC plot
+To interrogate the difference between the binomial and beta-binomial models we can plot the BAF and overlay the two models.
+
+```{r, fig.show='hold', fig.height=5, fig.width=10}
+plotBBfit(hscn_bb)
+```
+
+We can check how similar the results are by comparing the two dataframes. We find for this data that the results are almost identical.
+```{r}
+all.equal(orderdf(hscn$data), orderdf(hscn_bb$data))
+```
+
+Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments but the difference is very minimal.
+
+```{r}
+segs <- create_segments(hscn$data, field = "state_AS_phased")
+
+segs_bb <- create_segments(hscn_bb$data, field = "state_AS_phased")
+
+print(dim(segs))
+print(dim(segs_bb))
+```
+
+
+## Summary
+With this dataset, the difference between the nbinomial model and beta-binomial model is very minimal but in other lower quality datasets with for example lower depth of coverage the beta-binomial model may produce superior results.
+

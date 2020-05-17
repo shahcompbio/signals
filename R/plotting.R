@@ -361,18 +361,6 @@ plotBAFperstate <- function(cn, minpts = 250, maxstate = 6){
   return(g)
 }
 
-randbb <- function (num, pars){
-  depth <- pars[1]
-  p <- pars[2]
-  rho <- pars[3]
-  return(rbetabinom(num, size = depth, prob = p, rho = rho) / depth)
-}
-
-randbin <- function (num, pars){
-  depth <- pars[1]
-  p <- pars[2]
-  return(rbinom(num, size = depth, prob = p) / depth)
-}
 
 plot_density_histogram <- function(dat, mystate, rho){
   dat <- dat %>%
@@ -380,13 +368,12 @@ plot_density_histogram <- function(dat, mystate, rho){
 
   expBAF <- stringr::str_split(mystate, "\\|")[[1]]
   expBAF <- as.numeric(expBAF[2]) / (as.numeric(expBAF[1]) + as.numeric(expBAF[2]))
-  print(expBAF)
 
   BAF_bb <- VGAM::rbetabinom(length(dat$totalcounts), size = dat$totalcounts,
                              prob = expBAF,
                              rho = rho) / dat$totalcounts
   dffit_bb <- data.frame(BAF = BAF_bb,
-                         type = paste("Beta Binomial (rho = ", rho, ")", sep=""))
+                         type = paste("Beta Binomial (rho = ", round(rho, 4), ")", sep=""))
 
   BAF_b <- VGAM::rbetabinom(length(dat$totalcounts), size = dat$totalcounts,
                             prob = expBAF,
@@ -402,7 +389,7 @@ plot_density_histogram <- function(dat, mystate, rho){
     #geom_density(data = df, aes(VAF), size = 2.0, col = "deepskyblue4") +
     scale_colour_manual(values=c(alpha("deepskyblue4",0.6), alpha("firebrick4",0.6))) +
     theme_bw(base_family = 'Helvetica') +
-    xlab("VAF") +
+    xlab("BAF") +
     ylab("Density") +
     xlim(c(0.0, 1.0)) +
     #ylim(c(0,60)) +
@@ -414,6 +401,7 @@ plot_density_histogram <- function(dat, mystate, rho){
   return(g)
 }
 
+#' @export
 plotBBfit <- function(hscn){
   mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0)
   x <- table(mydat$state_AS_phased)
@@ -425,6 +413,14 @@ plotBBfit <- function(hscn){
     gplots[[j]] <- plot_density_histogram(hscn$data, mystate = i, rho = hscn$likelihood$rho)
     j <- j + 1
   }
+
+  legend <- cowplot::get_legend(
+    # create some space to the left of the legend
+    gplots[[j-1]] + ggplot2::theme(legend.box.margin = margin(0, 0, 0, 12)) +
+      ggplot2::theme(legend.title = ggplot2::element_blank()) + ggplot2::theme(legend.position = 'right')
+  )
+
+  gplots[[j]] <- legend
 
   cowplot::plot_grid(plotlist = gplots, ncol = 3)
 }
