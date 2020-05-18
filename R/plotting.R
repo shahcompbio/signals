@@ -362,4 +362,63 @@ plotBAFperstate <- function(cn, minpts = 250, maxstate = 6){
 }
 
 
+plot_density_histogram <- function(dat, mystate, rho){
+  dat <- dat %>%
+    dplyr::filter(state_AS_phased == mystate)
+
+  expBAF <- stringr::str_split(mystate, "\\|")[[1]]
+  expBAF <- as.numeric(expBAF[2]) / (as.numeric(expBAF[1]) + as.numeric(expBAF[2]))
+
+  BAF_bb <- VGAM::rbetabinom(length(dat$totalcounts), size = dat$totalcounts,
+                             prob = expBAF,
+                             rho = rho) / dat$totalcounts
+  dffit_bb <- data.frame(BAF = BAF_bb,
+                         type = paste("Beta Binomial (rho = ", round(rho, 4), ")", sep=""))
+
+  BAF_b <- VGAM::rbetabinom(length(dat$totalcounts), size = dat$totalcounts,
+                            prob = expBAF,
+                            rho = 0.0) / dat$totalcounts
+  dffit_b <- data.frame(BAF = BAF_b,
+                        type = paste("Binomial", sep=""))
+
+  g <- ggplot2::ggplot(dat, ggplot2::aes(x = BAF)) +
+    ggplot2::geom_histogram(ggplot2::aes(y=(..density..)), bins = 90, fill = "azure4",alpha = 0.8) +
+    ggplot2::geom_line(data = dffit_bb, stat="density",ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5) +
+    ggplot2::geom_line(data = dffit_b, stat="density",ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5, linetype = 2) +
+    ggplot2::scale_colour_manual(values=c(ggplot2::alpha("deepskyblue4",0.6), ggplot2::alpha("firebrick4",0.6))) +
+    ggplot2::theme_bw(base_family = 'Helvetica') +
+    ggplot2::xlab("BAF") +
+    ggplot2::ylab("Density") +
+    ggplot2:: xlim(c(0.0, 1.0)) +
+    ggplot2::theme(legend.title = ggplot2::element_blank()) +
+    cowplot::theme_cowplot() +
+    ggplot2::theme(legend.position = "none") +
+    ggplot2:: ggtitle(mystate)
+
+  return(g)
+}
+
+#' @export
+plotBBfit <- function(hscn){
+  mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0)
+  x <- table(mydat$state_AS_phased)
+  x <- x / sum(x)
+  x <- x[which(x > 0.01)]
+  gplots <- list()
+  j <- 1
+  for (i in names(x)){
+    gplots[[j]] <- plot_density_histogram(hscn$data, mystate = i, rho = hscn$likelihood$rho)
+    j <- j + 1
+  }
+
+  legend <- cowplot::get_legend(
+    # create some space to the left of the legend
+    gplots[[j-1]] + ggplot2::theme(legend.box.margin = ggplot2::margin(0, 0, 0, 12)) +
+      ggplot2::theme(legend.title = ggplot2::element_blank()) + ggplot2::theme(legend.position = 'right')
+  )
+
+  gplots[[j]] <- legend
+
+  cowplot::plot_grid(plotlist = gplots, ncol = 3)
+}
 

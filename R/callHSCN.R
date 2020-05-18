@@ -1,5 +1,5 @@
 #' @export
-callHaplotypeSpecificCN <- function(CNBAF, maxCN = 11){
+callHaplotypeSpecificCNdist <- function(CNBAF, maxCN = 11){
   maj <- seq(0, maxCN, 1)
   min <- seq(0, maxCN, 1)
   allASstates <- expand.grid(state = maj, min = min) %>%
@@ -48,7 +48,9 @@ HaplotypeHMM <- function(n,
                       minor_cn,
                       loherror = 0.01,
                       selftransitionprob = 0.999,
-                      eps = 1e-12){
+                      eps = 1e-12,
+                      likelihood = "binomial",
+                      rho = 0.0){
 
   minor_cn_mat <- t(replicate(length(binstates), minor_cn))
   total_cn_mat <- replicate(length(minor_cn), binstates)
@@ -57,7 +59,12 @@ HaplotypeHMM <- function(n,
   p[, 1] <- loherror
   p[minor_cn_mat == total_cn_mat] <- 1 - loherror
 
-  l <- suppressWarnings(dbinom(x, n, p, log = T))
+  if (likelihood == "binomial"){
+    l <- suppressWarnings(dbinom(x, n, p, log = TRUE))
+  } else{
+    l <- suppressWarnings(VGAM::dbetabinom(x, n, p, rho = rho, log = TRUE))
+    dim(l) <- c(length(x), length(minor_cn))
+  }
   if (eps > 0.0){
     l <- matrix(vapply(l, function(x) matrixStats::logSumExp(c(x, log(eps))), FUN.VALUE = numeric(1)), dim(l)[1], dim(l)[2])
   }
@@ -82,7 +89,9 @@ assignHaplotypeHMM <- function(CNBAF,
                             eps = 1e-12,
                             loherror = 0.01,
                             selftransitionprob = 0.999,
-                            pb = NULL){
+                            pb = NULL,
+                            likelihood = "binomial",
+                            rho = 0.0){
 
   if (!is.null(pb)){
     pb$tick()$print()
@@ -90,11 +99,13 @@ assignHaplotypeHMM <- function(CNBAF,
 
   hmmresults <- HaplotypeHMM(n = CNBAF$totalcounts,
                           x = CNBAF$alleleB,
-                          CNBAF$state,
-                          minor_cn,
+                          binstates = CNBAF$state,
+                          minor_cn = minor_cn,
                           loherror = loherror,
                           eps = eps,
-                          selftransitionprob = selftransitionprob)
+                          selftransitionprob = selftransitionprob,
+                          likelihood = likelihood,
+                          rho = rho)
 
   CNBAF$state_min <- as.numeric(hmmresults$minorcn)
 
@@ -174,7 +185,9 @@ callalleleHMMcell <- function(CNBAF,
                                     maxCN = 10,
                                     selftransitionprob = 0.999,
                                     progressbar = TRUE,
-                                    ncores = 1){
+                                    ncores = 1,
+                                    likelihood = "binomial",
+                                    rho = 0.0){
 
   minor_cn <- seq(0, maxCN, 1)
 
@@ -194,12 +207,16 @@ callalleleHMMcell <- function(CNBAF,
                                                     function(cell) assignHaplotypeHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
                                                                                    eps = eps, loherror = loherror,
                                                                                    selftransitionprob = selftransitionprob,
+                                                                                   likelihood = likelihood,
+                                                                                   rho = rho,
                                                                                    pb = pb), mc.cores = ncores)) %>%
       .[order(cell_id, chr, start)]
   } else{
     alleleCN <- data.table::rbindlist(lapply(unique(CNBAF$cell_id),
                                         function(cell) assignHaplotypeHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
                                                                        eps = eps, loherror = loherror,
+                                                                       likelihood = likelihood,
+                                                                       rho = rho,
                                                                        selftransitionprob = selftransitionprob,
                                                                        pb = pb))) %>%
       .[order(cell_id, chr, start)]
@@ -299,6 +316,41 @@ phase_haplotypes_bychr <- function(haplotypes, prop, phasebyarm = FALSE){
   return(phased_haplotypes)
 }
 
+tarones_Z <- function(alleleA, totalcounts){
+  m_null <- alleleA
+  n <- totalcounts
+  p_hat = sum(m_null) / sum(n)
+  S = sum( (m_null - n * p_hat)^2 / (p_hat * (1 - p_hat)) )
+  Z_score = (S - sum(n)) / sqrt(2 * sum(n * (n - 1)))
+  return(Z_score)
+}
+
+fitBB <- function(ascn){
+  modal_state <- which.max(table(ascn %>% dplyr::filter(Min > 0) %>%
+                                   dplyr::pull(state_AS_phased)))
+  bdata <- ascn %>%
+    dplyr::filter(state_AS_phased == names(modal_state))
+  expBAF <- bdata %>%
+    dplyr::filter(dplyr::row_number() == 1) %>%
+    dplyr::mutate(e = Min / (Min + Maj)) %>%
+    dplyr::pull(e)
+  message(paste0('Fitting beta-binomial model to state: ', names(modal_state), "..."))
+  fit <- VGAM::vglm(cbind(alleleB, totalcounts-alleleB) ~ 1,
+                    VGAM::betabinomial,
+                    data = bdata,
+                    trace = TRUE)
+  message(paste0("Inferred mean: ", round(VGAM::Coef(fit)[["mu"]], 3), ", Expected mean: ", round(expBAF, 3), ", Inferred overdispersion (rho): ", round(VGAM::Coef(fit)[["rho"]], 4)))
+  rho <- VGAM::Coef(fit)[["rho"]]
+  tz <- tarones_Z(bdata$alleleB, bdata$totalcounts)
+  bbfit <- list(fit = fit,
+                rho = rho,
+                likelihood = "betabinomial",
+                expBAF = expBAF,
+                state = modal_state,
+                taronesZ = tz)
+  return(bbfit)
+}
+
 
 #' @export
 callHaplotypeSpecificCN <- function(CNbins,
@@ -310,7 +362,20 @@ callHaplotypeSpecificCN <- function(CNbins,
                                       progressbar = TRUE,
                                       ncores = 1,
                                       phasebyarm = FALSE,
-                                      minfrac = 0.05) {
+                                      minfrac = 0.05,
+                                      likelihood = "binomial") {
+
+  if (!likelihood %in% c("binomial", "betabinomial")){
+    stop("Likelihood model for HMM emission model must be one of binomial and beta-binomial",
+         call. = FALSE)
+  }
+
+  if (likelihood == "betabinomial"){
+    if (!requireNamespace("VGAM", quietly = TRUE)) {
+      stop("Package \"VGAM\" needed to use the beta-binomial model. Please install it.",
+           call. = FALSE)
+    }
+  }
 
   cnbaf <- combineBAFCN(haplotypes = haplotypes, CNbins = CNbins)
   ascn <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
@@ -325,6 +390,17 @@ callHaplotypeSpecificCN <- function(CNbins,
     dplyr::filter(state_phase == "A-LOH") %>%
     dplyr::summarise(err = mean(BAF)) %>%
     dplyr::pull(err)
+
+  if (likelihood == 'betabinomial'){
+    bbfit <- fitBB(ascn)
+  } else{
+    bbfit <- list(fit = NULL,
+                  rho = 0.0,
+                  likelihood = "binomial",
+                  expBAF = NULL,
+                  state = NULL,
+                  taronesZ = NULL)
+  }
 
   ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
@@ -342,16 +418,19 @@ callHaplotypeSpecificCN <- function(CNbins,
                                                maxCN = maxCN,
                                                selftransitionprob = selftransitionprob,
                                                progressbar = progressbar,
-                                               ncores = ncores)
+                                               ncores = ncores,
+                                               likelihood = likelihood,
+                                               rho = bbfit$rho)
 
   # Output
   out = list()
   class(out) <- "hscn"
 
-  out[["data"]] <- hscn %>% dplyr::filter(state_min > -1) # catch weird bug with bin = -1
+  out[["data"]] <- hscn %>% dplyr::filter(state_min > -1) %>% as.data.frame() # catch weird bug with bin = -1
   out[["phasing"]] <- p
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps
+  out[["likelihood"]] <- bbfit
 
   return(out)
 }
