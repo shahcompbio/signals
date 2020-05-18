@@ -31,7 +31,8 @@ Imports:
     cowplot,
     matrixStats,
     ape,
-    RColorBrewer
+    RColorBrewer,
+    tidyr
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
