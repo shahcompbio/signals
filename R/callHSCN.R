@@ -97,17 +97,21 @@ assignHaplotypeHMM <- function(CNBAF,
     pb$tick()$print()
   }
 
-  hmmresults <- HaplotypeHMM(n = CNBAF$totalcounts,
-                          x = CNBAF$alleleB,
-                          binstates = CNBAF$state,
-                          minor_cn = minor_cn,
-                          loherror = loherror,
-                          eps = eps,
-                          selftransitionprob = selftransitionprob,
-                          likelihood = likelihood,
-                          rho = rho)
+  minorcn_res <- c()
+  for (mychr in unique(CNBAF$chr)){
+    hmmresults <- HaplotypeHMM(n = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(totalcounts),
+                               x = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(alleleB),
+                               CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(state),
+                               minor_cn,
+                               loherror = loherror,
+                               eps = eps,
+                               selftransitionprob = selftransitionprob,
+                               rho = rho,
+                               likelihood = likelihood)
+    minorcn_res <- c(minorcn_res, hmmresults$minorcn)
+  }
 
-  CNBAF$state_min <- as.numeric(hmmresults$minorcn)
+  CNBAF$state_min <- as.numeric(minorcn_res)
 
   CNBAF <- data.table::as.data.table(CNBAF)
 
@@ -143,16 +147,21 @@ callalleleHMMcell <- function(CNBAF,
                               loherror = 0.01,
                               selftransitionprob = 0.999){
 
-  hmmresults <- HaplotypeHMM(n = CNBAF$totalcounts,
-                          x = CNBAF$alleleB,
-                          CNBAF$state,
-                          minor_cn,
-                          loherror = loherror,
-                          eps = eps,
-                          selftransitionprob = selftransitionprob)
+  minorcn_res <- c()
+  for (mychr in unique(CNBAF$chr)){
+    hmmresults <- HaplotypeHMM(n = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(totalcounts),
+                            x = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(alleleB),
+                            CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(state),
+                            minor_cn,
+                            loherror = loherror,
+                            eps = eps,
+                            selftransitionprob = selftransitionprob,
+                            rho = rho,
+                            likelihood = likelihood)
+    minorcn_res <- c(minorcn_res, hmmresults$minorcn)
+  }
 
-  CNBAF$state_min <- as.numeric(hmmresults$minorcn)
-  CNBAF$allele <- ifelse()
+  CNBAF$state_min <- as.numeric(minorcn_res)
 
   CNBAF <- data.table::as.data.table(CNBAF) %>%
     .[, Maj := state - state_min] %>%
