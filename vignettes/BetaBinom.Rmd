@@ -1,8 +1,8 @@
 ---
-title: "Allele Specific Copy Number Inference"
+title: "Beta-Binomial model for schnapps"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Allele Specific Copy Number Inference}
+  %\VignetteIndexEntry{Beta-Binomial model for schnapps}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -59,10 +59,12 @@ plotBBfit(hscn_bb)
 
 We can check how similar the results are by comparing the two dataframes. We find for this data that the results are almost identical.
 ```{r}
+print(dim(hscn$data))
+print(dim(hscn_bb$data))
 all.equal(orderdf(hscn$data), orderdf(hscn_bb$data))
 ```
 
-Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments but the difference is very minimal.
+Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments but the difference is minimal.
 
 ```{r}
 segs <- create_segments(hscn$data, field = "state_AS_phased")

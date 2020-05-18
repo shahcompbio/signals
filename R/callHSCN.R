@@ -325,6 +325,32 @@ tarones_Z <- function(alleleA, totalcounts){
   return(Z_score)
 }
 
+fitBB <- function(ascn){
+  modal_state <- which.max(table(ascn %>% dplyr::filter(Min > 0) %>%
+                                   dplyr::pull(state_AS_phased)))
+  bdata <- ascn %>%
+    dplyr::filter(state_AS_phased == names(modal_state))
+  expBAF <- bdata %>%
+    dplyr::filter(dplyr::row_number() == 1) %>%
+    dplyr::mutate(e = Min / (Min + Maj)) %>%
+    dplyr::pull(e)
+  message(paste0('Fitting beta-binomial model to state: ', names(modal_state), "..."))
+  fit <- VGAM::vglm(cbind(alleleB, totalcounts-alleleB) ~ 1,
+                    VGAM::betabinomial,
+                    data = bdata,
+                    trace = TRUE)
+  message(paste0("Inferred mean: ", round(VGAM::Coef(fit)[["mu"]], 3), ", Expected mean: ", round(expBAF, 3), ", Inferred overdispersion (rho): ", round(VGAM::Coef(fit)[["rho"]], 4)))
+  rho <- VGAM::Coef(fit)[["rho"]]
+  tz <- tarones_Z(bdata$alleleB, bdata$totalcounts)
+  bbfit <- list(fit = fit,
+                rho = rho,
+                likelihood = "betabinomial",
+                expBAF = expBAF,
+                state = modal_state,
+                taronesZ = tz)
+  return(bbfit)
+}
+
 
 #' @export
 callHaplotypeSpecificCN <- function(CNbins,
@@ -366,29 +392,11 @@ callHaplotypeSpecificCN <- function(CNbins,
     dplyr::pull(err)
 
   if (likelihood == 'betabinomial'){
-    modal_state <- which.max(table(ascn %>% dplyr::filter(Min > 0) %>% dplyr::pull(state_AS_phased)))
-    bdata <- ascn %>%
-      dplyr::filter(state_AS_phased == names(modal_state))
-    expBAF <- bdata %>%
-      dplyr::filter(dplyr::row_number() == 1) %>%
-      dplyr::mutate(e = Min / (Min + Maj)) %>%
-      dplyr::pull(e)
-    message(paste0('Fitting beta-binomial model to state: ', names(modal_state), "..."))
-    fit <- VGAM::vglm(cbind(alleleB, totalcounts-alleleB) ~ 1,
-                      VGAM::betabinomial,
-                      data = bdata,
-                      trace = TRUE)
-    message(paste0("Inferred mean: ", round(Coef(fit)[["mu"]], 3), ", Expected mean: ", round(expBAF, 3), ", Inferred overdispersion (rho): ", round(Coef(fit)[["rho"]], 4)))
-    rho <- Coef(fit)[["rho"]]
-    tz <- tarones_Z(bdata$alleleB, bdata$totalcounts)
-    bbfit <- list(fit = fit, rho = rho,
-                  likelihood = "Beta-Binomial",
-                  expBAF = expBAF,
-                  state = modal_state,
-                  taronesZ = tz)
+    bbfit <- fitBB(ascn)
   } else{
-    bbfit <- list(fit = NULL, rho = 0.0,
-                  likelihood = "Binomial",
+    bbfit <- list(fit = NULL,
+                  rho = 0.0,
+                  likelihood = "binomial",
                   expBAF = NULL,
                   state = NULL,
                   taronesZ = NULL)
@@ -404,25 +412,15 @@ callHaplotypeSpecificCN <- function(CNbins,
                         CNbins = CNbins,
                         phased_haplotypes = phased_haplotypes)
 
-  if(likelihood == 'Binomial'){
-    hscn <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
-                                                 eps = eps,
-                                                 loherror = infloherror,
-                                                 maxCN = maxCN,
-                                                 selftransitionprob = selftransitionprob,
-                                                 progressbar = progressbar,
-                                                 ncores = ncores)
-  } else{
-    hscn <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
-                                                 eps = eps,
-                                                 loherror = infloherror,
-                                                 maxCN = maxCN,
-                                                 selftransitionprob = selftransitionprob,
-                                                 progressbar = progressbar,
-                                                 ncores = ncores,
-                                                 likelihood = "betabinomial",
-                                                 rho = rho)
-  }
+  hscn <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
+                                               eps = eps,
+                                               loherror = infloherror,
+                                               maxCN = maxCN,
+                                               selftransitionprob = selftransitionprob,
+                                               progressbar = progressbar,
+                                               ncores = ncores,
+                                               likelihood = likelihood,
+                                               rho = bbfit$rho)
 
   # Output
   out = list()
