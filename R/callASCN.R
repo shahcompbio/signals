@@ -61,17 +61,21 @@ assignalleleHMM <- function(CNBAF,
     pb$tick()$print()
   }
 
-  hmmresults <- alleleHMM(n = CNBAF$totalcounts,
-                          x = CNBAF$alleleB,
-                          CNBAF$state,
-                          minor_cn,
-                          loherror = loherror,
-                          eps = eps,
-                          selftransitionprob = selftransitionprob,
-                          rho = rho,
-                          likelihood = likelihood)
+  minorcn_res <- c()
+  for (mychr in unique(CNBAF$chr)){
+    hmmresults <- alleleHMM(n = CNBAF %>% dplyr::filter(chr == mychr) %>% pull(totalcounts),
+                            x = CNBAF %>% dplyr::filter(chr == mychr) %>% pull(alleleB),
+                            CNBAF %>% dplyr::filter(chr == mychr) %>% pull(state),
+                            minor_cn,
+                            loherror = loherror,
+                            eps = eps,
+                            selftransitionprob = selftransitionprob,
+                            rho = rho,
+                            likelihood = likelihood)
+    minorcn_res <- c(minorcn_res, hmmresults$minorcn)
+  }
 
-  CNBAF$state_min <- as.numeric(hmmresults$minorcn)
+  CNBAF$state_min <- as.numeric(minorcn_res)
 
   CNBAF <- data.table::as.data.table(CNBAF)
 
@@ -199,7 +203,7 @@ callAlleleSpecificCN <- function(CNbins,
     dplyr::pull(err)
 
   if (likelihood == 'betabinomial'){
-    bbfit <- fitBB(ascn)
+    bbfit <- fitBB(hscn)
   } else{
     bbfit <- list(fit = NULL,
                   rho = 0.0,
