@@ -37,7 +37,8 @@ Suggests:
     regioneR,
     karyoploteR,
     biomaRt,
-    VGAM
+    VGAM,
+    covr
 VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)
