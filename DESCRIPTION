@@ -15,6 +15,9 @@ Description: schnapps (Single Cell Haplotype copy Number Analysis through Phased
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+Depends:
+    R (>= 3.5.0)
+biocViews:
 Imports: 
     data.table,
     magrittr,
