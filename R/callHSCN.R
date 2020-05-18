@@ -388,7 +388,7 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   infloherror <- ascn %>%
     dplyr::filter(state_phase == "A-LOH") %>%
-    dplyr::summarise(err = mean(BAF)) %>%
+    dplyr::summarise(err = mean(BAF, na.rm = T)) %>%
     dplyr::pull(err)
 
   if (likelihood == 'betabinomial'){

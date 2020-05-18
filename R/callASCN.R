@@ -195,7 +195,7 @@ callAlleleSpecificCN <- function(CNbins,
 
   infloherror <- hscn %>%
     dplyr::filter(state_phase == "A-LOH") %>%
-    dplyr::summarise(err = mean(BAF)) %>%
+    dplyr::summarise(err = mean(BAF, na.rm = T)) %>%
     dplyr::pull(err)
 
   if (likelihood == 'betabinomial'){
@@ -248,6 +248,7 @@ callAlleleSpecificCN <- function(CNbins,
 
   out[["data"]] <- as.data.frame(alleleCN)
   out[["loherror"]] <- infloherror
+  out[["likelihood"]] <- bbfit
 
   return(out)
 }
