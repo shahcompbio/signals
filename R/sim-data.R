@@ -45,9 +45,9 @@ simulate_cell <- function(nchr = 2,
 
   for (i in 1:length(chromosomes)){
     bins <- bins %>%
-      mutate(state = ifelse(chr == names(chromosomes)[i], chromosomes[[i]][1], state))
+      dplyr::mutate(state = ifelse(chr == names(chromosomes)[i], chromosomes[[i]][1], state))
     bins <- bins %>%
-      mutate(state_min = ifelse(chr == names(chromosomes)[i], chromosomes[[i]][2], state_min))
+      dplyr::mutate(state_min = ifelse(chr == names(chromosomes)[i], chromosomes[[i]][2], state_min))
   }
 
   bins$copy <- bins$state + rnorm(length(bins$state), 0, copysd)

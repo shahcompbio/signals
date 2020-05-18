@@ -705,7 +705,7 @@ plotSNVHeatmap <- function(SNVs,
   return(snv_hm)
 }
 
-.plotHeatmapQC <- function(cn,
+plotHeatmapQC <- function(cn,
                         tree = NULL,
                         clusters = NULL,
                         normalize_ploidy = FALSE,

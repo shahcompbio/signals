@@ -63,9 +63,9 @@ assignalleleHMM <- function(CNBAF,
 
   minorcn_res <- c()
   for (mychr in unique(CNBAF$chr)){
-    hmmresults <- alleleHMM(n = CNBAF %>% dplyr::filter(chr == mychr) %>% pull(totalcounts),
-                            x = CNBAF %>% dplyr::filter(chr == mychr) %>% pull(alleleB),
-                            CNBAF %>% dplyr::filter(chr == mychr) %>% pull(state),
+    hmmresults <- alleleHMM(n = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(totalcounts),
+                            x = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(alleleB),
+                            CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(state),
                             minor_cn,
                             loherror = loherror,
                             eps = eps,
