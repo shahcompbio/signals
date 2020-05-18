@@ -381,22 +381,19 @@ plot_density_histogram <- function(dat, mystate, rho){
   dffit_b <- data.frame(BAF = BAF_b,
                         type = paste("Binomial", sep=""))
 
-  g <- ggplot(dat, aes(x = BAF)) +
-    #geom_histogram(aes(k=k,y=k*(..density..)), bins = 100, fill = "azure4",alpha = 0.8) +
-    geom_histogram(aes(y=(..density..)), bins = 90, fill = "azure4",alpha = 0.8) +
-    geom_line(data = dffit_bb, stat="density",aes(BAF, col = type), size = 0.5, adjust = 5) +
-    geom_line(data = dffit_b, stat="density",aes(BAF, col = type), size = 0.5, adjust = 5, linetype = 2) +
-    #geom_density(data = df, aes(VAF), size = 2.0, col = "deepskyblue4") +
-    scale_colour_manual(values=c(alpha("deepskyblue4",0.6), alpha("firebrick4",0.6))) +
-    theme_bw(base_family = 'Helvetica') +
-    xlab("BAF") +
-    ylab("Density") +
-    xlim(c(0.0, 1.0)) +
-    #ylim(c(0,60)) +
-    theme(legend.title = element_blank()) +
+  g <- ggplot2::ggplot(dat, ggplot2::aes(x = BAF)) +
+    ggplot2::geom_histogram(ggplot2::aes(y=(..density..)), bins = 90, fill = "azure4",alpha = 0.8) +
+    ggplot2::geom_line(data = dffit_bb, stat="density",ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5) +
+    ggplot2::geom_line(data = dffit_b, stat="density",ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5, linetype = 2) +
+    ggplot2::scale_colour_manual(values=c(ggplot2::alpha("deepskyblue4",0.6), ggplot2::alpha("firebrick4",0.6))) +
+    ggplot2::theme_bw(base_family = 'Helvetica') +
+    ggplot2::xlab("BAF") +
+    ggplot2::ylab("Density") +
+    ggplot2:: xlim(c(0.0, 1.0)) +
+    ggplot2::theme(legend.title = ggplot2::element_blank()) +
     cowplot::theme_cowplot() +
-    theme(legend.position = "none") +
-    ggtitle(mystate)
+    ggplot2::theme(legend.position = "none") +
+    ggplot2:: ggtitle(mystate)
 
   return(g)
 }
@@ -416,7 +413,7 @@ plotBBfit <- function(hscn){
 
   legend <- cowplot::get_legend(
     # create some space to the left of the legend
-    gplots[[j-1]] + ggplot2::theme(legend.box.margin = margin(0, 0, 0, 12)) +
+    gplots[[j-1]] + ggplot2::theme(legend.box.margin = ggplot2::margin(0, 0, 0, 12)) +
       ggplot2::theme(legend.title = ggplot2::element_blank()) + ggplot2::theme(legend.position = 'right')
   )
 

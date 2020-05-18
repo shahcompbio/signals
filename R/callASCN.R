@@ -5,7 +5,9 @@ alleleHMM <- function(n,
                       minor_cn,
                       loherror = 0.01,
                       selftransitionprob = 0.999,
-                      eps = 1e-12){
+                      eps = 1e-12,
+                      rho = 0.0,
+                      likelihood = "binomial"){
 
   minor_cn_mat <- t(replicate(length(binstates), minor_cn))
   total_cn_mat <- replicate(length(minor_cn), binstates)
@@ -14,10 +16,19 @@ alleleHMM <- function(n,
   p[, 1] <- loherror
   p[minor_cn_mat == total_cn_mat] <- 1 - loherror
 
-  l1log <- suppressWarnings(dbinom(x, n, p, log = T))
-  l2log <- suppressWarnings(dbinom(n - x, n, p, log = T))
-  l1l2log <- mapply(function(x,y) matrixStats::logSumExp(c(x,y)), l1log, l2log)
-  l <- structure(l1l2log, dim = dim(l1log))
+  if (likelihood == "binomial"){
+    l1log <- suppressWarnings(dbinom(x, n, p, log = T))
+    l2log <- suppressWarnings(dbinom(n - x, n, p, log = T))
+    l1l2log <- mapply(function(x,y) matrixStats::logSumExp(c(x,y)), l1log, l2log)
+    l <- structure(l1l2log, dim = dim(l1log))
+  } else {
+    l1log <- suppressWarnings(VGAM::dbetabinom(x, n, p, rho = rho, log = T))
+    dim(l1log) <- c(length(x), length(minor_cn))
+    l2log <- suppressWarnings(VGAM::dbetabinom(n - x, n, p, rho = rho, log = T))
+    dim(l2log) <- c(length(x), length(minor_cn))
+    l1l2log <- mapply(function(x,y) matrixStats::logSumExp(c(x,y)), l1log, l2log)
+    l <- structure(l1l2log, dim = dim(l1log))
+  }
   if (eps > 0.0){
     l <- matrix(vapply(l, function(x) matrixStats::logSumExp(c(x, log(eps))), FUN.VALUE = numeric(1)), dim(l)[1], dim(l)[2])
   }
@@ -42,7 +53,9 @@ assignalleleHMM <- function(CNBAF,
                             eps = 1e-12,
                             loherror = 0.01,
                             selftransitionprob = 0.999,
-                            pb = NULL){
+                            pb = NULL,
+                            rho = 0.0,
+                            likelihood = "binomial"){
 
   if (!is.null(pb)){
     pb$tick()$print()
@@ -54,7 +67,9 @@ assignalleleHMM <- function(CNBAF,
                           minor_cn,
                           loherror = loherror,
                           eps = eps,
-                          selftransitionprob = selftransitionprob)
+                          selftransitionprob = selftransitionprob,
+                          rho = rho,
+                          likelihood = likelihood)
 
   CNBAF$state_min <- as.numeric(hmmresults$minorcn)
 
@@ -147,7 +162,20 @@ callAlleleSpecificCN <- function(CNbins,
                                  maxCN = 12,
                                  selftransitionprob = 0.999,
                                  progressbar = TRUE,
-                                 ncores = 1){
+                                 ncores = 1,
+                                 likelihood = "binomial"){
+
+  if (!likelihood %in% c("binomial", "betabinomial")){
+    stop("Likelihood model for HMM emission model must be one of binomial and beta-binomial",
+         call. = FALSE)
+  }
+
+  if (likelihood == "betabinomial"){
+    if (!requireNamespace("VGAM", quietly = TRUE)) {
+      stop("Package \"VGAM\" needed to use the beta-binomial model. Please install it.",
+           call. = FALSE)
+    }
+  }
 
   CNBAF <- combineBAFCN(haplotypes = haplotypes, CNbins = CNbins)
 
@@ -170,6 +198,17 @@ callAlleleSpecificCN <- function(CNbins,
     dplyr::summarise(err = mean(BAF)) %>%
     dplyr::pull(err)
 
+  if (likelihood == 'betabinomial'){
+    bbfit <- fitBB(ascn)
+  } else{
+    bbfit <- list(fit = NULL,
+                  rho = 0.0,
+                  likelihood = "binomial",
+                  expBAF = NULL,
+                  state = NULL,
+                  taronesZ = NULL)
+  }
+
   CNBAF <- switch_alleles(hscn)
   minor_cn <- seq(0, maxCN, 1)
 
@@ -184,14 +223,20 @@ callAlleleSpecificCN <- function(CNbins,
   if (ncores > 1){
     alleleCN <- data.table::rbindlist(parallel::mclapply(unique(CNBAF$cell_id),
                                                     function(cell) assignalleleHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
-                                                                                   eps = eps, loherror = infloherror,
+                                                                                   eps = eps,
+                                                                                   loherror = infloherror,
                                                                                    selftransitionprob = selftransitionprob,
+                                                                                   likelihood = likelihood,
+                                                                                   rho = bbfit$rho,
                                                                                    pb = pb), mc.cores = ncores)) %>%
       .[order(cell_id, chr, start)]
   } else{
     alleleCN <- data.table::rbindlist(lapply(unique(CNBAF$cell_id),
                                         function(cell) assignalleleHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
-                                                                       eps = eps, loherror = infloherror,
+                                                                       eps = eps,
+                                                                       loherror = infloherror,
+                                                                       likelihood = likelihood,
+                                                                       rho = bbfit$rho,
                                                                        selftransitionprob = selftransitionprob,
                                                                        pb = pb))) %>%
       .[order(cell_id, chr, start)]
