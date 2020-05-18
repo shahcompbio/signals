@@ -1,6 +1,11 @@
 
 # schnapps
 
+<!-- badges: start -->
+[![R build status](https://github.com/shahcompbio/schnapps/workflows/R-CMD-check/badge.svg)](https://github.com/shahcompbio/schnapps/actions)
+[![Codecov test coverage](https://codecov.io/gh/shahcompbio/schnapps/branch/master/graph/badge.svg)](https://codecov.io/gh/shahcompbio/schnapps?branch=master)
+<!-- badges: end -->
+
 schnapps (Single Cell Haplotype copy Number Analysis through Phased Probabilistic States) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (~0.01X). schnapps phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model. 
 
 ## Installation
