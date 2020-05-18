@@ -32,11 +32,13 @@ simulate_cell <- function(nchr = 2,
   chrvec <- setdiff(unique(bins$chr), names(clonal_events))
 
   chromosomes <- list()
-  for (i in 1:nchr){
-    chr_temp <- sample(chrvec, 1)
-    totstate <- getstate(base_ploidy)
-    Bstate <- round(runif(1, 0, floor(totstate / 2)))
-    chromosomes[[chr_temp]] <- c(totstate, Bstate)
+  if (nchr > 0){
+    for (i in 1:nchr){
+      chr_temp <- sample(chrvec, 1)
+      totstate <- getstate(base_ploidy)
+      Bstate <- round(runif(1, 0, floor(totstate / 2)))
+      chromosomes[[chr_temp]] <- c(totstate, Bstate)
+    }
   }
 
   chromosomes <- c(chromosomes, clonal_events)
@@ -82,13 +84,15 @@ simulate_cell <- function(nchr = 2,
 
   if (likelihood == "binomial"){
     haps <- haps %>%
-      .[, alleleB := rbinom(n = 1, size = totalcounts, p = (Min / state) + loherror),
+      .[, prob := fifelse(Min == 0, (Min / state) + loherror, Min / state)] %>%
+      .[, alleleB := rbinom(n = 1, size = totalcounts, p = prob),
                             by = .(chr, start, end)] %>%
       .[, alleleA := totalcounts - alleleB] %>%
       .[, hap_label := 1:.N]
   } else {
     haps <- haps %>%
-      .[, alleleB := VGAM::rbetabinom(n = 1, size = totalcounts, p = (Min / state) + loherror, rho = rho), by = .(chr, start, end)] %>%
+      .[, prob := fifelse(Min == 0, (Min / state) + loherror, Min / state)] %>%
+      .[, alleleB := VGAM::rbetabinom(n = 1, size = totalcounts, p = prob, rho = rho), by = .(chr, start, end)] %>%
       .[, alleleA := totalcounts - alleleB] %>%
       .[, hap_label := 1:.N]
   }
@@ -151,6 +155,60 @@ simulate_cells <- function(ncells,
   return(list(ascn = ascn %>% as.data.frame(.),
               haplotypes = haps %>% as.data.frame(.),
               CNbins = CNbins %>% as.data.frame(.)))
+}
+
+#' @export
+simulate_data_cohort <- function(clone_num = c(10),
+                            coverage = 10,
+                            clonal_events = list(list("1" = c(2,0))),
+                            base_ploidy = 2,
+                            nchr = 0,
+                            hlamps = 0,
+                            maxCN = 8,
+                            copysd = 0.25,
+                            likelihood = "binomial",
+                            rho = 0.0,
+                            loherror = 0.01){
+
+  ascn <- tibble::tibble()
+  CNbins <- tibble::tibble()
+  haps <- tibble::tibble()
+  for (clone in 1:length(clone_num)){
+    for (i in 1:clone_num[clone]){
+      cell <- simulate_cell(nchr = nchr,
+                            hlamps = hlamps,
+                            coverage = coverage,
+                            clonal_events = clonal_events[[clone]],
+                            base_ploidy = base_ploidy,
+                            maxCN = maxCN,
+                            copysd = copysd,
+                            likelihood = likelihood,
+                            rho = rho,
+                            loherror = loherror)
+      ascn <- dplyr::bind_rows(ascn, cell$ascn)
+      CNbins <- dplyr::bind_rows(CNbins, cell$CNbins)
+      haps <- dplyr::bind_rows(haps, cell$haplotypes)
+    }
+  }
+
+  switches <- dplyr::distinct(haps, chr, start, end, hap_label) %>%
+    as.data.table() %>%
+    .[, switch := sample(c(TRUE,FALSE), .N, TRUE), by = "hap_label"]
+
+  haps <- haps %>%
+    dplyr::left_join(switches) %>%
+    as.data.table() %>%
+    .[, switch := sample(c(TRUE,FALSE), .N, TRUE), by = "hap_label"] %>%
+    .[, allele1 := data.table::fifelse(switch == TRUE, alleleA, alleleB)] %>%
+    .[, allele0 := data.table::fifelse(switch == TRUE, alleleB, alleleA)]
+
+  haps <- haps %>%
+    dplyr::select(cell_id, chr, start, end, hap_label, allele1, allele0, totalcounts)
+
+  return(list(ascn = ascn %>% as.data.frame(.),
+              haplotypes = haps %>% as.data.frame(.),
+              CNbins = CNbins %>% as.data.frame(.)))
+
 }
 
 
