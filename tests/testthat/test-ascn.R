@@ -1,11 +1,11 @@
 loherror <- 0.02
-sim_data <- simulate_data_cohort(clone_num = c(10, 10, 10),
+sim_data <- simulate_data_cohort(clone_num = c(5, 5, 5),
                                  clonal_events = list(list("1" = c(2,0), "5" = c(3,1)),
                                                       list("2" = c(6,3), "3" = c(1,0)),
                                                       list("1" = c(3,1), "8" = c(6,2))),
                                  loherror = loherror,
                                  coverage = 30,
-                                 nchr = 1)
+                                 nchr = 0)
 results <- callAlleleSpecificCN(sim_data$CNbins, sim_data$haplotypes)
 results_2 <- callAlleleSpecificCN(sim_data$CNbins, sim_data$haplotypes, likelihood = "betabinomial")
 
@@ -21,7 +21,7 @@ test_that("Test allele specific copy number inference", {
 
 
 loherror <- 0.02
-sim_data_bb <- simulate_data_cohort(clone_num = c(10, 10, 10),
+sim_data_bb <- simulate_data_cohort(clone_num = c(5, 5, 5),
                                  clonal_events = list(list("1" = c(2,0), "5" = c(3,1)),
                                                       list("2" = c(6,3), "3" = c(1,0)),
                                                       list("1" = c(3,1), "8" = c(6,2))),

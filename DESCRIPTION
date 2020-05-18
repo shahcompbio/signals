@@ -32,7 +32,8 @@ Imports:
     matrixStats,
     ape,
     RColorBrewer,
-    tidyr
+    tidyr,
+    ggtree
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
