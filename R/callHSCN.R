@@ -421,7 +421,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                         CNbins = CNbins,
                         phased_haplotypes = phased_haplotypes)
 
-  hscn <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
+  hscn_data <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
                                                eps = eps,
                                                loherror = infloherror,
                                                maxCN = maxCN,
@@ -435,7 +435,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   out = list()
   class(out) <- "hscn"
 
-  out[["data"]] <- hscn %>% dplyr::filter(state_min > -1) %>% as.data.frame() # catch weird bug with bin = -1
+  out[["data"]] <- hscn_data %>% dplyr::filter(state_min > -1) %>% as.data.frame() # catch weird bug with bin = -1
   out[["phasing"]] <- p
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps

@@ -62,7 +62,10 @@ plotCNprofile <- function(CNbins,
     plottinglist(.)
 
   if (raster == TRUE){
-    message("You will need to install ggrastr for the raster = TRUE to work...")
+    if (!requireNamespace("ggrastr", quietly = TRUE)) {
+      stop("Package \"ggrastr\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
     gCN <- pl$CNbins %>%
       dplyr::mutate(state = paste0(state)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
@@ -162,7 +165,10 @@ plotCNprofileBAF <- function(cn,
     plottinglist(.)
 
   if (raster == TRUE){
-    message("You will need to install ggrastr for the raster = TRUE to work...")
+    if (!requireNamespace("ggrastr", quietly = TRUE)) {
+      stop("Package \"ggrastr\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
     gBAF <- pl$CNbins %>%
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idxs, y = BAF)) +
