@@ -71,10 +71,14 @@ HaplotypeHMM <- function(n,
   l[is.na(l)] <- log(0.0)
   l[minor_cn_mat > total_cn_mat] <- log(0.0)
 
-  tProbs <- matrix((1 - selftransitionprob) / (length(minor_cn) -1), length(minor_cn), length(minor_cn))
-  diag(tProbs) <- selftransitionprob
-  colnames(tProbs) <- paste0(minor_cn)
-  row.names(tProbs) <- paste0(minor_cn)
+  if (selftransitionprob == 0.0){
+    tProbs <- matrix(1 / length(minor_cn), length(minor_cn), length(minor_cn))
+  } else{
+    tProbs <- matrix((1 - selftransitionprob) / (length(minor_cn) -1), length(minor_cn), length(minor_cn))
+    diag(tProbs) <- selftransitionprob
+    colnames(tProbs) <- paste0(minor_cn)
+    row.names(tProbs) <- paste0(minor_cn)
+  }
 
   states <- paste0(minor_cn)
 
