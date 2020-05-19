@@ -369,7 +369,7 @@ anno_mark = function(at, labels, which = c("column", "row"),
   which = match.arg(which)[1]
 
   if(!is.numeric(at)) {
-    stop(paste0("`at` should be numeric ", which, " index corresponding to the matrix."))
+    message(paste0("`at` should be numeric ", which, " index corresponding to the matrix."))
   }
 
   n = length(at)
