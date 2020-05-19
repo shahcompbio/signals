@@ -235,7 +235,7 @@ make_corrupt_tree_heatmap <- function(tree_ggplot, ...) {
   )
 
   n_cells <- sum(tree_ggplot$data$isTip)
-  tree_hm <- ComplexHeatmap::Heatmap(matrix(nc=0, nr=n_cells), left_annotation=tree_annot, ...)
+  tree_hm <- ComplexHeatmap::Heatmap(matrix(ncol=0, nrow=n_cells), left_annotation=tree_annot, ...)
 
   return(tree_hm)
 }
@@ -369,7 +369,7 @@ anno_mark = function(at, labels, which = c("column", "row"),
   which = match.arg(which)[1]
 
   if(!is.numeric(at)) {
-    stop_wrap(paste0("`at` should be numeric ", which, " index corresponding to the matrix."))
+    stop(paste0("`at` should be numeric ", which, " index corresponding to the matrix."))
   }
 
   n = length(at)
@@ -681,7 +681,7 @@ plotSNVHeatmap <- function(SNVs,
   if (field == "mutation"){
     cols <- snv_colours
   } else {
-    cols <- circlize::colorRamp2(c(0, 0.0001, quantile(as.matrix(muts), 0.95)), c("#7EA5EA", "#FFFFFF", "#9A2E1C"))
+    #cols <- circlize::colorRamp2(c(0, 0.0001, quantile(as.matrix(muts), 0.95)), c("#7EA5EA", "#FFFFFF", "#9A2E1C"))
   }
 
   snv_hm <- ComplexHeatmap::Heatmap(

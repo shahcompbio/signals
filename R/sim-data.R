@@ -25,7 +25,7 @@ simulate_cell <- function(nchr = 2,
     }
   }
 
-  data("dlpbins")
+  data("dlpbins", envir = environment())
   bins <- dlpbins
   bins$state <- base_ploidy
   bins$state_min <- round(base_ploidy / 2)
@@ -51,7 +51,7 @@ simulate_cell <- function(nchr = 2,
   }
 
   bins$copy <- bins$state + rnorm(length(bins$state), 0, copysd)
-  bins$cell_id <- paste("sample", "lib", stringi::stri_rand_strings(1, 10), sep = "-")
+  bins$cell_id <- paste("sample", "lib", rawToChar(as.raw(sample(c(65:90,97:122), 10, replace=T))), sep = "-")
   bins <- dplyr::select(bins, cell_id, chr, start, end, state, copy, state_min)
 
 
@@ -118,9 +118,9 @@ simulate_cells <- function(ncells,
                            rho = 0.0,
                            loherror = 0.01){
 
-  ascn <- tibble::tibble()
-  CNbins <- tibble::tibble()
-  haps <- tibble::tibble()
+  ascn <- data.frame()
+  CNbins <- data.frame()
+  haps <- data.frame()
   for (i in 1:ncells){
     print(i)
     cell <- simulate_cell(nchr = nchr,
@@ -170,9 +170,9 @@ simulate_data_cohort <- function(clone_num = c(10),
                             rho = 0.0,
                             loherror = 0.01){
 
-  ascn <- tibble::tibble()
-  CNbins <- tibble::tibble()
-  haps <- tibble::tibble()
+  ascn <- data.frame()
+  CNbins <- data.frame()
+  haps <- data.frame()
   for (clone in 1:length(clone_num)){
     for (i in 1:clone_num[clone]){
       cell <- simulate_cell(nchr = nchr,
