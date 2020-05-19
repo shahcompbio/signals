@@ -33,7 +33,9 @@ Imports:
     ape,
     RColorBrewer,
     tidyr,
-    ggtree
+    ggtree,
+    ggplot2,
+    S4Vectors
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
@@ -43,5 +45,9 @@ Suggests:
     karyoploteR,
     biomaRt,
     VGAM,
-    covr
+    covr,
+    ggrastr,
+    GenomeInfoDb
+Remotes:
+  VPetukhov/ggrastr
 VignetteBuilder: knitr

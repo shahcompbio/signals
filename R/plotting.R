@@ -366,7 +366,7 @@ plot_density_histogram <- function(dat, mystate, rho){
   dat <- dat %>%
     dplyr::filter(state_AS_phased == mystate)
 
-  expBAF <- stringr::str_split(mystate, "\\|")[[1]]
+  expBAF <- strsplit(mystate, "\\|")[[1]]
   expBAF <- as.numeric(expBAF[2]) / (as.numeric(expBAF[1]) + as.numeric(expBAF[2]))
 
   BAF_bb <- VGAM::rbetabinom(length(dat$totalcounts), size = dat$totalcounts,

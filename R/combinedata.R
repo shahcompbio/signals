@@ -71,7 +71,7 @@ computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE){
 
   if (arm == FALSE){
     perchr <- formatted_haplotypes %>%
-      .[, list(meanR = mean(R), meanR0 = schnapps::Mode(R0), meanR1 = schnapps::Mode(R1)),
+      .[, list(meanR = mean(R), meanR0 = Mode(R0), meanR1 = Mode(R1)),
         by = c("cell_id", "chr")] %>%
       #.[, dominant := fifelse(meanR0 < meanR1, "R1", "R0")] %>%
       setkey("meanR") %>%
@@ -79,7 +79,7 @@ computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE){
   } else{
     formatted_haplotypes$arm <- coord_to_arm(formatted_haplotypes$chr, formatted_haplotypes$start)
     perchr <- formatted_haplotypes %>%
-      .[, list(meanR = mean(R), meanR0 = schnapps::Mode(R0), meanR1 = schnapps::Mode(R1)),
+      .[, list(meanR = mean(R), meanR0 = Mode(R0), meanR1 = Mode(R1)),
         by = c("cell_id", "chr", "arm")] %>%
       #.[, dominant := fifelse(meanR0 < meanR1, "R1", "R0")] %>%
       setkey("meanR") %>%
@@ -92,7 +92,7 @@ computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE){
       .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")]
     phased_haplotypes <- limitedhaps %>%
       dplyr::group_by(chr, start, end, hap_label) %>%
-      dplyr::summarise(phase = schnapps::Mode(phase), meanR = mean(meanR)) %>%
+      dplyr::summarise(phase = Mode(phase), meanR = mean(meanR)) %>%
       dplyr::ungroup() %>%
       data.table::as.data.table()
   } else{
@@ -100,7 +100,7 @@ computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE){
       .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")]
     phased_haplotypes <- limitedhaps %>%
       dplyr::group_by(chr, start, arm, end, hap_label) %>%
-      dplyr::summarise(phase = schnapps::Mode(phase), meanR = mean(meanR)) %>%
+      dplyr::summarise(phase = Mode(phase), meanR = mean(meanR)) %>%
       dplyr::ungroup() %>%
       data.table::as.data.table()
   }
