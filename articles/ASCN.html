@@ -135,7 +135,7 @@
 <h3 class="hasAnchor">
 <a href="#callallelespecificcn" class="anchor"></a><code>callAlleleSpecificCN</code>
 </h3>
-<div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="no">ascn</span> <span class="kw">&lt;-</span> <span class="fu">callAlleleSpecificCN</span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="no">ascn</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>)</pre></body></html></div>
 <p>As a sanity check we can plot the B allele frequency (BAF) as a function of inferred state. We would expect to see a distribution around the expected value which is exactly what we see below.</p>
 <div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu">plotBAFperstate</span>(<span class="no">ascn</span>, <span class="kw">maxstate</span> <span class="kw">=</span> <span class="fl">10</span>)</pre></body></html></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-6-1.png" width="960"></p>
@@ -187,7 +187,7 @@
 <a href="#callhaplotypespecificcn" class="anchor"></a><code>callHaplotypeSpecificCN</code>
 </h3>
 <p>Now we’ll do the analysis that phases haplotypes across cells.</p>
-<div class="sourceCode" id="cb13"><html><body><pre class="r"><span class="no">hscn</span> <span class="kw">&lt;-</span> <span class="fu">callHaplotypeSpecificCN</span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">phasebyarm</span> <span class="kw">=</span> <span class="fl">FALSE</span>)
+<div class="sourceCode" id="cb13"><html><body><pre class="r"><span class="no">hscn</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">phasebyarm</span> <span class="kw">=</span> <span class="fl">FALSE</span>)
 <span class="co">#&gt; </span>
 <span class="co">#&gt;  A  B  C </span>
 <span class="co">#&gt; 73 90 74</span></pre></body></html></div>
@@ -230,7 +230,7 @@
 <div class="sourceCode" id="cb19"><html><body><pre class="r"><span class="no">CNbins_wide</span> <span class="kw">&lt;-</span> <span class="fu">widen_bins</span>(<span class="no">CNbins</span>, <span class="kw">binsize</span> <span class="kw">=</span> <span class="fl">5e6</span>)
 <span class="no">haplotypes_wide</span> <span class="kw">&lt;-</span> <span class="fu">widen_haplotypebins</span>(<span class="no">haplotypes</span>, <span class="kw">binsize</span> <span class="kw">=</span> <span class="fl">5e6</span>)
 
-<span class="no">hscn_wide</span> <span class="kw">&lt;-</span> <span class="fu">callHaplotypeSpecificCN</span>(<span class="no">CNbins_wide</span>, <span class="no">haplotypes_wide</span>)
+<span class="no">hscn_wide</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins_wide</span>, <span class="no">haplotypes_wide</span>)
 <span class="co">#&gt; </span>
 <span class="co">#&gt;  A  B  C  D </span>
 <span class="co">#&gt; 73 90 37 37</span></pre></body></html></div>

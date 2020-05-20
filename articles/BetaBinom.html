@@ -100,10 +100,10 @@
 <div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="no">haplotypes</span>)
 <span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="no">CNbins</span>)
 <span class="no">haplotypes</span> <span class="kw">&lt;-</span> <span class="fu">format_haplotypes_dlp</span>(<span class="no">haplotypes</span>, <span class="no">CNbins</span>)
-<span class="no">hscn</span> <span class="kw">&lt;-</span> <span class="fu">callHaplotypeSpecificCN</span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"binomial"</span>)
+<span class="no">hscn</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"binomial"</span>)
 <span class="co">#&gt; </span>
-<span class="co">#&gt;  A  B  C  D </span>
-<span class="co">#&gt; 73 90 38 36</span>
+<span class="co">#&gt;  A  B  C </span>
+<span class="co">#&gt; 73 90 74</span>
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="no">hscn</span>)
 <span class="co">#&gt; Haplotype specific copy number object </span>
@@ -113,14 +113,14 @@
 <span class="co">#&gt; Inferred LOH error rate: 0.02 </span>
 <span class="co">#&gt; Emission model for HMM: binomial</span>
 
-<span class="no">hscn_bb</span> <span class="kw">&lt;-</span> <span class="fu">callHaplotypeSpecificCN</span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"betabinomial"</span>)
-<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -323988.4205</span>
-<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -320218.8293</span>
-<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -319716.6027</span>
-<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -319693.3308</span>
-<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -319692.9402</span>
-<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -319692.9358</span>
-<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -319692.9358</span>
+<span class="no">hscn_bb</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"betabinomial"</span>)
+<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -323992.0272</span>
+<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -320226.8679</span>
+<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -319725.413</span>
+<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -319702.1715</span>
+<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -319701.7807</span>
+<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -319701.7763</span>
+<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -319701.7762</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;  A  B  C </span>
 <span class="co">#&gt; 73 90 74</span>
@@ -133,7 +133,7 @@
 <span class="co">#&gt; Inferred LOH error rate: 0.02 </span>
 <span class="co">#&gt; Emission model for HMM: betabinomial </span>
 <span class="co">#&gt;   Inferred over dispersion: 0.0104</span>
-<span class="co">#&gt;   Tarones Z score: 192.627</span></pre></body></html></div>
+<span class="co">#&gt;   Tarones Z score: 192.74</span></pre></body></html></div>
 <p>We see that the model inferred a modest degree of overdispersion in the data.</p>
 <p>Below I’ll plot the heatmaps for the two output, which in this case are very similar.</p>
 <div id="binomial-model" class="section level3">
@@ -141,8 +141,8 @@
 <a href="#binomial-model" class="anchor"></a>Binomial model</h3>
 <div class="sourceCode" id="cb3"><html><body><pre class="r"><span class="fu">plotHeatmap</span>(<span class="no">hscn</span>, <span class="kw">plotcol</span> <span class="kw">=</span> <span class="st">"state_BAF"</span>, <span class="kw">plottree</span> <span class="kw">=</span> <span class="fl">FALSE</span>, <span class="kw">spacer_cols</span> <span class="kw">=</span> <span class="fl">15</span>)
 <span class="co">#&gt; </span>
-<span class="co">#&gt;  A  B  C  D  E  F </span>
-<span class="co">#&gt; 73 25 44 21 38 36</span></pre></body></html></div>
+<span class="co">#&gt;  A  B  C  D  E  F  G </span>
+<span class="co">#&gt; 21 25 44 35 38 38 36</span></pre></body></html></div>
 <p><img src="BetaBinom_files/figure-html/unnamed-chunk-3-1.png" width="960"></p>
 </div>
 <div id="beta-binomial-model" class="section level3">
@@ -162,46 +162,28 @@
 <p><img src="BetaBinom_files/figure-html/unnamed-chunk-5-1.png" width="960"></p>
 <p>We can check how similar the results are by comparing the two dataframes. We find for this data that the results are almost identical.</p>
 <div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">hscn</span>$<span class="no">data</span>))
-<span class="co">#&gt; [1] 512107     19</span>
+<span class="co">#&gt; [1] 512119     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
 <span class="co">#&gt; [1] 512119     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="fu">orderdf</span>(<span class="no">hscn</span>$<span class="no">data</span>), <span class="fu">orderdf</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
-<span class="co">#&gt;  [1] "Attributes: &lt; Component \"row.names\": Numeric: lengths (512108, 512120) differ &gt;"              </span>
-<span class="co">#&gt;  [2] "Component \"chr\": Lengths (512108, 512120) differ (string compare on first 512108)"            </span>
-<span class="co">#&gt;  [3] "Component \"chr\": 42181 string mismatches"                                                     </span>
-<span class="co">#&gt;  [4] "Component \"start\": Numeric: lengths (512108, 512120) differ"                                  </span>
-<span class="co">#&gt;  [5] "Component \"end\": Numeric: lengths (512108, 512120) differ"                                    </span>
-<span class="co">#&gt;  [6] "Component \"cell_id\": Lengths (512108, 512120) differ (string compare on first 512108)"        </span>
-<span class="co">#&gt;  [7] "Component \"cell_id\": 'is.NA' value mismatch: 0 in current 1 in target"                        </span>
-<span class="co">#&gt;  [8] "Component \"state\": Numeric: lengths (512108, 512120) differ"                                  </span>
-<span class="co">#&gt;  [9] "Component \"copy\": Numeric: lengths (512108, 512120) differ"                                   </span>
-<span class="co">#&gt; [10] "Component \"alleleA\": Numeric: lengths (512108, 512120) differ"                                </span>
-<span class="co">#&gt; [11] "Component \"alleleB\": Numeric: lengths (512108, 512120) differ"                                </span>
-<span class="co">#&gt; [12] "Component \"totalcounts\": Numeric: lengths (512108, 512120) differ"                            </span>
-<span class="co">#&gt; [13] "Component \"BAF\": Numeric: lengths (512108, 512120) differ"                                    </span>
-<span class="co">#&gt; [14] "Component \"state_min\": Numeric: lengths (512108, 512120) differ"                              </span>
-<span class="co">#&gt; [15] "Component \"Maj\": Numeric: lengths (512108, 512120) differ"                                    </span>
-<span class="co">#&gt; [16] "Component \"Min\": Numeric: lengths (512108, 512120) differ"                                    </span>
-<span class="co">#&gt; [17] "Component \"state_AS_phased\": Lengths (512108, 512120) differ (string compare on first 512108)"</span>
-<span class="co">#&gt; [18] "Component \"state_AS_phased\": 'is.NA' value mismatch: 0 in current 1 in target"                </span>
-<span class="co">#&gt; [19] "Component \"state_AS\": Lengths (512108, 512120) differ (string compare on first 512108)"       </span>
-<span class="co">#&gt; [20] "Component \"state_AS\": 'is.NA' value mismatch: 0 in current 1 in target"                       </span>
-<span class="co">#&gt; [21] "Component \"LOH\": Lengths (512108, 512120) differ (string compare on first 512108)"            </span>
-<span class="co">#&gt; [22] "Component \"LOH\": 'is.NA' value mismatch: 0 in current 1 in target"                            </span>
-<span class="co">#&gt; [23] "Component \"phase\": Lengths (512108, 512120) differ (string compare on first 512108)"          </span>
-<span class="co">#&gt; [24] "Component \"phase\": 'is.NA' value mismatch: 0 in current 1 in target"                          </span>
-<span class="co">#&gt; [25] "Component \"state_phase\": Lengths (512108, 512120) differ (string compare on first 512108)"    </span>
-<span class="co">#&gt; [26] "Component \"state_phase\": 'is.NA' value mismatch: 0 in current 1 in target"                    </span>
-<span class="co">#&gt; [27] "Component \"state_BAF\": Numeric: lengths (512108, 512120) differ"</span></pre></body></html></div>
+<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5505096"</span>
+<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3521439"      </span>
+<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.4971299"      </span>
+<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5563 string mismatches"       </span>
+<span class="co">#&gt; [5] "Component \"state_AS\": 1516 string mismatches"              </span>
+<span class="co">#&gt; [6] "Component \"LOH\": 1454 string mismatches"                   </span>
+<span class="co">#&gt; [7] "Component \"phase\": 3446 string mismatches"                 </span>
+<span class="co">#&gt; [8] "Component \"state_phase\": 4536 string mismatches"           </span>
+<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.658751"</span></pre></body></html></div>
 <p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments but the difference is minimal.</p>
 <div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="no">segs</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
 
 <span class="no">segs_bb</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs</span>))
-<span class="co">#&gt; [1] 34866     5</span>
+<span class="co">#&gt; [1] 34870     5</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs_bb</span>))
-<span class="co">#&gt; [1] 31703     5</span></pre></body></html></div>
+<span class="co">#&gt; [1] 31710     5</span></pre></body></html></div>
 </div>
 </div>
 <div id="summary" class="section level2">

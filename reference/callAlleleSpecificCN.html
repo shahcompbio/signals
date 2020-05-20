@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • schnapps</title>
+<title>Call allele specific copy number in single cell datasets — callAlleleSpecificCN • schnapps</title>
 
 
 <!-- jquery -->
@@ -39,7 +39,8 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="Call allele specific copy number in single cell datasets — callAlleleSpecificCN" />
+<meta property="og:description" content="Call allele specific copy number in single cell datasets" />
 
 
 
@@ -58,7 +59,7 @@
   </head>
 
   <body data-spy="scroll" data-target="#toc">
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -118,72 +119,81 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>Call allele specific copy number in single cell datasets</h1>
+    
+    <div class="hidden name"><code>callAlleleSpecificCN.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    <p>Call allele specific copy number in single cell datasets</p>
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
+    <pre class="usage"><span class='fu'>callAlleleSpecificCN</span>(<span class='no'>CNbins</span>, <span class='no'>haplotypes</span>, <span class='kw'>eps</span> <span class='kw'>=</span> <span class='fl'>1e-12</span>, <span class='kw'>loherror</span> <span class='kw'>=</span> <span class='fl'>0.02</span>,
+  <span class='kw'>maxCN</span> <span class='kw'>=</span> <span class='fl'>12</span>, <span class='kw'>selftransitionprob</span> <span class='kw'>=</span> <span class='fl'>0.999</span>, <span class='kw'>progressbar</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>ncores</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>likelihood</span> <span class='kw'>=</span> <span class='st'>"binomial"</span>)</pre>
 
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      
-      
-    </tbody><tbody>
-      
-      
-      <tr>
-        
-        <td>
-          <p><code><a href="callAlleleSpecificCN.html">callAlleleSpecificCN()</a></code> </p>
-        </td>
-        <td><p>Call allele specific copy number in single cell datasets</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="callHaplotypeSpecificCN.html">callHaplotypeSpecificCN()</a></code> </p>
-        </td>
-        <td><p>Call haplotype specific copy number in single cell datasets</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="coord_to_arm.html">coord_to_arm()</a></code> </p>
-        </td>
-        <td><p>Genomic coordinate to chromosome arm</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="getBins.html">getBins()</a></code> </p>
-        </td>
-        <td><p>Make fixed-width bins</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="scale_color_scCN.html">scale_color_scCN()</a></code> </p>
-        </td>
-        <td><p>Colour scale constructor for scCN (single cell Copy Number) colors</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="scale_fill_scCN.html">scale_fill_scCN()</a></code> </p>
-        </td>
-        <td><p>Fill scale constructor for scCN (single cell Copy Number) colors</p></td>
-      </tr>
-    </tbody>
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>CNbins</th>
+      <td><p>single cell copy number dataframe with the following columns: cell_id, chr, start, end, state, copy</p></td>
+    </tr>
+    <tr>
+      <th>haplotypes</th>
+      <td><p>single cell haplotypes dataframe with the following columns: cell_id, chr, start, end, hap_label, allele1, allele0, totalcounts</p></td>
+    </tr>
+    <tr>
+      <th>eps</th>
+      <td><p>default 1e-12</p></td>
+    </tr>
+    <tr>
+      <th>loherror</th>
+      <td><p>LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02</p></td>
+    </tr>
+    <tr>
+      <th>maxCN</th>
+      <td><p>maximum copy number to infer allele specific states, default= 12</p></td>
+    </tr>
+    <tr>
+      <th>selftransitionprob</th>
+      <td><p>probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model</p></td>
+    </tr>
+    <tr>
+      <th>progressbar</th>
+      <td><p>Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1</p></td>
+    </tr>
+    <tr>
+      <th>ncores</th>
+      <td><p>Number of cores to use, default = 1</p></td>
+    </tr>
+    <tr>
+      <th>likelihood</th>
+      <td><p>Likelihood model for HMM, default is binomial, other option is betabinomial</p></td>
+    </tr>
     </table>
-  </div>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p><ul>
+<li><p>Maj (Major allele copy number)</p></li>
+<li><p>Min (Minor allele copy number)</p></li>
+<li><p>state_AS_phased (phased state of the form Maj|Min )</p></li>
+<li><p>state_AS (state of the form Maj|Min)</p></li>
+<li><p>LOH (is bin LOH or not)</p></li>
+<li><p>state_phase (state describing which is the dominant allele and whether it is LOH or not)</p></li>
+<li><p>state_BAF (binned discretized BAF value calculated as Min / (Maj + Min))</p></li>
+</ul>
+
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>In the allele specific copy number inference Maj is always &gt; Min and state_AS_phased == state_AS</p>
+
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"></pre>
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
       <h2 data-toc-skip>Contents</h2>
