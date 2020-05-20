@@ -46,7 +46,7 @@ HaplotypeHMM <- function(n,
                       x,
                       binstates,
                       minor_cn,
-                      loherror = 0.01,
+                      loherror = 0.02,
                       selftransitionprob = 0.999,
                       eps = 1e-12,
                       likelihood = "binomial",
@@ -91,7 +91,7 @@ HaplotypeHMM <- function(n,
 assignHaplotypeHMM <- function(CNBAF,
                             minor_cn,
                             eps = 1e-12,
-                            loherror = 0.01,
+                            loherror = 0.02,
                             selftransitionprob = 0.999,
                             pb = NULL,
                             likelihood = "binomial",
@@ -120,6 +120,7 @@ assignHaplotypeHMM <- function(CNBAF,
   CNBAF <- data.table::as.data.table(CNBAF)
 
   CNBAF <- CNBAF %>%
+    .[, state_min := fifelse(state_min < 0, 0, state_min)] %>% #catch edge cases of 0|1 and 1|0 states
     .[, Maj := state - state_min] %>%
     .[, Min := state_min] %>%
     .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
@@ -147,8 +148,8 @@ assignHaplotypeHMM <- function(CNBAF,
 #' @export
 callalleleHMMcell <- function(CNBAF,
                               minor_cn,
-                              eps = 1e-9,
-                              loherror = 0.01,
+                              eps = 1e-12,
+                              loherror = 0.02,
                               selftransitionprob = 0.999){
 
   minorcn_res <- c()
@@ -194,7 +195,7 @@ callalleleHMMcell <- function(CNBAF,
 
 .callHaplotypeSpecificCN_ <- function(CNBAF,
                                     eps = 1e-12,
-                                    loherror = 0.01,
+                                    loherror = 0.02,
                                     maxCN = 10,
                                     selftransitionprob = 0.999,
                                     progressbar = TRUE,
@@ -365,11 +366,43 @@ fitBB <- function(ascn){
 }
 
 
+#' Call haplotype specific copy number in single cell datasets
+#'
+#' @param CNbins single cell copy number dataframe with the following columns: cell_id, chr, start, end, state, copy
+#' @param haplotypes single cell haplotypes dataframe with the following columns: cell_id, chr, start, end, hap_label, allele1, allele0, totalcounts
+#' @param eps default 1e-12
+#' @param loherror LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02
+#' @param maxCN maximum copy number to infer allele specific states, default= 12
+#' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model
+#' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
+#' @param ncores Number of cores to use, default = 1
+#' @param likelihood Likelihood model for HMM, default is binomial, other option is betabinomial
+#'
+#' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
+#'
+#' * Maj (Major allele copy number)
+#' * Min (Minor allele copy number)
+#' * state_AS_phased (phased state of the form Maj|Min )
+#' * state_AS (state of the form Maj|Min)
+#' * LOH (is bin LOH or not)
+#' * state_phase (state describing which is the dominant allele and whether it is LOH or not)
+#' * state_BAF (binned discretized BAF value calculated as Min / (Maj + Min))
+#'
+#' @examples
+#' sim_data <- simulate_data_cohort(clone_num = c(20, 20),
+#'        clonal_events = list(list("1" = c(2,0), "5" = c(3,1)),
+#'        list("2" = c(6,3), "3" = c(1,0))),
+#'        loherror = 0.02,
+#'        coverage = 30,
+#'
+#' results <- callHaplotypeSpecificCN(sim_data$CNbins, sim_data$haplotypes)
+#'
+#' @md
 #' @export
 callHaplotypeSpecificCN <- function(CNbins,
                                     haplotypes,
                                       eps = 1e-12,
-                                      loherror = 0.03,
+                                      loherror = 0.02,
                                       maxCN = 12,
                                       selftransitionprob = 0.999,
                                       progressbar = TRUE,
@@ -401,8 +434,9 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   infloherror <- ascn %>%
     dplyr::filter(state_phase == "A-LOH") %>%
-    dplyr::summarise(err = mean(BAF, na.rm = T)) %>%
+    dplyr::summarise(err = mean(BAF, na.rm = TRUE)) %>%
     dplyr::pull(err)
+  infloherror <- min(infloherror, 0.05) #ensure loh error rate is < 5%
 
   if (likelihood == 'betabinomial'){
     bbfit <- fitBB(ascn)
