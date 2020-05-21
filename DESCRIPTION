@@ -7,7 +7,7 @@ Author@R: c(person("Marc", "Williams", email = "marcjwilliams1@gmail.com",
                   role = c("cbt")))
 Author: Marc J Williams [aut, cre],
   Tyler Funnell [ctb]
-Maintainer: The package maintainer <marcjwilliams1@gmail.com>
+Maintainer: Marc J Williams <marcjwilliams1@gmail.com>
 Description: schnapps (Single Cell Haplotype copy Number Analysis through Phased Probabilistic States) 
     is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (~0.01X). 
     schnapps phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin 
