@@ -524,6 +524,7 @@ plotHeatmap <- function(cn,
                         library_mapping = NULL,
                         clone_pal = NULL,
                         sample_label_idx = 1,
+                        fillna = TRUE,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -608,7 +609,7 @@ plotHeatmap <- function(cn,
   }
 
   message("Creating copy number heatmap...")
-  copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = TRUE)
+  copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = fillna)
   if (normalize_ploidy == T){
     message("Normalizing ploidy for each cell to 2")
     copynumber <- normalize_cell_ploidy(copynumber)
