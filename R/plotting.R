@@ -109,6 +109,10 @@ plotCNprofile <- function(CNbins,
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
   }
 
+  if (returnlist == TRUE){
+    gCN <- list(CN = gCN, plist = pl)
+  }
+
   return(gCN)
 }
 
@@ -269,7 +273,7 @@ plotCNprofileBAF <- function(cn,
   g <- cowplot::plot_grid(gBAF, gCN, align = "v", ncol = 1, rel_heights = c(1, 1.2))
 
   if (returnlist == TRUE){
-    p <- list(CN = gCN, BAF = gBAF, both = g)
+    p <- list(CN = gCN, BAF = gBAF, both = g, plist = pl)
   } else {
     p <- g
   }
