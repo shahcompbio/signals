@@ -393,7 +393,7 @@ fitBB <- function(ascn){
 #'        clonal_events = list(list("1" = c(2,0), "5" = c(3,1)),
 #'        list("2" = c(6,3), "3" = c(1,0))),
 #'        loherror = 0.02,
-#'        coverage = 30,
+#'        coverage = 30)
 #'
 #' results <- callHaplotypeSpecificCN(sim_data$CNbins, sim_data$haplotypes)
 #'
