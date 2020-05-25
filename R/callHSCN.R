@@ -368,30 +368,30 @@ fitBB <- function(ascn){
 
 #' Call haplotype specific copy number in single cell datasets
 #'
-#' @param CNbins single cell copy number dataframe with the following columns: cell_id, chr, start, end, state, copy
-#' @param haplotypes single cell haplotypes dataframe with the following columns: cell_id, chr, start, end, hap_label, allele1, allele0, totalcounts
+#' @param CNbins single cell copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`
+#' @param haplotypes single cell haplotypes dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `hap_label`, `allele1`, `allele0`, `totalcounts`
 #' @param eps default 1e-12
 #' @param loherror LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02
-#' @param maxCN maximum copy number to infer allele specific states, default= 12
+#' @param maxCN maximum copy number to infer allele specific states, default=12
 #' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model
 #' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
 #' @param ncores Number of cores to use, default = 1
-#' @param likelihood Likelihood model for HMM, default is binomial, other option is betabinomial
+#' @param likelihood Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
-#' * Maj (Major allele copy number)
-#' * Min (Minor allele copy number)
-#' * state_AS_phased (phased state of the form Maj|Min )
-#' * state_AS (state of the form Maj|Min)
-#' * LOH (is bin LOH or not)
-#' * state_phase (state describing which is the dominant allele and whether it is LOH or not)
-#' * state_BAF (binned discretized BAF value calculated as Min / (Maj + Min))
+#' * `Maj` (Major allele copy number)
+#' * `Min` (Minor allele copy number)
+#' * `state_AS_phased` (phased state of the form Maj|Min )
+#' * `state_AS` (mirrored state of the form Maj|Min)
+#' * `LOH` (is bin LOH or not)
+#' * `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
+#' * `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))
 #'
 #' @examples
 #' sim_data <- simulate_data_cohort(clone_num = c(20, 20),
 #'        clonal_events = list(list("1" = c(2,0), "5" = c(3,1)),
-#'        list("2" = c(6,3), "3" = c(1,0))),
+#'                        list("2" = c(6,3), "3" = c(1,0))),
 #'        loherror = 0.02,
 #'        coverage = 30)
 #'
@@ -411,12 +411,12 @@ callHaplotypeSpecificCN <- function(CNbins,
                                       minfrac = 0.05,
                                       likelihood = "binomial") {
 
-  if (!likelihood %in% c("binomial", "betabinomial")){
-    stop("Likelihood model for HMM emission model must be one of binomial and beta-binomial",
+  if (!likelihood %in% c("binomial", "betabinomial", "auto")){
+    stop("Likelihood model for HMM emission model must be one of binomial, betabinomial or auto",
          call. = FALSE)
   }
 
-  if (likelihood == "betabinomial"){
+  if (likelihood == "betabinomial" | likelihood == "auto"){
     if (!requireNamespace("VGAM", quietly = TRUE)) {
       stop("Package \"VGAM\" needed to use the beta-binomial model. Please install it.",
            call. = FALSE)
@@ -438,8 +438,15 @@ callHaplotypeSpecificCN <- function(CNbins,
     dplyr::pull(err)
   infloherror <- min(infloherror, 0.05) #ensure loh error rate is < 5%
 
-  if (likelihood == 'betabinomial'){
+  if (likelihood == 'betabinomial' | likelihood == "auto"){
     bbfit <- fitBB(ascn)
+    if (bbfit$taronesZ > 5){
+      likelihood <- "betabinomial"
+      message(paste0("Tarones Z-score: ", round(bbfit$taronesZ, 3), ", using ", likelihood, " model for inference."))
+    } else {
+      likelihood <- "binomial"
+      message(paste0("Tarones Z-score: ", round(bbfit$taronesZ, 3), ", using ", likelihood, " model for inference."))
+    }
   } else{
     bbfit <- list(fit = NULL,
                   rho = 0.0,
