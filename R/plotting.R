@@ -372,7 +372,7 @@ plotBAFperstate <- function(cn, minpts = 250, maxstate = 6){
 }
 
 
-plot_density_histogram <- function(dat, mystate, rho){
+plot_density_histogram <- function(dat, mystate, rho, nbins = 30){
   dat <- dat %>%
     dplyr::filter(state_AS_phased == mystate)
 
@@ -392,7 +392,7 @@ plot_density_histogram <- function(dat, mystate, rho){
                         type = paste("Binomial", sep=""))
 
   g <- ggplot2::ggplot(dat, ggplot2::aes(x = BAF)) +
-    ggplot2::geom_histogram(ggplot2::aes(y=(..density..)), bins = 90, fill = "azure4",alpha = 0.8) +
+    ggplot2::geom_histogram(ggplot2::aes(y=(..density..)), bins = nbins, fill = "azure4",alpha = 0.8) +
     ggplot2::geom_line(data = dffit_bb, stat="density",ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5) +
     ggplot2::geom_line(data = dffit_b, stat="density",ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5, linetype = 2) +
     ggplot2::scale_colour_manual(values=c(ggplot2::alpha("deepskyblue4",0.6), ggplot2::alpha("firebrick4",0.6))) +
@@ -409,7 +409,7 @@ plot_density_histogram <- function(dat, mystate, rho){
 }
 
 #' @export
-plotBBfit <- function(hscn){
+plotBBfit <- function(hscn, nbins = 30){
   mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0)
   x <- table(mydat$state_AS_phased)
   x <- x / sum(x)
@@ -417,7 +417,7 @@ plotBBfit <- function(hscn){
   gplots <- list()
   j <- 1
   for (i in names(x)){
-    gplots[[j]] <- plot_density_histogram(hscn$data, mystate = i, rho = hscn$likelihood$rho)
+    gplots[[j]] <- plot_density_histogram(hscn$data, mystate = i, rho = hscn$likelihood$rho, nbins = nbins)
     j <- j + 1
   }
 
