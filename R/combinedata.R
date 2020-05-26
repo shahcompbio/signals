@@ -158,8 +158,10 @@ combineBAFCN <- function(haplotypes,
     .[n > minbins] %>%
     .[, n := NULL] %>%
     .[, n := .N, by = c("chr", "cell_id")] %>%
-    .[n > minbinschr] %>%
-    .[, n := NULL]
+    .[, ncell := min(n), by = c("cell_id")] %>%
+    .[ncell > minbinschr] %>%
+    .[, n := NULL] %>%
+    .[, ncell := NULL]
 
   message(paste0("Total number of cells after removing cells with < " , minbins, " bins: ", length(unique(CNBAF$cell_id))))
 
