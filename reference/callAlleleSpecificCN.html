@@ -139,11 +139,11 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>CNbins</th>
-      <td><p>single cell copy number dataframe with the following columns: cell_id, chr, start, end, state, copy</p></td>
+      <td><p>single cell copy number dataframe with the following columns: <code>cell_id</code>, <code>chr</code>, <code>start</code>, <code>end</code>, <code>state</code>, <code>copy</code></p></td>
     </tr>
     <tr>
       <th>haplotypes</th>
-      <td><p>single cell haplotypes dataframe with the following columns: cell_id, chr, start, end, hap_label, allele1, allele0, totalcounts</p></td>
+      <td><p>single cell haplotypes dataframe with the following columns: <code>cell_id</code>, <code>chr</code>, <code>start</code>, <code>end</code>, <code>hap_label</code>, <code>allele1</code>, <code>allele0</code>, <code>totalcounts</code></p></td>
     </tr>
     <tr>
       <th>eps</th>
@@ -171,20 +171,20 @@
     </tr>
     <tr>
       <th>likelihood</th>
-      <td><p>Likelihood model for HMM, default is binomial, other option is betabinomial</p></td>
+      <td><p>Likelihood model for HMM, default is <code>binomial</code>, other option is <code>betabinomial</code> or use <code>auto</code> and the algorithm will choose the likelihood that best fits the data.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p><ul>
-<li><p>Maj (Major allele copy number)</p></li>
-<li><p>Min (Minor allele copy number)</p></li>
-<li><p>state_AS_phased (phased state of the form Maj|Min )</p></li>
-<li><p>state_AS (state of the form Maj|Min)</p></li>
-<li><p>LOH (is bin LOH or not)</p></li>
-<li><p>state_phase (state describing which is the dominant allele and whether it is LOH or not)</p></li>
-<li><p>state_BAF (binned discretized BAF value calculated as Min / (Maj + Min))</p></li>
+<li><p><code>Maj</code> (Major allele copy number)</p></li>
+<li><p><code>Min</code> (Minor allele copy number)</p></li>
+<li><p><code>state_AS_phased</code> (phased state of the form Maj|Min )</p></li>
+<li><p><code>state_AS</code> (mirrored state of the form Maj|Min)</p></li>
+<li><p><code>LOH</code> (is bin LOH or not)</p></li>
+<li><p><code>state_phase</code> (state describing which is the dominant allele and whether it is LOH or not)</p></li>
+<li><p><code>state_BAF</code> (binned discretized BAF value calculated as Min / (Maj + Min))</p></li>
 </ul>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
@@ -194,7 +194,7 @@
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='no'>sim_data</span> <span class='kw'>&lt;-</span> <span class='fu'>simulate_data_cohort</span>(<span class='kw'>clone_num</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>20</span>, <span class='fl'>20</span>),
        <span class='kw'>clonal_events</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='st'>"1"</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>2</span>,<span class='fl'>0</span>), <span class='st'>"5"</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>3</span>,<span class='fl'>1</span>)),
-       <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='st'>"2"</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>6</span>,<span class='fl'>3</span>), <span class='st'>"3"</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>1</span>,<span class='fl'>0</span>))),
+                       <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='st'>"2"</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>6</span>,<span class='fl'>3</span>), <span class='st'>"3"</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>1</span>,<span class='fl'>0</span>))),
        <span class='kw'>loherror</span> <span class='kw'>=</span> <span class='fl'>0.02</span>,
        <span class='kw'>coverage</span> <span class='kw'>=</span> <span class='fl'>30</span>)</div><div class='output co'>#&gt; <span class='message'>Joining, by = c("chr", "start", "end", "hap_label")</span></div><div class='input'>
 <span class='no'>results</span> <span class='kw'>&lt;-</span> <span class='fu'>callAlleleSpecificCN</span>(<span class='no'>sim_data</span>$<span class='no'>CNbins</span>, <span class='no'>sim_data</span>$<span class='no'>haplotypes</span>)</div><div class='output co'>#&gt; <span class='message'>Finding overlapping cell IDs between CN data and haplotype data...</span></div><div class='output co'>#&gt; <span class='message'>Total number of cells in both CN and haplotypes: 40</span></div><div class='output co'>#&gt; <span class='message'>Number of cells in CN data: 40</span></div><div class='output co'>#&gt; <span class='message'>Removing cells from CN data...</span></div><div class='output co'>#&gt; <span class='message'>Number of cells in haplotype data: 40</span></div><div class='output co'>#&gt; <span class='message'>Removing cells from haplotype data...</span></div><div class='output co'>#&gt; <span class='message'>Reformatting haplotypes</span></div><div class='output co'>#&gt; <span class='message'>Pivot data frame...</span></div><div class='output co'>#&gt; <span class='message'>Phase haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Phasing based on distribution across all cells</span></div><div class='output co'>#&gt; <span class='message'>Join phased haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Reorder haplotypes based on phase...</span></div><div class='output co'>#&gt; <span class='message'>Joining bins and haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Calculate BAF per bin...</span></div><div class='output co'>#&gt; <span class='message'>Total number of cells after removing cells with &lt; 100 bins: 40</span></div><div class='output co'>#&gt; <span class='message'>Initial assignment...</span></div><div class='output co'>#&gt; <span class='message'>Rerun using mirrored BAF...</span></div><div class='input'>
