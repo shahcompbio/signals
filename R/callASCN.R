@@ -246,7 +246,7 @@ callAlleleSpecificCN <- function(CNbins,
 
   infloherror <- hscn %>%
     dplyr::filter(state_phase == "A-LOH") %>%
-    dplyr::summarise(err = mean(BAF, na.rm = TRUE)) %>%
+    dplyr::summarise(err = weighted.mean(x = BAF, w = totalcounts, na.rm = TRUE)) %>% #ensure BAF calculations with low counts don't overwhelm signal
     dplyr::pull(err)
   infloherror <- min(infloherror, 0.05) #ensure loh error rate is < 5%
 

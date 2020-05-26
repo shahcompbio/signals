@@ -434,7 +434,7 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   infloherror <- ascn %>%
     dplyr::filter(state_phase == "A-LOH") %>%
-    dplyr::summarise(err = mean(BAF, na.rm = TRUE)) %>%
+    dplyr::summarise(err = weighted.mean(x = BAF, w = totalcounts, na.rm = TRUE)) %>%
     dplyr::pull(err)
   infloherror <- min(infloherror, 0.05) #ensure loh error rate is < 5%
 
