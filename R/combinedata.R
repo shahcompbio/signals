@@ -114,6 +114,7 @@ combineBAFCN <- function(haplotypes,
                          filtern = 0,
                          phased_haplotypes = NULL,
                          minbins = 100,
+                         minbinschr = 10,
                          phasing_method = "distribution", ...){
 
   message("Finding overlapping cell IDs between CN data and haplotype data...")
@@ -155,6 +156,9 @@ combineBAFCN <- function(haplotypes,
   CNBAF <- CNBAF %>%
     .[, n := .N, by = "cell_id"] %>%
     .[n > minbins] %>%
+    .[, n := NULL] %>%
+    .[, n := .N, by = c("chr", "cell_id")] %>%
+    .[n > minbinschr] %>%
     .[, n := NULL]
 
   message(paste0("Total number of cells after removing cells with < " , minbins, " bins: ", length(unique(CNBAF$cell_id))))
