@@ -103,9 +103,9 @@ assignHaplotypeHMM <- function(CNBAF,
 
   minorcn_res <- c()
   for (mychr in unique(CNBAF$chr)){
-    hmmresults <- HaplotypeHMM(n = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(totalcounts),
-                               x = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(alleleB),
-                               CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(state),
+    hmmresults <- HaplotypeHMM(n = dplyr::filter(CNBAF, chr == mychr)$totalcounts,
+                               x = dplyr::filter(CNBAF, chr == mychr)$alleleB,
+                               dplyr::filter(CNBAF, chr == mychr)$state,
                                minor_cn,
                                loherror = loherror,
                                eps = eps,
@@ -119,29 +119,6 @@ assignHaplotypeHMM <- function(CNBAF,
 
   CNBAF <- data.table::as.data.table(CNBAF)
 
-  CNBAF <- CNBAF %>%
-    .[, state_min := fifelse(state_min < 0, 0, state_min)] %>% #catch edge cases of 0|1 and 1|0 states
-    .[, Maj := state - state_min] %>%
-    .[, Min := state_min] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
-    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-    .[, phase := c("Balanced", "A", "B")[1 +
-                                           1 * ((Min < Maj)) +
-                                           2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                               1 * ((Min < Maj) & (Min != 0)) +
-                                                                               2 * ((Min > Maj) & (Maj != 0)) +
-                                                                               3 * ((Min < Maj) & (Min == 0)) +
-                                                                               4 * ((Min > Maj) & (Maj == 0))]
-    ] %>%
-  #.[, c("Maj", "Min") := NULL] %>%
-  .[order(cell_id, chr, start)] %>%
-  .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
-  .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
-
   return(as.data.frame(CNBAF))
 }
 
@@ -154,9 +131,9 @@ callalleleHMMcell <- function(CNBAF,
 
   minorcn_res <- c()
   for (mychr in unique(CNBAF$chr)){
-    hmmresults <- HaplotypeHMM(n = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(totalcounts),
-                            x = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(alleleB),
-                            CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(state),
+    hmmresults <- HaplotypeHMM(n = dplyr::filter(CNVAF, chr == mychr)$totalcounts,
+                            x = dplyr::filter(CNBAF, chr == mychr)$alleleB,
+                            dplyr::filter(CNBAF, chr == mychr)$state,
                             minor_cn,
                             loherror = loherror,
                             eps = eps,
@@ -212,22 +189,22 @@ callalleleHMMcell <- function(CNBAF,
   }
 
   #Make sure dataframe is in chromosome position order
-  CNBAF <- CNBAF %>%
-    data.table::as.data.table() %>%
+  CNBAF <- data.table::as.data.table(CNBAF) %>%
     .[order(cell_id, chr, start)]
 
   if (ncores > 1){
     alleleCN <- data.table::rbindlist(parallel::mclapply(unique(CNBAF$cell_id),
-                                                    function(cell) assignHaplotypeHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
-                                                                                   eps = eps, loherror = loherror,
-                                                                                   selftransitionprob = selftransitionprob,
-                                                                                   likelihood = likelihood,
-                                                                                   rho = rho,
-                                                                                   pb = pb), mc.cores = ncores)) %>%
+                                                    function(cell) assignHaplotypeHMM(dplyr::filter(CNBAF, cell_id == cell),
+                                                                                      minor_cn,
+                                                                                      eps = eps, loherror = loherror,
+                                                                                      selftransitionprob = selftransitionprob,
+                                                                                      likelihood = likelihood,
+                                                                                      rho = rho,
+                                                                                      pb = pb), mc.cores = ncores)) %>%
       .[order(cell_id, chr, start)]
   } else{
     alleleCN <- data.table::rbindlist(lapply(unique(CNBAF$cell_id),
-                                        function(cell) assignHaplotypeHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
+                                        function(cell) assignHaplotypeHMM(dplyr::filter(CNBAF, cell_id == cell), minor_cn,
                                                                        eps = eps, loherror = loherror,
                                                                        likelihood = likelihood,
                                                                        rho = rho,
@@ -235,6 +212,28 @@ callalleleHMMcell <- function(CNBAF,
                                                                        pb = pb))) %>%
       .[order(cell_id, chr, start)]
   }
+
+  alleleCN <- alleleCN %>%
+    .[, state_min := fifelse(state_min < 0, 0, state_min)] %>% #catch edge cases of 0|1 and 1|0 states
+    .[, Maj := state - state_min] %>%
+    .[, Min := state_min] %>%
+    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
+    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
+    .[, state_min := pmin(Maj, Min)] %>%
+    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
+    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
+    .[, phase := c("Balanced", "A", "B")[1 +
+                                           1 * ((Min < Maj)) +
+                                           2 * ((Min > Maj))]] %>%
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+                                                                                 1 * ((Min < Maj) & (Min != 0)) +
+                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
+                                                                                 3 * ((Min < Maj) & (Min == 0)) +
+                                                                                 4 * ((Min > Maj) & (Maj == 0))]
+      ] %>%
+    .[order(cell_id, chr, start)] %>%
+    .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
 
   return(as.data.frame(alleleCN))
 }
@@ -250,7 +249,7 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
   nhaps <- dim(dplyr::distinct(haplotype_counts, chr, start, hap_label))[1]
   for (i in prop){
     samp_cells <- sample(mycells, round(i * length(mycells)))
-    haplotype_counts_temp <- as.data.table(haplotypes %>% dplyr::filter(cell_id %in% samp_cells)) %>%
+    haplotype_counts_temp <- as.data.table(dplyr::filter(haplotypes, cell_id %in% samp_cells)) %>%
       .[, list(n = .N, nfrac = .N / ncells), by = c("chr", "start", "end", "hap_label")]
     nhaps_temp <- dim(dplyr::distinct(haplotype_counts_temp, chr, start, hap_label))[1]
     nhaps_vec <- c(nhaps_vec, nhaps_temp)
@@ -289,13 +288,11 @@ proportion_imbalance <- function(ascn, haplotypes, field = "copy", phasebyarm = 
   if (phasebyarm) {
     message("Phasing by chromosome arm...")
     ascn$chrarm <- paste0(ascn$chr, coord_to_arm(ascn$chr, ascn$start))
-    prop <- ascn %>%
-      .[, list(propA = sum(balance) / .N), by = .(chrarm, clone_id)]
+    prop <- ascn[, list(propA = sum(balance) / .N), by = .(chrarm, clone_id)]
     prop <- prop[prop[, .I[which.max(propA)], by=chrarm]$V1]
   } else {
     message("Phasing by chromosome (not arm level)..")
-    prop <- ascn %>%
-      .[, list(propA = sum(balance) / .N), by = .(chr, clone_id)]
+    prop <- ascn[, list(propA = sum(balance) / .N), by = .(chr, clone_id)]
     prop <- prop[prop[, .I[which.max(propA)], by=chr]$V1]
   }
 
@@ -340,10 +337,8 @@ tarones_Z <- function(alleleA, totalcounts){
 }
 
 fitBB <- function(ascn){
-  modal_state <- which.max(table(ascn %>% dplyr::filter(Min > 0) %>%
-                                   dplyr::pull(state_AS_phased)))
-  bdata <- ascn %>%
-    dplyr::filter(state_AS_phased == names(modal_state))
+  modal_state <- which.max(table(dplyr::filter(ascn, Min > 0)$state_AS_phased))
+  bdata <- dplyr::filter(ascn, state_AS_phased == names(modal_state))
   expBAF <- bdata %>%
     dplyr::filter(dplyr::row_number() == 1) %>%
     dplyr::mutate(e = Min / (Min + Maj)) %>%
@@ -480,7 +475,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   out = list()
   class(out) <- "hscn"
 
-  out[["data"]] <- hscn_data %>% dplyr::filter(state_min > -1) %>% as.data.frame() # catch weird bug with bin = -1
+  out[["data"]] <- hscn_data %>% as.data.frame() # catch weird bug with bin = -1
   out[["phasing"]] <- p
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps

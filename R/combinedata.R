@@ -137,8 +137,7 @@ combineBAFCN <- function(haplotypes,
   }
 
   message("Reformatting haplotypes")
-  haplotypes <- haplotypes %>%
-    format_haplotypes(., phased_haplotypes = phased_haplotypes,
+  haplotypes <- format_haplotypes(haplotypes, phased_haplotypes = phased_haplotypes,
                       phasing_method = phasing_method, ...)
   haplotypes <- data.table::as.data.table(haplotypes)
 
@@ -147,8 +146,7 @@ combineBAFCN <- function(haplotypes,
   CNbins <- CNbins[haplotypes, on = c("chr", "start", "end", "cell_id"), nomatch=0]
 
   message("Calculate BAF per bin...")
-  CNBAF <- CNbins %>%
-    data.table::as.data.table() %>%
+  CNBAF <- data.table::as.data.table(CNbins) %>%
     .[totalcounts > filtern] %>%
     .[, lapply(.SD, sum), by = .(chr, start, end, cell_id, state, copy), .SDcols = c("alleleA", "alleleB", "totalcounts")] %>%
     .[, BAF := alleleB / totalcounts]
