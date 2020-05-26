@@ -374,7 +374,7 @@ plotBAFperstate <- function(cn, minpts = 250, maxstate = 6){
 
 plot_density_histogram <- function(dat, mystate, rho, nbins = 30){
   dat <- dat %>%
-    dplyr::filter(state_AS_phased == mystate)
+    dplyr::filter(state_AS_phased == mystate, totalcounts > 9)
 
   expBAF <- strsplit(mystate, "\\|")[[1]]
   expBAF <- as.numeric(expBAF[2]) / (as.numeric(expBAF[1]) + as.numeric(expBAF[2]))
@@ -410,7 +410,7 @@ plot_density_histogram <- function(dat, mystate, rho, nbins = 30){
 
 #' @export
 plotBBfit <- function(hscn, nbins = 30){
-  mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0)
+  mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0, totalcounts > 9)
   x <- table(mydat$state_AS_phased)
   x <- x / sum(x)
   x <- x[which(x > 0.01)]
