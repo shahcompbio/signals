@@ -1,3 +1,7 @@
+logspace_add <- function(logx,logy) {
+  pmax(logx,logy) + log1p(exp(-abs(logx - logy)))
+}
+
 #' @export
 alleleHMM <- function(n,
                       x,
@@ -30,7 +34,9 @@ alleleHMM <- function(n,
     l <- structure(l1l2log, dim = dim(l1log))
   }
   if (eps > 0.0){
-    l <- matrix(vapply(l, function(x) matrixStats::logSumExp(c(x, log(eps))), FUN.VALUE = numeric(1)), dim(l)[1], dim(l)[2])
+    ltemp <- vapply(l, function(x) matrixStats::logSumExp(c(x, log(eps))), FUN.VALUE = numeric(1))
+    #ltemp <- vapply(l, function(x) logspace_add(x, log(eps)), FUN.VALUE = double(1))
+    l <- matrix(ltemp, dim(l)[1], dim(l)[2])
   }
   l[is.na(l)] <- log(0.0)
   l[minor_cn_mat > total_cn_mat/2] <- log(0.0)
@@ -67,9 +73,9 @@ assignalleleHMM <- function(CNBAF,
 
   minorcn_res <- c()
   for (mychr in unique(CNBAF$chr)){
-    hmmresults <- alleleHMM(n = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(totalcounts),
-                            x = CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(alleleB),
-                            CNBAF %>% dplyr::filter(chr == mychr) %>% dplyr::pull(state),
+    hmmresults <- alleleHMM(n = dplyr::filter(CNBAF, chr == mychr)$totalcounts,
+                            x = dplyr::filter(CNBAF, chr == mychr)$alleleB,
+                            dplyr::filter(CNBAF, chr == mychr)$state,
                             minor_cn,
                             loherror = loherror,
                             eps = eps,
@@ -82,32 +88,6 @@ assignalleleHMM <- function(CNBAF,
   CNBAF$state_min <- as.numeric(minorcn_res)
 
   CNBAF <- data.table::as.data.table(CNBAF)
-
-  CNBAF <- CNBAF %>%
-    .[, Maj1 := state - state_min] %>%
-    .[, Min1 := state_min] %>%
-    .[, Min := fifelse(Min1 > Maj1, Maj1, Min1)] %>% #catch edge cases where Min > Maj
-    .[, Maj := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
-    .[, Maj1 := NULL] %>%
-    .[, Min1 := NULL] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
-    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-    .[, phase := c("Balanced", "A", "B")[1 +
-                                           1 * ((Min < Maj)) +
-                                           2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                               1 * ((Min < Maj) & (Min != 0)) +
-                                                                               2 * ((Min > Maj) & (Maj != 0)) +
-                                                                               3 * ((Min < Maj) & (Min == 0)) +
-                                                                               4 * ((Min > Maj) & (Maj == 0))]
-    ] %>%
-  #.[, c("Maj", "Min") := NULL] %>%
-  .[order(cell_id, chr, start)] %>%
-  .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
-  .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
 
   return(as.data.frame(CNBAF))
 }
@@ -128,33 +108,8 @@ callalleleHMMcell <- function(CNBAF,
                           selftransitionprob = selftransitionprob)
 
   CNBAF$state_min <- as.numeric(hmmresults$minorcn)
-  CNBAF$allele <- ifelse()
 
-  CNBAF <- data.table::as.data.table(CNBAF) %>%
-    .[, Maj1 := state - state_min] %>%
-    .[, Min1 := state_min] %>%
-    .[, Min := fifelse(Min1 > Maj1, Maj1, Min1)] %>% #catch edge cases where Min > Maj
-    .[, Maj := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
-    .[, Maj1 := NULL] %>%
-    .[, Min1 := NULL] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
-    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-    .[, phase := c("Balanced", "A", "B")[1 +
-                                         1 * ((Min < Maj)) +
-                                         2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                                 1 * ((Min < Maj) & (Min != 0)) +
-                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                 3 * ((Min < Maj) & (Min == 0)) +
-                                                                                 4 * ((Min > Maj) & (Maj == 0))]
-      ] %>%
-    #.[, c("Maj", "Min") := NULL] %>%
-    .[order(cell_id, chr, start)] %>%
-    .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
-    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
+  CNBAF <- data.table::as.data.table(CNBAF)
 
   return(list(alleleCN = CNBAF, posterior_prob = hmmresults$posterior_prob, l = hmmresults$l))
 }
@@ -281,7 +236,7 @@ callAlleleSpecificCN <- function(CNbins,
 
   if (ncores > 1){
     alleleCN <- data.table::rbindlist(parallel::mclapply(unique(CNBAF$cell_id),
-                                                    function(cell) assignalleleHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
+                                                    function(cell) assignalleleHMM(dplyr::filter(CNBAF, cell_id == cell), minor_cn,
                                                                                    eps = eps,
                                                                                    loherror = infloherror,
                                                                                    selftransitionprob = selftransitionprob,
@@ -291,7 +246,7 @@ callAlleleSpecificCN <- function(CNbins,
       .[order(cell_id, chr, start)]
   } else{
     alleleCN <- data.table::rbindlist(lapply(unique(CNBAF$cell_id),
-                                        function(cell) assignalleleHMM(CNBAF %>% dplyr::filter(cell_id == cell), minor_cn,
+                                        function(cell) assignalleleHMM(dplyr::filter(CNBAF, cell_id == cell), minor_cn,
                                                                        eps = eps,
                                                                        loherror = infloherror,
                                                                        likelihood = likelihood,
@@ -300,6 +255,32 @@ callAlleleSpecificCN <- function(CNbins,
                                                                        pb = pb))) %>%
       .[order(cell_id, chr, start)]
   }
+
+  alleleCN <- alleleCN %>%
+    .[, Maj1 := state - state_min] %>%
+    .[, Min1 := state_min] %>%
+    .[, Min := fifelse(Min1 > Maj1, Maj1, Min1)] %>% #catch edge cases where Min > Maj
+    .[, Maj := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
+    .[, Maj1 := NULL] %>%
+    .[, Min1 := NULL] %>%
+    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
+    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
+    .[, state_min := pmin(Maj, Min)] %>%
+    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
+    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
+    .[, phase := c("Balanced", "A", "B")[1 +
+                                           1 * ((Min < Maj)) +
+                                           2 * ((Min > Maj))]] %>%
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+                                                                                 1 * ((Min < Maj) & (Min != 0)) +
+                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
+                                                                                 3 * ((Min < Maj) & (Min == 0)) +
+                                                                                 4 * ((Min > Maj) & (Maj == 0))]
+      ] %>%
+    #.[, c("Maj", "Min") := NULL] %>%
+    .[order(cell_id, chr, start)] %>%
+    .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
 
   # Output
   out = list()
