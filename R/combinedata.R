@@ -137,8 +137,9 @@ combineBAFCN <- function(haplotypes,
   }
 
   message("Reformatting haplotypes")
-  haplotypes <- format_haplotypes(haplotypes, phased_haplotypes = phased_haplotypes,
-                      phasing_method = phasing_method, ...)
+  haplotypes <- format_haplotypes(haplotypes,
+                                  phased_haplotypes = phased_haplotypes,
+                                  phasing_method = phasing_method, ...)
   haplotypes <- data.table::as.data.table(haplotypes)
 
   message("Joining bins and haplotypes...")

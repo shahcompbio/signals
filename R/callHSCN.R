@@ -404,7 +404,10 @@ callHaplotypeSpecificCN <- function(CNbins,
                                       ncores = 1,
                                       phasebyarm = FALSE,
                                       minfrac = 0.05,
-                                      likelihood = "binomial") {
+                                      likelihood = "binomial",
+                                      minbins = 100,
+                                      minbinschr = 10,
+                                      phased_haplotypes = NULL) {
 
   if (!likelihood %in% c("binomial", "betabinomial", "auto")){
     stop("Likelihood model for HMM emission model must be one of binomial, betabinomial or auto",
@@ -453,13 +456,18 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
-  p <- proportion_imbalance(ascn, haplotypes, phasebyarm = phasebyarm, minfrac = minfrac)
-  phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
-                                              prop = p,
-                                              phasebyarm = phasebyarm)
+  if (is.null(phased_haplotypes)){
+    p <- proportion_imbalance(ascn, haplotypes, phasebyarm = phasebyarm, minfrac = minfrac)
+    phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
+                                                prop = p,
+                                                phasebyarm = phasebyarm)
+  }
+
   cnbaf <- combineBAFCN(haplotypes = haplotypes,
                         CNbins = CNbins,
-                        phased_haplotypes = phased_haplotypes)
+                        phased_haplotypes = phased_haplotypes,
+                        minbinschr = minbinschr,
+                        minbins = minbins)
 
   hscn_data <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
                                                eps = eps,
@@ -475,12 +483,13 @@ callHaplotypeSpecificCN <- function(CNbins,
   out = list()
   class(out) <- "hscn"
 
-  out[["data"]] <- hscn_data %>% as.data.frame() # catch weird bug with bin = -1
+  out[["data"]] <- hscn_data %>% as.data.frame()
   out[["phasing"]] <- p
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps
   out[["likelihood"]] <- bbfit
   out[["qc_summary"]] <- qc_summary(alleleCN)
+  out[["haplotype_phasing"]] <- phased_haplotypes
 
   return(out)
 }

@@ -136,6 +136,8 @@ switch_alleles <- function(cn, pval = 0.05){
 #' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
 #' @param ncores Number of cores to use, default = 1
 #' @param likelihood Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.
+#' @param minbins Minimum number of bins containing both haplotype counts and copy number data for a cell to be included
+#' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -169,7 +171,9 @@ callAlleleSpecificCN <- function(CNbins,
                                  selftransitionprob = 0.999,
                                  progressbar = TRUE,
                                  ncores = 1,
-                                 likelihood = "binomial"){
+                                 likelihood = "binomial",
+                                 minbins = 100,
+                                 minbinschr = 10){
 
   if (!likelihood %in% c("binomial", "betabinomial", "auto")){
     stop("Likelihood model for HMM emission model must be one of binomial, betabinomial or auto",
