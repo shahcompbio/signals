@@ -16,6 +16,7 @@ print.hscn = function(x, ...) {
     cat(paste0("\t Inferred over dispersion: ", round(x$likelihood$rho, 4), "\n"))
     cat(paste0("\t Tarones Z score: ", round(x$likelihood$taronesZ, 3), "\n"))
   }
+  cat(paste0("Average distance from median to expected BAF = ", round(x$qc_summary$summary, 4), " \n"))
 }
 
 #' @export
@@ -30,4 +31,5 @@ print.ascn = function(x, ...) {
     cat(paste0("\t Inferred over dispersion: ", round(x$likelihood$rho, 4), "\n"))
     cat(paste0("\t Tarones Z score: ", round(x$likelihood$taronesZ, 3), "\n"))
   }
+  cat(paste0("Average distance from median to expected BAF = ", round(x$qc_summary$summary, 4), " \n"))
 }

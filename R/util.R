@@ -267,3 +267,41 @@ orderdf <- function(CNbins){
     .[, idx := NULL] %>%
       as.data.frame())
 }
+
+densmode <- function(x){
+  dens <- density(x)
+  dens$x[which.max(dens$y)]
+}
+
+#' @export
+qc_summary <- function(cn){
+  if (is.hscn(cn) | is.ascn(cn)){
+    cn <- cn$data
+  } else{
+    cn <- cn
+  }
+
+  distance_df <- cn %>%
+    dplyr::filter(state_AS_phased != "0|0") %>%
+    dplyr::group_by(state_AS_phased, Min, Maj) %>%
+    dplyr::mutate(n = dplyr::n()) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(frac = n / dplyr::n()) %>%
+    dplyr::filter(n > 10) %>%
+    dplyr::group_by(state_AS_phased, Min, Maj, n, frac) %>%
+    dplyr::summarise(medianBAF = median(BAF),
+                     meanBAF = mean(BAF),
+                     modeBAF = densmode(BAF),
+                     high95 = quantile(BAF, 0.975),
+                     low95 = quantile(BAF, 0.025)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(expBAF = Min / (Min + Maj)) %>%
+    dplyr::mutate(distance = sqrt((expBAF - medianBAF)^2)) %>%
+    as.data.frame()
+
+  summary_distance <- weighted.mean(distance_df$distance, distance_df$frac)
+
+  message(paste0("Average distance from median to expected BAF = ", round(summary_distance, 4)))
+
+  return(list(distance = distance_df, summary = summary_distance))
+}
