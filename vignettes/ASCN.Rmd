@@ -145,13 +145,13 @@ hscn$data %>%
 ```
 
 ### Dealing with noisy data
-If the coverage per cell is on average low then estimating allele specific copy number can be challenging. This can result in "grainy" heatmaps, noisy cell profiles and inconsistent `plotBAFperstate` plots. One way to overcome this is to use larger bin sizes, `schnapps` provides 2 utility functions to "widen" the bins by taking an average across bins. 
+If the coverage per cell is on average low then estimating allele specific copy number can be challenging. This can result in "grainy" heatmaps, noisy cell profiles and inconsistent `plotBAFperstate` plots. One way to overcome this is to use larger bin sizes, `schnapps` provides 2 utility functions to "widen" the bins by taking an average across bins. To use this, we also need to decrease the requirements for the number of bins per chromosome.
 
 ```{r}
-CNbins_wide <- widen_bins(CNbins, binsize = 5e6)
-haplotypes_wide <- widen_haplotypebins(haplotypes, binsize = 5e6)
+CNbins_wide <- widen_bins(CNbins, binsize = 2e6)
+haplotypes_wide <- widen_haplotypebins(haplotypes, binsize = 2e6)
 
-hscn_wide <- callHaplotypeSpecificCN(CNbins_wide, haplotypes_wide)
+hscn_wide <- callHaplotypeSpecificCN(CNbins_wide, haplotypes_wide, minbins = 10, minbinschr = 2)
 ```
 
 
