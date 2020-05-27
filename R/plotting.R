@@ -324,7 +324,7 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
 }
 
 #' @export
-plotBAFperstate <- function(cn, minpts = 250, maxstate = 6){
+plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.03, maxstate = 10){
 
   if (is.hscn(cn) | is.ascn(cn)){
     alleleCN <- cn$data
@@ -348,22 +348,27 @@ plotBAFperstate <- function(cn, minpts = 250, maxstate = 6){
     dplyr::group_by(state_AS_phased) %>%
     dplyr::mutate(n = dplyr::n()) %>%
     dplyr::ungroup() %>%
-    dplyr::filter(state <= maxstate, n > minpts)
+    dplyr::mutate(f = n / dplyr::n()) %>%
+    dplyr::filter(state <= maxstate, n > minpts, f > minfrac)
   allASstates <- allASstates %>%
     dplyr::filter(state_AS_phased %in% unique(forplot$state_AS_phased))
 
+  text_fraction <- dplyr::distinct(forplot, state_AS_phased, f) %>%
+    dplyr::mutate(pct = paste0(100 * round(f, 2), "%"), y = 0.95)
+
   g <- forplot %>%
+    dplyr::mutate(cncol = paste0("CN", state)) %>%
     ggplot2::ggplot(ggplot2::aes(x = forcats::fct_reorder(state_AS_phased, state),
-                                 y = BAF,
-                                 fill = paste0("CN", state))) +
-    ggplot2::geom_violin(scale = "width", col = "white") +
-    ggplot2::geom_boxplot(width = 0.1, outlier.shape = NA, col = "white") +
+                                 y = BAF)) +
+    ggplot2::geom_violin(scale = "width", col = "white", ggplot2::aes(fill = cncol)) +
+    ggplot2::geom_boxplot(width = 0.1, outlier.shape = NA, col = "white", ggplot2::aes(fill = cncol)) +
     ggplot2::scale_fill_manual(name = "Copy number \n state",
                                 breaks = paste0("CN", seq(0, max(alleleCN$state, na.rm = TRUE), 1)),
                                 labels = seq(0, max(alleleCN$state, na.rm = TRUE), 1),
                                 values = scCN_cols(paste0("CN", seq(0, max(alleleCN$state, na.rm = TRUE), 1)))) +
     cowplot::theme_cowplot() +
     ggplot2::geom_crossbar(data = allASstates, ggplot2::aes(y = cBAF, ymin = cBAF, ymax = cBAF)) +
+    ggplot2::geom_text(data = text_fraction, ggplot2::aes(x = state_AS_phased, y = y, label = pct)) +
     ggplot2::xlab("") +
     ggplot2::theme(legend.position = "bottom") +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))

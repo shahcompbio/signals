@@ -480,6 +480,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps
   out[["likelihood"]] <- bbfit
+  out[["qc_summary"]] <- qc_summary(alleleCN)
 
   return(out)
 }
