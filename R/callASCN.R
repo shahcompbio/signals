@@ -272,6 +272,8 @@ callAlleleSpecificCN <- function(CNbins,
     .[, Min := state_min] %>%
     .[, Min := fifelse(Min < 0, 0, Min)] %>%
     .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
+    .[, Min := fifelse(Min > state, state, Min)] %>%
+    .[, Maj := fifelse(Maj > state, state, Maj)] %>%
     .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
     .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
     .[, state_min := pmin(Maj, Min)] %>%
