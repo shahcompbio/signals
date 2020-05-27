@@ -488,7 +488,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps
   out[["likelihood"]] <- bbfit
-  out[["qc_summary"]] <- qc_summary(alleleCN)
+  out[["qc_summary"]] <- qc_summary(hscn_data)
   out[["haplotype_phasing"]] <- phased_haplotypes
 
   return(out)
