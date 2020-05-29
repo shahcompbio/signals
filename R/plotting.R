@@ -3,6 +3,7 @@ plottinglist <- function(CNbins){
 
   chridx <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
   CNbins <- CNbins %>%
+    dplyr::filter(!is.na(copy)) %>%
     dplyr::left_join(., chridx, by = c("chr")) %>%
     dplyr::arrange(cell_id, idx, start) %>%
     dplyr::group_by(cell_id) %>%
@@ -33,6 +34,14 @@ plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5){
     ggplot2::guides(colour = ggplot2::guide_legend(ncol = 3))
 }
 
+squashy_trans <- function() {
+  scales::trans_new(
+    "squashy",
+    function(x) tanh( 0.075 * x),
+    function(x) atanh(x) / 0.075
+  )
+}
+
 #' @export
 plotCNprofile <- function(CNbins,
                          cellid = NULL,
@@ -43,9 +52,14 @@ plotCNprofile <- function(CNbins,
                          cellidx = 1,
                          statecol = "state",
                          returnlist = FALSE,
-                         raster = FALSE){
+                         raster = FALSE,
+                         y_axis_trans = "identity"){
   if (is.null(cellid)){
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
+  }
+
+  if (y_axis_trans == "squashy"){
+    maxCN <- min(c(20, maxCN))
   }
 
   statecolpal <- scCNstate_cols()
@@ -79,7 +93,7 @@ plotCNprofile <- function(CNbins,
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
       ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
+      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot() +
@@ -100,7 +114,7 @@ plotCNprofile <- function(CNbins,
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
       ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
+      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot() +
@@ -128,11 +142,16 @@ plotCNprofileBAF <- function(cn,
                           BAFcol = "state_phase",
                           statecol = "state",
                           returnlist = FALSE,
-                          raster = FALSE){
+                          raster = FALSE,
+                          y_axis_trans = "identity"){
   if (is.hscn(cn) | is.ascn(cn)){
     CNbins <- cn$data
   } else{
     CNbins <- cn
+  }
+
+  if (y_axis_trans == "squashy"){
+    maxCN <- min(c(20, maxCN))
   }
 
   if (is.null(cellid)){
@@ -213,7 +232,7 @@ plotCNprofileBAF <- function(cn,
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
       ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
+      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot() +
@@ -261,7 +280,7 @@ plotCNprofileBAF <- function(cn,
                        axis.ticks.y = ggplot2::element_blank(),
                        legend.position = "none") +
         ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-        ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN)) +
+        ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
         ggplot2::xlab("Chromosome") +
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot() +
