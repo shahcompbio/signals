@@ -250,7 +250,7 @@ callalleleHMMcell <- function(CNBAF,
 min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
   nhaps_vec <- c()
   prop_vec <- c()
-  prop <- seq(0.05, 1.0, 0.01)
+  prop <- seq(0.01, 1.0, 0.01)
   mycells <- unique(haplotypes$cell_id)
   ncells <- length(mycells)
   haplotype_counts <- as.data.table(haplotypes) %>%
@@ -496,6 +496,8 @@ callHaplotypeSpecificCN <- function(CNbins,
     phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
                                                 prop = p,
                                                 phasebyarm = phasebyarm)
+  } else{
+    p <- NULL
   }
 
   cnbaf <- combineBAFCN(haplotypes = haplotypes,
