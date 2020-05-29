@@ -274,7 +274,7 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
     dplyr::pull(ncells)
 
   ncells_forclustering <- max(ncells_forclustering, round(0.05 * length(unique(mycells))))
-  return(ncells_forclustering)
+  return(list(ncells_forclustering = ncells_forclustering, prop = df))
 }
 
 #' @export
@@ -306,6 +306,7 @@ proportion_imbalance_manual <- function(ascn, haplotypes, cl, field = "copy", ph
 proportion_imbalance <- function(ascn, haplotypes, field = "copy", phasebyarm = FALSE, minfrachaplotypes = 0.95){
   ncells <- length(unique(ascn$cell_id))
   ncells_for_clustering <- min_cells(haplotypes, minfrachaplotypes = minfrachaplotypes)
+  ncells_for_clustering <- ncells_for_clustering$ncells_forclustering
   message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
 
   #cluster cells using umap and the "copy" corrected read count value
