@@ -278,10 +278,8 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
 }
 
 #' @export
-proportion_imbalance_manual <- function(ascn, haplotypes, cl, field = "copy", phasebyarm = FALSE, minfrac = 0.05){
+proportion_imbalance_manual <- function(ascn, haplotypes, cl, field = "copy", phasebyarm = FALSE){
   ncells <- length(unique(ascn$cell_id))
-  ncells_for_clustering <- min_cells(haplotypes)
-  message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
 
   alleles <- data.table()
   ascn <- as.data.table(dplyr::left_join(ascn, cl$clustering))
@@ -305,9 +303,9 @@ proportion_imbalance_manual <- function(ascn, haplotypes, cl, field = "copy", ph
 }
 
 #' @export
-proportion_imbalance <- function(ascn, haplotypes, field = "copy", phasebyarm = FALSE, minfrac = 0.05){
+proportion_imbalance <- function(ascn, haplotypes, field = "copy", phasebyarm = FALSE, minfrachaplotypes = 0.95){
   ncells <- length(unique(ascn$cell_id))
-  ncells_for_clustering <- min_cells(haplotypes)
+  ncells_for_clustering <- min_cells(haplotypes, minfrachaplotypes = minfrachaplotypes)
   message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
 
   #cluster cells using umap and the "copy" corrected read count value
@@ -439,7 +437,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                       progressbar = TRUE,
                                       ncores = 1,
                                       phasebyarm = FALSE,
-                                      minfrac = 0.05,
+                                      minfrac = 0.95,
                                       likelihood = "binomial",
                                       minbins = 100,
                                       minbinschr = 10,
