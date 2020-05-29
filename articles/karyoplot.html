@@ -123,9 +123,9 @@
 #&gt;     chromosomes = chr), karyoploteR::kpAxis(kp, r0 = 0.52, r1 = 1), 
 #&gt;     karyoploteR::kpPoints(kp, data = data, y = data$BAF, r0 = 0.52, 
 #&gt;         r1 = 1, col = data$col_ASstate), karyoploteR::kpAxis(kp, 
-#&gt;         tick.pos = c(0, 2, 4, 6, 8, 10), r0 = 0, r1 = 0.48, ymax = 10, 
+#&gt;         tick.pos = seq(0, maxCN, 2), r0 = 0, r1 = 0.48, ymax = maxCN, 
 #&gt;         ymin = 0), karyoploteR::kpPoints(kp, data = data, y = data$copy, 
-#&gt;         r0 = 0, r1 = 0.48, ymin = 0, ymax = 10, col = data$col_state))</code></pre>
+#&gt;         r0 = 0, r1 = 0.48, ymin = 0, ymax = maxCN, col = data$col_state))</code></pre>
 </div>
 <div id="genome-wide-plot-with-ideogram-and-gene-annotations" class="section level3">
 <h3 class="hasAnchor">
@@ -136,9 +136,9 @@
 #&gt;     chromosomes = chr), karyoploteR::kpAxis(kp, r0 = 0.4, r1 = 0.75), 
 #&gt;     karyoploteR::kpPoints(kp, data = data, y = data$BAF, r0 = 0.4, 
 #&gt;         r1 = 0.75, col = data$col_ASstate), karyoploteR::kpAxis(kp, 
-#&gt;         tick.pos = c(0, 2, 4, 6, 8, 10), r0 = 0, r1 = 0.35, ymax = 10, 
+#&gt;         tick.pos = seq(0, maxCN, 2), r0 = 0, r1 = 0.35, ymax = maxCN, 
 #&gt;         ymin = 0), karyoploteR::kpPoints(kp, data = data, y = data$copy, 
-#&gt;         r0 = 0, r1 = 0.35, ymin = 0, ymax = 10, col = data$col_state), 
+#&gt;         r0 = 0, r1 = 0.35, ymin = 0, ymax = maxCN, col = data$col_state), 
 #&gt;     karyoploteR::kpPlotMarkers(kp, data = genes, labels = genes$hgnc_symbol, 
 #&gt;         line.color = "#555555", marker.parts = c(0.95, 0.025, 
 #&gt;             0.025), r1 = 1.05))</code></pre>
@@ -152,9 +152,9 @@
 #&gt;     chromosomes = chr), karyoploteR::kpAxis(kp, r0 = 0.4, r1 = 0.75), 
 #&gt;     karyoploteR::kpPoints(kp, data = data, y = data$BAF, r0 = 0.4, 
 #&gt;         r1 = 0.75, col = data$col_ASstate), karyoploteR::kpAxis(kp, 
-#&gt;         tick.pos = c(0, 2, 4, 6, 8, 10), r0 = 0, r1 = 0.35, ymax = 10, 
+#&gt;         tick.pos = seq(0, maxCN, 2), r0 = 0, r1 = 0.35, ymax = maxCN, 
 #&gt;         ymin = 0), karyoploteR::kpPoints(kp, data = data, y = data$copy, 
-#&gt;         r0 = 0, r1 = 0.35, ymin = 0, ymax = 10, col = data$col_state), 
+#&gt;         r0 = 0, r1 = 0.35, ymin = 0, ymax = maxCN, col = data$col_state), 
 #&gt;     karyoploteR::kpPlotMarkers(kp, data = genes, labels = genes$hgnc_symbol, 
 #&gt;         line.color = "#555555", marker.parts = c(0.95, 0.025, 
 #&gt;             0.025), r1 = 1.05))</code></pre>
@@ -164,9 +164,9 @@
 #&gt;     chromosomes = chr), karyoploteR::kpAxis(kp, r0 = 0.4, r1 = 0.75), 
 #&gt;     karyoploteR::kpPoints(kp, data = data, y = data$BAF, r0 = 0.4, 
 #&gt;         r1 = 0.75, col = data$col_ASstate), karyoploteR::kpAxis(kp, 
-#&gt;         tick.pos = c(0, 2, 4, 6, 8, 10), r0 = 0, r1 = 0.35, ymax = 10, 
+#&gt;         tick.pos = seq(0, maxCN, 2), r0 = 0, r1 = 0.35, ymax = maxCN, 
 #&gt;         ymin = 0), karyoploteR::kpPoints(kp, data = data, y = data$copy, 
-#&gt;         r0 = 0, r1 = 0.35, ymin = 0, ymax = 10, col = data$col_state), 
+#&gt;         r0 = 0, r1 = 0.35, ymin = 0, ymax = maxCN, col = data$col_state), 
 #&gt;     karyoploteR::kpPlotMarkers(kp, data = genes, labels = genes$hgnc_symbol, 
 #&gt;         line.color = "#555555", marker.parts = c(0.95, 0.025, 
 #&gt;             0.025), r1 = 1.05))</code></pre>
