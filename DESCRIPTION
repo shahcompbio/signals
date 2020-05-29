@@ -35,7 +35,8 @@ Imports:
     tidyr,
     ggtree,
     ggplot2,
-    S4Vectors
+    S4Vectors,
+    scales
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
