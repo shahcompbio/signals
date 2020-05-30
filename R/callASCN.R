@@ -34,8 +34,8 @@ alleleHMM <- function(n,
     l <- structure(l1l2log, dim = dim(l1log))
   }
   if (eps > 0.0){
-    ltemp <- vapply(l, function(x) matrixStats::logSumExp(c(x, log(eps))), FUN.VALUE = numeric(1))
-    #ltemp <- vapply(l, function(x) logspace_add(x, log(eps)), FUN.VALUE = double(1))
+    #ltemp <- vapply(l, function(x) matrixStats::logSumExp(c(x, log(eps))), FUN.VALUE = numeric(1))
+    ltemp <- vapply(l, function(x) logspace_addcpp(x, log(eps)), FUN.VALUE = double(1))
     l <- matrix(ltemp, dim(l)[1], dim(l)[2])
   }
   l[is.na(l)] <- log(0.0)
@@ -52,7 +52,7 @@ alleleHMM <- function(n,
 
   states <- paste0(minor_cn)
 
-  res <- myviterbi(l, log(tProbs), observations = 1:length(binstates))
+  res <- myviterbicpp(l, log(tProbs), observations = 1:length(binstates))
 
   return(list(minorcn = res, l = l))
 }
