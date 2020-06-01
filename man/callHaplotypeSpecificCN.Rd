@@ -7,7 +7,8 @@
 callHaplotypeSpecificCN(CNbins, haplotypes, eps = 1e-12,
   loherror = 0.02, maxCN = 12, selftransitionprob = 0.999,
   progressbar = TRUE, ncores = 1, phasebyarm = FALSE,
-  minfrac = 0.05, likelihood = "binomial")
+  minfrac = 0.95, likelihood = "binomial", minbins = 100,
+  minbinschr = 10, phased_haplotypes = NULL)
 }
 \arguments{
 \item{CNbins}{single cell copy number dataframe with the following columns: \code{cell_id}, \code{chr}, \code{start}, \code{end}, \code{state}, \code{copy}}
