@@ -29,14 +29,14 @@ Imports:
     ComplexHeatmap,
     GenomicRanges,
     cowplot,
-    matrixStats,
     ape,
     RColorBrewer,
     tidyr,
     ggtree,
     ggplot2,
     S4Vectors,
-    scales
+    scales,
+    Rcpp
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
@@ -52,3 +52,5 @@ Suggests:
 Remotes:
   VPetukhov/ggrastr
 VignetteBuilder: knitr
+LinkingTo: 
+    Rcpp
