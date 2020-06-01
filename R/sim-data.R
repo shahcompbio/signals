@@ -80,7 +80,7 @@ simulate_cell <- function(nchr = 2,
   CNbins <- dplyr::select(ascn, cell_id, chr, start, end, state, copy)
 
   haps <- ascn %>%
-    .[, totalcounts := rpois(1, coverage * state), by = .(chr, start, end)]
+    .[, totalcounts := rpois(1, coverage), by = .(chr, start, end)]
 
   if (likelihood == "binomial"){
     haps <- haps %>%
@@ -145,12 +145,11 @@ simulate_cells <- function(ncells,
   haps <- haps %>%
     dplyr::left_join(switches) %>%
     as.data.table() %>%
-    .[, switch := sample(c(TRUE,FALSE), .N, TRUE), by = "hap_label"] %>%
     .[, allele1 := data.table::fifelse(switch == TRUE, alleleA, alleleB)] %>%
     .[, allele0 := data.table::fifelse(switch == TRUE, alleleB, alleleA)]
 
   haps <- haps %>%
-    dplyr::select(cell_id, chr, start, end, hap_label, allele1, allele0, totalcounts)
+    dplyr::select(cell_id, chr, start, end, hap_label, allele1, allele0, totalcounts, switch)
 
   return(list(ascn = ascn %>% as.data.frame(.),
               haplotypes = haps %>% as.data.frame(.),
@@ -198,12 +197,11 @@ simulate_data_cohort <- function(clone_num = c(10),
   haps <- haps %>%
     dplyr::left_join(switches) %>%
     as.data.table() %>%
-    .[, switch := sample(c(TRUE,FALSE), .N, TRUE), by = "hap_label"] %>%
     .[, allele1 := data.table::fifelse(switch == TRUE, alleleA, alleleB)] %>%
     .[, allele0 := data.table::fifelse(switch == TRUE, alleleB, alleleA)]
 
   haps <- haps %>%
-    dplyr::select(cell_id, chr, start, end, hap_label, allele1, allele0, totalcounts)
+    dplyr::select(cell_id, chr, start, end, hap_label, allele1, allele0, totalcounts, switch)
 
   return(list(ascn = ascn %>% as.data.frame(.),
               haplotypes = haps %>% as.data.frame(.),
