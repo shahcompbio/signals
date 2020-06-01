@@ -532,9 +532,13 @@ plotHeatmap <- function(cn,
   } else{
     CNbins <- cn
   }
+
+  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min")){
+    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, state_BAF, state_phase, state_AS or state_min"))
+  }
+
   if (!plotcol %in% names(CNbins)){
-    warning(paste0("Column name - ", plotcol, " not in CNbins data frame, using state to plot heatmap"))
-    plotcol <- "state"
+    stop(paste0("Column name - ", plotcol, " not in CNbins data frame..."))
   }
 
   if (plotcol == "state"){
