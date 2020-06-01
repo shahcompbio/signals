@@ -115,13 +115,13 @@
 <span class="co">#&gt; Average distance from median to expected BAF = 0.0043</span>
 
 <span class="no">hscn_bb</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"betabinomial"</span>)
-<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -322810.2491</span>
-<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -319062.9264</span>
-<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -318563.878</span>
-<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -318540.7225</span>
-<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -318540.3319</span>
-<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -318540.3274</span>
-<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -318540.3274</span>
+<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -317861.0852</span>
+<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -314164.7918</span>
+<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -313672.2352</span>
+<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -313649.3851</span>
+<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -313649.0006</span>
+<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -313648.9962</span>
+<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -313648.9962</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;  A  B  C </span>
 <span class="co">#&gt; 90 72 73</span>
@@ -134,7 +134,7 @@
 <span class="co">#&gt; Inferred LOH error rate: 0.017 </span>
 <span class="co">#&gt; Emission model for HMM: betabinomial </span>
 <span class="co">#&gt;   Inferred over dispersion: 0.0104</span>
-<span class="co">#&gt;   Tarones Z score: 191.942</span>
+<span class="co">#&gt;   Tarones Z score: 190.317</span>
 <span class="co">#&gt; Average distance from median to expected BAF = 0.0047</span></pre></body></html></div>
 <p>We see that the model inferred a modest degree of overdispersion in the data.</p>
 <p>Below I’ll plot the heatmaps for the two output, which in this case are very similar.</p>
@@ -168,24 +168,24 @@
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
 <span class="co">#&gt; [1] 507878     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="fu">orderdf</span>(<span class="no">hscn</span>$<span class="no">data</span>), <span class="fu">orderdf</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
-<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5656796"</span>
-<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.353654"       </span>
-<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.5027547"      </span>
-<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5590 string mismatches"       </span>
-<span class="co">#&gt; [5] "Component \"state_AS\": 1629 string mismatches"              </span>
-<span class="co">#&gt; [6] "Component \"LOH\": 1619 string mismatches"                   </span>
-<span class="co">#&gt; [7] "Component \"phase\": 3393 string mismatches"                 </span>
-<span class="co">#&gt; [8] "Component \"state_phase\": 4599 string mismatches"           </span>
-<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.6659303"</span></pre></body></html></div>
+<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5664837"</span>
+<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3540323"      </span>
+<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.5019594"      </span>
+<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5611 string mismatches"       </span>
+<span class="co">#&gt; [5] "Component \"state_AS\": 1631 string mismatches"              </span>
+<span class="co">#&gt; [6] "Component \"LOH\": 1623 string mismatches"                   </span>
+<span class="co">#&gt; [7] "Component \"phase\": 3417 string mismatches"                 </span>
+<span class="co">#&gt; [8] "Component \"state_phase\": 4628 string mismatches"           </span>
+<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.6641119"</span></pre></body></html></div>
 <p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments but the difference is minimal.</p>
 <div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="no">segs</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
 
 <span class="no">segs_bb</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs</span>))
-<span class="co">#&gt; [1] 34555     5</span>
+<span class="co">#&gt; [1] 34630     5</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs_bb</span>))
-<span class="co">#&gt; [1] 31142     5</span></pre></body></html></div>
+<span class="co">#&gt; [1] 31154     5</span></pre></body></html></div>
 </div>
 </div>
 <div id="summary" class="section level2">

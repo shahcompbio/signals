@@ -132,7 +132,8 @@
 
     <pre class="usage"><span class='fu'>callAlleleSpecificCN</span>(<span class='no'>CNbins</span>, <span class='no'>haplotypes</span>, <span class='kw'>eps</span> <span class='kw'>=</span> <span class='fl'>1e-12</span>, <span class='kw'>loherror</span> <span class='kw'>=</span> <span class='fl'>0.02</span>,
   <span class='kw'>maxCN</span> <span class='kw'>=</span> <span class='fl'>12</span>, <span class='kw'>selftransitionprob</span> <span class='kw'>=</span> <span class='fl'>0.999</span>, <span class='kw'>progressbar</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>ncores</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>likelihood</span> <span class='kw'>=</span> <span class='st'>"binomial"</span>)</pre>
+  <span class='kw'>ncores</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>likelihood</span> <span class='kw'>=</span> <span class='st'>"binomial"</span>, <span class='kw'>minbins</span> <span class='kw'>=</span> <span class='fl'>100</span>,
+  <span class='kw'>minbinschr</span> <span class='kw'>=</span> <span class='fl'>10</span>)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -172,6 +173,14 @@
     <tr>
       <th>likelihood</th>
       <td><p>Likelihood model for HMM, default is <code>binomial</code>, other option is <code>betabinomial</code> or use <code>auto</code> and the algorithm will choose the likelihood that best fits the data.</p></td>
+    </tr>
+    <tr>
+      <th>minbins</th>
+      <td><p>Minimum number of bins containing both haplotype counts and copy number data for a cell to be included</p></td>
+    </tr>
+    <tr>
+      <th>minbinschr</th>
+      <td><p>Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included</p></td>
     </tr>
     </table>
 
