@@ -23,18 +23,17 @@ alleleHMM <- function(n,
   if (likelihood == "binomial"){
     l1log <- suppressWarnings(dbinom(x, n, p, log = T))
     l2log <- suppressWarnings(dbinom(n - x, n, p, log = T))
-    l1l2log <- mapply(function(x,y) matrixStats::logSumExp(c(x,y)), l1log, l2log)
+    l1l2log <- mapply(function(x,y) logspace_addcpp(x,y), l1log, l2log)
     l <- structure(l1l2log, dim = dim(l1log))
   } else {
     l1log <- suppressWarnings(VGAM::dbetabinom(x, n, p, rho = rho, log = T))
     dim(l1log) <- c(length(x), length(minor_cn))
     l2log <- suppressWarnings(VGAM::dbetabinom(n - x, n, p, rho = rho, log = T))
     dim(l2log) <- c(length(x), length(minor_cn))
-    l1l2log <- mapply(function(x,y) matrixStats::logSumExp(c(x,y)), l1log, l2log)
+    l1l2log <- mapply(function(x,y) logspace_addcpp(x,y), l1log, l2log)
     l <- structure(l1l2log, dim = dim(l1log))
   }
   if (eps > 0.0){
-    #ltemp <- vapply(l, function(x) matrixStats::logSumExp(c(x, log(eps))), FUN.VALUE = numeric(1))
     ltemp <- vapply(l, function(x) logspace_addcpp(x, log(eps)), FUN.VALUE = double(1))
     l <- matrix(ltemp, dim(l)[1], dim(l)[2])
   }
@@ -52,7 +51,7 @@ alleleHMM <- function(n,
 
   states <- paste0(minor_cn)
 
-  res <- myviterbicpp(l, log(tProbs), observations = 1:length(binstates))
+  res <- viterbi(l, log(tProbs), observations = 1:length(binstates))
 
   return(list(minorcn = res, l = l))
 }

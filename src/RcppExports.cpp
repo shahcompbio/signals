@@ -17,23 +17,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// myviterbicpp
-NumericVector myviterbicpp(NumericMatrix emission, NumericMatrix transition, NumericVector observations);
-RcppExport SEXP _schnapps_myviterbicpp(SEXP emissionSEXP, SEXP transitionSEXP, SEXP observationsSEXP) {
+// viterbi
+NumericVector viterbi(NumericMatrix emission, NumericMatrix transition, NumericVector observations);
+RcppExport SEXP _schnapps_viterbi(SEXP emissionSEXP, SEXP transitionSEXP, SEXP observationsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type emission(emissionSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type transition(transitionSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type observations(observationsSEXP);
-    rcpp_result_gen = Rcpp::wrap(myviterbicpp(emission, transition, observations));
+    rcpp_result_gen = Rcpp::wrap(viterbi(emission, transition, observations));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_schnapps_logspace_addcpp", (DL_FUNC) &_schnapps_logspace_addcpp, 2},
-    {"_schnapps_myviterbicpp", (DL_FUNC) &_schnapps_myviterbicpp, 3},
+    {"_schnapps_viterbi", (DL_FUNC) &_schnapps_viterbi, 3},
     {NULL, NULL, 0}
 };
 

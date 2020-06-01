@@ -82,7 +82,7 @@ HaplotypeHMM <- function(n,
 
   states <- paste0(minor_cn)
 
-  res <- myviterbicpp(l, log(tProbs), observations = 1:length(binstates))
+  res <- viterbi(l, log(tProbs), observations = 1:length(binstates))
 
   return(list(minorcn = res, l = l))
 }
@@ -374,6 +374,10 @@ tarones_Z <- function(alleleA, totalcounts){
 fitBB <- function(ascn){
   modal_state <- which.max(table(dplyr::filter(ascn, Min > 0)$state_AS_phased))
   bdata <- dplyr::filter(ascn, state_AS_phased == names(modal_state))
+  nsample <- min(length(bdata$state), 10^5)
+  if(nsample == 10^5){
+   bdata <- dplyr::sample_n(bdata, 10^5)
+  }
   expBAF <- bdata %>%
     dplyr::filter(dplyr::row_number() == 1) %>%
     dplyr::mutate(e = Min / (Min + Maj)) %>%
