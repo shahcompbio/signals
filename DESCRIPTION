@@ -29,7 +29,6 @@ Imports:
     ComplexHeatmap,
     GenomicRanges,
     cowplot,
-    matrixStats,
     ape,
     RColorBrewer,
     tidyr,
