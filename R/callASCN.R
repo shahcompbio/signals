@@ -130,7 +130,7 @@ switch_alleles <- function(cn, pval = 0.05){
 #' @param haplotypes single cell haplotypes dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `hap_label`, `allele1`, `allele0`, `totalcounts`
 #' @param eps default 1e-12
 #' @param loherror LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02
-#' @param maxCN maximum copy number to infer allele specific states, default= 12
+#' @param maxCN maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins
 #' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model
 #' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
 #' @param ncores Number of cores to use, default = 1
@@ -166,7 +166,7 @@ callAlleleSpecificCN <- function(CNbins,
                                  haplotypes,
                                  eps = 1e-12,
                                  loherror = 0.02,
-                                 maxCN = 12,
+                                 maxCN = NULL,
                                  selftransitionprob = 0.999,
                                  progressbar = TRUE,
                                  ncores = 1,
@@ -184,6 +184,10 @@ callAlleleSpecificCN <- function(CNbins,
       stop("Package \"VGAM\" needed to use the beta-binomial model. Please install it.",
            call. = FALSE)
     }
+  }
+
+  if (is.null(maxCN)){
+    maxCN <- max(CNbins$state)
   }
 
   CNBAF <- combineBAFCN(haplotypes = haplotypes, CNbins = CNbins)

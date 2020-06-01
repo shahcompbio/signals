@@ -406,11 +406,15 @@ fitBB <- function(ascn){
 #' @param haplotypes single cell haplotypes dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `hap_label`, `allele1`, `allele0`, `totalcounts`
 #' @param eps default 1e-12
 #' @param loherror LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02
-#' @param maxCN maximum copy number to infer allele specific states, default=12
+#' @param maxCN maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins
 #' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model
 #' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
 #' @param ncores Number of cores to use, default = 1
+#' @param minfrac Minimum proportion of haplotypes to retain when clustering + phasing
 #' @param likelihood Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.
+#' @param minbins Minimum number of bins containing both haplotype counts and copy number data for a cell to be included
+#' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
+#' @param phased_haplotypes Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by schnapps does not return a good fit.
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -437,7 +441,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     haplotypes,
                                       eps = 1e-12,
                                       loherror = 0.02,
-                                      maxCN = 12,
+                                      maxCN = NULL,
                                       selftransitionprob = 0.999,
                                       progressbar = TRUE,
                                       ncores = 1,
@@ -459,6 +463,11 @@ callHaplotypeSpecificCN <- function(CNbins,
            call. = FALSE)
     }
   }
+
+  if (is.null(maxCN)){
+    maxCN <- max(CNbins$state)
+  }
+
 
   cnbaf <- combineBAFCN(haplotypes = haplotypes, CNbins = CNbins)
   ascn <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
