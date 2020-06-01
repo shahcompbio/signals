@@ -80,7 +80,7 @@ simulate_cell <- function(nchr = 2,
   CNbins <- dplyr::select(ascn, cell_id, chr, start, end, state, copy)
 
   haps <- ascn %>%
-    .[, totalcounts := rpois(1, coverage), by = .(chr, start, end)]
+    .[, totalcounts := rpois(1, coverage * state), by = .(chr, start, end)]
 
   if (likelihood == "binomial"){
     haps <- haps %>%
