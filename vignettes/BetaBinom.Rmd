@@ -24,8 +24,8 @@ This vignette demonstrates how to use a beta-binomial model instead of a binomia
 
 ## Inference
 ```{r}
-data(haplotypes)
-data(CNbins)
+data("haplotypes")
+data("CNbins")
 haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
 hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "binomial")
 
@@ -36,7 +36,7 @@ hscn_bb <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "betabinomia
 print(hscn_bb)
 
 ```
-We see that the model inferred a modest degree of overdispersion in the data.
+We see that the model inferred a modest degree of overdispersion in the data, but that this was siginificantly different from 0 dispersion (Tarones Z-score is high).
 
 Below I'll plot the heatmaps for the two output, which in this case are very similar.
 
@@ -57,14 +57,14 @@ To interrogate the difference between the binomial and beta-binomial models we c
 plotBBfit(hscn_bb)
 ```
 
-We can check how similar the results are by comparing the two dataframes. We find for this data that the results are almost identical.
+We can check how similar the results are by comparing the two dataframes. We find for this data that the results are very similar.
 ```{r}
 print(dim(hscn$data))
 print(dim(hscn_bb$data))
 all.equal(orderdf(hscn$data), orderdf(hscn_bb$data))
 ```
 
-Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments but the difference is minimal.
+Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments in the beta-binomial model.
 
 ```{r}
 segs <- create_segments(hscn$data, field = "state_AS_phased")
@@ -77,5 +77,5 @@ print(dim(segs_bb))
 
 
 ## Summary
-With this dataset, the difference between the nbinomial model and beta-binomial model is very minimal but in other lower quality datasets with for example lower depth of coverage the beta-binomial model may produce superior results.
+With this dataset, the difference between the nbinomial model and beta-binomial model is minimal but produces a statistically superior fit, in lower quality datasets with for example lower depth of coverage the beta-binomial model may may provide more noticeable differences.
 
