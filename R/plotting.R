@@ -396,7 +396,7 @@ plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.03, maxstate = 10){
 }
 
 
-plot_density_histogram <- function(dat, mystate, rho, nbins = 30){
+plot_density_histogram <- function(dat, mystate, rho, nbins = 30, frac = "NA"){
   dat <- dat %>%
     dplyr::filter(state_AS_phased == mystate, totalcounts > 9)
 
@@ -420,28 +420,29 @@ plot_density_histogram <- function(dat, mystate, rho, nbins = 30){
     ggplot2::geom_line(data = dffit_bb, stat="density",ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5) +
     ggplot2::geom_line(data = dffit_b, stat="density",ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5, linetype = 2) +
     ggplot2::scale_colour_manual(values=c(ggplot2::alpha("deepskyblue4",0.6), ggplot2::alpha("firebrick4",0.6))) +
-    ggplot2::theme_bw(base_family = 'Helvetica') +
+    ggplot2::theme_bw() +
     ggplot2::xlab("BAF") +
     ggplot2::ylab("Density") +
     ggplot2:: xlim(c(0.0, 1.0)) +
     ggplot2::theme(legend.title = ggplot2::element_blank()) +
     cowplot::theme_cowplot() +
     ggplot2::theme(legend.position = "none") +
-    ggplot2:: ggtitle(mystate)
+    ggplot2:: ggtitle(paste0(mystate, " (", round(frac, 3) * 100, "%)"))
 
   return(g)
 }
 
 #' @export
-plotBBfit <- function(hscn, nbins = 30){
+plotBBfit <- function(hscn, nbins = 30, minfrac = 0.03){
   mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0, totalcounts > 9)
+
   x <- table(mydat$state_AS_phased)
   x <- x / sum(x)
-  x <- x[which(x > 0.01)]
+  x <- x[which(x > minfrac)]
   gplots <- list()
   j <- 1
   for (i in names(x)){
-    gplots[[j]] <- plot_density_histogram(hscn$data, mystate = i, rho = hscn$likelihood$rho, nbins = nbins)
+    gplots[[j]] <- plot_density_histogram(hscn$data, mystate = i, rho = hscn$likelihood$rho, nbins = nbins, frac = x[[i]])
     j <- j + 1
   }
 
