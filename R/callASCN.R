@@ -17,8 +17,8 @@ alleleHMM <- function(n,
   total_cn_mat <- replicate(length(minor_cn), binstates)
 
   p <- t(vapply(binstates, function(x) minor_cn / x, FUN.VALUE = numeric(length(minor_cn))))
-  p[, 1] <- loherror
-  p[minor_cn_mat == total_cn_mat] <- 1 - loherror
+  p[minor_cn_mat < total_cn_mat / 2] <- p[minor_cn_mat < total_cn_mat/2] + loherror
+  p[minor_cn_mat > total_cn_mat / 2] <- p[minor_cn_mat > total_cn_mat/2] - loherror
 
   if (likelihood == "binomial"){
     l1log <- suppressWarnings(dbinom(x, n, p, log = T))
