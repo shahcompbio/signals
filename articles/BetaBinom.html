@@ -97,8 +97,8 @@
 <div id="inference" class="section level2">
 <h2 class="hasAnchor">
 <a href="#inference" class="anchor"></a>Inference</h2>
-<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="no">haplotypes</span>)
-<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="no">CNbins</span>)
+<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="st">"haplotypes"</span>)
+<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="st">"CNbins"</span>)
 <span class="no">haplotypes</span> <span class="kw">&lt;-</span> <span class="fu">format_haplotypes_dlp</span>(<span class="no">haplotypes</span>, <span class="no">CNbins</span>)
 <span class="no">hscn</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"binomial"</span>)
 <span class="co">#&gt; </span>
@@ -110,18 +110,18 @@
 <span class="co">#&gt;  </span>
 <span class="co">#&gt; Number of cells: 235</span>
 <span class="co">#&gt; Bin size: 0.5 Mb </span>
-<span class="co">#&gt; Inferred LOH error rate: 0.017 </span>
+<span class="co">#&gt; Inferred LOH error rate: 0.019 </span>
 <span class="co">#&gt; Emission model for HMM: binomial </span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.0043</span>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.0047</span>
 
 <span class="no">hscn_bb</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"betabinomial"</span>)
-<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -317861.0852</span>
-<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -314164.7918</span>
-<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -313672.2352</span>
-<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -313649.3851</span>
-<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -313649.0006</span>
-<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -313648.9962</span>
-<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -313648.9962</span>
+<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -317726.6332</span>
+<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -313975.073</span>
+<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -313468.9066</span>
+<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -313444.9917</span>
+<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -313444.5835</span>
+<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -313444.5788</span>
+<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -313444.5788</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;  A  B  C </span>
 <span class="co">#&gt; 90 72 73</span>
@@ -131,12 +131,12 @@
 <span class="co">#&gt;  </span>
 <span class="co">#&gt; Number of cells: 235</span>
 <span class="co">#&gt; Bin size: 0.5 Mb </span>
-<span class="co">#&gt; Inferred LOH error rate: 0.017 </span>
+<span class="co">#&gt; Inferred LOH error rate: 0.019 </span>
 <span class="co">#&gt; Emission model for HMM: betabinomial </span>
-<span class="co">#&gt;   Inferred over dispersion: 0.0104</span>
-<span class="co">#&gt;   Tarones Z score: 190.317</span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.0047</span></pre></body></html></div>
-<p>We see that the model inferred a modest degree of overdispersion in the data.</p>
+<span class="co">#&gt;   Inferred over dispersion: 0.0102</span>
+<span class="co">#&gt;   Tarones Z score: 188.052</span>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.005</span></pre></body></html></div>
+<p>We see that the model inferred a modest degree of overdispersion in the data, but that this was siginificantly different from 0 dispersion (Tarones Z-score is high).</p>
 <p>Below I’ll plot the heatmaps for the two output, which in this case are very similar.</p>
 <div id="binomial-model" class="section level3">
 <h3 class="hasAnchor">
@@ -162,36 +162,36 @@
 <p>To interrogate the difference between the binomial and beta-binomial models we can plot the BAF and overlay the two models.</p>
 <div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="fu">plotBBfit</span>(<span class="no">hscn_bb</span>)</pre></body></html></div>
 <p><img src="BetaBinom_files/figure-html/unnamed-chunk-5-1.png" width="960"></p>
-<p>We can check how similar the results are by comparing the two dataframes. We find for this data that the results are almost identical.</p>
+<p>We can check how similar the results are by comparing the two dataframes. We find for this data that the results are very similar.</p>
 <div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">hscn</span>$<span class="no">data</span>))
 <span class="co">#&gt; [1] 507878     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
 <span class="co">#&gt; [1] 507878     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="fu">orderdf</span>(<span class="no">hscn</span>$<span class="no">data</span>), <span class="fu">orderdf</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
-<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5664837"</span>
-<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3540323"      </span>
-<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.5019594"      </span>
-<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5611 string mismatches"       </span>
-<span class="co">#&gt; [5] "Component \"state_AS\": 1631 string mismatches"              </span>
-<span class="co">#&gt; [6] "Component \"LOH\": 1623 string mismatches"                   </span>
-<span class="co">#&gt; [7] "Component \"phase\": 3417 string mismatches"                 </span>
-<span class="co">#&gt; [8] "Component \"state_phase\": 4628 string mismatches"           </span>
-<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.6641119"</span></pre></body></html></div>
-<p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments but the difference is minimal.</p>
+<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5903767"</span>
+<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3549388"      </span>
+<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.5137029"      </span>
+<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5535 string mismatches"       </span>
+<span class="co">#&gt; [5] "Component \"state_AS\": 1601 string mismatches"              </span>
+<span class="co">#&gt; [6] "Component \"LOH\": 1385 string mismatches"                   </span>
+<span class="co">#&gt; [7] "Component \"phase\": 3354 string mismatches"                 </span>
+<span class="co">#&gt; [8] "Component \"state_phase\": 4371 string mismatches"           </span>
+<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.6628337"</span></pre></body></html></div>
+<p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments in the beta-binomial model.</p>
 <div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="no">segs</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
 
 <span class="no">segs_bb</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs</span>))
-<span class="co">#&gt; [1] 34630     5</span>
+<span class="co">#&gt; [1] 34454     5</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs_bb</span>))
-<span class="co">#&gt; [1] 31154     5</span></pre></body></html></div>
+<span class="co">#&gt; [1] 31224     5</span></pre></body></html></div>
 </div>
 </div>
 <div id="summary" class="section level2">
 <h2 class="hasAnchor">
 <a href="#summary" class="anchor"></a>Summary</h2>
-<p>With this dataset, the difference between the nbinomial model and beta-binomial model is very minimal but in other lower quality datasets with for example lower depth of coverage the beta-binomial model may produce superior results.</p>
+<p>With this dataset, the difference between the nbinomial model and beta-binomial model is minimal but produces a statistically superior fit, in lower quality datasets with for example lower depth of coverage the beta-binomial model may may provide more noticeable differences.</p>
 </div>
   </div>
 
