@@ -1,7 +1,7 @@
 #' @export
 umap_clustering <- function(CNbins,
-                            n_neighbors = 30,
-                            min_dist = 0.0,
+                            n_neighbors = 20,
+                            min_dist = 0.1,
                             minPts = 30,
                             seed = 1,
                             field = "state"){
@@ -55,7 +55,10 @@ umap_clustering <- function(CNbins,
 
   message(paste0("Identified ", length(unique(dfumap$clone_id)), " clusters"))
   message("Distribution of clusters:")
-  print(table(dfumap$clone_id))
+  f <- table(dfumap$clone_id)
+  for (cl in sort(unique(dfumap$clone_id))){
+    message(paste0("  Cluster ", cl, ":", f[[cl]]))
+  }
 
   return(list(clustering = dfumap,
               hdbscanresults = hdbscanresults,
@@ -65,8 +68,8 @@ umap_clustering <- function(CNbins,
 
 #' @export
 umap_clustering_breakpoints <- function(CNbins,
-                            n_neighbors = 30,
-                            min_dist = 0.0,
+                            n_neighbors = 20,
+                            min_dist = 0.1,
                             minPts = 30,
                             seed = 1,
                             field = "state"){
@@ -76,6 +79,7 @@ umap_clustering_breakpoints <- function(CNbins,
   }
 
   message("Creating breakpoint matrix...")
+  print(length(unique(CNbins$cell_id)))
   segs <- schnapps::create_segments(CNbins, field = field)
   segs_matrix <- createbreakpointmatrix(segs)
 
@@ -96,7 +100,7 @@ umap_clustering_breakpoints <- function(CNbins,
                        umap2 = umapresults$embedding[,2],
                        cell_id = row.names(segs_matrix))
   rownames(dfumap) <- row.names(segs_matrix)
-
+  print(dim(dfumap))
   message('Clustering cells using hdbscan...')
   gentree <- FALSE
   while(gentree == FALSE){
@@ -122,7 +126,10 @@ umap_clustering_breakpoints <- function(CNbins,
 
   message(paste0("Identified ", length(unique(dfumap$clone_id)), " clusters"))
   message("Distribution of clusters:")
-  print(table(dfumap$clone_id))
+  f <- table(dfumap$clone_id)
+  for (cl in sort(unique(dfumap$clone_id))){
+    message(paste0("  Cluster ", cl, ": ", f[[cl]]))
+  }
 
   return(list(clustering = dfumap,
               hdbscanresults = hdbscanresults,

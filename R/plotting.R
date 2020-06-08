@@ -81,13 +81,14 @@ plotCNprofile <- function(CNbins,
            call. = FALSE)
     }
     gCN <- pl$CNbins %>%
-      dplyr::mutate(state = paste0(state)) %>%
+      dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
       ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(name = "Allele Specific CN",
                                   breaks = names(statecolpal),
                                   labels = names(statecolpal),
-                                  values = statecolpal) +
+                                  values = statecolpal,
+                                  drop = FALSE) +
       ggplot2::theme(axis.title.y = ggplot2::element_blank(),
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
@@ -102,13 +103,14 @@ plotCNprofile <- function(CNbins,
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
   } else {
     gCN <- pl$CNbins %>%
-      dplyr::mutate(state = paste0(state)) %>%
+      dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
       ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(name = "Allele Specific CN",
                                   breaks = names(statecolpal),
                                   labels = names(statecolpal),
-                                  values = statecolpal) +
+                                  values = statecolpal,
+                                  drop = FALSE) +
       ggplot2::theme(axis.title.y = ggplot2::element_blank(),
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
@@ -219,14 +221,15 @@ plotCNprofileBAF <- function(cn,
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2)))
 
     gCN <- pl$CNbins %>%
-      dplyr::mutate(state = paste0(state)) %>%
+      dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
       ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(name = "Allele Specific CN",
                                   breaks = names(statecolpal),
                                   labels = names(statecolpal),
-                                  values = statecolpal) +
+                                  values = statecolpal,
+                                  drop = FALSE) +
       ggplot2::theme(axis.title.y = ggplot2::element_blank(),
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
@@ -267,14 +270,15 @@ plotCNprofileBAF <- function(cn,
         ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2)))
 
       gCN <- pl$CNbins %>%
-        dplyr::mutate(state = paste0(state)) %>%
+        dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
         ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
         ggplot2::scale_color_manual(name = "Allele Specific CN",
                                     breaks = names(statecolpal),
                                     labels = names(statecolpal),
-                                    values = statecolpal) +
+                                    values = statecolpal,
+                                    drop = FALSE) +
         ggplot2::theme(axis.title.y = ggplot2::element_blank(),
                        axis.text.y = ggplot2::element_blank(),
                        axis.ticks.y = ggplot2::element_blank(),
@@ -472,5 +476,52 @@ plotBBfit <- function(hscn, nbins = 30, minfrac = 0.01){
   gplots[[j]] <- legend
 
   cowplot::plot_grid(plotlist = gplots, ncol = 3)
+}
+
+#' @export
+plot_variance_state <- function(hscn, by_allele_specific_state = FALSE){
+  if (by_allele_specific_state == TRUE){
+    plot_var <- hscn$data %>%
+      dplyr::group_by(state, state_AS_phased) %>%
+      dplyr:: filter(Min > 0 & Maj > 0) %>%
+      dplyr::summarize(mBAF = median(BAF), varBAF = var(BAF)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = state, y = varBAF, col = factor(paste0("CN", state), levels = paste0("CN", seq(0, 11, 1))))) +
+      ggplot2::geom_text(ggplot2::aes(label = state_AS_phased)) +
+      cowplot::theme_cowplot() +
+      ggplot2::xlab("State") +
+      ggplot2::ylab("BAF variance") +
+      ggplot2::scale_color_manual(name = "Copy number \n state",
+                                 breaks = paste0("CN", seq(0, 11, 1)),
+                                 labels = paste0("CN", seq(0, 11, 1)),
+                                 values = scCN_cols(paste0("CN", seq(0, 11, 1))),
+                                 drop = FALSE) +
+      ggplot2::theme(legend.position = "none") +
+      ggplot2::scale_x_continuous(labels = seq(1, max(hscn$data$state), 1),
+                                  breaks = seq(1, max(hscn$data$state), 1))
+  } else {
+    plot_var <- hscn$data %>%
+      dplyr:: filter(Min > 0 & Maj > 0) %>%
+      dplyr::group_by(state, state_AS_phased) %>%
+      dplyr::summarize(mBAF = median(BAF), varBAF = var(BAF)) %>%
+      dplyr::group_by(state) %>%
+      dplyr::summarise(mBAF = mean(mBAF), ymin = min(varBAF), ymax = max(varBAF), varBAF = mean(varBAF)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = state, y = varBAF,
+                                   ymin = ymin, ymax = ymax,
+                                   col = factor(paste0("CN", state), levels = paste0("CN", seq(0, 11, 1))))) +
+      ggplot2::geom_pointrange() +
+      cowplot::theme_cowplot() +
+      ggplot2::xlab("State") +
+      ggplot2::ylab("BAF variance") +
+      ggplot2::scale_color_manual(name = "Copy number \n state",
+                                  breaks = paste0("CN", seq(0, 11, 1)),
+                                  labels = paste0("CN", seq(0, 11, 1)),
+                                  values = scCN_cols(paste0("CN", seq(0, 11, 1))),
+                                  drop = FALSE) +
+      ggplot2::theme(legend.position = "none") +
+      ggplot2::scale_x_continuous(labels = seq(1, max(hscn$data$state), 1),
+                                  breaks = seq(1, max(hscn$data$state), 1))
+  }
+
+  return(plot_var)
 }
 

@@ -5,10 +5,11 @@
 \title{Call haplotype specific copy number in single cell datasets}
 \usage{
 callHaplotypeSpecificCN(CNbins, haplotypes, eps = 1e-12,
-  loherror = 0.02, maxCN = 12, selftransitionprob = 0.999,
+  loherror = 0.02, maxCN = NULL, selftransitionprob = 0.999,
   progressbar = TRUE, ncores = 1, phasebyarm = FALSE,
   minfrac = 0.95, likelihood = "binomial", minbins = 100,
-  minbinschr = 10, phased_haplotypes = NULL)
+  minbinschr = 10, phased_haplotypes = NULL,
+  clustering_method = "copy")
 }
 \arguments{
 \item{CNbins}{single cell copy number dataframe with the following columns: \code{cell_id}, \code{chr}, \code{start}, \code{end}, \code{state}, \code{copy}}
@@ -19,7 +20,7 @@ callHaplotypeSpecificCN(CNbins, haplotypes, eps = 1e-12,
 
 \item{loherror}{LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02}
 
-\item{maxCN}{maximum copy number to infer allele specific states, default=12}
+\item{maxCN}{maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins}
 
 \item{selftransitionprob}{probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model}
 
@@ -27,7 +28,17 @@ callHaplotypeSpecificCN(CNbins, haplotypes, eps = 1e-12,
 
 \item{ncores}{Number of cores to use, default = 1}
 
+\item{minfrac}{Minimum proportion of haplotypes to retain when clustering + phasing}
+
 \item{likelihood}{Likelihood model for HMM, default is \code{binomial}, other option is \code{betabinomial} or use \code{auto} and the algorithm will choose the likelihood that best fits the data.}
+
+\item{minbins}{Minimum number of bins containing both haplotype counts and copy number data for a cell to be included}
+
+\item{minbinschr}{Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included}
+
+\item{phased_haplotypes}{Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by schnapps does not return a good fit.}
+
+\item{clustering_method}{Method to use to cluster cells for haplotype phasing, default is \code{copy}, other option is \code{breakpoints}}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include
