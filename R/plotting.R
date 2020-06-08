@@ -441,11 +441,13 @@ plot_density_histogram <- function(dat, mystate, rho, nbins = 30, frac = "NA", l
 
 #' @export
 plotBBfit <- function(hscn, nbins = 30, minfrac = 0.03){
-  mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0, totalcounts > 9)
 
-  x <- table(mydat$state_AS_phased)
+  x <- table(hscn$data$state_AS_phased)
   x <- x / sum(x)
   x <- x[which(x > minfrac)]
+
+  mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0, totalcounts > 9)
+
   gplots <- list()
   j <- 1
   for (i in names(x)){
