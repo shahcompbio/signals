@@ -343,7 +343,7 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
 }
 
 #' @export
-plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, dens_adjust = 2.5){
+plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, dens_adjust = 2.0){
 
   if (is.hscn(cn) | is.ascn(cn)){
     alleleCN <- cn$data
