@@ -5,7 +5,7 @@
 \title{Call allele specific copy number in single cell datasets}
 \usage{
 callAlleleSpecificCN(CNbins, haplotypes, eps = 1e-12, loherror = 0.02,
-  maxCN = 12, selftransitionprob = 0.999, progressbar = TRUE,
+  maxCN = NULL, selftransitionprob = 0.999, progressbar = TRUE,
   ncores = 1, likelihood = "binomial", minbins = 100,
   minbinschr = 10)
 }
@@ -18,7 +18,7 @@ callAlleleSpecificCN(CNbins, haplotypes, eps = 1e-12, loherror = 0.02,
 
 \item{loherror}{LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02}
 
-\item{maxCN}{maximum copy number to infer allele specific states, default= 12}
+\item{maxCN}{maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins}
 
 \item{selftransitionprob}{probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model}
 
