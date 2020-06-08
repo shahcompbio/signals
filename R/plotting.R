@@ -343,7 +343,7 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
 }
 
 #' @export
-plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.03, maxstate = 10){
+plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, dens_adjust = 2.5){
 
   if (is.hscn(cn) | is.ascn(cn)){
     alleleCN <- cn$data
@@ -379,14 +379,15 @@ plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.03, maxstate = 10){
     dplyr::mutate(cncol = paste0("CN", state)) %>%
     ggplot2::ggplot(ggplot2::aes(x = forcats::fct_reorder(state_AS_phased, state),
                                  y = BAF)) +
-    ggplot2::geom_violin(scale = "width", col = "white", ggplot2::aes(fill = cncol)) +
+    ggplot2::geom_violin(scale = "width", col = "white", ggplot2::aes(fill = cncol), adjust = dens_adjust) +
     ggplot2::geom_boxplot(width = 0.1, outlier.shape = NA, col = "white", ggplot2::aes(fill = cncol)) +
     ggplot2::scale_fill_manual(name = "Copy number \n state",
                                 breaks = paste0("CN", seq(0, max(alleleCN$state, na.rm = TRUE), 1)),
                                 labels = seq(0, max(alleleCN$state, na.rm = TRUE), 1),
                                 values = scCN_cols(paste0("CN", seq(0, max(alleleCN$state, na.rm = TRUE), 1)))) +
     cowplot::theme_cowplot() +
-    ggplot2::geom_crossbar(data = allASstates, ggplot2::aes(y = cBAF, ymin = cBAF, ymax = cBAF)) +
+    ggplot2::geom_crossbar(data = allASstates, ggplot2::aes(y = cBAF, ymin = cBAF, ymax = cBAF),
+                           alpha = 0.2, size = 0.2) +
     ggplot2::geom_text(data = text_fraction, ggplot2::aes(x = state_AS_phased, y = y, label = pct)) +
     ggplot2::xlab("") +
     ggplot2::theme(legend.position = "bottom") +
@@ -440,13 +441,15 @@ plot_density_histogram <- function(dat, mystate, rho, nbins = 30, frac = "NA", l
 }
 
 #' @export
-plotBBfit <- function(hscn, nbins = 30, minfrac = 0.03){
+plotBBfit <- function(hscn, nbins = 30, minfrac = 0.01){
 
   x <- table(hscn$data$state_AS_phased)
   x <- x / sum(x)
   x <- x[which(x > minfrac)]
 
   mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0, totalcounts > 9)
+
+  x <- x[names(x) %in% unique(mydat$state_AS_phased)]
 
   gplots <- list()
   j <- 1
