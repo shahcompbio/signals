@@ -102,8 +102,8 @@
 <span class="no">haplotypes</span> <span class="kw">&lt;-</span> <span class="fu">format_haplotypes_dlp</span>(<span class="no">haplotypes</span>, <span class="no">CNbins</span>)
 <span class="no">hscn</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"binomial"</span>)
 <span class="co">#&gt; </span>
-<span class="co">#&gt;  A  B  C </span>
-<span class="co">#&gt; 90 72 73</span>
+<span class="co">#&gt;  A  B  C  D </span>
+<span class="co">#&gt; 90 72 37 36</span>
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="no">hscn</span>)
 <span class="co">#&gt; Haplotype specific copy number object </span>
@@ -144,7 +144,7 @@
 <div class="sourceCode" id="cb3"><html><body><pre class="r"><span class="fu">plotHeatmap</span>(<span class="no">hscn</span>, <span class="kw">plotcol</span> <span class="kw">=</span> <span class="st">"state_BAF"</span>, <span class="kw">plottree</span> <span class="kw">=</span> <span class="fl">FALSE</span>, <span class="kw">spacer_cols</span> <span class="kw">=</span> <span class="fl">15</span>)
 <span class="co">#&gt; </span>
 <span class="co">#&gt;  A  B  C  D  E  F  G </span>
-<span class="co">#&gt; 21 25 44 36 36 37 36</span></pre></body></html></div>
+<span class="co">#&gt; 36 36 25 44 21 37 36</span></pre></body></html></div>
 <p><img src="BetaBinom_files/figure-html/unnamed-chunk-3-1.png" width="960"></p>
 </div>
 <div id="beta-binomial-model" class="section level3">
@@ -164,26 +164,44 @@
 <p><img src="BetaBinom_files/figure-html/unnamed-chunk-5-1.png" width="960"></p>
 <p>We can check how similar the results are by comparing the two dataframes. We find for this data that the results are very similar.</p>
 <div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">hscn</span>$<span class="no">data</span>))
-<span class="co">#&gt; [1] 507878     19</span>
+<span class="co">#&gt; [1] 507859     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
 <span class="co">#&gt; [1] 507878     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="fu">orderdf</span>(<span class="no">hscn</span>$<span class="no">data</span>), <span class="fu">orderdf</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
-<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5903767"</span>
-<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3549388"      </span>
-<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.5137029"      </span>
-<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5535 string mismatches"       </span>
-<span class="co">#&gt; [5] "Component \"state_AS\": 1601 string mismatches"              </span>
-<span class="co">#&gt; [6] "Component \"LOH\": 1385 string mismatches"                   </span>
-<span class="co">#&gt; [7] "Component \"phase\": 3354 string mismatches"                 </span>
-<span class="co">#&gt; [8] "Component \"state_phase\": 4371 string mismatches"           </span>
-<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.6628337"</span></pre></body></html></div>
+<span class="co">#&gt;  [1] "Attributes: &lt; Component \"row.names\": Numeric: lengths (507860, 507879) differ &gt;"              </span>
+<span class="co">#&gt;  [2] "Component \"chr\": Lengths (507860, 507879) differ (string compare on first 507860)"            </span>
+<span class="co">#&gt;  [3] "Component \"chr\": 65641 string mismatches"                                                     </span>
+<span class="co">#&gt;  [4] "Component \"start\": Numeric: lengths (507860, 507879) differ"                                  </span>
+<span class="co">#&gt;  [5] "Component \"end\": Numeric: lengths (507860, 507879) differ"                                    </span>
+<span class="co">#&gt;  [6] "Component \"cell_id\": Lengths (507860, 507879) differ (string compare on first 507860)"        </span>
+<span class="co">#&gt;  [7] "Component \"cell_id\": 'is.NA' value mismatch: 0 in current 1 in target"                        </span>
+<span class="co">#&gt;  [8] "Component \"state\": Numeric: lengths (507860, 507879) differ"                                  </span>
+<span class="co">#&gt;  [9] "Component \"copy\": Numeric: lengths (507860, 507879) differ"                                   </span>
+<span class="co">#&gt; [10] "Component \"alleleA\": Numeric: lengths (507860, 507879) differ"                                </span>
+<span class="co">#&gt; [11] "Component \"alleleB\": Numeric: lengths (507860, 507879) differ"                                </span>
+<span class="co">#&gt; [12] "Component \"totalcounts\": Numeric: lengths (507860, 507879) differ"                            </span>
+<span class="co">#&gt; [13] "Component \"BAF\": Numeric: lengths (507860, 507879) differ"                                    </span>
+<span class="co">#&gt; [14] "Component \"state_min\": Numeric: lengths (507860, 507879) differ"                              </span>
+<span class="co">#&gt; [15] "Component \"Maj\": Numeric: lengths (507860, 507879) differ"                                    </span>
+<span class="co">#&gt; [16] "Component \"Min\": Numeric: lengths (507860, 507879) differ"                                    </span>
+<span class="co">#&gt; [17] "Component \"state_AS_phased\": Lengths (507860, 507879) differ (string compare on first 507860)"</span>
+<span class="co">#&gt; [18] "Component \"state_AS_phased\": 'is.NA' value mismatch: 0 in current 1 in target"                </span>
+<span class="co">#&gt; [19] "Component \"state_AS\": Lengths (507860, 507879) differ (string compare on first 507860)"       </span>
+<span class="co">#&gt; [20] "Component \"state_AS\": 'is.NA' value mismatch: 0 in current 1 in target"                       </span>
+<span class="co">#&gt; [21] "Component \"LOH\": Lengths (507860, 507879) differ (string compare on first 507860)"            </span>
+<span class="co">#&gt; [22] "Component \"LOH\": 'is.NA' value mismatch: 0 in current 1 in target"                            </span>
+<span class="co">#&gt; [23] "Component \"phase\": Lengths (507860, 507879) differ (string compare on first 507860)"          </span>
+<span class="co">#&gt; [24] "Component \"phase\": 'is.NA' value mismatch: 0 in current 1 in target"                          </span>
+<span class="co">#&gt; [25] "Component \"state_phase\": Lengths (507860, 507879) differ (string compare on first 507860)"    </span>
+<span class="co">#&gt; [26] "Component \"state_phase\": 'is.NA' value mismatch: 0 in current 1 in target"                    </span>
+<span class="co">#&gt; [27] "Component \"state_BAF\": Numeric: lengths (507860, 507879) differ"</span></pre></body></html></div>
 <p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments in the beta-binomial model.</p>
 <div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="no">segs</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
 
 <span class="no">segs_bb</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs</span>))
-<span class="co">#&gt; [1] 34454     5</span>
+<span class="co">#&gt; [1] 34140     5</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs_bb</span>))
 <span class="co">#&gt; [1] 31224     5</span></pre></body></html></div>
 </div>
