@@ -303,16 +303,25 @@ proportion_imbalance_manual <- function(ascn, haplotypes, cl, field = "copy", ph
 }
 
 #' @export
-proportion_imbalance <- function(ascn, haplotypes, field = "copy", phasebyarm = FALSE, minfrachaplotypes = 0.95){
+proportion_imbalance <- function(ascn, haplotypes,
+                                 field = "copy",
+                                 phasebyarm = FALSE,
+                                 minfrachaplotypes = 0.95,
+                                 clustering_method = "copy"){
   ncells <- length(unique(ascn$cell_id))
   ncells_for_clustering <- min_cells(haplotypes, minfrachaplotypes = minfrachaplotypes)
   ncells_for_clustering <- ncells_for_clustering$ncells_forclustering
   message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
 
   #cluster cells using umap and the "copy" corrected read count value
-  cl <- umap_clustering(ascn,
-                        minPts = ncells_for_clustering,
-                        field = field)
+  if (clustering_method == "copy"){
+    cl <- umap_clustering(ascn,
+                          minPts = ncells_for_clustering,
+                          field = field)
+  } else {
+    cl <- umap_clustering_breakpoints(ascn,
+                          minPts = ncells_for_clustering)
+  }
   alleles <- data.table()
   ascn <- as.data.table(dplyr::left_join(ascn, cl$clustering))
 
@@ -415,6 +424,7 @@ fitBB <- function(ascn){
 #' @param minbins Minimum number of bins containing both haplotype counts and copy number data for a cell to be included
 #' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
 #' @param phased_haplotypes Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by schnapps does not return a good fit.
+#' @param clustering_method Method to use to cluster cells for haplotype phasing, default is `copy`, other option is `breakpoints`
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -450,7 +460,12 @@ callHaplotypeSpecificCN <- function(CNbins,
                                       likelihood = "binomial",
                                       minbins = 100,
                                       minbinschr = 10,
-                                      phased_haplotypes = NULL) {
+                                      phased_haplotypes = NULL,
+                                      clustering_method = "copy") {
+
+  if (!clustering_method %in% c("copy", "breakpoints")){
+    stop("Clustering method must be one of copy or breakpoints")
+  }
 
   if (!likelihood %in% c("binomial", "betabinomial", "auto")){
     stop("Likelihood model for HMM emission model must be one of binomial, betabinomial or auto",
@@ -505,7 +520,11 @@ callHaplotypeSpecificCN <- function(CNbins,
   ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
   if (is.null(phased_haplotypes)){
-    p <- proportion_imbalance(ascn, haplotypes, phasebyarm = phasebyarm, minfrac = minfrac)
+    p <- proportion_imbalance(ascn,
+                              haplotypes,
+                              phasebyarm = phasebyarm,
+                              minfrac = minfrac,
+                              clustering_method = clustering_method)
     phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
                                                 prop = p,
                                                 phasebyarm = phasebyarm)
