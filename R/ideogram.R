@@ -35,9 +35,9 @@ plotideogram <- function(cn, cellid = NULL, gene.symbols = NULL, chr = NULL, max
   data_cell$col_state <- scCN_cols(paste0("CN", data_cell$state))
   data_cell$col_ASstate <- scCNphase_cols(paste0(data_cell$state_phase))
 
-  data <- regioneR::toGRanges(data_cell[, c("chr", "start", "end", "state", "copy",
+  data <- regioneR::toGRanges(as.data.frame(data_cell[, c("chr", "start", "end", "state", "copy",
                                             "state_AS_phased","state_phase", "BAF",
-                                            "col_state", "col_ASstate")])
+                                            "col_state", "col_ASstate")]))
   GenomeInfoDb::seqlevelsStyle(data) <- "UCSC"
 
   if (is.null(maxCN)){
@@ -115,8 +115,8 @@ plotideogramCN <- function(cn, cellid = NULL, gene.symbols = NULL, chr = NULL, m
   }
 
   data_cell <- data %>% dplyr::filter(cell_id == cellid)
-  data_cell$col_state <- scCN_cols(paste0("CN", data_cell$state))
-  data <- regioneR::toGRanges(data_cell[, c("chr", "start", "end", "state", "copy", "col_state")])
+  data_cell$col_state <- unlist(scCN_cols(paste0("CN", data_cell$state)))
+  data <- regioneR::toGRanges(as.data.frame(data_cell[, c("chr", "start", "end", "state", "copy", "col_state")]))
   GenomeInfoDb::seqlevelsStyle(data) <- "UCSC"
 
   if (is.null(maxCN)){
