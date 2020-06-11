@@ -4,7 +4,7 @@
 \alias{getBins}
 \title{Make fixed-width bins}
 \usage{
-getBins(chrom.lengths = hg19_chrlength, binsize = 1e+06,
+getBins(chrom.lengths = hg19_chrlength, binsize = 1000000,
   chromosomes = NULL)
 }
 \arguments{

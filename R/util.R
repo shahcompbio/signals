@@ -36,16 +36,45 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, 
 }
 
 #' @export
-createbreakpointmatrix <- function(segs, transpose = FALSE){
+createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE, use_state = FALSE){
 
-  segs_bin <- segs %>%
-    as.data.table() %>%
-    .[, loci := paste(chr, end - 0.5e6 + 1, end, sep = "_")] %>%
-    .[, row_num := .I] %>% # add row numbers
-    .[, remove_row_num := .I[.N], by=.(cell_id, chr)]  %>% # find last row in each cell_id - chr group
-    .[row_num != remove_row_num] %>%
-    .[, tipInclusionProbabilities := 1] %>%
-    dplyr::select(cell_id, loci, tipInclusionProbabilities)
+  options("scipen"=20)
+
+  if (use_state == FALSE){
+    if (internalonly == TRUE){
+      segs_bin <- segs %>%
+        as.data.table() %>%
+        .[, loci := paste(chr, end - 0.5e6 + 1, end, sep = "_")] %>%
+        .[, row_num := .I] %>% # add row numbers
+        .[, remove_row_num := .I[.N], by=.(cell_id, chr)]  %>% # find last row in each cell_id - chr group
+        .[row_num != remove_row_num] %>%
+        .[, tipInclusionProbabilities := 1] %>%
+        dplyr::select(cell_id, loci, tipInclusionProbabilities)
+    } else {
+      segs_bin <- segs %>%
+        as.data.table() %>%
+        .[, loci := paste(chr, end - 0.5e6 + 1, end, sep = "_")] %>%
+        .[, tipInclusionProbabilities := 1] %>%
+        dplyr::select(cell_id, loci, tipInclusionProbabilities)
+    }
+  } else{
+    if (internalonly == TRUE){
+      segs_bin <- segs %>%
+        as.data.table() %>%
+        .[, loci := paste(chr, end - 0.5e6 + 1, end, state, sep = "_")] %>%
+        .[, row_num := .I] %>% # add row numbers
+        .[, remove_row_num := .I[.N], by=.(cell_id, chr)]  %>% # find last row in each cell_id - chr group
+        .[row_num != remove_row_num] %>%
+        .[, tipInclusionProbabilities := 1] %>%
+        dplyr::select(cell_id, loci, tipInclusionProbabilities)
+    } else {
+      segs_bin <- segs %>%
+        as.data.table() %>%
+        .[, loci := paste(chr, end - 0.5e6 + 1, end, state, sep = "_")] %>%
+        .[, tipInclusionProbabilities := 1] %>%
+        dplyr::select(cell_id, loci, tipInclusionProbabilities)
+    }
+  }
 
   segs_mat <- segs_bin %>%
     data.table::dcast(., loci ~ cell_id, value.var = "tipInclusionProbabilities", fill = 0)
