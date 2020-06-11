@@ -144,7 +144,7 @@ plotideogramCN <- function(cn, cellid = NULL, gene.symbols = NULL, chr = NULL, m
     pp <- karyoploteR::getDefaultPlotParams(plot.type = 4)
     pp$data1inmargin <- 2
     pl <- expression(kp <- karyoploteR::plotKaryotype(plot.type = 4, plot.params = pp, chromosomes = chr),
-                     karyoploteR::kpAxis(kp, r0=0.0, r1=0.75),
+                     karyoploteR::kpAxis(kp, tick.pos = seq(0, maxCN, 2), r0=0, r1=0.75, ymax=maxCN, ymin=0),
                      karyoploteR::kpPoints(kp, data=data, y=data$copy, r0=0.0, r1=0.75, ymin = 0, ymax = maxCN, col = data$col_state),
                      karyoploteR::kpPlotMarkers(kp, data=genes, labels=genes$hgnc_symbol, line.color = "#555555", marker.parts = c(0.95,0.025,0.025),  r1=1.05))
 
