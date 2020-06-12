@@ -318,11 +318,11 @@ qc_summary <- function(cn){
     dplyr::mutate(frac = n / dplyr::n()) %>%
     dplyr::filter(n > 10) %>%
     dplyr::group_by(state_AS_phased, Min, Maj, n, frac) %>%
-    dplyr::summarise(medianBAF = median(BAF),
-                     meanBAF = mean(BAF),
-                     modeBAF = densmode(BAF),
-                     high95 = quantile(BAF, 0.975),
-                     low95 = quantile(BAF, 0.025)) %>%
+    dplyr::summarise(medianBAF = median(BAF, na.rm = TRUE),
+                     meanBAF = mean(BAF, na.rm = TRUE),
+                     #modeBAF = densmode(BAF),
+                     high95 = quantile(BAF, 0.975, na.rm = TRUE),
+                     low95 = quantile(BAF, 0.025, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(expBAF = Min / (Min + Maj)) %>%
     dplyr::mutate(distance = sqrt((expBAF - medianBAF)^2)) %>%
