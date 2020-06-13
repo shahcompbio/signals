@@ -71,13 +71,14 @@ umap_clustering <- function(CNbins,
 
 #' @export
 umap_clustering_breakpoints <- function(CNbins,
-                            n_neighbors = 20,
+                            n_neighbors = 10,
                             min_dist = 0.1,
                             minPts = 30,
                             seed = 1,
                             field = "state",
                             internalonly = TRUE,
-                            use_state = FALSE){
+                            use_state = FALSE,
+                            state_remove = NULL){
 
   if(length(unique(CNbins$cell_id)) < n_neighbors) {
     n_neighbors <- length(unique(CNbins$cell_id)) - 1
@@ -86,7 +87,7 @@ umap_clustering_breakpoints <- function(CNbins,
   message("Creating breakpoint matrix...")
   print(length(unique(CNbins$cell_id)))
   segs <- schnapps::create_segments(CNbins, field = field)
-  segs_matrix <- createbreakpointmatrix(segs, internalonly = internalonly, use_state = use_state)
+  segs_matrix <- createbreakpointmatrix(segs, internalonly = internalonly, use_state = use_state, state_remove = state_remove)
 
   segs_matrix <- subset(segs_matrix, select = -c(loci))
   segs_matrix <- t(segs_matrix)
@@ -115,6 +116,9 @@ umap_clustering_breakpoints <- function(CNbins,
       message("Only 1 cluster found, reducing minPts size by 10...")
       minPts <- round(minPts - 10)
       message(paste0("Cluster size = ", minPts))
+      if (minPts < 0){
+        stop("Only 1 cluster can be found")
+      }
     } else{
       gentree <- TRUE
     }
