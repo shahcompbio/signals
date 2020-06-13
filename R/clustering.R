@@ -38,6 +38,9 @@ umap_clustering <- function(CNbins,
     if (class(hdbscanresults) == "try-error"){
       message("Only 1 cluster found, reducing minPts size by 10...")
       minPts <- round(minPts - 10)
+      if (minPts < 0){
+        stop("Only 1 cluster can be found")
+      }
       message(paste0("Cluster size = ", minPts))
     } else{
       gentree <- TRUE
