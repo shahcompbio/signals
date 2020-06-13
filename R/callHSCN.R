@@ -332,11 +332,13 @@ proportion_imbalance <- function(ascn, haplotypes,
   if (phasebyarm) {
     message("Phasing by chromosome arm...")
     ascn$chrarm <- paste0(ascn$chr, coord_to_arm(ascn$chr, ascn$start))
-    prop <- ascn[, list(propA = sum(balance) / .N), by = .(chrarm, clone_id)]
+    prop <- ascn[, list(propA = round(sum(balance) / .N, n = sum(balance), 2)), by = .(chrarm, clone_id)]
+    prop <- prop[order(n, decreasing = TRUE)] # if there are ties make sure the clone with the largest number of cells gets chosen
     prop <- prop[prop[, .I[which.max(propA)], by=chrarm]$V1]
   } else {
     message("Phasing by chromosome (not arm level)..")
-    prop <- ascn[, list(propA = sum(balance) / .N), by = .(chr, clone_id)]
+    prop <- ascn[, list(propA = round(sum(balance) / .N, 2), n = sum(balance)), by = .(chr, clone_id)]
+    prop <- prop[order(n, decreasing = TRUE)]
     prop <- prop[prop[, .I[which.max(propA)], by=chr]$V1]
   }
 
