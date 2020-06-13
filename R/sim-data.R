@@ -3,6 +3,9 @@ getstate <- function(base_ploidy){
   while (x == base_ploidy){
     x <- round(rgamma(1,base_ploidy + 1, rate = 1))
   }
+  if (x == 0){
+    x <- 1
+  }
   return(x)
 }
 
