@@ -36,7 +36,7 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, 
 }
 
 #' @export
-createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE, use_state = FALSE){
+createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE, use_state = FALSE, state_remove = 2){
 
   options("scipen"=20)
 
@@ -53,6 +53,7 @@ createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE,
     } else {
       segs_bin <- segs %>%
         as.data.table() %>%
+        .[state != state_remove] %>%
         .[, loci := paste(chr, end - 0.5e6 + 1, end, sep = "_")] %>%
         .[, tipInclusionProbabilities := 1] %>%
         dplyr::select(cell_id, loci, tipInclusionProbabilities)
@@ -70,6 +71,7 @@ createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE,
     } else {
       segs_bin <- segs %>%
         as.data.table() %>%
+        .[state != state_remove] %>%
         .[, loci := paste(chr, end - 0.5e6 + 1, end, state, sep = "_")] %>%
         .[, tipInclusionProbabilities := 1] %>%
         dplyr::select(cell_id, loci, tipInclusionProbabilities)
