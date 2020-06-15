@@ -30,7 +30,7 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position"){
     bins <- getBins(binsize = binsize) %>%
       dplyr::mutate(idx = 1:dplyr::n())
 
-    CNbins <- full_join(bins, CNbins) %>%
+    CNbins <- dplyr::full_join(bins, CNbins) %>%
       dplyr::filter(!is.na(copy)) %>%
       dplyr::filter(!is.na(state)) %>%
       dplyr::mutate(idxs = forcats::fct_reorder(factor(idx), idx)) %>%
