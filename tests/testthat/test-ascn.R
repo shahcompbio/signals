@@ -9,6 +9,8 @@ sim_data <- simulate_data_cohort(clone_num = c(5, 5, 5),
 results <- callAlleleSpecificCN(sim_data$CNbins, sim_data$haplotypes)
 results_2 <- callAlleleSpecificCN(sim_data$CNbins, sim_data$haplotypes, likelihood = "betabinomial")
 
+print(results)
+
 results_df <- orderdf(results$data)
 truth_df <- orderdf(sim_data$ascn)
 nbins <- length(truth_df$cell_id)

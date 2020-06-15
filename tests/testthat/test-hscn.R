@@ -13,6 +13,8 @@ results_bb <- callHaplotypeSpecificCN(sim_data_bb$CNbins, sim_data_bb$haplotypes
 f <- table(results_bb$data[results_bb$data$chr == "1",]$state_AS_phased)
 f <- f / sum(f)
 
+print(results_bb)
+
 results_df <- orderdf(results_bb$data)
 truth_df <- orderdf(sim_data_bb$ascn)
 nbins <- length(truth_df$cell_id)
@@ -23,4 +25,24 @@ test_that("Test haplotype specific copy number inference (beta-binomial)", {
   expect_gt(results_bb$likelihood$taronesZ, 5)
   expect_true(f[["0|2"]] == 0.125)
   expect_true(f[["2|0"]] == 0.25)
+})
+
+plot1 <- plotCNprofile(sim_data_bb$CNbins)
+plot2 <- plotCNprofile(sim_data_bb$CNbins, xaxis_order = "bin")
+plot3 <- plotCNprofileBAF(sim_data_bb$ascn)
+plot4 <- plotCNprofileBAF(sim_data_bb$ascn, xaxis_order = "bin")
+plot5 <- plotBAFperstate(results_bb)
+plot6 <- plotBBfit(hscn)
+plot7 <- plot_variance_state(hscn)
+plot8 <- plot_variance_state(hscn, by_allele_specific_state = TRUE)
+
+test_that("Test plotting", {
+  expect_true(is.ggplot(plot1))
+  expect_true(is.ggplot(plot2))
+  expect_true(is.ggplot(plot3))
+  expect_true(is.ggplot(plot4))
+  expect_true(is.ggplot(plot5))
+  expect_true(is.ggplot(plot6))
+  expect_true(is.ggplot(plot7))
+  expect_true(is.ggplot(plot8))
 })

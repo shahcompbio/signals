@@ -1,6 +1,11 @@
-plottinglist <- function(CNbins){
+plottinglist <- function(CNbins, xaxis_order = "genome_position"){
   #arrange segments in order, generate segment index and reorder CN state factor
 
+  if (!xaxis_order %in% c("bin", "genome_position")){
+    stop("xaxis_order must be either 'bin' or 'genome_position'")
+  }
+
+  if (xaxis_order == "bin"){
   chridx <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
   CNbins <- CNbins %>%
     dplyr::filter(!is.na(copy)) %>%
@@ -20,6 +25,26 @@ plottinglist <- function(CNbins){
     dplyr::pull(idx)
 
   chrlabels <- gtools::mixedsort(unique(CNbins$chr))
+  } else {
+    binsize <- CNbins$end[1] - CNbins$start[1] + 1
+    bins <- getBins(binsize = binsize) %>%
+      dplyr::mutate(idx = 1:n())
+
+    CNbins <- full_join(bins, CNbins) %>%
+      dplyr::filter(!is.na(copy)) %>%
+      dplyr::filter(!is.na(state)) %>%
+      dplyr::mutate(idxs = forcats::fct_reorder(factor(idx), idx)) %>%
+      dplyr::mutate(CNs = forcats::fct_reorder(ifelse(is.na(state), NA,
+                                                      paste0("CN", state)), state))
+
+    #get breaks - first index of each chromosome
+    chrbreaks <- CNbins %>%
+      dplyr::group_by(chr) %>%
+      dplyr::filter(dplyr::row_number() == 1) %>%
+      dplyr::pull(idx)
+
+    chrlabels <- gtools::mixedsort(unique(CNbins$chr))
+  }
 
   return(list(CNbins = CNbins, chrbreaks = chrbreaks, chrlabels = chrlabels))
 }
@@ -53,7 +78,13 @@ plotCNprofile <- function(CNbins,
                          statecol = "state",
                          returnlist = FALSE,
                          raster = FALSE,
-                         y_axis_trans = "identity"){
+                         y_axis_trans = "identity",
+                         xaxis_order = "genome_position"){
+
+  if (!xaxis_order %in% c("bin", "genome_position")){
+    stop("xaxis_order must be either 'bin' or 'genome_position'")
+  }
+
   if (is.null(cellid)){
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
   }
@@ -73,7 +104,7 @@ plotCNprofile <- function(CNbins,
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
-    plottinglist(.)
+    plottinglist(., xaxis_order = xaxis_order)
 
   if (raster == TRUE){
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
@@ -82,7 +113,7 @@ plotCNprofile <- function(CNbins,
     }
     gCN <- pl$CNbins %>%
       dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
-      ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
+      ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(name = "Allele Specific CN",
                                   breaks = names(statecolpal),
@@ -93,7 +124,7 @@ plotCNprofile <- function(CNbins,
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
-      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
+      ggplot2::scale_x_continuous(breaks = pl$chrbreaks, labels = pl$chrlabels, expand = c(0, 0)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
@@ -104,7 +135,7 @@ plotCNprofile <- function(CNbins,
   } else {
     gCN <- pl$CNbins %>%
       dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
-      ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
+      ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(name = "Allele Specific CN",
                                   breaks = names(statecolpal),
@@ -115,7 +146,7 @@ plotCNprofile <- function(CNbins,
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
-      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
+      ggplot2::scale_x_continuous(breaks = pl$chrbreaks, labels = pl$chrlabels, expand = c(0, 0)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
@@ -145,7 +176,13 @@ plotCNprofileBAF <- function(cn,
                           statecol = "state",
                           returnlist = FALSE,
                           raster = FALSE,
-                          y_axis_trans = "identity"){
+                          y_axis_trans = "identity",
+                          xaxis_order = "genome_position"){
+
+  if (!xaxis_order %in% c("bin", "genome_position")){
+    stop("xaxis_order must be either 'bin' or 'genome_position'")
+  }
+
   if (is.hscn(cn) | is.ascn(cn)){
     CNbins <- cn$data
   } else{
@@ -187,7 +224,7 @@ plotCNprofileBAF <- function(cn,
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
-    plottinglist(.)
+    plottinglist(., xaxis_order = xaxis_order)
 
   if (raster == TRUE){
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
@@ -196,7 +233,7 @@ plotCNprofileBAF <- function(cn,
     }
     gBAF <- pl$CNbins %>%
       dplyr::mutate(state_min = paste0(state_min)) %>%
-      ggplot2::ggplot(ggplot2::aes(x = idxs, y = BAF)) +
+      ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggrastr::geom_point_rast(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(name = "CN",
                                   breaks = names(BAFcolpal),
@@ -206,7 +243,7 @@ plotCNprofileBAF <- function(cn,
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
-      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
+      ggplot2::scale_x_continuous(breaks = pl$chrbreaks, labels = pl$chrlabels, expand = c(0, 0)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("BAF") +
@@ -223,7 +260,7 @@ plotCNprofileBAF <- function(cn,
     gCN <- pl$CNbins %>%
       dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
       dplyr::mutate(state_min = paste0(state_min)) %>%
-      ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
+      ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(name = "Allele Specific CN",
                                   breaks = names(statecolpal),
@@ -234,7 +271,7 @@ plotCNprofileBAF <- function(cn,
                      axis.text.y = ggplot2::element_blank(),
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
-      ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
+      ggplot2::scale_x_continuous(breaks = pl$chrbreaks, labels = pl$chrlabels, expand = c(0, 0)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
@@ -245,7 +282,7 @@ plotCNprofileBAF <- function(cn,
     } else {
       gBAF <- pl$CNbins %>%
         dplyr::mutate(state_min = paste0(state_min)) %>%
-        ggplot2::ggplot(ggplot2::aes(x = idxs, y = BAF)) +
+        ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
         ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval) +
         ggplot2::scale_color_manual(name = "CN",
                                     breaks = names(BAFcolpal),
@@ -255,7 +292,7 @@ plotCNprofileBAF <- function(cn,
                        axis.text.y = ggplot2::element_blank(),
                        axis.ticks.y = ggplot2::element_blank(),
                        legend.position = "none") +
-        ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
+        ggplot2::scale_x_continuous(breaks = pl$chrbreaks, labels = pl$chrlabels, expand = c(0, 0)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
         ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
         ggplot2::xlab("Chromosome") +
         ggplot2::ylab("BAF") +
@@ -272,7 +309,7 @@ plotCNprofileBAF <- function(cn,
       gCN <- pl$CNbins %>%
         dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
         dplyr::mutate(state_min = paste0(state_min)) %>%
-        ggplot2::ggplot(ggplot2::aes(x = idxs, y = copy)) +
+        ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
         ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
         ggplot2::scale_color_manual(name = "Allele Specific CN",
                                     breaks = names(statecolpal),
@@ -283,7 +320,7 @@ plotCNprofileBAF <- function(cn,
                        axis.text.y = ggplot2::element_blank(),
                        axis.ticks.y = ggplot2::element_blank(),
                        legend.position = "none") +
-        ggplot2::scale_x_discrete(breaks = pl$chrbreaks, labels = pl$chrlabels ) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
+        ggplot2::scale_x_continuous(breaks = pl$chrbreaks, labels = pl$chrlabels, expand = c(0, 0)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
         ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
         ggplot2::xlab("Chromosome") +
         ggplot2::ylab("Copy Number") +
