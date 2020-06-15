@@ -28,7 +28,7 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position"){
   } else {
     binsize <- CNbins$end[1] - CNbins$start[1] + 1
     bins <- getBins(binsize = binsize) %>%
-      dplyr::mutate(idx = 1:n())
+      dplyr::mutate(idx = 1:dplyr::n())
 
     CNbins <- full_join(bins, CNbins) %>%
       dplyr::filter(!is.na(copy)) %>%
