@@ -1,3 +1,5 @@
+library(ggplot2)
+
 loherror <- 0.02
 sim_data_bb <- simulate_data_cohort(clone_num = c(20, 25, 25, 10),
                                     clonal_events = list(list("1" = c(2,0), "5" = c(3,1)),
