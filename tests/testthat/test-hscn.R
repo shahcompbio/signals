@@ -32,9 +32,9 @@ plot2 <- plotCNprofile(sim_data_bb$CNbins, xaxis_order = "bin")
 plot3 <- plotCNprofileBAF(sim_data_bb$ascn)
 plot4 <- plotCNprofileBAF(sim_data_bb$ascn, xaxis_order = "bin")
 plot5 <- plotBAFperstate(results_bb)
-plot6 <- plotBBfit(hscn)
-plot7 <- plot_variance_state(hscn)
-plot8 <- plot_variance_state(hscn, by_allele_specific_state = TRUE)
+plot6 <- plotBBfit(results_bb)
+plot7 <- plot_variance_state(results_bb)
+plot8 <- plot_variance_state(results_bb, by_allele_specific_state = TRUE)
 
 test_that("Test plotting", {
   expect_true(is.ggplot(plot1))
