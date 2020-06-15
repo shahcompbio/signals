@@ -32,8 +32,8 @@ library(GenomeInfoDb)
 ## Data processing
 We'll now process the data as in the introductory vignette and call haplotype specific copy number.
 ```{r}
-data(haplotypes)
-data(CNbins)
+data("haplotypes")
+data("CNbins")
 haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
 hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, phasebyarm = FALSE)
 ```

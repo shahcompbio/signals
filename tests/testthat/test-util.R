@@ -13,7 +13,7 @@ sim_data_bb <- simulate_data_cohort(clone_num = clones_dist,
                                     nchr = 0)
 
 cnmat <- subset(createCNmatrix(sim_data_bb$ascn), select = -c(chr, start, end, width))
-cnmat_bp <- subset(createbreakpointmatrix(sim_data_bb$ascn), select = -c(loci))
+cnmat_bp1 <- subset(createbreakpointmatrix(sim_data_bb$ascn), select = -c(loci))
 cnmat_bp2 <- subset(createbreakpointmatrix(sim_data_bb$ascn, use_state = TRUE), select = -c(loci))
 cnmat_bp3 <- subset(createbreakpointmatrix(sim_data_bb$ascn, use_state = TRUE, internalonly = TRUE), select = -c(loci))
 
