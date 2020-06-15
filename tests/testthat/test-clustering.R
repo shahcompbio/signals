@@ -1,3 +1,4 @@
+library(ggplot2)
 loherror <- 0.02
 nclones <- 4
 clones_dist <- c(20, 15, 35, 10)
