@@ -15,10 +15,12 @@ sim_data_bb <- simulate_data_cohort(clone_num = clones_dist,
 cl_state <- umap_clustering(sim_data_bb$CNbins, field = "copy", minPts = 5)
 cl_bps <- umap_clustering_breakpoints(sim_data_bb$CNbins, minPts = 5,
                                       internalonly = FALSE, use_state = TRUE, state_remove = 2, n_neighbors = 10)
+plot1 <- plot_umap(cl$clustering)
 
 test_that("Test umap clustering with bin states", {
   expect_equal(length(unique(cl_state$clustering$clone_id)), 4)
   expect_true(all(table(cl_state$clustering$clone_id) %in% clones_dist))
+  expect_true(is.ggplot(plot1))
 })
 
 test_that("Test umap clustering with breakpoints matrix", {
