@@ -59,6 +59,7 @@ plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5){
     ggplot2::guides(colour = ggplot2::guide_legend(ncol = 3))
 }
 
+#' @export
 squashy_trans <- function() {
   scales::trans_new(
     "squashy",

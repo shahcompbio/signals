@@ -30,7 +30,7 @@ test_that("Test haplotype specific copy number inference (beta-binomial)", {
 })
 
 plot1 <- plotCNprofile(sim_data_bb$CNbins)
-plot2 <- plotCNprofile(sim_data_bb$CNbins, xaxis_order = "bin", y_axis_trans = "squashy", chrfilt = "1", maxCN = 20)
+plot2 <- plotCNprofile(sim_data_bb$CNbins, xaxis_order = "bin", chrfilt = "1", maxCN = 20)
 plot3 <- plotCNprofileBAF(sim_data_bb$ascn)
 plot4 <- plotCNprofileBAF(sim_data_bb$ascn, xaxis_order = "bin")
 plot5 <- plotBAFperstate(results_bb)
