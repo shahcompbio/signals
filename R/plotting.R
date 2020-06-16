@@ -112,10 +112,10 @@ plotCNprofile <- function(CNbins,
            call. = FALSE)
     }
     gCN <- pl$CNbins %>%
-      dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
+      dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
-      ggplot2::scale_color_manual(name = "Allele Specific CN",
+      ggplot2::scale_color_manual(name = "Copy number",
                                   breaks = names(statecolpal),
                                   labels = names(statecolpal),
                                   values = statecolpal,
@@ -130,11 +130,12 @@ plotCNprofile <- function(CNbins,
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot() +
       cowplot::background_grid(major = "x") +
-      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
+                                                     override.aes = list(alpha=1, size = 3, shape = 15))) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
   } else {
     gCN <- pl$CNbins %>%
-      dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
+      dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(name = "Allele Specific CN",
@@ -152,7 +153,8 @@ plotCNprofile <- function(CNbins,
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot() +
       cowplot::background_grid(major = "x") +
-      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
+                                                     override.aes = list(alpha=1, size = 3, shape = 15))) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
   }
 
@@ -255,10 +257,10 @@ plotCNprofileBAF <- function(cn,
             axis.text.x=ggplot2::element_blank(),
             axis.ticks.x=ggplot2::element_blank()) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom") +
-      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2)))
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 3, shape = 15)))
 
     gCN <- pl$CNbins %>%
-      dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
+      dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
@@ -277,7 +279,8 @@ plotCNprofileBAF <- function(cn,
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot() +
       cowplot::background_grid(major = "x") +
-      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
+                                                     override.aes = list(alpha=1, size = 3, shape = 15))) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
     } else {
       gBAF <- pl$CNbins %>%
@@ -304,10 +307,10 @@ plotCNprofileBAF <- function(cn,
                        axis.text.x=ggplot2::element_blank(),
                        axis.ticks.x=ggplot2::element_blank()) +
         ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom") +
-        ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2)))
+        ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 3, shape = 15)))
 
       gCN <- pl$CNbins %>%
-        dplyr::mutate(state = factor(paste0(state), levels = paste0(seq(1, max(pl$CNbins$state), 1)))) %>%
+        dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
         ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
@@ -326,7 +329,8 @@ plotCNprofileBAF <- function(cn,
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot() +
         cowplot::background_grid(major = "x") +
-        ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 2))) +
+        ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
+                                                       override.aes = list(alpha=1, size = 3, shape = 15))) +
         ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
     }
 
@@ -357,17 +361,17 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
     dplyr::select(-min) %>%
     dplyr::filter(Maj >= 0, Min >= 0)
 
-  CNBAF <- CNBAF %>%
+  CNbins <- CNbins %>%
     dplyr::filter(state < 10, copy < 10)
 
-  if (nfilt < length(CNBAF$chr)){
-    CNBAF <- CNBAF %>%
+  if (nfilt < length(CNbins$chr)){
+    CNbins <- CNbins %>%
       dplyr::sample_n(nfilt)
   }
 
-  plottitle <- paste0((CNBAF$end[1] - CNBAF$start[1] + 1) / 1e6, "Mb bins")
+  plottitle <- paste0((CNbins$end[1] - CNbins$start[1] + 1) / 1e6, "Mb bins")
 
-  g <- CNBAF %>%
+  g <- CNbins %>%
     ggplot2::ggplot(ggplot2::aes(y = BAF, x = copy, col = paste0("CN", state))) +
     ggplot2::geom_point(size = pointsize, alpha = 0.2) +
     ggplot2::xlab("Corrected read counts") +
@@ -376,9 +380,9 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
     ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(alpha=1, size=5))) +
     ggplot2::geom_text(data = ASstates, ggplot2::aes(x = state, y = cBAF, label = state_AS), col = "black") +
     ggplot2::scale_color_manual(name = "Copy number \n state",
-                       breaks = paste0("CN", seq(0, max(CNBAF$state, na.rm = TRUE), 1)),
-                       labels = seq(0, max(CNBAF$state, na.rm = TRUE), 1),
-                       values = scCN_cols(paste0("CN", seq(0, max(CNBAF$state, na.rm = TRUE), 1)))) +
+                       breaks = paste0("CN", seq(0, max(CNbins$state, na.rm = TRUE), 1)),
+                       labels = seq(0, max(CNbins$state, na.rm = TRUE), 1),
+                       values = scCN_cols(paste0("CN", seq(0, max(CNbins$state, na.rm = TRUE), 1)))) +
     ggplot2::scale_x_continuous(breaks = seq(0, 10, 1), labels = seq(0, 10, 1), limits = c(0, 10))
   return(g)
 }

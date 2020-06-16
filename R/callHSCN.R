@@ -1,47 +1,4 @@
 #' @export
-callHaplotypeSpecificCNdist <- function(CNBAF, maxCN = 11){
-  maj <- seq(0, maxCN, 1)
-  min <- seq(0, maxCN, 1)
-  allASstates <- expand.grid(state = maj, min = min) %>%
-    dplyr::mutate(cBAF = min / state) %>%
-    dplyr::mutate(state_AS_phased = paste0(state-min, "|", min)) %>%
-    dplyr::mutate(Maj = state-min, Min = min) %>%
-    dplyr::select(-min) %>%
-    dplyr::filter(Maj >= 0, Min >= 0) %>%
-    data.table::as.data.table()
-  allASstates$cBAF[is.nan(allASstates$cBAF)] <- 0.0
-
-  CNBAF <- data.table::as.data.table(CNBAF)
-  CNBAF$copy[is.nan(CNBAF$copy)] <- NA
-  setnafill(CNBAF, type = "locf", cols = c("copy"))
-  setnafill(CNBAF, type = "nocb", cols = c("copy"))
-
-  alleleCN <- data.table::merge.data.table(CNBAF, allASstates, by = .EACHI, allow.cartesian=TRUE) %>%
-    .[, dist := sqrt((copy - state)^2 + (BAF - cBAF)^2)]
-
-  data.table::setcolorder(alleleCN, c("chr", "start", "end", "cell_id", "state"))
-
-  alleleCN <- alleleCN[alleleCN[, .I[which.min(dist)], by = .(chr, start, cell_id)]$V1]
-
-  alleleCN <- alleleCN %>%
-    .[, c("cBAF", "dist") := NULL] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                                 1 * ((Min < Maj) & (Min != 0)) +
-                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                 3 * ((Min < Maj) & (Min == 0)) +
-                                                                                 4 * ((Min > Maj) & (Maj == 0))]
-      ] %>%
-    .[, c("Maj", "Min") := NULL] %>%
-    .[order(cell_id, chr, start)]
-
-  return(as.data.frame(alleleCN))
-}
-
-#' @export
 HaplotypeHMM <- function(n,
                       x,
                       binstates,

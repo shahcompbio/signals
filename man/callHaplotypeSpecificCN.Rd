@@ -4,7 +4,7 @@
 \alias{callHaplotypeSpecificCN}
 \title{Call haplotype specific copy number in single cell datasets}
 \usage{
-callHaplotypeSpecificCN(CNbins, haplotypes, eps = 0.000000000001,
+callHaplotypeSpecificCN(CNbins, haplotypes, eps = 1e-12,
   loherror = 0.02, maxCN = NULL, selftransitionprob = 0.999,
   progressbar = TRUE, ncores = 1, phasebyarm = FALSE,
   minfrac = 0.95, likelihood = "binomial", minbins = 100,

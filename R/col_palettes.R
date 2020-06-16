@@ -25,7 +25,7 @@ scCNstate_colors <- c(
   `8` = '#DD1C77',
   `9` = '#DF65B0',
   `10` = '#C994C7',
-  `11` = '#D4B9DA'
+  `11+` = '#D4B9DA'
 )
 
 scCNAS_colors <- c(
