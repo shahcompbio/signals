@@ -112,7 +112,7 @@
 <span class="co">#&gt; Bin size: 0.5 Mb </span>
 <span class="co">#&gt; Inferred LOH error rate: 0.019 </span>
 <span class="co">#&gt; Emission model for HMM: binomial </span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.0046</span>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.0047</span>
 
 <span class="kw">hscn_bb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="kw">CNbins</span>, <span class="kw">haplotypes</span>, likelihood = <span class="st">"betabinomial"</span>)
 <span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -317726.6332</span>
@@ -163,37 +163,19 @@
 <p>We can check how similar the results are by comparing the two dataframes. We find for this data that the results are very similar.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">hscn</span><span class="op">$</span><span class="kw">data</span>))
-<span class="co">#&gt; [1] 507867     19</span>
+<span class="co">#&gt; [1] 507875     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">hscn_bb</span><span class="op">$</span><span class="kw">data</span>))
 <span class="co">#&gt; [1] 507875     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="fu">orderdf</span>(<span class="kw">hscn</span><span class="op">$</span><span class="kw">data</span>), <span class="fu">orderdf</span>(<span class="kw">hscn_bb</span><span class="op">$</span><span class="kw">data</span>))
-<span class="co">#&gt;  [1] "Attributes: &lt; Component \"row.names\": Numeric: lengths (507868, 507876) differ &gt;"              </span>
-<span class="co">#&gt;  [2] "Component \"chr\": Lengths (507868, 507876) differ (string compare on first 507868)"            </span>
-<span class="co">#&gt;  [3] "Component \"chr\": 27657 string mismatches"                                                     </span>
-<span class="co">#&gt;  [4] "Component \"start\": Numeric: lengths (507868, 507876) differ"                                  </span>
-<span class="co">#&gt;  [5] "Component \"end\": Numeric: lengths (507868, 507876) differ"                                    </span>
-<span class="co">#&gt;  [6] "Component \"cell_id\": Lengths (507868, 507876) differ (string compare on first 507868)"        </span>
-<span class="co">#&gt;  [7] "Component \"cell_id\": 'is.NA' value mismatch: 0 in current 1 in target"                        </span>
-<span class="co">#&gt;  [8] "Component \"state\": Numeric: lengths (507868, 507876) differ"                                  </span>
-<span class="co">#&gt;  [9] "Component \"copy\": Numeric: lengths (507868, 507876) differ"                                   </span>
-<span class="co">#&gt; [10] "Component \"alleleA\": Numeric: lengths (507868, 507876) differ"                                </span>
-<span class="co">#&gt; [11] "Component \"alleleB\": Numeric: lengths (507868, 507876) differ"                                </span>
-<span class="co">#&gt; [12] "Component \"totalcounts\": Numeric: lengths (507868, 507876) differ"                            </span>
-<span class="co">#&gt; [13] "Component \"BAF\": Numeric: lengths (507868, 507876) differ"                                    </span>
-<span class="co">#&gt; [14] "Component \"state_min\": Numeric: lengths (507868, 507876) differ"                              </span>
-<span class="co">#&gt; [15] "Component \"Maj\": Numeric: lengths (507868, 507876) differ"                                    </span>
-<span class="co">#&gt; [16] "Component \"Min\": Numeric: lengths (507868, 507876) differ"                                    </span>
-<span class="co">#&gt; [17] "Component \"state_AS_phased\": Lengths (507868, 507876) differ (string compare on first 507868)"</span>
-<span class="co">#&gt; [18] "Component \"state_AS_phased\": 'is.NA' value mismatch: 0 in current 1 in target"                </span>
-<span class="co">#&gt; [19] "Component \"state_AS\": Lengths (507868, 507876) differ (string compare on first 507868)"       </span>
-<span class="co">#&gt; [20] "Component \"state_AS\": 'is.NA' value mismatch: 0 in current 1 in target"                       </span>
-<span class="co">#&gt; [21] "Component \"LOH\": Lengths (507868, 507876) differ (string compare on first 507868)"            </span>
-<span class="co">#&gt; [22] "Component \"LOH\": 'is.NA' value mismatch: 0 in current 1 in target"                            </span>
-<span class="co">#&gt; [23] "Component \"phase\": Lengths (507868, 507876) differ (string compare on first 507868)"          </span>
-<span class="co">#&gt; [24] "Component \"phase\": 'is.NA' value mismatch: 0 in current 1 in target"                          </span>
-<span class="co">#&gt; [25] "Component \"state_phase\": Lengths (507868, 507876) differ (string compare on first 507868)"    </span>
-<span class="co">#&gt; [26] "Component \"state_phase\": 'is.NA' value mismatch: 0 in current 1 in target"                    </span>
-<span class="co">#&gt; [27] "Component \"state_BAF\": Numeric: lengths (507868, 507876) differ"</span>
+<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5904415"</span>
+<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3549348"      </span>
+<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.5137466"      </span>
+<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5536 string mismatches"       </span>
+<span class="co">#&gt; [5] "Component \"state_AS\": 1601 string mismatches"              </span>
+<span class="co">#&gt; [6] "Component \"LOH\": 1386 string mismatches"                   </span>
+<span class="co">#&gt; [7] "Component \"phase\": 3355 string mismatches"                 </span>
+<span class="co">#&gt; [8] "Component \"state_phase\": 4372 string mismatches"           </span>
+<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.662908"</span>
 </pre></div>
 <p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments in the beta-binomial model.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit">
@@ -202,7 +184,7 @@
 <span class="kw">segs_bb</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span>(<span class="kw">hscn_bb</span><span class="op">$</span><span class="kw">data</span>, field = <span class="st">"state_AS_phased"</span>)
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">segs</span>))
-<span class="co">#&gt; [1] 34438     5</span>
+<span class="co">#&gt; [1] 34456     5</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">segs_bb</span>))
 <span class="co">#&gt; [1] 31224     5</span>
 </pre></div>
