@@ -113,6 +113,7 @@ plotCNprofile <- function(CNbins,
            call. = FALSE)
     }
     gCN <- pl$CNbins %>%
+      dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
@@ -136,6 +137,7 @@ plotCNprofile <- function(CNbins,
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
   } else {
     gCN <- pl$CNbins %>%
+      dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
@@ -261,6 +263,7 @@ plotCNprofileBAF <- function(cn,
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 3, shape = 15)))
 
     gCN <- pl$CNbins %>%
+      dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
@@ -311,6 +314,7 @@ plotCNprofileBAF <- function(cn,
         ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 3, shape = 15)))
 
       gCN <- pl$CNbins %>%
+        dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
         dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
