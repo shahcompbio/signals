@@ -90,7 +90,9 @@
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
 <p>You can install schnapps with the following command</p>
-<div class="sourceCode" id="cb1"><pre class="r"><span class="kw pkg">devtools</span><span class="kw ns">::</span><span class="fu">install_github</span>(<span class="st">"shahcompbio/schnapps"</span>)</pre></div>
+<div class="sourceCode" id="cb1"><pre class="downlit">
+<span class="kw">devtools</span>::<span class="fu">install_github</span>(<span class="st">"shahcompbio/schnapps"</span>)
+</pre></div>
 </div>
 <div id="input-data" class="section level2">
 <h2 class="hasAnchor">
@@ -105,17 +107,27 @@
 <h2 class="hasAnchor">
 <a href="#example" class="anchor"></a>Example</h2>
 <p>First we need to do some data wrangling to convert the <code>allele_data</code> table from long to wide format.</p>
-<div class="sourceCode" id="cb3"><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">schnapps</span>)
-<span class="no">allele_data</span> <span class="kw">&lt;-</span> <span class="fu">format_haplotypes_dlp</span>(<span class="no">allele_data</span>, <span class="no">CNbins</span>)</pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit">
+<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw">schnapps</span>)
+<span class="kw">allele_data</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span>(<span class="kw">allele_data</span>, <span class="kw">CNbins</span>)
+</pre></div>
 <p>Then we can call the allele specific states:</p>
-<div class="sourceCode" id="cb4"><pre class="r"><span class="no">ascn</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">allele_data</span>)</pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit">
+<span class="kw">ascn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span>(<span class="kw">CNbins</span>, <span class="kw">allele_data</span>)
+</pre></div>
 <p>Or alterantively the haplotype specific states:</p>
-<div class="sourceCode" id="cb5"><pre class="r"><span class="no">hscn</span> <span class="kw">&lt;-</span> <span class="fu"><a href="reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">allele_data</span>)</pre></div>
+<div class="sourceCode" id="cb5"><pre class="downlit">
+<span class="kw">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="kw">CNbins</span>, <span class="kw">allele_data</span>)
+</pre></div>
 <p>See the vignette for more information on the differences between these two outputs.</p>
 <p>After performing this inference, to QC the results it is useful to plot a different representation of the BAF. Here we plot the BAF as a function of the inferred states. The black lines indicate where we should see the mean BAF based on the state.</p>
-<div class="sourceCode" id="cb6"><pre class="r"><span class="fu">plotBAFperstate</span>(<span class="no">ascn</span>, <span class="kw">maxstate</span> <span class="kw">=</span> <span class="fl">10</span>)</pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit">
+<span class="fu">plotBAFperstate</span>(<span class="kw">ascn</span>, maxstate = <span class="fl">10</span>)
+</pre></div>
 <p>After having ensured the results make sense, you can plot a heatmap of the states across all cells with the following.</p>
-<div class="sourceCode" id="cb7"><pre class="r"><span class="fu">plotHeatmap</span>(<span class="no">ascn</span>, <span class="kw">plotcol</span> <span class="kw">=</span> <span class="st">"state_BAF"</span>)</pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit">
+<span class="fu">plotHeatmap</span>(<span class="kw">ascn</span>, plotcol = <span class="st">"state_BAF"</span>)
+</pre></div>
 <p>This will cluster the cell using umap and hdbscan.</p>
 </div>
 </div>
