@@ -4,10 +4,10 @@
 \alias{callAlleleSpecificCN}
 \title{Call allele specific copy number in single cell datasets}
 \usage{
-callAlleleSpecificCN(CNbins, haplotypes, eps = 0.000000000001,
-  loherror = 0.02, maxCN = NULL, selftransitionprob = 0.999,
-  progressbar = TRUE, ncores = 1, likelihood = "binomial",
-  minbins = 100, minbinschr = 10)
+callAlleleSpecificCN(CNbins, haplotypes, eps = 1e-12, loherror = 0.02,
+  maxCN = NULL, selftransitionprob = 0.999, progressbar = TRUE,
+  ncores = 1, likelihood = "binomial", minbins = 100,
+  minbinschr = 10)
 }
 \arguments{
 \item{CNbins}{single cell copy number dataframe with the following columns: \code{cell_id}, \code{chr}, \code{start}, \code{end}, \code{state}, \code{copy}}

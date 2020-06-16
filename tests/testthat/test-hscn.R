@@ -30,13 +30,14 @@ test_that("Test haplotype specific copy number inference (beta-binomial)", {
 })
 
 plot1 <- plotCNprofile(sim_data_bb$CNbins)
-plot2 <- plotCNprofile(sim_data_bb$CNbins, xaxis_order = "bin")
+plot2 <- plotCNprofile(sim_data_bb$CNbins, xaxis_order = "bin", y_axis_trans = "squashy", chrfilt = "1", maxCN = 20)
 plot3 <- plotCNprofileBAF(sim_data_bb$ascn)
 plot4 <- plotCNprofileBAF(sim_data_bb$ascn, xaxis_order = "bin")
 plot5 <- plotBAFperstate(results_bb)
 plot6 <- plotBBfit(results_bb)
 plot7 <- plot_variance_state(results_bb)
 plot8 <- plot_variance_state(results_bb, by_allele_specific_state = TRUE)
+plot9 <- plotCNBAF(sim_data_bb$ascn)
 
 test_that("Test plotting", {
   expect_true(is.ggplot(plot1))
@@ -47,4 +48,5 @@ test_that("Test plotting", {
   expect_true(is.ggplot(plot6))
   expect_true(is.ggplot(plot7))
   expect_true(is.ggplot(plot8))
+  expect_true(is.ggplot(plot9))
 })
