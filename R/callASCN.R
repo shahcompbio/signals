@@ -113,10 +113,13 @@ callalleleHMMcell <- function(CNBAF,
   return(list(alleleCN = CNBAF, posterior_prob = hmmresults$posterior_prob, l = hmmresults$l))
 }
 
-switch_alleles <- function(cn, pval = 0.05){
+switch_alleles <- function(cn){
   phase_cn <- cn %>%
     as.data.table() %>%
     .[, switch := data.table::fifelse(Min > Maj, "switch", "stick")] %>%
+    .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
+    .[, alleleB := totalcounts - alleleA] %>%
+    .[, switch := data.table::fifelse(phase != "Balanced" & BAF > 0.5, "switch", "stick")] %>%
     .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
     .[, alleleB := totalcounts - alleleA] %>%
     .[, c("chr", "start", "end", "cell_id", "state", "copy","alleleA", "alleleB", "totalcounts")] %>%
@@ -295,6 +298,16 @@ callAlleleSpecificCN <- function(CNbins,
     .[order(cell_id, chr, start)] %>%
     .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
     .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
+
+  #mirror BAF
+  alleleCN <- alleleCN[, switch := data.table::fifelse(Min > Maj, "switch", "stick")] %>%
+    .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
+    .[, alleleB := totalcounts - alleleA] %>%
+    .[, switch := data.table::fifelse(phase != "Balanced" & BAF > 0.5, "switch", "stick")] %>%
+    .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
+    .[, alleleB := totalcounts - alleleA] %>%
+    .[, BAF := alleleB / (totalcounts)] %>%
+    .[, switch := NULL]
 
   # Output
   out = list()
