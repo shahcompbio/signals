@@ -88,6 +88,7 @@ umap_clustering_breakpoints <- function(CNbins,
   print(length(unique(CNbins$cell_id)))
   segs <- schnapps::create_segments(CNbins, field = field)
   segs_matrix <- createbreakpointmatrix(segs, internalonly = internalonly, use_state = use_state, state_remove = state_remove)
+  segs_matrix <- segs_matrix$bps
 
   segs_matrix <- subset(segs_matrix, select = -c(loci))
   segs_matrix <- t(segs_matrix)
