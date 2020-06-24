@@ -34,12 +34,14 @@ umap_clustering <- function(CNbins,
   gentree <- FALSE
   while(gentree == FALSE){
     hdbscanresults <- try(dbscan::hdbscan(dfumap[,1:2], minPts = minPts,
-                                      gen_simplified_tree = TRUE))
+                                      gen_hdbscan_tree = FALSE,
+                                      gen_simplified_tree = FALSE))
     if (class(hdbscanresults) == "try-error"){
       message("Only 1 cluster found, reducing minPts size by 10...")
       minPts <- round(minPts - 10)
       if (minPts < 0){
-        stop("Only 1 cluster can be found")
+        message("Only 1 cluster can be found")
+        gentree <- TRUE
       }
       message(paste0("Cluster size = ", minPts))
     } else{
@@ -53,15 +55,15 @@ umap_clustering <- function(CNbins,
   dfumap <- dfumap %>%
     dplyr::mutate(clone_id = ifelse(clone_id == "ZZ", "0", clone_id))
 
-  tree <- ape::as.phylo(hdbscanresults$hc, use.labels = TRUE)
-  tree$tip.label <- row.names(cnmatrix)[as.numeric(tree$tip.label)]
-
   message(paste0("Identified ", length(unique(dfumap$clone_id)), " clusters"))
   message("Distribution of clusters:")
   f <- table(dfumap$clone_id)
   for (cl in sort(unique(dfumap$clone_id))){
     message(paste0("  Cluster ", cl, ":", f[[cl]]))
   }
+
+  tree <- ape::as.phylo(hdbscanresults$hc, use.labels = TRUE)
+  tree$tip.label <- row.names(cnmatrix)[as.numeric(tree$tip.label)]
 
   return(list(clustering = dfumap,
               hdbscanresults = hdbscanresults,
@@ -112,13 +114,14 @@ umap_clustering_breakpoints <- function(CNbins,
   gentree <- FALSE
   while(gentree == FALSE){
     hdbscanresults <- try(dbscan::hdbscan(dfumap[,1:2], minPts = minPts,
-                                          gen_simplified_tree = TRUE))
+                                          gen_simplified_tree = FALSE))
     if (class(hdbscanresults) == "try-error"){
       message("Only 1 cluster found, reducing minPts size by 10...")
       minPts <- round(minPts - 10)
       message(paste0("Cluster size = ", minPts))
       if (minPts < 0){
-        stop("Only 1 cluster can be found")
+        message("Only 1 cluster can be found")
+        gentree <- TRUE
       }
     } else{
       gentree <- TRUE
