@@ -127,7 +127,7 @@ plotCNprofile <- function(CNbins,
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
       ggplot2::scale_x_continuous(breaks = pl$chrbreaks, labels = pl$chrlabels, expand = c(0, 0), limits = c(0, NA)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN),trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot() +
