@@ -49,14 +49,14 @@ createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE,
         .[, remove_row_num := .I[.N], by=.(cell_id, chr)]  %>% # find last row in each cell_id - chr group
         .[row_num != remove_row_num] %>%
         .[, tipInclusionProbabilities := 1] %>%
-        dplyr::select(cell_id, loci, tipInclusionProbabilities)
+        dplyr::select(cell_id, loci, chr, start, end, tipInclusionProbabilities)
     } else {
       segs_bin <- segs %>%
         as.data.table() %>%
         .[state != state_remove] %>%
         .[, loci := paste(chr, end - 0.5e6 + 1, end, sep = "_")] %>%
         .[, tipInclusionProbabilities := 1] %>%
-        dplyr::select(cell_id, loci, tipInclusionProbabilities)
+        dplyr::select(cell_id, loci, chr, start, end, tipInclusionProbabilities)
     }
   } else{
     if (internalonly == TRUE){
@@ -67,19 +67,23 @@ createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE,
         .[, remove_row_num := .I[.N], by=.(cell_id, chr)]  %>% # find last row in each cell_id - chr group
         .[row_num != remove_row_num] %>%
         .[, tipInclusionProbabilities := 1] %>%
-        dplyr::select(cell_id, loci, tipInclusionProbabilities)
+        dplyr::select(cell_id, loci, chr, start, end, tipInclusionProbabilities)
     } else {
       segs_bin <- segs %>%
         as.data.table() %>%
         .[state != state_remove] %>%
         .[, loci := paste(chr, end - 0.5e6 + 1, end, state, sep = "_")] %>%
         .[, tipInclusionProbabilities := 1] %>%
-        dplyr::select(cell_id, loci, tipInclusionProbabilities)
+        dplyr::select(cell_id, loci, chr, start, end, tipInclusionProbabilities)
     }
   }
 
+  mapping <- dplyr::select(segs_bin, cell_id, chr, start, end, loci)
+
   segs_mat <- segs_bin %>%
-    data.table::dcast(., loci ~ cell_id, value.var = "tipInclusionProbabilities", fill = 0)
+    dplyr::select(cell_id, loci, tipInclusionProbabilities) %>%
+    data.table::dcast(., loci ~ cell_id, value.var = "tipInclusionProbabilities", fill = 0) %>%
+    .[gtools::mixedorder(loci)]
 
   segs_mat <- as.data.frame(segs_mat)
   rownames(segs_mat) <- segs_mat$loci
@@ -89,7 +93,7 @@ createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE,
     segs_mat <- t(segs_mat)
   }
 
-  return(segs_mat)
+  return(list(bps = segs_mat, mapping = mapping))
 }
 
 
