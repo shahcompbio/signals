@@ -36,7 +36,40 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, 
 }
 
 #' @export
-createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE, use_state = FALSE, state_remove = 2){
+fixjitter <- function(bps, nextend = 2){
+  x <- as.data.frame(colSums(bps))
+  names(x) <- "frequency"
+  x$loci <- row.names(x)
+
+  frequency_order <- order(x$frequency, decreasing = TRUE)
+  nloci <- dim(bps)[2]
+
+  while(length(frequency_order) > 0){
+    idx <- frequency_order[1]
+    minidx <- max(1, idx - nextend)
+    maxidx <- min(nloci, idx + nextend)
+    temp_mat <-  bps[, minidx:maxidx] #extract matrix nextend either side of locus of interest
+    bps[, minidx:maxidx] <- 0 #set matrix to 0
+    bps[, idx] <- as.numeric(rowSums(temp_mat) > 0)
+    frequency_order <- setdiff(frequency_order, minidx:maxidx)
+  }
+
+  message(paste0("Original number of loci: ", nloci))
+  x <- colSums(bps)
+  x <- x[x>0]
+  bps <- bps[,names(x)]
+  message(paste0("New number of loci: ", dim(bps)[2]))
+
+  return(as.data.frame(bps))
+}
+
+#' @export
+createbreakpointmatrix <- function(segs,
+                                   transpose = FALSE,
+                                   internalonly = TRUE,
+                                   use_state = FALSE,
+                                   state_remove = 2,
+                                   fixjitter = FALSE){
 
   options("scipen"=20)
 
@@ -91,6 +124,9 @@ createbreakpointmatrix <- function(segs, transpose = FALSE, internalonly = TRUE,
   if (transpose == TRUE){
     segs_mat <- subset(segs_mat, select = -c(loci))
     segs_mat <- t(segs_mat)
+    if (fixjitter == TRUE){
+      segs_mat <- fixjitter(segs_mat, nextend = 2)
+    }
   }
 
   return(list(bps = segs_mat, mapping = mapping))

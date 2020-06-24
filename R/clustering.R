@@ -80,7 +80,8 @@ umap_clustering_breakpoints <- function(CNbins,
                             field = "state",
                             internalonly = TRUE,
                             use_state = FALSE,
-                            state_remove = NULL){
+                            state_remove = NULL,
+                            fixjitter = TRUE){
 
   if(length(unique(CNbins$cell_id)) < n_neighbors) {
     n_neighbors <- length(unique(CNbins$cell_id)) - 1
@@ -89,11 +90,13 @@ umap_clustering_breakpoints <- function(CNbins,
   message("Creating breakpoint matrix...")
   print(length(unique(CNbins$cell_id)))
   segs <- schnapps::create_segments(CNbins, field = field)
-  segs_matrix <- createbreakpointmatrix(segs, internalonly = internalonly, use_state = use_state, state_remove = state_remove)
+  segs_matrix <- createbreakpointmatrix(segs,
+                                        transpose = TRUE,
+                                        internalonly = internalonly,
+                                        use_state = use_state,
+                                        state_remove = state_remove,
+                                        fixjitter = fixjitter)
   segs_matrix <- segs_matrix$bps
-
-  segs_matrix <- subset(segs_matrix, select = -c(loci))
-  segs_matrix <- t(segs_matrix)
 
   set.seed(seed)
   message('Calculating UMAP dimensionality reduction...')
@@ -133,6 +136,10 @@ umap_clustering_breakpoints <- function(CNbins,
   dfumap$clone_id <- LETTERS702[clusterids]
   dfumap <- dfumap %>%
     dplyr::mutate(clone_id = ifelse(clone_id == "ZZ", "0", clone_id))
+
+  if (length(unique(dfumap$clone_id)) == 1){
+    dfumap$clone_id <- "A"
+  }
 
   tree <- ape::as.phylo(hdbscanresults$hc, use.labels = TRUE)
   tree$tip.label <- row.names(segs_matrix)[as.numeric(tree$tip.label)]
