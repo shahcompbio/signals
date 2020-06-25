@@ -38,7 +38,8 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position"){
                                                       paste0("CN", state)), state))
 
     #get breaks - first index of each chromosome
-    chrbreaks <- CNbins %>%
+    chrbreaks <- bins %>%
+      dplyr::filter(chr %in% unique(CNbins$chr)) %>%
       dplyr::group_by(chr) %>%
       dplyr::filter(dplyr::row_number() == 1) %>%
       dplyr::pull(idx)
