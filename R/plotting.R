@@ -54,13 +54,28 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position"){
 }
 
 #' @export
-plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5){
-  ggplot2::ggplot(clustering, ggplot2::aes(x = umap1, y = umap2)) +
-    ggrastr::geom_point_rast(ggplot2::aes_string(col = bycol), alpha = alphavalue) +
-    ggplot2::xlab("UMAP 1") +
-    ggplot2::ylab("UMAP 2") +
-    ggplot2::theme_bw() +
-    ggplot2::guides(colour = ggplot2::guide_legend(ncol = 3))
+plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5, raster = FALSE){
+
+  if (raster == TRUE){
+    if (!requireNamespace("ggrastr", quietly = TRUE)) {
+      stop("Package \"ggrastr\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
+    g <- ggplot2::ggplot(clustering, ggplot2::aes(x = umap1, y = umap2)) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = bycol), alpha = alphavalue) +
+      ggplot2::xlab("UMAP 1") +
+      ggplot2::ylab("UMAP 2") +
+      ggplot2::theme_bw() +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 3))
+  } else {
+    g <- ggplot2::ggplot(clustering, ggplot2::aes(x = umap1, y = umap2)) +
+      ggplot2::geom_point(ggplot2::aes_string(col = bycol), alpha = alphavalue) +
+      ggplot2::xlab("UMAP 1") +
+      ggplot2::ylab("UMAP 2") +
+      ggplot2::theme_bw() +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 3))
+  }
+  return(g)
 }
 
 #' @export
