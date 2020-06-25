@@ -140,6 +140,7 @@ switch_alleles <- function(cn){
 #' @param likelihood Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.
 #' @param minbins Minimum number of bins containing both haplotype counts and copy number data for a cell to be included
 #' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
+#' @param maxloherror Maximum value for LOH error rate
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -175,7 +176,8 @@ callAlleleSpecificCN <- function(CNbins,
                                  ncores = 1,
                                  likelihood = "binomial",
                                  minbins = 100,
-                                 minbinschr = 10){
+                                 minbinschr = 10,
+                                 maxloherror = 0.03){
 
   if (!likelihood %in% c("binomial", "betabinomial", "auto")){
     stop("Likelihood model for HMM emission model must be one of binomial, betabinomial or auto",
@@ -213,7 +215,7 @@ callAlleleSpecificCN <- function(CNbins,
     dplyr::filter(state_phase == "A-LOH") %>%
     dplyr::summarise(err = weighted.mean(x = BAF, w = totalcounts, na.rm = TRUE)) %>% #ensure BAF calculations with low counts don't overwhelm signal
     dplyr::pull(err)
-  infloherror <- min(infloherror, 0.05) #ensure loh error rate is < 5%
+  infloherror <- min(infloherror, maxloherror) #ensure loh error rate is < maxloherror
 
   if (likelihood == 'betabinomial' | likelihood == "auto"){
     bbfit <- fitBB(hscn)
@@ -303,11 +305,15 @@ callAlleleSpecificCN <- function(CNbins,
   alleleCN <- alleleCN[, switch := data.table::fifelse(Min > Maj, "switch", "stick")] %>%
     .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
     .[, alleleB := totalcounts - alleleA] %>%
-    .[, switch := data.table::fifelse(phase != "Balanced" & BAF > 0.5, "switch", "stick")] %>%
+    .[, distA := abs(BAF - (Min / state))] %>%
+    .[, distB := abs(BAF - (Maj / state))] %>%
+    .[, switch := fifelse((distB < distA) & (BAF != 0.5), "switch", "stick")] %>%
     .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
     .[, alleleB := totalcounts - alleleA] %>%
     .[, BAF := alleleB / (totalcounts)] %>%
-    .[, switch := NULL]
+    .[, switch := NULL] %>%
+    .[, distA := NULL] %>%
+    .[, distB := NULL]
 
   # Output
   out = list()

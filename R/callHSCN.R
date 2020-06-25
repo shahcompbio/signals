@@ -384,6 +384,7 @@ fitBB <- function(ascn){
 #' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
 #' @param phased_haplotypes Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by schnapps does not return a good fit.
 #' @param clustering_method Method to use to cluster cells for haplotype phasing, default is `copy`, other option is `breakpoints`
+#' @param maxloherror Maximum value for LOH error rate
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -420,7 +421,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                       minbins = 100,
                                       minbinschr = 10,
                                       phased_haplotypes = NULL,
-                                      clustering_method = "copy") {
+                                      clustering_method = "copy",
+                                      maxloherror = 0.035) {
 
   if (!clustering_method %in% c("copy", "breakpoints")){
     stop("Clustering method must be one of copy or breakpoints")
@@ -456,7 +458,7 @@ callHaplotypeSpecificCN <- function(CNbins,
     dplyr::filter(state_phase == "A-LOH") %>%
     dplyr::summarise(err = weighted.mean(x = BAF, w = totalcounts, na.rm = TRUE)) %>%
     dplyr::pull(err)
-  infloherror <- min(infloherror, 0.05) #ensure loh error rate is < 5%
+  infloherror <- min(infloherror, maxloherror) #ensure loh error rate is < maxloherror
 
   if (likelihood == 'betabinomial' | likelihood == "auto"){
     bbfit <- fitBB(ascn)
