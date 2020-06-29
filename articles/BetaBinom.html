@@ -132,7 +132,7 @@
 <span class="co">#&gt; Emission model for HMM: betabinomial </span>
 <span class="co">#&gt;   Inferred over dispersion: 0.0102</span>
 <span class="co">#&gt;   Tarones Z score: 188.052</span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.005</span>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.0051</span>
 </pre></div>
 <p>We see that the model inferred a modest degree of overdispersion in the data, but that this was siginificantly different from 0 dispersion (Tarones Z-score is high).</p>
 <p>Below I’ll plot the heatmaps for the two output, which in this case are very similar.</p>
@@ -163,19 +163,19 @@
 <p>We can check how similar the results are by comparing the two dataframes. We find for this data that the results are very similar.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">hscn</span><span class="op">$</span><span class="kw">data</span>))
-<span class="co">#&gt; [1] 507875     19</span>
+<span class="co">#&gt; [1] 507796     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">hscn_bb</span><span class="op">$</span><span class="kw">data</span>))
-<span class="co">#&gt; [1] 507875     19</span>
+<span class="co">#&gt; [1] 507796     19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="fu">orderdf</span>(<span class="kw">hscn</span><span class="op">$</span><span class="kw">data</span>), <span class="fu">orderdf</span>(<span class="kw">hscn_bb</span><span class="op">$</span><span class="kw">data</span>))
-<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5904415"</span>
-<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3549348"      </span>
-<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.5137466"      </span>
-<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5536 string mismatches"       </span>
-<span class="co">#&gt; [5] "Component \"state_AS\": 1601 string mismatches"              </span>
-<span class="co">#&gt; [6] "Component \"LOH\": 1386 string mismatches"                   </span>
-<span class="co">#&gt; [7] "Component \"phase\": 3355 string mismatches"                 </span>
-<span class="co">#&gt; [8] "Component \"state_phase\": 4372 string mismatches"           </span>
-<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.662908"</span>
+<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.579522" </span>
+<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3514727"      </span>
+<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.4964983"      </span>
+<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5848 string mismatches"       </span>
+<span class="co">#&gt; [5] "Component \"state_AS\": 1619 string mismatches"              </span>
+<span class="co">#&gt; [6] "Component \"LOH\": 1365 string mismatches"                   </span>
+<span class="co">#&gt; [7] "Component \"phase\": 3629 string mismatches"                 </span>
+<span class="co">#&gt; [8] "Component \"state_phase\": 4629 string mismatches"           </span>
+<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.6468839"</span>
 </pre></div>
 <p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments in the beta-binomial model.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit">
@@ -184,9 +184,9 @@
 <span class="kw">segs_bb</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span>(<span class="kw">hscn_bb</span><span class="op">$</span><span class="kw">data</span>, field = <span class="st">"state_AS_phased"</span>)
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">segs</span>))
-<span class="co">#&gt; [1] 34456     5</span>
+<span class="co">#&gt; [1] 34538     5</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">segs_bb</span>))
-<span class="co">#&gt; [1] 31224     5</span>
+<span class="co">#&gt; [1] 31371     5</span>
 </pre></div>
 </div>
 </div>
