@@ -378,7 +378,7 @@ fitBB <- function(ascn){
 #' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model
 #' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
 #' @param ncores Number of cores to use, default = 1
-#' @param minfrac Minimum proportion of haplotypes to retain when clustering + phasing
+#' @param minfrac Minimum proportion of haplotypes to retain when clustering + phasing, default = 0.8
 #' @param likelihood Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.
 #' @param minbins Minimum number of bins containing both haplotype counts and copy number data for a cell to be included
 #' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
@@ -416,7 +416,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     progressbar = TRUE,
                                     ncores = 1,
                                     phasebyarm = FALSE,
-                                    minfrac = 0.95,
+                                    minfrac = 0.8,
                                     likelihood = "binomial",
                                     minbins = 100,
                                     minbinschr = 10,
