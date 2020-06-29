@@ -92,7 +92,6 @@ umap_clustering_breakpoints <- function(CNbins,
   }
 
   message("Creating breakpoint matrix...")
-  print(length(unique(CNbins$cell_id)))
   segs <- schnapps::create_segments(CNbins, field = field)
   segs_matrix <- createbreakpointmatrix(segs,
                                         transpose = TRUE,
@@ -116,7 +115,6 @@ umap_clustering_breakpoints <- function(CNbins,
                        umap2 = umapresults$embedding[,2],
                        cell_id = row.names(segs_matrix))
   rownames(dfumap) <- row.names(segs_matrix)
-  print(dim(dfumap))
   message('Clustering cells using hdbscan...')
   gentree <- FALSE
   while(gentree == FALSE){
