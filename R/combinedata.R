@@ -9,7 +9,7 @@ format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
     data.table::as.data.table()
 
   x <- haplotypes %>%
-    .[, n := .N, by = .(chr, start, end, hap_label, cell_id)]
+    .[, n := .N, by = .(chr, start, end, hap_label, cell_id, allele_id)]
 
   if (any(x$n > 1)){
     stop("Haplotypes are not unique, there exist some combination of cell_id, chr, start, end, hap_label that is duplicated. Please remove.")
