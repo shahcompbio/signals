@@ -5,6 +5,16 @@ format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
     dplyr::mutate(binid = paste(chr, start, end, sep = "_")) %>%
     dplyr::pull(binid)
 
+  haplotypes <- haplotypes %>%
+    data.table::as.data.table()
+
+  x <- haplotypes %>%
+    .[, n := .N, by = .(chr, start, end, hap_label, cell_id)]
+
+  if (any(x$n > 1)){
+    stop("Haplotypes are not unique, there exist some combination of cell_id, chr, start, end, hap_label that is duplicated. Please remove.")
+  }
+
   formatted_haplotypes <- haplotypes %>%
     data.table::as.data.table() %>%
     .[, allele_id := paste0("allele", allele_id)] %>%
