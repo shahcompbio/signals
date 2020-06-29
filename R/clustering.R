@@ -59,7 +59,11 @@ umap_clustering <- function(CNbins,
   message("Distribution of clusters:")
   f <- table(dfumap$clone_id)
   for (cl in sort(unique(dfumap$clone_id))){
-    message(paste0("  Cluster ", cl, ":", f[[cl]]))
+    message(paste0("  Cluster ", cl, ": ", f[[cl]]))
+  }
+
+  if (length(unique(dfumap$clone_id)) == 1){
+    dfumap$clone_id <- "A"
   }
 
   tree <- ape::as.phylo(hdbscanresults$hc, use.labels = TRUE)
@@ -80,7 +84,7 @@ umap_clustering_breakpoints <- function(CNbins,
                             field = "state",
                             internalonly = TRUE,
                             use_state = FALSE,
-                            state_remove = NULL,
+                            state_remove = 2,
                             fixjitter = TRUE){
 
   if(length(unique(CNbins$cell_id)) < n_neighbors) {

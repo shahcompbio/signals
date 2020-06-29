@@ -13,8 +13,8 @@ HaplotypeHMM <- function(n,
   total_cn_mat <- replicate(length(minor_cn), binstates)
 
   p <- t(vapply(binstates, function(x) minor_cn / x, FUN.VALUE = numeric(length(minor_cn))))
-  p[minor_cn_mat < total_cn_mat / 2] <- p[minor_cn_mat < total_cn_mat/2] + loherror
-  p[minor_cn_mat > total_cn_mat / 2] <- p[minor_cn_mat > total_cn_mat/2] - loherror
+  p[minor_cn_mat < total_cn_mat / 2] <- p[minor_cn_mat < total_cn_mat / 2] + loherror
+  p[minor_cn_mat > total_cn_mat / 2] <- p[minor_cn_mat > total_cn_mat / 2] - loherror
 
   if (likelihood == "binomial"){
     l <- suppressWarnings(dbinom(x, n, p, log = TRUE))
@@ -31,7 +31,7 @@ HaplotypeHMM <- function(n,
   if (selftransitionprob == 0.0){
     tProbs <- matrix(1 / length(minor_cn), length(minor_cn), length(minor_cn))
   } else{
-    tProbs <- matrix((1 - selftransitionprob) / (length(minor_cn) -1), length(minor_cn), length(minor_cn))
+    tProbs <- matrix((1 - selftransitionprob) / (length(minor_cn) - 1), length(minor_cn), length(minor_cn))
     diag(tProbs) <- selftransitionprob
     colnames(tProbs) <- paste0(minor_cn)
     row.names(tProbs) <- paste0(minor_cn)
@@ -126,7 +126,7 @@ callalleleHMMcell <- function(CNBAF,
       ] %>%
     #.[, c("Maj", "Min") := NULL] %>%
     .[order(cell_id, chr, start)] %>%
-    .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+    .[, state_BAF := round((Min / state)/0.1) * 0.1] %>%
     .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
 
   return(list(alleleCN = CNBAF, posterior_prob = hmmresults$posterior_prob, l = hmmresults$l))
@@ -409,20 +409,20 @@ fitBB <- function(ascn){
 #' @export
 callHaplotypeSpecificCN <- function(CNbins,
                                     haplotypes,
-                                      eps = 1e-12,
-                                      loherror = 0.02,
-                                      maxCN = NULL,
-                                      selftransitionprob = 0.999,
-                                      progressbar = TRUE,
-                                      ncores = 1,
-                                      phasebyarm = FALSE,
-                                      minfrac = 0.95,
-                                      likelihood = "binomial",
-                                      minbins = 100,
-                                      minbinschr = 10,
-                                      phased_haplotypes = NULL,
-                                      clustering_method = "copy",
-                                      maxloherror = 0.035) {
+                                    eps = 1e-12,
+                                    loherror = 0.02,
+                                    maxCN = NULL,
+                                    selftransitionprob = 0.999,
+                                    progressbar = TRUE,
+                                    ncores = 1,
+                                    phasebyarm = FALSE,
+                                    minfrac = 0.95,
+                                    likelihood = "binomial",
+                                    minbins = 100,
+                                    minbinschr = 10,
+                                    phased_haplotypes = NULL,
+                                    clustering_method = "copy",
+                                    maxloherror = 0.035) {
 
   if (!clustering_method %in% c("copy", "breakpoints")){
     stop("Clustering method must be one of copy or breakpoints")
