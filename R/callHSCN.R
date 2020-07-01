@@ -207,7 +207,7 @@ callalleleHMMcell <- function(CNBAF,
 min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
   nhaps_vec <- c()
   prop_vec <- c()
-  prop <- seq(0.01, 1.0, 0.01)
+  prop <- seq(0.1, 1.0, 0.025)
   mycells <- unique(haplotypes$cell_id)
   ncells <- length(mycells)
   haplotype_counts <- as.data.table(haplotypes) %>%
