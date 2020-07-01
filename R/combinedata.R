@@ -1,6 +1,8 @@
 #' @export
 format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
 
+  options("scipen"=20)
+
   bins <- dplyr::distinct(CNbins, chr, start, end) %>%
     dplyr::mutate(binid = paste(chr, start, end, sep = "_")) %>%
     dplyr::pull(binid)
@@ -12,7 +14,7 @@ format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
     .[, n := .N, by = .(chr, start, end, hap_label, cell_id, allele_id)]
 
   if (any(x$n > 1)){
-    stop("Haplotypes are not unique, there exist some combination of cell_id, chr, start, end, hap_label that is duplicated. Please remove.")
+    stop("Haplotypes are not unique, there exist some combination of cell_id, chr, start, end, hap_label, allele_id that is duplicated. Please remove.")
   }
 
   formatted_haplotypes <- haplotypes %>%
