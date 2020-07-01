@@ -108,31 +108,31 @@
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw">hscn</span>)
 <span class="co">#&gt; Haplotype specific copy number object </span>
 <span class="co">#&gt;  </span>
-<span class="co">#&gt; Number of cells: 235</span>
+<span class="co">#&gt; Number of cells: 237</span>
 <span class="co">#&gt; Bin size: 0.5 Mb </span>
 <span class="co">#&gt; Inferred LOH error rate: 0.019 </span>
 <span class="co">#&gt; Emission model for HMM: binomial </span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.0047</span>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.0041</span>
 
 <span class="kw">hscn_bb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="kw">CNbins</span>, <span class="kw">haplotypes</span>, likelihood = <span class="st">"betabinomial"</span>)
-<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -317726.6332</span>
-<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -313975.073</span>
-<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -313468.9066</span>
-<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -313444.9917</span>
-<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -313444.5835</span>
-<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -313444.5788</span>
-<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -313444.5788</span>
+<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -317759.3311</span>
+<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -314146.0983</span>
+<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -313674.6712</span>
+<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -313653.5046</span>
+<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -313653.1593</span>
+<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -313653.1554</span>
+<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -313653.1554</span>
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="kw">hscn_bb</span>)
 <span class="co">#&gt; Haplotype specific copy number object </span>
 <span class="co">#&gt;  </span>
-<span class="co">#&gt; Number of cells: 235</span>
+<span class="co">#&gt; Number of cells: 237</span>
 <span class="co">#&gt; Bin size: 0.5 Mb </span>
 <span class="co">#&gt; Inferred LOH error rate: 0.019 </span>
 <span class="co">#&gt; Emission model for HMM: betabinomial </span>
-<span class="co">#&gt;   Inferred over dispersion: 0.0102</span>
-<span class="co">#&gt;   Tarones Z score: 188.052</span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.0051</span>
+<span class="co">#&gt;   Inferred over dispersion: 0.0106</span>
+<span class="co">#&gt;   Tarones Z score: 193.936</span>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.0044</span>
 </pre></div>
 <p>We see that the model inferred a modest degree of overdispersion in the data, but that this was siginificantly different from 0 dispersion (Tarones Z-score is high).</p>
 <p>Below I’ll plot the heatmaps for the two output, which in this case are very similar.</p>
@@ -163,19 +163,19 @@
 <p>We can check how similar the results are by comparing the two dataframes. We find for this data that the results are very similar.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">hscn</span><span class="op">$</span><span class="kw">data</span>))
-<span class="co">#&gt; [1] 507796     19</span>
+<span class="co">#&gt; [1] 1023588      19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">hscn_bb</span><span class="op">$</span><span class="kw">data</span>))
-<span class="co">#&gt; [1] 507796     19</span>
+<span class="co">#&gt; [1] 1023588      19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="fu">orderdf</span>(<span class="kw">hscn</span><span class="op">$</span><span class="kw">data</span>), <span class="fu">orderdf</span>(<span class="kw">hscn_bb</span><span class="op">$</span><span class="kw">data</span>))
-<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.579522" </span>
-<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3514727"      </span>
-<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.4964983"      </span>
-<span class="co">#&gt; [4] "Component \"state_AS_phased\": 5848 string mismatches"       </span>
-<span class="co">#&gt; [5] "Component \"state_AS\": 1619 string mismatches"              </span>
-<span class="co">#&gt; [6] "Component \"LOH\": 1365 string mismatches"                   </span>
-<span class="co">#&gt; [7] "Component \"phase\": 3629 string mismatches"                 </span>
-<span class="co">#&gt; [8] "Component \"state_phase\": 4629 string mismatches"           </span>
-<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.6468839"</span>
+<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5978222"</span>
+<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3589077"      </span>
+<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.5197238"      </span>
+<span class="co">#&gt; [4] "Component \"state_AS_phased\": 10492 string mismatches"      </span>
+<span class="co">#&gt; [5] "Component \"state_AS\": 2896 string mismatches"              </span>
+<span class="co">#&gt; [6] "Component \"LOH\": 2723 string mismatches"                   </span>
+<span class="co">#&gt; [7] "Component \"phase\": 6681 string mismatches"                 </span>
+<span class="co">#&gt; [8] "Component \"state_phase\": 8664 string mismatches"           </span>
+<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.6945428"</span>
 </pre></div>
 <p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments in the beta-binomial model.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit">
@@ -184,9 +184,9 @@
 <span class="kw">segs_bb</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span>(<span class="kw">hscn_bb</span><span class="op">$</span><span class="kw">data</span>, field = <span class="st">"state_AS_phased"</span>)
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">segs</span>))
-<span class="co">#&gt; [1] 34538     5</span>
+<span class="co">#&gt; [1] 42733     5</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="kw">segs_bb</span>))
-<span class="co">#&gt; [1] 31371     5</span>
+<span class="co">#&gt; [1] 36067     5</span>
 </pre></div>
 </div>
 </div>
