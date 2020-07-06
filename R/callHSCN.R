@@ -204,10 +204,10 @@ callalleleHMMcell <- function(CNBAF,
   return(as.data.frame(alleleCN))
 }
 
-min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
+min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = NULL){
   nhaps_vec <- c()
   prop_vec <- c()
-  prop <- seq(0.1, 1.0, 0.025)
+  prop <- seq(0.025, 1.0, 0.025)
   mycells <- unique(haplotypes$cell_id)
   ncells <- length(mycells)
   haplotype_counts <- as.data.table(haplotypes) %>%
@@ -230,7 +230,11 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95){
     dplyr::filter(dplyr::row_number() == 1) %>%
     dplyr::pull(ncells)
 
-  ncells_forclustering <- max(ncells_forclustering, round(0.05 * length(unique(mycells))))
+  if (is.null(mincells)){
+    mincells <- round(0.05 * length(unique(mycells)))
+  }
+
+  ncells_forclustering <- max(ncells_forclustering, mincells)
   return(list(ncells_forclustering = ncells_forclustering, prop = df))
 }
 
@@ -264,10 +268,15 @@ proportion_imbalance <- function(ascn, haplotypes,
                                  field = "copy",
                                  phasebyarm = FALSE,
                                  minfrachaplotypes = 0.95,
-                                 clustering_method = "copy"){
+                                 clustering_method = "copy",
+                                 overwritemincells = NULL){
   ncells <- length(unique(ascn$cell_id))
-  ncells_for_clustering <- min_cells(haplotypes, minfrachaplotypes = minfrachaplotypes)
-  ncells_for_clustering <- ncells_for_clustering$ncells_forclustering
+  if (is.null(overwritemincells)){
+    ncells_for_clustering <- min_cells(haplotypes, minfrachaplotypes = minfrachaplotypes)
+    ncells_for_clustering <- ncells_for_clustering$ncells_forclustering
+  } else{
+    ncells_for_clustering <- overwritemincells
+  }
   message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
 
   #cluster cells using umap and the "copy" corrected read count value
@@ -385,6 +394,7 @@ fitBB <- function(ascn){
 #' @param phased_haplotypes Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by schnapps does not return a good fit.
 #' @param clustering_method Method to use to cluster cells for haplotype phasing, default is `copy`, other option is `breakpoints`
 #' @param maxloherror Maximum value for LOH error rate
+#' @param overwritemincells default NULL
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -422,7 +432,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     minbinschr = 10,
                                     phased_haplotypes = NULL,
                                     clustering_method = "copy",
-                                    maxloherror = 0.035) {
+                                    maxloherror = 0.035,
+                                    overwritemincells = NULL) {
 
   if (!clustering_method %in% c("copy", "breakpoints")){
     stop("Clustering method must be one of copy or breakpoints")
@@ -485,7 +496,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                               haplotypes,
                               phasebyarm = phasebyarm,
                               minfrac = minfrac,
-                              clustering_method = clustering_method)
+                              clustering_method = clustering_method,
+                              overwritemincells = overwritemincells)
     phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
                                                 prop = p,
                                                 phasebyarm = phasebyarm)

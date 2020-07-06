@@ -6,28 +6,36 @@ format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
   bins <- dplyr::distinct(CNbins, chr, start, end) %>%
     dplyr::mutate(binid = paste(chr, start, end, sep = "_")) %>%
     dplyr::pull(binid)
+  message(paste0("Number of distinct bins in copy number data: ", length(bins)))
+
+  binshaps <-dplyr::distinct(haplotypes, chr, start, end) %>%
+    dplyr::mutate(start = floor(start / hmmcopybinsize) * hmmcopybinsize + 1) %>%
+    dplyr::mutate(end = start + hmmcopybinsize - 1) %>%
+    dplyr::mutate(binid = paste(chr, start, end, sep = "_")) %>%
+    dplyr::pull(binid)
+
+  message(paste0("Number of distinct bins in haplotype data: ", length(unique(binshaps))))
 
   haplotypes <- haplotypes %>%
     data.table::as.data.table()
-
-  x <- haplotypes %>%
-    .[, n := .N, by = .(chr, start, end, hap_label, cell_id, allele_id)]
-
-  if (any(x$n > 1)){
-    stop("Haplotypes are not unique, there exist some combination of cell_id, chr, start, end, hap_label, allele_id that is duplicated. Please remove.")
-  }
 
   formatted_haplotypes <- haplotypes %>%
     data.table::as.data.table() %>%
     .[, allele_id := paste0("allele", allele_id)] %>%
     data.table::dcast(., ... ~ allele_id, value.var = "readcount", fill = 0L) %>%
-    .[, start := round(start / hmmcopybinsize) * hmmcopybinsize + 1] %>%
+    .[, start := floor(start / hmmcopybinsize) * hmmcopybinsize + 1] %>%
     .[, end := start + hmmcopybinsize - 1] %>%
     .[, lapply(.SD, sum), by = .(cell_id, chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
     .[, totalcounts := allele1 + allele0] %>%
     .[, hbinid := paste(chr, start, end, sep = "_")] %>%
     .[hbinid %in% bins] %>%
     .[, hbinid := NULL]
+
+  binshaps2 <-dplyr::distinct(formatted_haplotypes, chr, start, end) %>%
+    dplyr::mutate(binid = paste(chr, start, end, sep = "_")) %>%
+    dplyr::pull(binid)
+
+  message(paste0("Number of distinct bins in formatted haplotype data: ", length(unique(binshaps2))))
 
   return(as.data.frame(formatted_haplotypes))
 }
@@ -38,7 +46,6 @@ format_haplotypes <- function(haplotypes,
                               hmmcopybinsize = 0.5e6,
                               phased_haplotypes = NULL,
                               phasing_method = "distribution", ...){
-  message("Pivot data frame...")
 
   message("Phase haplotypes...")
   if (is.null(phased_haplotypes)){
@@ -138,13 +145,11 @@ combineBAFCN <- function(haplotypes,
 
   if (all(cellidoverlap %in% CNbins$cell_id)){
     message(paste0("Number of cells in CN data: ", length(unique(CNbins$cell_id))))
-    message("Removing cells from CN data...")
     CNbins <- CNbins[cell_id %in% cellidoverlap]
   }
 
   if (all(cellidoverlap %in% haplotypes$cell_id)){
     message(paste0("Number of cells in haplotype data: ", length(unique(CNbins$cell_id))))
-    message("Removing cells from haplotype data...")
     haplotypes <- haplotypes[cell_id %in% cellidoverlap]
   }
 
