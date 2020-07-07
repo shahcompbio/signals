@@ -43,17 +43,17 @@ We'll now run through a series of examples that makes use of this plotting funct
 
 ### Genome wide plot with ideogram
 ```{r, fig.width=15}
-plotideogram(hscn, cellid = "SA921-A90554A-R05-C07")
+plotideogram(hscn, cellid = "SA922-A90554B-R35-C61")
 ```
 
 ### Genome wide plot with ideogram and gene annotations
 ```{r, fig.width=15}
-plotideogram(hscn, cellid = "SA921-A90554A-R05-C07", gene.symbols = c("TP53", "MYC"))
+plotideogram(hscn, cellid = "SA922-A90554B-R35-C61", gene.symbols = c("TP53", "MYC"))
 ```
 
-### Chrosome level plots with ideogram and gene annotations
+### Chromosome level plots with ideogram and gene annotations
 ```{r, fig.width = 10}
-plotideogram(hscn, cellid = "SA921-A90554A-R05-C07", chr = c("8"), gene.symbols = c("MYC"))
+plotideogram(hscn, cellid = "SA922-A90554B-R35-C61", chr = c("8"), gene.symbols = c("MYC"))
 ```
 
 ```{r, fig.width = 10}

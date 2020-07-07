@@ -231,7 +231,7 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = NULL){
     dplyr::pull(ncells)
 
   if (is.null(mincells)){
-    mincells <- round(0.05 * length(unique(mycells)))
+    mincells <- round(0.01 * length(unique(mycells)))
   }
 
   ncells_forclustering <- max(ncells_forclustering, mincells)

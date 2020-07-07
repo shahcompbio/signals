@@ -1,6 +1,6 @@
 #' @export
 umap_clustering <- function(CNbins,
-                            n_neighbors = 20,
+                            n_neighbors = 10,
                             min_dist = 0.1,
                             minPts = 30,
                             seed = 1,
@@ -18,12 +18,21 @@ umap_clustering <- function(CNbins,
 
   set.seed(seed)
   message('Calculating UMAP dimensionality reduction...')
+  if (nrow(cnmatrix) > 500){
+    pca <- 50
+    fast_sgd <- TRUE
+  } else{
+    pca <- NULL
+    fast_sgd <- FALSE
+  }
   umapresults <- uwot::umap(cnmatrix,
                       n_neighbors = n_neighbors,
                       n_components = 2,
                       min_dist = min_dist,
                       ret_model = TRUE,
-                      ret_nn = TRUE)
+                      ret_nn = TRUE,
+                      pca = pca,
+                      fast_sgd = fast_sgd)
 
   dfumap <- data.frame(umap1 = umapresults$embedding[,1],
                        umap2 = umapresults$embedding[,2],
@@ -103,13 +112,21 @@ umap_clustering_breakpoints <- function(CNbins,
 
   set.seed(seed)
   message('Calculating UMAP dimensionality reduction...')
+
+  if (nrow(segsmatrix) > 500){
+    fast_sgd <- TRUE
+  } else{
+    fast_sgd <- FALSE
+  }
+
   umapresults <- uwot::umap(segs_matrix,
                             metric = "hamming",
                             n_neighbors = n_neighbors,
                             n_components = 2,
                             min_dist = min_dist,
                             ret_model = TRUE,
-                            ret_nn = TRUE)
+                            ret_nn = TRUE,
+                            fast_sgd = fast_sgd)
 
   dfumap <- data.frame(umap1 = umapresults$embedding[,1],
                        umap2 = umapresults$embedding[,2],
