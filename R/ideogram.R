@@ -1,5 +1,5 @@
 #' @export
-plotideogram <- function(cn, cellid = NULL, gene.symbols = NULL, chr = NULL, maxCN = NULL, version = 91, grch = "37"){
+plotideogram <- function(cn, cellid = NULL, gene.symbols = NULL, chr = NULL, maxCN = NULL, version = NULL, grch = "37"){
 
   if (!requireNamespace("GenomeInfoDb", quietly = TRUE)) {
     stop("Package \"GenomeInfoDb\" needed for this function to work. Please install it.",
@@ -51,9 +51,10 @@ plotideogram <- function(cn, cellid = NULL, gene.symbols = NULL, chr = NULL, max
   }
 
   if(is.null(gene.symbols)){
-    pp <- karyoploteR::getDefaultPlotParams(plot.type = 4)
-    pp$data1inmargin <- 2
-    pl <- expression(kp <- karyoploteR::plotKaryotype(plot.type = 4, plot.params = pp, chromosomes = chr),
+    pl <- expression(
+      pp <- karyoploteR::getDefaultPlotParams(plot.type = 4),
+      pp$data1inmargin <- 2,
+      kp <- karyoploteR::plotKaryotype(plot.type = 4, plot.params = pp, chromosomes = chr),
       karyoploteR::kpAxis(kp, r0=0.52, r1=1.0),
       karyoploteR::kpPoints(kp, data=data, y=data$BAF, r0=0.52, r1=1.0, col = data$col_ASstate),
       karyoploteR::kpAxis(kp, tick.pos = seq(0, maxCN, 2), r0=0, r1=0.48, ymax=maxCN, ymin=0),
@@ -64,9 +65,10 @@ plotideogram <- function(cn, cellid = NULL, gene.symbols = NULL, chr = NULL, max
                                                 filters = 'hgnc_symbol', values =gene.symbols, mart = ensembl))
     GenomeInfoDb::seqlevelsStyle(genes) <- "UCSC"
 
-    pp <- karyoploteR::getDefaultPlotParams(plot.type = 4)
-    pp$data1inmargin <- 2
-    pl <- expression(kp <- karyoploteR::plotKaryotype(plot.type = 4, plot.params = pp, chromosomes = chr),
+    pl <- expression(
+      pp <- karyoploteR::getDefaultPlotParams(plot.type = 4),
+      pp$data1inmargin <- 2,
+      kp <- karyoploteR::plotKaryotype(plot.type = 4, plot.params = pp, chromosomes = chr),
       #karyoploteR::kpAddCytobandsAsLine(kp)
       karyoploteR::kpAxis(kp, r0=0.4, r1=0.75),
       karyoploteR::kpPoints(kp, data=data, y=data$BAF, r0=0.4, r1=0.75, col = data$col_ASstate),
