@@ -20,6 +20,7 @@ print(results_bb)
 results_df <- orderdf(results_bb$data)
 truth_df <- orderdf(sim_data_bb$ascn)
 nbins <- length(truth_df$cell_id)
+hm <- plotHeatmap(results_bb)
 
 test_that("Test haplotype specific copy number inference (beta-binomial)", {
   expect_gt(sum(results_df$state_AS_phased == truth_df$state_AS_phased) / nbins, 0.99) #test accuraccy is > 99%
@@ -27,6 +28,7 @@ test_that("Test haplotype specific copy number inference (beta-binomial)", {
   expect_gt(results_bb$likelihood$taronesZ, 5)
   expect_true(f[["0|2"]] == 0.125)
   expect_true(f[["2|0"]] == 0.25)
+  expect_true(typeof(hm) == "S4")
 })
 
 plot1 <- plotCNprofile(sim_data_bb$CNbins)
