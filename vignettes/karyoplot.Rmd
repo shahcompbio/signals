@@ -53,11 +53,11 @@ plotideogram(hscn, cellid = "SA922-A90554B-R35-C61", gene.symbols = c("TP53", "M
 
 ### Chromosome level plots with ideogram and gene annotations
 ```{r, fig.width = 10}
-plotideogram(hscn, cellid = "SA922-A90554B-R35-C61", chr = c("8"), gene.symbols = c("MYC"))
+plotideogram(hscn, cellid = "SA922-A90554B-R31-C42", chr = c("8"), gene.symbols = c("MYC"))
 ```
 
 ```{r, fig.width = 10}
-plotideogram(hscn, cellid = "SA921-A90554A-R05-C07", chr = c("17"), gene.symbols = c("TP53"))
+plotideogram(hscn, cellid = "SA922-A90554B-R34-C67", chr = c("17"), gene.symbols = c("TP53"))
 ```
 
 
