@@ -473,7 +473,10 @@ make_top_annotation_gain <- function(copynumber,
     f1 <- colSums(copynumber > cutoff, na.rm = TRUE) / ncells
     f2 <- -colSums(copynumber < cutoff, na.rm = TRUE) / ncells
     if (is.null(maxf)){
-      maxf <- round(max(max(f1, max(abs(f2)))) / 0.25) * 0.25
+      maxf <- round(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
+      if (maxf < 0.01){
+        maxf <- 0.01
+      }
     }
     ha2 = ComplexHeatmap::columnAnnotation(
       dist2 =  ComplexHeatmap::anno_barplot(
@@ -499,7 +502,10 @@ make_top_annotation_gain <- function(copynumber,
     f1 <- colSums(apply(copynumber, 2, function(x) grepl("A-", x))) / ncells
     f2 <- -colSums(apply(copynumber, 2, function(x) grepl("B-", x))) / ncells
     if (is.null(maxf)){
-      maxf <- round(max(max(f1, max(abs(f2)))) / 0.25) * 0.25
+      maxf <- round(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
+      if (maxf < 0.01){
+        maxf <- 0.01
+      }
     }
 
     ha2 = ComplexHeatmap::columnAnnotation(
@@ -527,7 +533,10 @@ make_top_annotation_gain <- function(copynumber,
     f1 <- colSums(copynumber < 0.5, na.rm = TRUE) / ncells
     f2 <- -colSums(copynumber > 0.5, na.rm = TRUE) / ncells
     if (is.null(maxf)){
-      maxf <- round(max(max(f1, max(abs(f2)))) / 0.25) * 0.25
+      maxf <- round(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
+      if (maxf < 0.01){
+        maxf <- 0.01
+      }
     }
     ha2 = ComplexHeatmap::columnAnnotation(
       dist2 =  ComplexHeatmap::anno_barplot(
