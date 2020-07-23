@@ -267,7 +267,7 @@ get_library_labels <- function(cell_ids, idx = 1) {
   return(labels)
 }
 
-make_left_annot <- function(copynumber, clones, library_mapping = NULL, clone_pal = NULL, idx = 1) {
+make_left_annot <- function(copynumber, clones, library_mapping = NULL, clone_pal = NULL, idx = 1, show_legend = TRUE) {
   annot_colours <- list()
 
   library_labels <- get_library_labels(rownames(copynumber), idx = idx)
@@ -319,15 +319,17 @@ make_left_annot <- function(copynumber, clones, library_mapping = NULL, clone_pa
       annotation_legend_param=list(
         Clone=list(nrow=clone_legend_rows),
         Sample=list(nrow=library_legend_rows)
-      )
+      ),
+      show_legend = show_legend
     )
   } else {
     left_annot <- ComplexHeatmap::HeatmapAnnotation(
       Sample=library_labels, col=annot_colours,
       which="row", simple_anno_size=ggplot2::unit(0.4, "cm"),
       annotation_legend_param=list(
-        Sample=list(nrow=library_legend_rows)
-      )
+        Sample=list(nrow=library_legend_rows),
+      ),
+      show_legend = show_legend
     )
   }
 
@@ -565,6 +567,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     maxf = 1.0,
                                     plotcol = "state",
                                     plotfrequency = FALSE,
+                                    show_legend = TRUE,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -576,9 +579,12 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_columns=FALSE,
     show_column_names=FALSE,
     bottom_annotation=make_bottom_annot(copynumber),
-    left_annotation=make_left_annot(copynumber, clones, library_mapping = library_mapping, clone_pal = clone_pal, idx = sample_label_idx),
+    left_annotation=make_left_annot(copynumber, clones,
+                                    library_mapping = library_mapping, clone_pal = clone_pal,
+                                    idx = sample_label_idx,show_legend = show_legend),
     heatmap_legend_param=list(nrow=4),
-    top_annotation = make_top_annotation_gain(copynumber, cutoff = cutoff, maxf = maxf, plotfrequency = plotfrequency, plotcol = plotcol),
+    top_annotation = make_top_annotation_gain(copynumber, cutoff = cutoff, maxf = maxf,
+                                              plotfrequency = plotfrequency, plotcol = plotcol),
     use_raster=TRUE,
     raster_quality=5,
     ...
@@ -627,6 +633,7 @@ plotHeatmap <- function(cn,
                         frequencycutoff = 2,
                         maxf = NULL,
                         plotfrequency = FALSE,
+                        show_legend = TRUE,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -678,7 +685,7 @@ plotHeatmap <- function(cn,
 
   if (is.null(tree) & is.null(clusters)){
     message("No tree or cluster information provided, clustering using HDBSCAN")
-    clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), field = "copy", ...)
+    clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), field = "copy")
     tree <- clustering_results$tree
     tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data
@@ -737,7 +744,9 @@ plotHeatmap <- function(cn,
                                            cutoff = frequencycutoff,
                                            maxf = maxf,
                                            plotcol = plotcol,
-                                           plotfrequency = plotfrequency)
+                                           plotfrequency = plotfrequency,
+                                           show_legend = show_legend,
+                                           ...)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
   } else {
@@ -805,7 +814,7 @@ plotSNVHeatmap <- function(SNVs,
     cluster_columns=FALSE,
     show_column_names=FALSE,
     #bottom_annotation=make_bottom_annot(copynumber),
-    left_annotation=make_left_annot(muts, format_clones(clusters, ordered_cell_ids)),
+    left_annotation=make_left_annot(muts, format_clones(clusters, ordered_cell_ids, show_legend = show_legend)),
     #use_raster=TRUE,
     top_annotation = HeatmapAnnotation(df = mutgroups,
                                        col = list(MutationGroup = colpal)),
@@ -873,7 +882,7 @@ plotHeatmapQC <- function(cn,
 
   if (is.null(tree) & is.null(clusters)){
     message("No tree or cluster information provided, clustering using HDBSCAN")
-    clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), field = "copy", ...)
+    clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), field = "copy")
     tree <- clustering_results$tree
     tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data
