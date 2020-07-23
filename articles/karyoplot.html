@@ -88,30 +88,24 @@
 
     
     
-<div class="sourceCode" id="cb1"><pre class="downlit">
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw">schnapps</span>)
-</pre></div>
+<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">schnapps</span>)</pre></body></html></div>
 <div id="background" class="section level2">
 <h2 class="hasAnchor">
 <a href="#background" class="anchor"></a>Background</h2>
 <p>This vignette will illustrate some advanced plotting functionality available in <code>schnapps</code> that allows plotting single cell profiles with ideograms and gene annotations. This additional functionaility requires the following bioconductor packages (which are not installed automatically): <code>regioneR</code>, <code>karyploteR</code>, <code>biomaRt</code> and <code>GenomeInfoDb</code>.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit">
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw">regioneR</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw"><a href="https://github.com/bernatgel/karyoploteR">karyoploteR</a></span>)
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw">biomaRt</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw">GenomeInfoDb</span>)
-</pre></div>
+<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">regioneR</span>)
+<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">karyoploteR</span>)
+<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">biomaRt</span>)
+<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">GenomeInfoDb</span>)</pre></body></html></div>
 </div>
 <div id="data-processing" class="section level2">
 <h2 class="hasAnchor">
 <a href="#data-processing" class="anchor"></a>Data processing</h2>
 <p>We’ll now process the data as in the introductory vignette and call haplotype specific copy number.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit">
-<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="st">"haplotypes"</span>)
+<div class="sourceCode" id="cb3"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="st">"haplotypes"</span>)
 <span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="st">"CNbins"</span>)
-<span class="kw">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span>(<span class="kw">haplotypes</span>, <span class="kw">CNbins</span>)
-<span class="kw">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="kw">CNbins</span>, <span class="kw">haplotypes</span>, phasebyarm = <span class="fl">FALSE</span>)
-</pre></div>
+<span class="no">haplotypes</span> <span class="kw">&lt;-</span> <span class="fu">format_haplotypes_dlp</span>(<span class="no">haplotypes</span>, <span class="no">CNbins</span>)
+<span class="no">hscn</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">phasebyarm</span> <span class="kw">=</span> <span class="fl">FALSE</span>)</pre></body></html></div>
 </div>
 <div id="plotting" class="section level2">
 <h2 class="hasAnchor">
@@ -120,67 +114,64 @@
 <div id="genome-wide-plot-with-ideogram" class="section level3">
 <h3 class="hasAnchor">
 <a href="#genome-wide-plot-with-ideogram" class="anchor"></a>Genome wide plot with ideogram</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit">
-<span class="fu">plotideogram</span>(<span class="kw">hscn</span>, cellid = <span class="st">"SA921-A90554A-R05-C07"</span>)
-</pre></div>
+<div class="sourceCode" id="cb4"><html><body><pre class="r"><span class="fu">plotideogram</span>(<span class="no">hscn</span>, <span class="kw">cellid</span> <span class="kw">=</span> <span class="st">"SA922-A90554B-R35-C61"</span>)</pre></body></html></div>
 <p><img src="karyoplot_files/figure-html/unnamed-chunk-4-1.png" width="1440"></p>
-<pre><code>#&gt; expression(kp &lt;- karyoploteR::plotKaryotype(plot.type = 4, plot.params = pp, 
-#&gt;     chromosomes = chr), karyoploteR::kpAxis(kp, r0 = 0.52, r1 = 1), 
-#&gt;     karyoploteR::kpPoints(kp, data = data, y = data$BAF, r0 = 0.52, 
-#&gt;         r1 = 1, col = data$col_ASstate), karyoploteR::kpAxis(kp, 
-#&gt;         tick.pos = seq(0, maxCN, 2), r0 = 0, r1 = 0.48, ymax = maxCN, 
-#&gt;         ymin = 0), karyoploteR::kpPoints(kp, data = data, y = data$copy, 
-#&gt;         r0 = 0, r1 = 0.48, ymin = 0, ymax = maxCN, col = data$col_state))</code></pre>
+<pre><code>#&gt; expression(pp &lt;- karyoploteR::getDefaultPlotParams(plot.type = 4), 
+#&gt;     pp$data1inmargin &lt;- 2, kp &lt;- karyoploteR::plotKaryotype(plot.type = 4, 
+#&gt;         plot.params = pp, chromosomes = chr), karyoploteR::kpAxis(kp, 
+#&gt;         r0 = 0.52, r1 = 1), karyoploteR::kpPoints(kp, data = data, 
+#&gt;         y = data$BAF, r0 = 0.52, r1 = 1, col = data$col_ASstate), 
+#&gt;     karyoploteR::kpAxis(kp, tick.pos = seq(0, maxCN, 2), r0 = 0, 
+#&gt;         r1 = 0.48, ymax = maxCN, ymin = 0), karyoploteR::kpPoints(kp, 
+#&gt;         data = data, y = data$copy, r0 = 0, r1 = 0.48, ymin = 0, 
+#&gt;         ymax = maxCN, col = data$col_state))</code></pre>
 </div>
 <div id="genome-wide-plot-with-ideogram-and-gene-annotations" class="section level3">
 <h3 class="hasAnchor">
 <a href="#genome-wide-plot-with-ideogram-and-gene-annotations" class="anchor"></a>Genome wide plot with ideogram and gene annotations</h3>
-<div class="sourceCode" id="cb6"><pre class="downlit">
-<span class="fu">plotideogram</span>(<span class="kw">hscn</span>, cellid = <span class="st">"SA921-A90554A-R05-C07"</span>, gene.symbols = <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"TP53"</span>, <span class="st">"MYC"</span>))
-</pre></div>
+<div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu">plotideogram</span>(<span class="no">hscn</span>, <span class="kw">cellid</span> <span class="kw">=</span> <span class="st">"SA922-A90554B-R35-C61"</span>, <span class="kw">gene.symbols</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"TP53"</span>, <span class="st">"MYC"</span>))</pre></body></html></div>
 <p><img src="karyoplot_files/figure-html/unnamed-chunk-5-1.png" width="1440"></p>
-<pre><code>#&gt; expression(kp &lt;- karyoploteR::plotKaryotype(plot.type = 4, plot.params = pp, 
-#&gt;     chromosomes = chr), karyoploteR::kpAxis(kp, r0 = 0.4, r1 = 0.75), 
-#&gt;     karyoploteR::kpPoints(kp, data = data, y = data$BAF, r0 = 0.4, 
-#&gt;         r1 = 0.75, col = data$col_ASstate), karyoploteR::kpAxis(kp, 
-#&gt;         tick.pos = seq(0, maxCN, 2), r0 = 0, r1 = 0.35, ymax = maxCN, 
-#&gt;         ymin = 0), karyoploteR::kpPoints(kp, data = data, y = data$copy, 
-#&gt;         r0 = 0, r1 = 0.35, ymin = 0, ymax = maxCN, col = data$col_state), 
-#&gt;     karyoploteR::kpPlotMarkers(kp, data = genes, labels = genes$hgnc_symbol, 
-#&gt;         line.color = "#555555", marker.parts = c(0.95, 0.025, 
-#&gt;             0.025), r1 = 1.05))</code></pre>
+<pre><code>#&gt; expression(pp &lt;- karyoploteR::getDefaultPlotParams(plot.type = 4), 
+#&gt;     pp$data1inmargin &lt;- 2, kp &lt;- karyoploteR::plotKaryotype(plot.type = 4, 
+#&gt;         plot.params = pp, chromosomes = chr), karyoploteR::kpAxis(kp, 
+#&gt;         r0 = 0.4, r1 = 0.75), karyoploteR::kpPoints(kp, data = data, 
+#&gt;         y = data$BAF, r0 = 0.4, r1 = 0.75, col = data$col_ASstate), 
+#&gt;     karyoploteR::kpAxis(kp, tick.pos = seq(0, maxCN, 2), r0 = 0, 
+#&gt;         r1 = 0.35, ymax = maxCN, ymin = 0), karyoploteR::kpPoints(kp, 
+#&gt;         data = data, y = data$copy, r0 = 0, r1 = 0.35, ymin = 0, 
+#&gt;         ymax = maxCN, col = data$col_state), karyoploteR::kpPlotMarkers(kp, 
+#&gt;         data = genes, labels = genes$hgnc_symbol, line.color = "#555555", 
+#&gt;         marker.parts = c(0.95, 0.025, 0.025), r1 = 1.05))</code></pre>
 </div>
-<div id="chrosome-level-plots-with-ideogram-and-gene-annotations" class="section level3">
+<div id="chromosome-level-plots-with-ideogram-and-gene-annotations" class="section level3">
 <h3 class="hasAnchor">
-<a href="#chrosome-level-plots-with-ideogram-and-gene-annotations" class="anchor"></a>Chrosome level plots with ideogram and gene annotations</h3>
-<div class="sourceCode" id="cb8"><pre class="downlit">
-<span class="fu">plotideogram</span>(<span class="kw">hscn</span>, cellid = <span class="st">"SA921-A90554A-R05-C07"</span>, chr = <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"8"</span>), gene.symbols = <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"MYC"</span>))
-</pre></div>
+<a href="#chromosome-level-plots-with-ideogram-and-gene-annotations" class="anchor"></a>Chromosome level plots with ideogram and gene annotations</h3>
+<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="fu">plotideogram</span>(<span class="no">hscn</span>, <span class="kw">cellid</span> <span class="kw">=</span> <span class="st">"SA922-A90554B-R31-C42"</span>, <span class="kw">chr</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"8"</span>), <span class="kw">gene.symbols</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"MYC"</span>))</pre></body></html></div>
 <p><img src="karyoplot_files/figure-html/unnamed-chunk-6-1.png" width="960"></p>
-<pre><code>#&gt; expression(kp &lt;- karyoploteR::plotKaryotype(plot.type = 4, plot.params = pp, 
-#&gt;     chromosomes = chr), karyoploteR::kpAxis(kp, r0 = 0.4, r1 = 0.75), 
-#&gt;     karyoploteR::kpPoints(kp, data = data, y = data$BAF, r0 = 0.4, 
-#&gt;         r1 = 0.75, col = data$col_ASstate), karyoploteR::kpAxis(kp, 
-#&gt;         tick.pos = seq(0, maxCN, 2), r0 = 0, r1 = 0.35, ymax = maxCN, 
-#&gt;         ymin = 0), karyoploteR::kpPoints(kp, data = data, y = data$copy, 
-#&gt;         r0 = 0, r1 = 0.35, ymin = 0, ymax = maxCN, col = data$col_state), 
-#&gt;     karyoploteR::kpPlotMarkers(kp, data = genes, labels = genes$hgnc_symbol, 
-#&gt;         line.color = "#555555", marker.parts = c(0.95, 0.025, 
-#&gt;             0.025), r1 = 1.05))</code></pre>
-<div class="sourceCode" id="cb10"><pre class="downlit">
-<span class="fu">plotideogram</span>(<span class="kw">hscn</span>, cellid = <span class="st">"SA921-A90554A-R05-C07"</span>, chr = <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"17"</span>), gene.symbols = <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"TP53"</span>))
-</pre></div>
+<pre><code>#&gt; expression(pp &lt;- karyoploteR::getDefaultPlotParams(plot.type = 4), 
+#&gt;     pp$data1inmargin &lt;- 2, kp &lt;- karyoploteR::plotKaryotype(plot.type = 4, 
+#&gt;         plot.params = pp, chromosomes = chr), karyoploteR::kpAxis(kp, 
+#&gt;         r0 = 0.4, r1 = 0.75), karyoploteR::kpPoints(kp, data = data, 
+#&gt;         y = data$BAF, r0 = 0.4, r1 = 0.75, col = data$col_ASstate), 
+#&gt;     karyoploteR::kpAxis(kp, tick.pos = seq(0, maxCN, 2), r0 = 0, 
+#&gt;         r1 = 0.35, ymax = maxCN, ymin = 0), karyoploteR::kpPoints(kp, 
+#&gt;         data = data, y = data$copy, r0 = 0, r1 = 0.35, ymin = 0, 
+#&gt;         ymax = maxCN, col = data$col_state), karyoploteR::kpPlotMarkers(kp, 
+#&gt;         data = genes, labels = genes$hgnc_symbol, line.color = "#555555", 
+#&gt;         marker.parts = c(0.95, 0.025, 0.025), r1 = 1.05))</code></pre>
+<div class="sourceCode" id="cb10"><html><body><pre class="r"><span class="fu">plotideogram</span>(<span class="no">hscn</span>, <span class="kw">cellid</span> <span class="kw">=</span> <span class="st">"SA922-A90554B-R34-C67"</span>, <span class="kw">chr</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"17"</span>), <span class="kw">gene.symbols</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"TP53"</span>))</pre></body></html></div>
 <p><img src="karyoplot_files/figure-html/unnamed-chunk-7-1.png" width="960"></p>
-<pre><code>#&gt; expression(kp &lt;- karyoploteR::plotKaryotype(plot.type = 4, plot.params = pp, 
-#&gt;     chromosomes = chr), karyoploteR::kpAxis(kp, r0 = 0.4, r1 = 0.75), 
-#&gt;     karyoploteR::kpPoints(kp, data = data, y = data$BAF, r0 = 0.4, 
-#&gt;         r1 = 0.75, col = data$col_ASstate), karyoploteR::kpAxis(kp, 
-#&gt;         tick.pos = seq(0, maxCN, 2), r0 = 0, r1 = 0.35, ymax = maxCN, 
-#&gt;         ymin = 0), karyoploteR::kpPoints(kp, data = data, y = data$copy, 
-#&gt;         r0 = 0, r1 = 0.35, ymin = 0, ymax = maxCN, col = data$col_state), 
-#&gt;     karyoploteR::kpPlotMarkers(kp, data = genes, labels = genes$hgnc_symbol, 
-#&gt;         line.color = "#555555", marker.parts = c(0.95, 0.025, 
-#&gt;             0.025), r1 = 1.05))</code></pre>
+<pre><code>#&gt; expression(pp &lt;- karyoploteR::getDefaultPlotParams(plot.type = 4), 
+#&gt;     pp$data1inmargin &lt;- 2, kp &lt;- karyoploteR::plotKaryotype(plot.type = 4, 
+#&gt;         plot.params = pp, chromosomes = chr), karyoploteR::kpAxis(kp, 
+#&gt;         r0 = 0.4, r1 = 0.75), karyoploteR::kpPoints(kp, data = data, 
+#&gt;         y = data$BAF, r0 = 0.4, r1 = 0.75, col = data$col_ASstate), 
+#&gt;     karyoploteR::kpAxis(kp, tick.pos = seq(0, maxCN, 2), r0 = 0, 
+#&gt;         r1 = 0.35, ymax = maxCN, ymin = 0), karyoploteR::kpPoints(kp, 
+#&gt;         data = data, y = data$copy, r0 = 0, r1 = 0.35, ymin = 0, 
+#&gt;         ymax = maxCN, col = data$col_state), karyoploteR::kpPlotMarkers(kp, 
+#&gt;         data = genes, labels = genes$hgnc_symbol, line.color = "#555555", 
+#&gt;         marker.parts = c(0.95, 0.025, 0.025), r1 = 1.05))</code></pre>
 </div>
 </div>
   </div>
@@ -200,7 +191,7 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>
