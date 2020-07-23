@@ -460,6 +460,30 @@ make_bottom_annot <- function(copynumber) {
   return(bottom_annot)
 }
 
+make_top_annotation_gain <- function(copynumber, cutoff = NULL){
+  ncells <- nrow(copynumber)
+
+  if (!is.null(cutoff)){
+    ha2 = ComplexHeatmap::columnAnnotation(
+      dist2 =  ComplexHeatmap::anno_barplot(
+        colSums(copynumber > 2, na.rm = TRUE) / ncells,
+        bar_width = 1,
+        gp =  grid::gpar(col = "#E34A33"),
+        border = FALSE,
+      ),
+      dist3 =  ComplexHeatmap::anno_barplot(
+        -colSums(copynumber < 2, na.rm = TRUE) / ncells,
+        bar_width = 1,
+        gp =  grid::gpar(col = "#3182BD"),
+        border = FALSE,
+      ),
+      show_annotation_name = FALSE)
+  } else{
+    ha2 <- NULL
+  }
+  return(ha2)
+}
+
 make_copynumber_heatmap <- function(copynumber,
                                     clones,
                                     colvals = cn_colours,
@@ -467,6 +491,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     library_mapping = NULL,
                                     clone_pal = NULL,
                                     sample_label_idx = 1,
+                                    cutoff = NULL,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -480,6 +505,7 @@ make_copynumber_heatmap <- function(copynumber,
     bottom_annotation=make_bottom_annot(copynumber),
     left_annotation=make_left_annot(copynumber, clones, library_mapping = library_mapping, clone_pal = clone_pal, idx = sample_label_idx),
     heatmap_legend_param=list(nrow=4),
+    top_annotation = make_top_annotation_gain(copynumber, cutoff = cutoff),
     use_raster=TRUE,
     raster_quality=5,
     ...
@@ -525,6 +551,7 @@ plotHeatmap <- function(cn,
                         clone_pal = NULL,
                         sample_label_idx = 1,
                         fillna = TRUE,
+                        frequencycutoff = NULL,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -631,7 +658,8 @@ plotHeatmap <- function(cn,
                                            legendname = legendname,
                                            library_mapping = library_mapping,
                                            clone_pal = clone_pal,
-                                           sample_label_idx = sample_label_idx)
+                                           sample_label_idx = sample_label_idx,
+                                           cutoff = frequencycutoff)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
   } else {
