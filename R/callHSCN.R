@@ -88,7 +88,7 @@ callalleleHMMcell <- function(CNBAF,
 
   minorcn_res <- c()
   for (mychr in unique(CNBAF$chr)){
-    hmmresults <- HaplotypeHMM(n = dplyr::filter(CNVAF, chr == mychr)$totalcounts,
+    hmmresults <- HaplotypeHMM(n = dplyr::filter(CNBAF, chr == mychr)$totalcounts,
                             x = dplyr::filter(CNBAF, chr == mychr)$alleleB,
                             dplyr::filter(CNBAF, chr == mychr)$state,
                             minor_cn,
