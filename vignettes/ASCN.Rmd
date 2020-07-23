@@ -117,7 +117,7 @@ plotBAFperstate(hscn, maxstate = 10)
 In the allelic imbalance heatmap we can see that some cells have gained the "B" allele and others the "A" allele resulting in imbalance spanning from 0 to 1.
 ```{r, fig.show='hold', fig.height=4 , fig.width=10}
 set.seed(1)
-plotHeatmap(hscn, plotcol = "state_BAF", plottree = FALSE, spacer_cols = 15)
+plotHeatmap(hscn, plotcol = "state_BAF", plottree = FALSE, spacer_cols = 15, plotfrequency = TRUE)
 ```
 
 In the discrete version of this plot we see similar patterns. 
