@@ -464,13 +464,18 @@ make_top_annotation_gain <- function(copynumber,
                                      plotcol = "state",
                                      plotfrequency = FALSE,
                                      cutoff = NULL,
-                                     maxf = 1.0){
+                                     maxf = NULL){
   ncells <- nrow(copynumber)
 
   if (plotcol == "state" & plotfrequency == TRUE){
+    f1 <- colSums(copynumber > cutoff, na.rm = TRUE) / ncells
+    f2 <- -colSums(copynumber < cutoff, na.rm = TRUE) / ncells
+    if (is.null(maxf)){
+      maxf <- round(max(max(f1, max(abs(f2)))) / 0.25) * 0.25
+    }
     ha2 = ComplexHeatmap::columnAnnotation(
       dist2 =  ComplexHeatmap::anno_barplot(
-        colSums(copynumber > cutoff, na.rm = TRUE) / ncells,
+        f1,
         bar_width = 1,
         gp =  grid::gpar(col = "#E34A33"),
         axis_param = list(at = c(round(maxf / 2, 2), maxf),
@@ -479,7 +484,7 @@ make_top_annotation_gain <- function(copynumber,
         border = FALSE,
       ),
       dist3 =  ComplexHeatmap::anno_barplot(
-        -colSums(copynumber < cutoff, na.rm = TRUE) / ncells,
+        f2,
         bar_width = 1,
         gp =  grid::gpar(col = "#3182BD"),
         axis_param = list(at = c(0.0, -round(maxf / 2, 2), -maxf),
@@ -489,9 +494,15 @@ make_top_annotation_gain <- function(copynumber,
       ),
       show_annotation_name = FALSE)
   } else if (plotcol == "state_phase" & plotfrequency == TRUE) {
+    f1 <- colSums(apply(copynumber, 2, function(x) grepl("A-", x))) / ncells
+    f2 <- -colSums(apply(copynumber, 2, function(x) grepl("B-", x))) / ncells
+    if (is.null(maxf)){
+      maxf <- round(max(max(f1, max(abs(f2)))) / 0.25) * 0.25
+    }
+
     ha2 = ComplexHeatmap::columnAnnotation(
       dist2 =  ComplexHeatmap::anno_barplot(
-        colSums(apply(copynumber, 2, function(x) grepl("A-", x))) / ncells,
+        f1,
         bar_width = 1,
         gp =  grid::gpar(col = "#56956E"),
         axis_param = list(at = c(round(maxf / 2, 2), maxf),
@@ -500,7 +511,7 @@ make_top_annotation_gain <- function(copynumber,
         border = FALSE,
       ),
       dist3 =  ComplexHeatmap::anno_barplot(
-        -colSums(apply(copynumber, 2, function(x) grepl("B-", x))) / ncells,
+        f2,
         bar_width = 1,
         gp =  grid::gpar(col = "#683711"),
         axis_param = list(at = c(0, -round(maxf / 2, 2), -maxf),
@@ -511,9 +522,14 @@ make_top_annotation_gain <- function(copynumber,
       show_annotation_name = FALSE)
   }
   else if (plotcol == "state_BAF" & plotfrequency == TRUE){
+    f1 <- colSums(copynumber < 0.5, na.rm = TRUE) / ncells
+    f2 <- -colSums(copynumber > 0.5, na.rm = TRUE) / ncells
+    if (is.null(maxf)){
+      maxf <- round(max(max(f1, max(abs(f2)))) / 0.25) * 0.25
+    }
     ha2 = ComplexHeatmap::columnAnnotation(
       dist2 =  ComplexHeatmap::anno_barplot(
-        colSums(copynumber < 0.5, na.rm = TRUE) / ncells,
+        f1,
         bar_width = 1,
         gp =  grid::gpar(col = "#006D2C"),
         axis_param = list(at = c(round(maxf / 2, 2), maxf),
@@ -522,7 +538,7 @@ make_top_annotation_gain <- function(copynumber,
         border = FALSE,
       ),
       dist3 =  ComplexHeatmap::anno_barplot(
-        -colSums(copynumber > 0.5, na.rm = TRUE) / ncells,
+        f2,
         bar_width = 1,
         gp =  grid::gpar(col = "#A63603"),
         axis_param = list(at = c(0.0, -round(maxf / 2, 2), -maxf),
@@ -609,7 +625,7 @@ plotHeatmap <- function(cn,
                         sample_label_idx = 1,
                         fillna = TRUE,
                         frequencycutoff = 2,
-                        maxf = 1.0,
+                        maxf = NULL,
                         plotfrequency = FALSE,
                         ...){
 
