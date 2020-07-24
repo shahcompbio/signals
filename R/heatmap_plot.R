@@ -497,10 +497,15 @@ make_top_annotation_gain <- function(copynumber,
         ylim = c(-maxf,0),
         border = FALSE,
       ),
-      show_annotation_name = FALSE)
+      show_annotation_name = FALSE,
+      height = unit(1, "cm"))
   } else if (plotcol == "state_phase" & plotfrequency == TRUE) {
-    f1 <- colSums(apply(copynumber, 2, function(x) grepl("A-", x))) / ncells
-    f2 <- -colSums(apply(copynumber, 2, function(x) grepl("B-", x))) / ncells
+    f1a <- colSums(apply(copynumber, 2, function(x) grepl("A-Gained", x))) / ncells
+    f1b <- colSums(apply(copynumber, 2, function(x) grepl("A-LOH", x))) / ncells
+    f2a <- -colSums(apply(copynumber, 2, function(x) grepl("B-Gained", x))) / ncells
+    f2b <- -colSums(apply(copynumber, 2, function(x) grepl("B-LOH", x))) / ncells
+    f1 <- f1a + f1b
+    f2 <- f2a + f2b
     if (is.null(maxf)){
       maxf <- ceiling(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
       if (maxf < 0.01){
@@ -510,24 +515,25 @@ make_top_annotation_gain <- function(copynumber,
 
     ha2 = ComplexHeatmap::columnAnnotation(
       dist2 =  ComplexHeatmap::anno_barplot(
-        f1,
+        matrix(data = c(f1a,f1b), ncol = 2),
         bar_width = 1,
-        gp =  grid::gpar(col = "#56956E"),
+        gp =  grid::gpar(col = c("#66CC99", "#56956E")),
         axis_param = list(at = c(round(maxf / 2, 2), maxf),
                           labels = c(paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(0, maxf),
         border = FALSE,
       ),
       dist3 =  ComplexHeatmap::anno_barplot(
-        f2,
+        matrix(data = c(f2a,f2b), ncol = 2),
         bar_width = 1,
-        gp =  grid::gpar(col = "#683711"),
+        gp =  grid::gpar(col = c("#FF9E26", "#683711")),
         axis_param = list(at = c(0, -round(maxf / 2, 2), -maxf),
                           labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(-maxf,0),
         border = FALSE,
       ),
-      show_annotation_name = FALSE)
+      show_annotation_name = FALSE,
+      height = unit(1, "cm"))
   }
   else if (plotcol == "state_BAF" & plotfrequency == TRUE){
     f1 <- colSums(copynumber < 0.5, na.rm = TRUE) / ncells
@@ -557,7 +563,8 @@ make_top_annotation_gain <- function(copynumber,
         ylim = c(-maxf,0),
         border = FALSE,
       ),
-      show_annotation_name = FALSE)
+      show_annotation_name = FALSE,
+      height = unit(1, "cm"))
   }
   else {
     ha2 <- NULL
