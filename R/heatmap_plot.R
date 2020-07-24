@@ -498,7 +498,7 @@ make_top_annotation_gain <- function(copynumber,
         border = FALSE,
       ),
       show_annotation_name = FALSE,
-      height = unit(1, "cm"))
+      height = unit(1.4, "cm"))
   } else if (plotcol == "state_phase" & plotfrequency == TRUE) {
     f1a <- colSums(apply(copynumber, 2, function(x) grepl("A-Gained", x))) / ncells
     f1b <- colSums(apply(copynumber, 2, function(x) grepl("A-LOH", x))) / ncells
@@ -533,7 +533,7 @@ make_top_annotation_gain <- function(copynumber,
         border = FALSE,
       ),
       show_annotation_name = FALSE,
-      height = unit(1, "cm"))
+      height = unit(1.4, "cm"))
   }
   else if (plotcol == "state_BAF" & plotfrequency == TRUE){
     f1 <- colSums(copynumber < 0.5, na.rm = TRUE) / ncells
@@ -564,7 +564,7 @@ make_top_annotation_gain <- function(copynumber,
         border = FALSE,
       ),
       show_annotation_name = FALSE,
-      height = unit(1, "cm"))
+      height = unit(1.4, "cm"))
   }
   else {
     ha2 <- NULL
