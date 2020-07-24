@@ -111,7 +111,7 @@ hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, phasebyarm = FALSE)
 We'll now generate the same plots as before. We can see in the BAF per state plot that we now observe states with BAF > 0.5 meaning that we see different alleles gained or lost in different cells.
 
 ```{r, fig.show='hold', fig.height=4 , fig.width=10}
-plotBAFperstate(hscn, maxstate = 10, plotfrequency = TRUE)
+plotBAFperstate(hscn, maxstate = 10)
 ```
 
 In the allelic imbalance heatmap we can see that some cells have gained the "B" allele and others the "A" allele resulting in imbalance spanning from 0 to 1.
