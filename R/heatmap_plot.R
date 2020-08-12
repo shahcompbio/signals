@@ -267,7 +267,13 @@ get_library_labels <- function(cell_ids, idx = 1) {
   return(labels)
 }
 
-make_left_annot <- function(copynumber, clones, library_mapping = NULL, clone_pal = NULL, idx = 1, show_legend = TRUE) {
+make_left_annot <- function(copynumber,
+                            clones,
+                            library_mapping = NULL,
+                            show_library_label = TRUE,
+                            clone_pal = NULL,
+                            idx = 1,
+                            show_legend = TRUE) {
   annot_colours <- list()
 
   library_labels <- get_library_labels(rownames(copynumber), idx = idx)
@@ -311,17 +317,29 @@ make_left_annot <- function(copynumber, clones, library_mapping = NULL, clone_pa
       clone_legend_rows <- round(sqrt(length(clone_levels) * 4))
     }
 
-    left_annot <- ComplexHeatmap::HeatmapAnnotation(
-      Clone=clones$clone_label, clone_label=clone_label_generator,
-      Sample=library_labels,
-      col=annot_colours, show_annotation_name=c(TRUE, FALSE, TRUE),
-      which="row", annotation_width=ggplot2::unit(rep(0.4, 3), "cm"),
-      annotation_legend_param=list(
-        Clone=list(nrow=clone_legend_rows),
-        Sample=list(nrow=library_legend_rows)
-      ),
-      show_legend = show_legend
-    )
+    if (show_library_label){
+      left_annot <- ComplexHeatmap::HeatmapAnnotation(
+        Clone=clones$clone_label, clone_label=clone_label_generator,
+        Sample=library_labels,
+        col=annot_colours, show_annotation_name=c(TRUE, FALSE, TRUE),
+        which="row", annotation_width=ggplot2::unit(rep(0.4, 3), "cm"),
+        annotation_legend_param=list(
+          Clone=list(nrow=clone_legend_rows),
+          Sample=list(nrow=library_legend_rows)
+        ),
+        show_legend = show_legend
+      )
+    } else {
+      left_annot <- ComplexHeatmap::HeatmapAnnotation(
+        Clone=clones$clone_label, clone_label=clone_label_generator,
+        col=annot_colours, show_annotation_name=c(TRUE, FALSE),
+        which="row", annotation_width=ggplot2::unit(rep(0.4, 2), "cm"),
+        annotation_legend_param=list(
+          Clone=list(nrow=clone_legend_rows)
+        ),
+        show_legend = show_legend
+      )
+    }
   } else {
     left_annot <- ComplexHeatmap::HeatmapAnnotation(
       Sample=library_labels, col=annot_colours,
@@ -584,6 +602,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     plotcol = "state",
                                     plotfrequency = FALSE,
                                     show_legend = TRUE,
+                                    show_library_label = TRUE,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -597,7 +616,7 @@ make_copynumber_heatmap <- function(copynumber,
     bottom_annotation=make_bottom_annot(copynumber),
     left_annotation=make_left_annot(copynumber, clones,
                                     library_mapping = library_mapping, clone_pal = clone_pal,
-                                    idx = sample_label_idx,show_legend = show_legend),
+                                    idx = sample_label_idx,show_legend = show_legend, show_library_label = show_library_label),
     heatmap_legend_param=list(nrow=4),
     top_annotation = make_top_annotation_gain(copynumber, cutoff = cutoff, maxf = maxf,
                                               plotfrequency = plotfrequency, plotcol = plotcol),
@@ -650,6 +669,7 @@ plotHeatmap <- function(cn,
                         maxf = NULL,
                         plotfrequency = FALSE,
                         show_legend = TRUE,
+                        show_library_label = TRUE,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -762,6 +782,7 @@ plotHeatmap <- function(cn,
                                            plotcol = plotcol,
                                            plotfrequency = plotfrequency,
                                            show_legend = show_legend,
+                                           show_library_label = show_library_label,
                                            ...)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
