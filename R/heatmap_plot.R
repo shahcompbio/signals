@@ -227,7 +227,7 @@ make_corrupt_tree_heatmap <- function(tree_ggplot, ...) {
       popViewport()
     },
     var_import=list(tree_ggplot=tree_ggplot),
-    width=ggplot2::unit(4, "cm"),
+    width=grid::unit(4, "cm"),
     which="row"
   )
   tree_annot <- ComplexHeatmap::HeatmapAnnotation(
@@ -322,7 +322,7 @@ make_left_annot <- function(copynumber,
         Clone=clones$clone_label, clone_label=clone_label_generator,
         Sample=library_labels,
         col=annot_colours, show_annotation_name=c(TRUE, FALSE, TRUE),
-        which="row", annotation_width=ggplot2::unit(rep(0.4, 3), "cm"),
+        which="row", annotation_width=grid::unit(rep(0.4, 3), "cm"),
         annotation_legend_param=list(
           Clone=list(nrow=clone_legend_rows),
           Sample=list(nrow=library_legend_rows)
@@ -333,7 +333,7 @@ make_left_annot <- function(copynumber,
       left_annot <- ComplexHeatmap::HeatmapAnnotation(
         Clone=clones$clone_label, clone_label=clone_label_generator,
         col=annot_colours, show_annotation_name=c(TRUE, FALSE),
-        which="row", annotation_width=ggplot2::unit(rep(0.4, 2), "cm"),
+        which="row", annotation_width=grid::unit(rep(0.4, 2), "cm"),
         annotation_legend_param=list(
           Clone=list(nrow=clone_legend_rows)
         ),
@@ -343,7 +343,7 @@ make_left_annot <- function(copynumber,
   } else {
     left_annot <- ComplexHeatmap::HeatmapAnnotation(
       Sample=library_labels, col=annot_colours,
-      which="row", simple_anno_size=ggplot2::unit(0.4, "cm"),
+      which="row", simple_anno_size=grid::unit(0.4, "cm"),
       annotation_legend_param=list(
         Sample=list(nrow=library_legend_rows),
       ),
@@ -382,9 +382,9 @@ recycle_gp = function(gp, n = 1) {
 anno_mark = function(at, labels, which = c("column", "row"),
                      side = ifelse(which == "column", "top", "right"),
                      lines_gp = grid::gpar(), labels_gp = grid::gpar(), padding = 0.5,
-                     link_width = ggplot2::unit(5, "mm"), link_height = link_width,
+                     link_width = grid::unit(5, "mm"), link_height = link_width,
                      link_gp = lines_gp,
-                     extend = ggplot2::unit(0, "mm")) {
+                     extend = grid::unit(0, "mm")) {
 
   which = match.arg(which)[1]
 
@@ -400,10 +400,10 @@ anno_mark = function(at, labels, which = c("column", "row"),
 
   if(length(extend) == 1) extend = rep(extend, 2)
   if(length(extend) > 2) extend = extend[1:2]
-  if(!inherits(extend, "unit")) extend = ggplot2::unit(extend, "npc")
+  if(!inherits(extend, "unit")) extend = grid::unit(extend, "npc")
 
   height = link_width + ComplexHeatmap::max_text_width(labels, gp = labels_gp)
-  width = ggplot2::unit(1, "npc")
+  width = grid::unit(1, "npc")
 
   .pos = NULL
   .scale = NULL
@@ -442,10 +442,10 @@ anno_mark = function(at, labels, which = c("column", "row"),
     n2 = length(labels)
     # grid.text(labels, h, rep(max_text_width(labels, gp = labels_gp), n2), default.units = "native", gp = labels_gp, rot = 0, just = "center")
     grid.text(labels, h, rep(grobHeight(textGrob(labels, gp = labels_gp)), n2), default.units = "native", gp = labels_gp, rot = 0, just = "center")
-    link_height = link_height - ggplot2::unit(1, "mm")
-    grid.segments(pos, ggplot2::unit(rep(1, n2), "npc"), pos, ggplot2::unit(1, "npc")-rep(link_height*(1/3), n2), default.units = "native", gp = link_gp)
-    grid.segments(pos, ggplot2::unit(1, "npc")-rep(link_height*(1/3), n2), h, ggplot2::unit(1, "npc")-rep(link_height*(2/3), n2), default.units = "native", gp = link_gp)
-    grid.segments(h, ggplot2::unit(1, "npc")-rep(link_height*(2/3), n2), h, ggplot2::unit(1, "npc")-rep(link_height, n2), default.units = "native", gp = link_gp)
+    link_height = link_height - grid::unit(1, "mm")
+    grid.segments(pos, grid::unit(rep(1, n2), "npc"), pos, grid::unit(1, "npc")-rep(link_height*(1/3), n2), default.units = "native", gp = link_gp)
+    grid.segments(pos, grid::unit(1, "npc")-rep(link_height*(1/3), n2), h, grid::unit(1, "npc")-rep(link_height*(2/3), n2), default.units = "native", gp = link_gp)
+    grid.segments(h, grid::unit(1, "npc")-rep(link_height*(2/3), n2), h, grid::unit(1, "npc")-rep(link_height, n2), default.units = "native", gp = link_gp)
     upViewport()
   }
 
@@ -516,7 +516,7 @@ make_top_annotation_gain <- function(copynumber,
         border = FALSE,
       ),
       show_annotation_name = FALSE,
-      height = unit(1.4, "cm"))
+      height = grid::unit(1.4, "cm"))
   } else if (plotcol == "state_phase" & plotfrequency == TRUE) {
     f1a <- colSums(apply(copynumber, 2, function(x) grepl("A-Gained", x))) / ncells
     f1b <- colSums(apply(copynumber, 2, function(x) grepl("A-LOH", x))) / ncells
@@ -551,7 +551,7 @@ make_top_annotation_gain <- function(copynumber,
         border = FALSE,
       ),
       show_annotation_name = FALSE,
-      height = unit(1.4, "cm"))
+      height = grid::unit(1.4, "cm"))
   }
   else if (plotcol == "state_BAF" & plotfrequency == TRUE){
     f1 <- colSums(copynumber < 0.5, na.rm = TRUE) / ncells
@@ -582,7 +582,7 @@ make_top_annotation_gain <- function(copynumber,
         border = FALSE,
       ),
       show_annotation_name = FALSE,
-      height = unit(1.4, "cm"))
+      height = grid::unit(1.4, "cm"))
   }
   else {
     ha2 <- NULL
@@ -851,7 +851,7 @@ plotSNVHeatmap <- function(SNVs,
     cluster_columns=FALSE,
     show_column_names=FALSE,
     #bottom_annotation=make_bottom_annot(copynumber),
-    left_annotation=make_left_annot(muts, format_clones(clusters, ordered_cell_ids, show_legend = show_legend)),
+    left_annotation=make_left_annot(muts, format_clones(clusters, ordered_cell_ids)),
     #use_raster=TRUE,
     top_annotation = HeatmapAnnotation(df = mutgroups,
                                        col = list(MutationGroup = colpal)),
