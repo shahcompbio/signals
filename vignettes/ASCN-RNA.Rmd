@@ -1,0 +1,43 @@
+---
+title: "Allele Specific Copy Number Inference in scRNAseq"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Allele Specific Copy Number Inference}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  warning=FALSE, message=FALSE, 
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(schnapps)
+```
+
+## Background
+This vignette illustrates how to perform allele specific copy number inference with DLP+ data. However the method should be generally applicable to any single cell copy number method. The input requirements are discussed below.
+
+## Data
+The data needed to perform the allele specific copy number inference are the binned copy number data and cell specific haplotype calls. The copy number data and the haplotype data should use the same bins.
+
+A small test data set of 250 cells is provided with the package, we'll load this data and inspect these 2 dataframe.
+
+```{r}
+data(haplotypes)
+data(CNbins)
+```
+
+```{r}
+head(CNbins)
+```
+
+The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function `format_haplotypes_dlp` to convert the data to the correct format, this function will also remove any bins present in the haplotypes data frame that is not present in the CNbins data frame.
+```{r}
+haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
+head(haplotypes)
+```

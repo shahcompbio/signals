@@ -287,7 +287,7 @@ snv_states <- function(SNV, CNbins){
 #'   and "hg16" (corresponding to the five latest human genome annotations in the
 #'   UCSC genome browser).
 #' @return Character vector, with choromosome arm of given genomic coordinates
-coord_to_arm <- function(chromosome, position, assembly = "hg19", full = F){
+coord_to_arm <- function(chromosome, position, assembly = "hg19", full = FALSE, mergesmallarms = FALSE){
   if(length(chromosome) !=  length(position)){
     stop("chromosome and position must have equal length")
   }
@@ -302,14 +302,28 @@ coord_to_arm <- function(chromosome, position, assembly = "hg19", full = F){
   }
   data("cytoband_map", envir = environment())
   arms <- rep("     ", length(chromosome))
+
+  small <- cytoband_map[[assembly]] %>%
+    dplyr::mutate(arm = substr(V4, 1,1)) %>%
+    dplyr::group_by(V1, arm) %>%
+    dplyr::summarise(start = min(V2), end = max(V3)) %>% dplyr::mutate(width = (end- start) /1e6) %>%
+    dplyr::mutate(small = ifelse(width < 40, TRUE, FALSE)) %>%
+    dplyr::group_by(V1) %>%
+    dplyr::summarise(small = any(small))
+
   for(i in unique(chromosome)){
     map <- cytoband_map[[assembly]][V1 == i]
     arm <- map[(findInterval(position[chromosome == i], map$V3)+1)]$V4
     if(!full){
-      arm <- substr(arm, 1,1)
+      if (mergesmallarms & small[small$V1 == i,]$small){
+        arm <- ""
+      } else{
+        arm <- substr(arm, 1,1)
+      }
     }
     arms[chromosome == i] <- arm
   }
+
   return(arms)
 }
 
@@ -375,4 +389,62 @@ qc_summary <- function(cn){
   message(paste0("Average distance from median to expected BAF = ", round(summary_distance, 4)))
 
   return(list(distance = distance_df, summary = summary_distance))
+}
+
+#' @export
+per_arm_baf_mat <- function(haps){
+  baf <- haps %>%
+    dplyr::filter(chr != "Y") %>%
+    dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = TRUE)) %>%
+    dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+    dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+    dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
+                     alleleB = sum(alleleB, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
+                  total = alleleB + alleleA) %>%
+    dplyr::mutate(idx = ifelse(chr == "X", 2 * 23, 2 * as.numeric(chr))) %>%
+    dplyr::mutate(idx = ifelse(arm == "p", idx - 1, idx))
+
+  idx <- dplyr::distinct(baf, chr, arm, chrarm, idx) %>% dplyr::arrange(idx)
+
+  baf_mat <- baf %>%
+    dplyr::select(cell_id, chrarm, BAF) %>%
+    tidyr::pivot_wider(names_from = "chrarm", values_from = "BAF") %>%
+    as.data.frame()
+
+  row.names(baf_mat) <- baf_mat$cell_id
+  baf_mat = subset(baf_mat, select = -c(cell_id))
+
+  baf_mat <- baf_mat[, idx$chrarm]
+
+  return(list(bafperchr = baf, bafperchrmat = baf_mat))
+}
+
+
+#' @export
+per_arm_cn <- function(hscn){
+  hscn_arm <- hscn %>%
+    dplyr::filter(chr != "Y") %>%
+    dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = TRUE)) %>%
+    dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+    dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+    dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
+                     alleleB = sum(alleleB, na.rm = TRUE),
+                     state = Mode(state),
+                     copy = median(copy),
+                     state_AS_phased = Mode(state_AS_phased),
+                     state_AS = Mode(state_AS),
+                     LOH = Mode(LOH),
+                     state_BAF = Mode(state_BAF),
+                     phase = Mode(phase)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
+                  total = alleleB + alleleA) %>%
+    dplyr::mutate(idx = ifelse(chr == "X", 2 * 23, 2 * as.numeric(chr))) %>%
+    dplyr::mutate(idx = ifelse(arm == "p", idx - 1, idx)) %>%
+    dplyr::mutate(start = data.table::fifelse(arm == "p", 1, 10)) %>%
+    dplyr::mutate(end = data.table::fifelse(arm == "p", 2, 11))
+
+  return(hscn_arm)
 }
