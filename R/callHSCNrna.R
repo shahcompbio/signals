@@ -52,7 +52,7 @@ assign_states <- function(haps, hscn){
     .[, copy := state]
 
   perchr <- as.data.frame(perchr) %>%
-    select(-L, -n, -f, -prob) %>%
+    dplyr::select(-L, -n, -f, -prob) %>%
     as.data.frame()
 
   return(perchr)

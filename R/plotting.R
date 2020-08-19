@@ -459,9 +459,9 @@ plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, den
     ggplot2::geom_violin(scale = "width", col = "white", ggplot2::aes(fill = cncol), adjust = dens_adjust) +
     ggplot2::geom_boxplot(width = 0.1, outlier.shape = NA, col = "white", ggplot2::aes(fill = cncol)) +
     ggplot2::scale_fill_manual(name = "Copy number \n state",
-                                breaks = paste0("CN", seq(0, max(alleleCN$state, na.rm = TRUE), 1)),
-                                labels = seq(0, max(alleleCN$state, na.rm = TRUE), 1),
-                                values = scCN_cols(paste0("CN", seq(0, max(alleleCN$state, na.rm = TRUE), 1)))) +
+                                breaks = paste0("CN", seq(min(alleleCN$state, na.rm = TRUE), max(alleleCN$state, na.rm = TRUE), 1)),
+                                labels = seq(min(alleleCN$state, na.rm = TRUE), max(alleleCN$state, na.rm = TRUE), 1),
+                                values = scCN_cols(paste0("CN", seq(min(alleleCN$state, na.rm = TRUE), max(alleleCN$state, na.rm = TRUE), 1)))) +
     cowplot::theme_cowplot() +
     ggplot2::geom_crossbar(data = allASstates, ggplot2::aes(y = cBAF, ymin = cBAF, ymax = cBAF),
                            alpha = 0.2, size = 0.2) +
@@ -553,8 +553,15 @@ plotBBfit <- function(hscn, nbins = 30, minfrac = 0.01){
 
 #' @export
 plot_variance_state <- function(hscn, by_allele_specific_state = FALSE){
+
+  if (is.hscn(hscn) | is.ascn(hscn)){
+    dat <- hscn$data
+  } else{
+    dat <- hscn
+  }
+
   if (by_allele_specific_state == TRUE){
-    plot_var <- hscn$data %>%
+    plot_var <- dat %>%
       dplyr::group_by(state, state_AS_phased) %>%
       dplyr:: filter(Min > 0 & Maj > 0) %>%
       dplyr::summarize(mBAF = median(BAF), varBAF = var(BAF)) %>%
@@ -569,10 +576,10 @@ plot_variance_state <- function(hscn, by_allele_specific_state = FALSE){
                                  values = scCN_cols(paste0("CN", seq(0, 11, 1))),
                                  drop = FALSE) +
       ggplot2::theme(legend.position = "none") +
-      ggplot2::scale_x_continuous(labels = seq(1, max(hscn$data$state), 1),
-                                  breaks = seq(1, max(hscn$data$state), 1))
+      ggplot2::scale_x_continuous(labels = seq(1, max(dat$state), 1),
+                                  breaks = seq(1, max(dat$state), 1))
   } else {
-    plot_var <- hscn$data %>%
+    plot_var <- dat %>%
       dplyr:: filter(Min > 0 & Maj > 0) %>%
       dplyr::group_by(state, state_AS_phased) %>%
       dplyr::summarize(mBAF = median(BAF), varBAF = var(BAF)) %>%
@@ -591,8 +598,8 @@ plot_variance_state <- function(hscn, by_allele_specific_state = FALSE){
                                   values = scCN_cols(paste0("CN", seq(0, 11, 1))),
                                   drop = FALSE) +
       ggplot2::theme(legend.position = "none") +
-      ggplot2::scale_x_continuous(labels = seq(1, max(hscn$data$state), 1),
-                                  breaks = seq(1, max(hscn$data$state), 1))
+      ggplot2::scale_x_continuous(labels = seq(1, max(dat$state), 1),
+                                  breaks = seq(1, max(dat$state), 1))
   }
 
   return(plot_var)

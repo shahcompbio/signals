@@ -17,6 +17,8 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(schnapps)
+library(tidyverse)
+library(cowplot)
 ```
 
 ## Background
@@ -28,16 +30,92 @@ The data needed to perform the allele specific copy number inference are the bin
 A small test data set of 250 cells is provided with the package, we'll load this data and inspect these 2 dataframe.
 
 ```{r}
-data(haplotypes)
-data(CNbins)
+data(SA1049haps)
+data(SA1049hscn)
 ```
 
-```{r}
-head(CNbins)
-```
 
 The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function `format_haplotypes_dlp` to convert the data to the correct format, this function will also remove any bins present in the haplotypes data frame that is not present in the CNbins data frame.
+```{r, fig.width = 5, fig.height=5}
+haplotypes <- format_haplotypes_rna(SA1049haps, phased_haplotypes = SA1049hscn$haplotype_phasing)
+per_chr_baf(haplotypes)
+```
+
+## Compare DNA vs RNA
+scDNA has 2 orders of magnitude more counts than scRNA.
+
 ```{r}
-haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
-head(haplotypes)
+g1 <- SA1049hscn$data %>%
+  group_by(cell_id) %>%
+  summarise(totalcounts = sum(totalcounts) / 1e6) %>%
+  ggplot(aes(x = totalcounts)) +
+  geom_histogram(bins = 50) +
+  cowplot::theme_cowplot() +
+  xlab("Millions of counts") +
+  ggtitle("DNA")
+
+g2 <- SA1049haps %>%
+  group_by(cell_id) %>%
+  summarise(totalcounts = sum(allele0 + allele1) / 1e6) %>%
+  ggplot(aes(x = totalcounts)) +
+  geom_histogram(bins = 50) +
+  cowplot::theme_cowplot() +
+  xlab("Millions of counts") +
+  ggtitle("RNA")
+
+cowplot::plot_grid(g2, g1)
+```
+
+## Plot
+
+### scRNA
+
+```{r, fig.width=7}
+plotHeatmapBAF(haplotypes)
+```
+
+### scDNA
+```{r, fig.width=7}
+plotHeatmapBAF(SA1049hscn$data)
+```
+
+
+## Infer ASCN in scRNA
+```{r}
+hscn_rna_arm <- assign_states(haplotypes, SA1049hscn$data)
+hscn_dna_arm <- per_arm_cn(SA1049hscn$data)
+```
+
+### QC BAF state
+
+```{r, fig.width=8, fig.height=8}
+library(ggplot2)
+cowplot::plot_grid(plotBAFperstate(hscn_rna_arm) + ggtitle("RNA"),
+                   plotBAFperstate(hscn_dna_arm) + ggtitle("DNA"), ncol = 1)
+```
+### QC BAF variance
+
+```{r, fig.width=8, fig.height=4}
+cowplot::plot_grid(plot_variance_state(hscn_rna_arm) + ggtitle("RNA"),
+                   plot_variance_state(hscn_dna_arm) + ggtitle("DNA"), ncol = 2)
+```
+
+### Heatmap RNA
+```{r, fig.width=8.5}
+plotHeatmap(hscn_rna_arm, 
+            plotfrequency = TRUE, 
+            spacer_cols = 0, 
+            plotcol = "state_BAF", 
+            plottree = FALSE,
+            show_legend = FALSE)
+```
+
+### Heatmap DNA
+```{r, fig.width=8.5}
+plotHeatmap(hscn_dna_arm, 
+            plotfrequency = TRUE, 
+            spacer_cols = 0, 
+            plotcol = "state_BAF", 
+            plottree = FALSE,
+            show_legend = FALSE)
 ```

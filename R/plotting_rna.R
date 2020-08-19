@@ -1,6 +1,7 @@
+#' @export
 per_chr_baf <- function(haps, filtern = 1, perarm = FALSE){
 
-  if (arm){
+  if (perarm){
 
     chridx <- data.frame(chrarm = paste0(rep(c(paste0(seq(1:22)), "X", "Y"), each = 2), rep(c("p", "q"), 24))) %>%
       dplyr::mutate(idx = 1:n())

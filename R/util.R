@@ -431,20 +431,36 @@ per_arm_cn <- function(hscn){
     dplyr::group_by(chr, arm, chrarm, cell_id) %>%
     dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
                      alleleB = sum(alleleB, na.rm = TRUE),
-                     state = Mode(state),
-                     copy = median(copy),
-                     state_AS_phased = Mode(state_AS_phased),
-                     state_AS = Mode(state_AS),
-                     LOH = Mode(LOH),
-                     state_BAF = Mode(state_BAF),
-                     phase = Mode(phase)) %>%
+                     Min = Mode(Min),
+                     Maj = Mode(Maj),
+                     copy = median(copy, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
+    as.data.table() %>%
+    .[, state := Maj + Min] %>%
+    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
+    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
+    .[, state_min := pmin(Maj, Min)] %>%
+    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
+    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
+    .[, phase := c("Balanced", "A", "B")[1 +
+                                           1 * ((Min < Maj)) +
+                                           2 * ((Min > Maj))]] %>%
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+                                                                                 1 * ((Min < Maj) & (Min != 0)) +
+                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
+                                                                                 3 * ((Min < Maj) & (Min == 0)) +
+                                                                                 4 * ((Min > Maj) & (Maj == 0))]
+      ] %>%
+    .[order(cell_id, chr)] %>%
+    .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
     dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
                   total = alleleB + alleleA) %>%
     dplyr::mutate(idx = ifelse(chr == "X", 2 * 23, 2 * as.numeric(chr))) %>%
     dplyr::mutate(idx = ifelse(arm == "p", idx - 1, idx)) %>%
     dplyr::mutate(start = data.table::fifelse(arm == "p", 1, 10)) %>%
-    dplyr::mutate(end = data.table::fifelse(arm == "p", 2, 11))
+    dplyr::mutate(end = data.table::fifelse(arm == "p", 2, 11)) %>%
+    dplyr::mutate(state = ifelse(state >11, 11, state))
 
   return(hscn_arm)
 }
