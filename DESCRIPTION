@@ -37,7 +37,8 @@ Imports:
     S4Vectors,
     scales,
     Rcpp,
-    ggrepel
+    ggrepel,
+    grid
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
