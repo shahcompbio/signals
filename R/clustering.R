@@ -10,6 +10,8 @@ umap_clustering <- function(CNbins,
     n_neighbors <- length(unique(CNbins$cell_id)) - 1
   }
 
+  minPts <- max(minPts, 2)
+
   message("Creating CN matrix...")
   cnmatrix <- createCNmatrix(CNbins, fillna = TRUE, field = field)
   cnmatrix <- subset(cnmatrix, select = -c(chr, start, end, width))
@@ -99,6 +101,8 @@ umap_clustering_breakpoints <- function(CNbins,
   if(length(unique(CNbins$cell_id)) < n_neighbors) {
     n_neighbors <- length(unique(CNbins$cell_id)) - 1
   }
+
+  minPts <- max(minPts, 2)
 
   message("Creating breakpoint matrix...")
   segs <- schnapps::create_segments(CNbins, field = field)
