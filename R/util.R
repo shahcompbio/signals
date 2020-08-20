@@ -403,7 +403,7 @@ per_arm_baf_mat <- function(haps){
     dplyr::ungroup() %>%
     dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
                   total = alleleB + alleleA) %>%
-    dplyr::mutate(idx = ifelse(chr == "X", 2 * 23, 2 * as.numeric(chr))) %>%
+    dplyr::mutate(idx = ifelse(chr == "X", 2 * 23, 2 * as.numeric(as.character(chr)))) %>%
     dplyr::mutate(idx = ifelse(arm == "p", idx - 1, idx))
 
   idx <- dplyr::distinct(baf, chr, arm, chrarm, idx) %>% dplyr::arrange(idx)

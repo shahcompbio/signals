@@ -56,3 +56,49 @@ per_chr_baf <- function(haps, filtern = 1, perarm = FALSE){
 
   return(hst)
 }
+
+#' @export
+plot_proportions <- function(hscn_dna_arm, hscn_rna_arm, perarm = FALSE){
+
+  prop_rna <- hscn_rna_arm %>%
+    dplyr::mutate(state_AS_phased = ifelse(state > 5, "Other", state_AS_phased)) %>%
+    dplyr::group_by(chr, chrarm, state_AS_phased) %>%
+    dplyr::summarise(n = n()) %>%
+    dplyr::mutate(f = n / sum(n)) %>%
+    dplyr::mutate(assay = "RNA")
+
+  prop_dna <- hscn_dna_arm %>%
+    dplyr::mutate(state_AS_phased = ifelse(state > 5, "Other", state_AS_phased)) %>%
+    dplyr::group_by(chr, chrarm, state_AS_phased) %>%
+    dplyr::summarise(n = n()) %>%
+    dplyr::mutate(f = n / sum(n)) %>%
+    dplyr::mutate(assay = "DNA")
+
+  prop <- dplyr::bind_rows(prop_rna, prop_dna) %>%
+    dplyr::mutate(ord = ifelse(assay == "DNA", 1, 0)) %>%
+    dplyr::mutate(chrord = ifelse(chr == "X", 24, as.numeric(as.character(chr))))
+
+  barplot <- prop %>%
+    ggplot2::ggplot(ggplot2::aes(x = assay,
+               y = f,
+               fill = state_AS_phased,
+               alpha = forcats::fct_reorder(assay, ord))) +
+    ggplot2::geom_bar(stat = "identity") +
+    ggplot2::facet_wrap(~forcats::fct_reorder(chrarm, chrord), nrow = 1) +
+    cowplot::theme_cowplot() +
+    ggplot2::theme(panel.spacing = grid::unit(0.1, "lines"),
+          legend.position = "bottom",
+          legend.title = ggplot2::element_blank()) +
+    ggplot2::guides(fill = ggplot2::guide_legend(nrow = 3),
+           alpha = ggplot2::guide_legend(nrow = 2)) +
+    ggplot2::xlab("") +
+    ggplot2::ylab("Proportion") +
+    ggplot2::scale_alpha_discrete(range = c(0.65, 1.0)) +
+    ggplot2::theme(axis.title.x=ggplot2::element_blank(),
+            axis.text.x=ggplot2::element_blank(),
+            axis.ticks.x=ggplot2::element_blank(),
+            axis.line.x=ggplot2::element_blank()) +
+    ggplot2::scale_y_continuous(expand = c(0, 0))
+
+  return(barplot)
+}
