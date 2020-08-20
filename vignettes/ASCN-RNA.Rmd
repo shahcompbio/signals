@@ -36,15 +36,21 @@ data(SA1049hscn)
 
 
 The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function `format_haplotypes_dlp` to convert the data to the correct format, this function will also remove any bins present in the haplotypes data frame that is not present in the CNbins data frame.
-```{r, fig.width = 5, fig.height=5}
+```{r, fig.width = 6, fig.height=6}
 haplotypes <- format_haplotypes_rna(SA1049haps, phased_haplotypes = SA1049hscn$haplotype_phasing)
-per_chr_baf(haplotypes)
+per_chr_baf(haplotypes, perarm = TRUE)
+```
+
+### DNA
+
+```{r,  fig.width = 6, fig.height=6}
+per_chr_baf(SA1049hscn$data, perarm = TRUE)
 ```
 
 ## Compare DNA vs RNA
 scDNA has 2 orders of magnitude more counts than scRNA.
 
-```{r}
+```{r, fig.width = 6}
 g1 <- SA1049hscn$data %>%
   group_by(cell_id) %>%
   summarise(totalcounts = sum(totalcounts) / 1e6) %>%
@@ -82,7 +88,7 @@ plotHeatmapBAF(SA1049hscn$data)
 
 ## Infer ASCN in scRNA
 ```{r}
-hscn_rna_arm <- assign_states(haplotypes, SA1049hscn$data)
+hscn_rna_arm <- assign_states(haplotypes, SA1049hscn$data, minf = 0.05)
 hscn_dna_arm <- per_arm_cn(SA1049hscn$data)
 ```
 
@@ -98,6 +104,10 @@ cowplot::plot_grid(plotBAFperstate(hscn_rna_arm) + ggtitle("RNA"),
 ```{r, fig.width=8, fig.height=4}
 cowplot::plot_grid(plot_variance_state(hscn_rna_arm) + ggtitle("RNA"),
                    plot_variance_state(hscn_dna_arm) + ggtitle("DNA"), ncol = 2)
+```
+### QC proportion states
+```{r, fig.width=8.5}
+plot_proportions(hscn_dna_arm, hscn_rna_arm)
 ```
 
 ### Heatmap RNA
