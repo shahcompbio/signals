@@ -22,33 +22,35 @@ library(cowplot)
 ```
 
 ## Background
-This vignette illustrates how to perform allele specific copy number inference with DLP+ data. However the method should be generally applicable to any single cell copy number method. The input requirements are discussed below.
+This vignette illustrates how to perform allele specific copy number inference in scRNAseq data. There are 2 methods to perform this inference, one which issues prior knowledge from allele specific scDNAseq inference and the second without prior knowledge. We'll demonstrate both approaches here.
 
 ## Data
-The data needed to perform the allele specific copy number inference are the binned copy number data and cell specific haplotype calls. The copy number data and the haplotype data should use the same bins.
+The data needed to perform the allele specific copy number inference are SNP calls of heterozygous positions in individual single cells. Ideally haplotype block calling should also be performed, so that each allele in each cell can be assigned to a haplotype block. To get this data you will ideally need a whole genome sequenced bulk sample of normal tissue to identify heterozygous SNPs and then you can use a tool such as cellSNP or vartrix to get per cell counts. An example dataset from ~1000 cells is included here. For this dataset we also have paired scDNAseq, where we have called ASCN using `schnapps`, we'll use this as input for the method that utilzes prior knowledge.
 
-A small test data set of 250 cells is provided with the package, we'll load this data and inspect these 2 dataframe.
 
 ```{r}
 data(SA1049haps)
 data(SA1049hscn)
 ```
 
-
-The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function `format_haplotypes_dlp` to convert the data to the correct format, this function will also remove any bins present in the haplotypes data frame that is not present in the CNbins data frame.
-```{r, fig.width = 6, fig.height=6}
+## ASCN inference with prior knowledge
+The first step is to format this dataframe. This will phase the haplotypes across all the cells and add additional columns such as the B-Allele Frequency. Our scDNAseq includes information on the phasing of haplotype blocks which we'll use as input.
+```{r}
 haplotypes <- format_haplotypes_rna(SA1049haps, phased_haplotypes = SA1049hscn$haplotype_phasing)
+```
+
+As a first look at the data we can calculate the BAF per arm in each cell and plot these distributions using `per_chr_baf`. Notice on this dataset that the BAFs in chromosomes `3p`, `9p`, `13q`, `17` and `22` in almost all cells are very left skewed towards 0 suggesting clonal LOH events in these chromosomes.
+```{r, fig.width = 6, fig.height=6}
 per_chr_baf(haplotypes, perarm = TRUE)
 ```
 
-### DNA
+For comparison we can plot a similar distribution from our scDNAseq dataset. Here we notice similar trends but note that data from the scRNAseq is much more dispersed due to the lower number of counts per cell. scRNAseq will have 1-2 orders of magnitude lower reads so our ability to identify SNPs is reduced.
 
 ```{r,  fig.width = 6, fig.height=6}
 per_chr_baf(SA1049hscn$data, perarm = TRUE)
 ```
 
-## Compare DNA vs RNA
-scDNA has 2 orders of magnitude more counts than scRNA.
+To illustrate these difference, the plot below shows the total number of SNP counts we see per cell in the 2 modalities.
 
 ```{r, fig.width = 6}
 g1 <- SA1049hscn$data %>%
@@ -72,47 +74,50 @@ g2 <- SA1049haps %>%
 cowplot::plot_grid(g2, g1)
 ```
 
-## Plot
-
-### scRNA
-
+We can also plot heatmaps of the 2 modalities as shown below.
 ```{r, fig.width=7}
 plotHeatmapBAF(haplotypes)
 ```
 
-### scDNA
 ```{r, fig.width=7}
 plotHeatmapBAF(SA1049hscn$data)
 ```
 
 
-## Infer ASCN in scRNA
+Now we'll move onto inferreing allele specific copy number in our dataset. As illustrated above, the scRNAseq is typically very sparse so we only attempt to identify arm level events. As we have prior knowledge of the states from scDNAseq here we use the `assign_states` function. This method identifies arm level states in the scDNAseq data that are represented in more than `minf` proportion of cells, and then uses maximum likelihood to assign each arm in each cell to the most probably state based on the observed counts. You can also apply an empricial bayes based shrinkage, which we will do here.
 ```{r}
-hscn_rna_arm <- assign_states(haplotypes, SA1049hscn$data, minf = 0.05)
+hscn_rna_arm <- assign_states(haplotypes, SA1049hscn$data, minf = 0.05, shrinkage = TRUE)
+```
+
+In order to compare we'll also pull out arm level CN alterations in the scDNAseq.
+```{r}
 hscn_dna_arm <- per_arm_cn(SA1049hscn$data)
 ```
 
-### QC BAF state
+### QC
 
-```{r, fig.width=8, fig.height=8}
+With our output data we can then generate some plots to QC the output. First of all we can plot the distribution of BAF values per state.
+
+```{r, fig.width=8, fig.height=12}
 library(ggplot2)
 cowplot::plot_grid(plotBAFperstate(hscn_rna_arm) + ggtitle("RNA"),
                    plotBAFperstate(hscn_dna_arm) + ggtitle("DNA"), ncol = 1)
 ```
-### QC BAF variance
 
-```{r, fig.width=8, fig.height=4}
-cowplot::plot_grid(plot_variance_state(hscn_rna_arm) + ggtitle("RNA"),
-                   plot_variance_state(hscn_dna_arm) + ggtitle("DNA"), ncol = 2)
-```
-### QC proportion states
+As in this example the cells have come from the same aliquot we'd expect the proportion of cells with different alterations to be similar. We can vizualize this with the following plot.
+
 ```{r, fig.width=8.5}
 plot_proportions(hscn_dna_arm, hscn_rna_arm)
 ```
 
-### Heatmap RNA
+### Heatmaps
+Finally we can plot heatmaps of the resulting outputs.
+Firstly using the scRNA.
 ```{r, fig.width=8.5}
+cl <- umap_clustering(hscn_rna_arm, field = "BAF")
 plotHeatmap(hscn_rna_arm, 
+            clusters = cl$clustering,
+            reorderclusters = TRUE,
             plotfrequency = TRUE, 
             spacer_cols = 0, 
             plotcol = "state_BAF", 
@@ -120,9 +125,45 @@ plotHeatmap(hscn_rna_arm,
             show_legend = FALSE)
 ```
 
+
+And here for scDNA.
 ### Heatmap DNA
 ```{r, fig.width=8.5}
 plotHeatmap(hscn_dna_arm, 
+            plotfrequency = TRUE, 
+            spacer_cols = 0, 
+            plotcol = "state_BAF", 
+            plottree = FALSE,
+            show_legend = FALSE)
+```
+
+
+## ASCN inference with prior knowledge
+In this section, we'll perform the inference without prior knowledge. In this case we don't attempt to identify accurate integer level allele specific copy number but rather identify chromosome arms that are either heterezygous, have imbalance or are balanced.
+
+```{r}
+haplotypes_noprior <- format_haplotypes_rna(SA1049haps)
+```
+
+We'll plot the distribution as before.
+```{r, fig.width = 6, fig.height=6}
+per_chr_baf(haplotypes_noprior, perarm = TRUE)
+```
+
+```{r}
+hscn_rna_arm_noprior <- assign_states_noprior(haplotypes, shrinkage = TRUE, loherror = 0.03)
+```
+We can also plot the raw BAF heatmap as before.
+```{r, fig.width=7}
+plotHeatmapBAF(haplotypes_noprior)
+```
+
+As well as the inferred state level heatmaps, using the same cluster ordering as before.
+
+```{r, fig.width=8.5}
+plotHeatmap(hscn_rna_arm_noprior, 
+            clusters = cl$clustering,
+            reorderclusters = TRUE,
             plotfrequency = TRUE, 
             spacer_cols = 0, 
             plotcol = "state_BAF", 

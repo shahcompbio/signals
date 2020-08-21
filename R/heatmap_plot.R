@@ -134,12 +134,20 @@ make_discrete_palette <- function(pal_name, levels) {
   return(pal)
 }
 
-format_copynumber_values <- function(copynumber) {
+format_copynumber_values <- function(copynumber, plotcol = "state") {
   #copynumber[copynumber > 11] <- 11
-  for(col in colnames(copynumber)) {
-    values <- as.character(copynumber[, col])
-    values[values == "11"] <- "11+"
-    copynumber[, col] <- values
+
+  if (plotcol %in% c("BAF", "copy")){
+    for(col in colnames(copynumber)) {
+      values <- copynumber[, col]
+      copynumber[, col] <- values
+    }
+  } else {
+    for(col in colnames(copynumber)) {
+      values <- as.character(copynumber[, col])
+      values[values == "11"] <- "11+"
+      copynumber[, col] <- values
+    }
   }
   return(copynumber)
 }
@@ -178,7 +186,10 @@ multi.mixedorder <- function(..., na.last = TRUE, decreasing = FALSE){
   ))
 }
 
-format_copynumber <- function(copynumber, ordered_cell_ids, spacer_cols=20) {
+format_copynumber <- function(copynumber,
+                              ordered_cell_ids,
+                              plotcol = "state",
+                              spacer_cols=20) {
   if (!("chr" %in% colnames(copynumber))) {
     message("No chr column")
     loci <- sapply(rownames(copynumber), strsplit, "_")
@@ -198,7 +209,7 @@ format_copynumber <- function(copynumber, ordered_cell_ids, spacer_cols=20) {
 
   copynumber <- copynumber[ordered_cell_ids, ]
 
-  copynumber <- format_copynumber_values(copynumber)
+  copynumber <- format_copynumber_values(copynumber, plotcol = plotcol)
   copynumber <- space_copynumber_columns(copynumber, spacer_cols)
 
   return(copynumber)
@@ -678,7 +689,7 @@ plotHeatmap <- function(cn,
     CNbins <- cn
   }
 
-  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min")){
+  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF")){
     stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, state_BAF, state_phase, state_AS or state_min"))
   }
 
@@ -693,7 +704,17 @@ plotHeatmap <- function(cn,
 
   if (plotcol == "state_BAF"){
     colvals <- cn_colours_bafstate
+    legendname <- "Allelic Imbalance (Raw)"
+  }
+
+  if (plotcol == "BAF"){
+    colvals = circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-LOH"], "white", scCNphase_colors["B-LOH"]))
     legendname <- "Allelic Imbalance"
+  }
+
+  if (plotcol == "copy"){
+    colvals = circlize::colorRamp2(seq(0, 11, 1), scCN_colors)
+    legendname <- "Copy"
   }
 
   if (plotcol == "state_AS"){
@@ -763,7 +784,10 @@ plotHeatmap <- function(cn,
     message("Normalizing ploidy for each cell to 2")
     copynumber <- normalize_cell_ploidy(copynumber)
   }
-  copynumber <- format_copynumber(copynumber, ordered_cell_ids, spacer_cols = spacer_cols)
+  copynumber <- format_copynumber(copynumber,
+                                  ordered_cell_ids,
+                                  spacer_cols = spacer_cols,
+                                  plotcol = plotcol)
   clones_formatted <- format_clones(as.data.frame(clusters), ordered_cell_ids)
   if (!is.null(clone_pal)){
     clones_idx <- dplyr::distinct(clones_formatted, clone_id, clone_label)
