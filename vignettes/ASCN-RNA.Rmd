@@ -2,7 +2,7 @@
 title: "Allele Specific Copy Number Inference in scRNAseq"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Allele Specific Copy Number Inference}
+  %\VignetteIndexEntry{Allele Specific Copy Number Inference in scRNAseq}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
