@@ -79,6 +79,7 @@ plot_proportions <- function(hscn_dna_arm, hscn_rna_arm, perarm = FALSE){
     dplyr::mutate(chrord = ifelse(chr == "X", 24, as.numeric(as.character(chr))))
 
   barplot <- prop %>%
+    dplyr::ungroup() %>%
     dplyr::mutate(chrarm = forcats::fct_reorder(chrarm, chrord)) %>%
     ggplot2::ggplot(ggplot2::aes(x = assay,
                y = f,
