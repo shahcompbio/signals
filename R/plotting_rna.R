@@ -17,10 +17,10 @@ per_chr_baf <- function(haps, filtern = 1, perarm = FALSE){
                     total = alleleB + alleleA) %>%
       dplyr::filter(total > filtern) %>%
       dplyr::left_join(chridx, by = c("chrarm")) %>%
-      dplyr::mutate(chrarm = paste0("Chr ", chrarm)) %>%
+      dplyr::mutate(chrarmf = forcats::fct_reorder(as.factor(paste0("Chr ", chrarm)), idx)) %>%
       ggplot2::ggplot(ggplot2::aes(x = BAF)) +
       ggplot2::geom_histogram(bins = 30, alpha = 0.5) +
-      ggplot2::facet_wrap(~forcats::fct_reorder(chrarm, idx), scales = "free_y") +
+      ggplot2::facet_wrap(~chrarmf, scales = "free_y")+
       cowplot::theme_cowplot() +
       ggplot2::scale_x_continuous(breaks = c(0.0, 0.5, 1.0)) +
       cowplot::panel_border() +
@@ -41,10 +41,10 @@ per_chr_baf <- function(haps, filtern = 1, perarm = FALSE){
                     total = alleleB + alleleA) %>%
       dplyr::filter(total > filtern) %>%
       dplyr::left_join(chridx, by = "chr") %>%
-      dplyr::mutate(chr = paste0("Chr ", chr)) %>%
+      dplyr::mutate(chr = forcats::fct_reorder(as.factor(paste0("Chr ", chr)), idx)) %>%
       ggplot2::ggplot(ggplot2::aes(x = BAF)) +
       ggplot2::geom_histogram(bins = 30, alpha = 0.5) +
-      ggplot2::facet_wrap(~forcats::fct_reorder(chr, idx), scales = "free_y") +
+      ggplot2::facet_wrap(~chr, scales = "free_y") +
       cowplot::theme_cowplot() +
       ggplot2::scale_x_continuous(breaks = c(0.0, 0.5, 1.0)) +
       cowplot::panel_border() +

@@ -1,15 +1,8 @@
 #' @export
 phase_haplotypes_rna <- function(haplotypes){
+
   phased_haplotypes <- data.table::as.data.table(haplotypes) %>%
     .[, lapply(.SD, sum), by = .(chr, hap_label), .SDcols = c("allele1", "allele0")] %>%
-    .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-    .[, c("allele1", "allele0") := NULL]
-
-  phased_haplotypes2 <- data.table::as.data.table(haplotypes) %>%
-    .[, percell := sum(allele0) + sum(allele1), by = "cell_id"] %>%
-    #.[percell > 1000] %>%
-    .[, list(allele0 = weighted.mean(allele0, w = percell),
-             allele1 = weighted.mean(allele1, w = percell)), by = .(chr, position, hap_label)] %>%
     .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
     .[, c("allele1", "allele0") := NULL]
 
@@ -37,6 +30,7 @@ format_haplotypes_rna <- function(haplotypes,
       .[!is.na(cell_id)]
   } else {
     message("Join phased haplotypes...")
+    phased_haplotypes <- as.data.table(dplyr::distinct(phased_haplotypes, chr, hap_label, phase))
     haplotypes <- as.data.table(haplotypes)[phased_haplotypes,
                                             on = .(chr, hap_label)] %>%
       .[!is.na(cell_id)]
