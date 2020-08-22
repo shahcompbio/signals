@@ -41,10 +41,10 @@ per_chr_baf <- function(haps, filtern = 1, perarm = FALSE){
                     total = alleleB + alleleA) %>%
       dplyr::filter(total > filtern) %>%
       dplyr::left_join(chridx, by = "chr") %>%
-      dplyr::mutate(chr = forcats::fct_reorder(as.factor(paste0("Chr ", chr)), idx)) %>%
+      dplyr::mutate(chrf = forcats::fct_reorder(as.factor(paste0("Chr ", chr)), idx)) %>%
       ggplot2::ggplot(ggplot2::aes(x = BAF)) +
       ggplot2::geom_histogram(bins = 30, alpha = 0.5) +
-      ggplot2::facet_wrap(~chr, scales = "free_y") +
+      ggplot2::facet_wrap(~chrf, scales = "free_y") +
       cowplot::theme_cowplot() +
       ggplot2::scale_x_continuous(breaks = c(0.0, 0.5, 1.0)) +
       cowplot::panel_border() +
@@ -79,12 +79,13 @@ plot_proportions <- function(hscn_dna_arm, hscn_rna_arm, perarm = FALSE){
     dplyr::mutate(chrord = ifelse(chr == "X", 24, as.numeric(as.character(chr))))
 
   barplot <- prop %>%
+    dplyr::mutate(chrarm = forcats::fct_reorder(chrarm, chrord)) %>%
     ggplot2::ggplot(ggplot2::aes(x = assay,
                y = f,
                fill = state_AS_phased,
                alpha = forcats::fct_reorder(assay, ord))) +
     ggplot2::geom_bar(stat = "identity") +
-    ggplot2::facet_wrap(~forcats::fct_reorder(chrarm, chrord), nrow = 1) +
+    ggplot2::facet_wrap(~chrarm, nrow = 1) +
     cowplot::theme_cowplot() +
     ggplot2::theme(panel.spacing = grid::unit(0.1, "lines"),
           legend.position = "bottom",
