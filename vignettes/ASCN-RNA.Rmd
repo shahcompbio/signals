@@ -17,7 +17,8 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(schnapps)
-library(tidyverse)
+library(tidyr)
+library(dplyr)
 library(cowplot)
 ```
 
@@ -119,9 +120,10 @@ plotHeatmap(hscn_rna_arm,
             clusters = cl$clustering,
             reorderclusters = TRUE,
             plotfrequency = TRUE, 
-            spacer_cols = 0, 
+            spacer_cols = 15, 
             plotcol = "state_BAF", 
             plottree = FALSE,
+            widenarm = TRUE,
             show_legend = FALSE)
 ```
 
@@ -131,9 +133,10 @@ And here for scDNA.
 ```{r, fig.width=8.5}
 plotHeatmap(hscn_dna_arm, 
             plotfrequency = TRUE, 
-            spacer_cols = 0, 
+            spacer_cols = 15, 
             plotcol = "state_BAF", 
             plottree = FALSE,
+            widenarm = TRUE,
             show_legend = FALSE)
 ```
 
@@ -165,8 +168,9 @@ plotHeatmap(hscn_rna_arm_noprior,
             clusters = cl$clustering,
             reorderclusters = TRUE,
             plotfrequency = TRUE, 
-            spacer_cols = 0, 
+            spacer_cols = 15, 
             plotcol = "state_BAF", 
             plottree = FALSE,
+            widenarm = TRUE,
             show_legend = FALSE)
 ```

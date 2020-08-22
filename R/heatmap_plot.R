@@ -681,12 +681,19 @@ plotHeatmap <- function(cn,
                         plotfrequency = FALSE,
                         show_legend = TRUE,
                         show_library_label = TRUE,
+                        widenarm = FALSE,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
     CNbins <- cn$data
   } else{
     CNbins <- cn
+  }
+
+  if (widenarm == TRUE){
+    dlpbinsarm <- dlpbins %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = TRUE), chrarm = paste0(chr, arm))
+    CNbins <- dplyr::full_join(CNbins %>% dplyr::select(-start, -end), dlpbinsarm)
   }
 
   if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF")){
@@ -704,12 +711,12 @@ plotHeatmap <- function(cn,
 
   if (plotcol == "state_BAF"){
     colvals <- cn_colours_bafstate
-    legendname <- "Allelic Imbalance (Raw)"
+    legendname <- "Allelic Imbalance"
   }
 
   if (plotcol == "BAF"){
     colvals = circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-LOH"], "white", scCNphase_colors["B-LOH"]))
-    legendname <- "Allelic Imbalance"
+    legendname <- "Allelic Imbalance (Raw)"
   }
 
   if (plotcol == "copy"){

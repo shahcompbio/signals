@@ -22,7 +22,7 @@ per_chr_baf <- function(haps, filtern = 1, perarm = FALSE){
       ggplot2::geom_histogram(bins = 30, alpha = 0.5) +
       ggplot2::facet_wrap(~chrarmf, scales = "free_y")+
       cowplot::theme_cowplot() +
-      ggplot2::scale_x_continuous(breaks = c(0.0, 0.5, 1.0)) +
+      ggplot2::scale_x_continuous(breaks = c(0.0, 0.5, 1.0), limits = c(0, 1.0)) +
       cowplot::panel_border() +
       ggplot2::geom_vline(xintercept = 0.5, lty = 2, size = 0.5, col = "firebrick4") +
       ggplot2::theme(axis.title.y=ggplot2::element_blank(),
@@ -46,7 +46,7 @@ per_chr_baf <- function(haps, filtern = 1, perarm = FALSE){
       ggplot2::geom_histogram(bins = 30, alpha = 0.5) +
       ggplot2::facet_wrap(~chrf, scales = "free_y") +
       cowplot::theme_cowplot() +
-      ggplot2::scale_x_continuous(breaks = c(0.0, 0.5, 1.0)) +
+      ggplot2::scale_x_continuous(breaks = c(0.0, 0.5, 1.0), limits = c(0, 1.0)) +
       cowplot::panel_border() +
       ggplot2::geom_vline(xintercept = 0.5, lty = 2, size = 0.5, col = "firebrick4") +
       ggplot2::theme(axis.title.y=ggplot2::element_blank(),

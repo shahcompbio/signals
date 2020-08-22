@@ -19,7 +19,7 @@ get_states_dna <- function(hscn, minf = 0.1){
 }
 
 #' @export
-assign_states <- function(haps, hscn, minf = 0.1, shrinkage = FALSE, loherror = 0.02){
+assign_states <- function(haps, hscn, minf = 0.1, shrinkage = FALSE, loherror = 0.03){
 
   perchrlist <- per_arm_baf_mat(haps)
   bafperchr <- perchrlist$bafperchr
@@ -145,7 +145,7 @@ possible_states_df <- function(bafperchr, step = 0.25){
 }
 
 #' @export
-assign_states_noprior <- function(haps, shrinkage = FALSE, step = 0.25, loherror = 0.02){
+assign_states_noprior <- function(haps, shrinkage = FALSE, step = 0.25, loherror = 0.03){
 
   perchrlist <- per_arm_baf_mat(haps)
   bafperchr <- perchrlist$bafperchr
