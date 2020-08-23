@@ -20,6 +20,7 @@ library(schnapps)
 library(tidyr)
 library(dplyr)
 library(cowplot)
+library(ggplot2)
 ```
 
 ## Background
@@ -141,7 +142,7 @@ plotHeatmap(hscn_dna_arm,
 ```
 
 
-## ASCN inference with prior knowledge
+## ASCN inference without prior knowledge
 In this section, we'll perform the inference without prior knowledge. In this case we don't attempt to identify accurate integer level allele specific copy number but rather identify chromosome arms that are either heterezygous, have imbalance or are balanced.
 
 ```{r}

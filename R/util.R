@@ -287,6 +287,8 @@ snv_states <- function(SNV, CNbins){
 #'   and "hg16" (corresponding to the five latest human genome annotations in the
 #'   UCSC genome browser).
 #' @return Character vector, with choromosome arm of given genomic coordinates
+#'
+#' #' @export
 coord_to_arm <- function(chromosome, position, assembly = "hg19", full = FALSE, mergesmallarms = FALSE){
   if(length(chromosome) !=  length(position)){
     stop("chromosome and position must have equal length")

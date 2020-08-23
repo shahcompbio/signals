@@ -692,8 +692,24 @@ plotHeatmap <- function(cn,
 
   if (widenarm == TRUE){
     dlpbinsarm <- dlpbins %>%
-      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = TRUE), chrarm = paste0(chr, arm))
-    CNbins <- dplyr::full_join(CNbins %>% dplyr::select(-start, -end), dlpbinsarm)
+      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = TRUE), chrarm = paste0(chr, arm)) %>%
+      as.data.table()
+
+    dlpbinsarm <- data.table::rbindlist(lapply(unique(CNbins$cell_id),
+                                               function(i) cbind(dlpbinsarm,
+                                                                 cell_id = i))) %>%
+      data.table::setkey("chr", "arm", "chrarm", "start", "end")
+
+    CNbinst <- setkey(as.data.table(CNbins %>% dplyr::select(-start, -end)), "chr", "arm", "chrarm")
+    CNbins <- dlpbinsarm[CNbinst, on = c("chr", "chrarm", "arm", "cell_id")] %>%
+      orderdf(.)
+
+    # CNbins3 <- dplyr::full_join(CNbins %>% dplyr::select(-start, -end), dlpbinsarm, by = c("chr", "chrarm", "arm"))
+    # CNbins2 <- merge.data.table(CNbinst, dlpbinsarm,
+    #                                         #by = c("chr", "arm"),
+    #                                         all = TRUE, allow.cartesian = TRUE))
+    #
+
   }
 
   if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF")){
