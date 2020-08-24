@@ -288,7 +288,7 @@ snv_states <- function(SNV, CNbins){
 #'   UCSC genome browser).
 #' @return Character vector, with choromosome arm of given genomic coordinates
 #'
-#' #' @export
+#' @export
 coord_to_arm <- function(chromosome, position, assembly = "hg19", full = FALSE, mergesmallarms = FALSE){
   if(length(chromosome) !=  length(position)){
     stop("chromosome and position must have equal length")
@@ -394,21 +394,59 @@ qc_summary <- function(cn){
 }
 
 #' @export
-per_arm_baf_mat <- function(haps){
-  baf <- haps %>%
-    dplyr::filter(chr != "Y") %>%
-    dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = TRUE)) %>%
-    dplyr::mutate(chrarm = paste0(chr, arm)) %>%
-    dplyr::group_by(chr, arm, chrarm, cell_id) %>%
-    dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
-                     alleleB = sum(alleleB, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
-                  total = alleleB + alleleA) %>%
-    dplyr::mutate(idx = ifelse(chr == "X", 2 * 23, 2 * as.numeric(as.character(chr)))) %>%
-    dplyr::mutate(idx = ifelse(arm == "p", idx - 1, idx))
+per_arm_baf_mat <- function(haps, mergelowcounts = TRUE, mincounts = 10){
 
-  idx <- dplyr::distinct(baf, chr, arm, chrarm, idx) %>% dplyr::arrange(idx)
+  if (mergelowcounts) {
+    baf <- haps %>%
+      dplyr::filter(chr != "Y") %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+      dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
+                       alleleB = sum(alleleB, na.rm = TRUE)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
+                    total = alleleB + alleleA)
+
+    mergearms <- baf %>%
+      dplyr::group_by(chr, chrarm, arm) %>%
+      dplyr::summarise(median = median(total)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(merge = ifelse(median < mincounts, "merge", "no")) %>%
+      dplyr::group_by(chr) %>%
+      dplyr::mutate(merge = ifelse(any(merge == "merge"), "merge", "no"))
+
+    baf <- haps %>%
+      dplyr::filter(chr != "Y") %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
+      dplyr::left_join(mergearms) %>%
+      dplyr::mutate(arm = ifelse(merge == "merge", "", arm)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+      dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
+                       alleleB = sum(alleleB, na.rm = TRUE)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
+                    total = alleleB + alleleA)
+  } else {
+    baf <- haps %>%
+      dplyr::filter(chr != "Y") %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+      dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
+                       alleleB = sum(alleleB, na.rm = TRUE)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
+                    total = alleleB + alleleA)
+  }
+
+  ord <- dplyr::distinct(baf, chr, arm, chrarm) %>%
+    as.data.table() %>%
+    .[gtools::mixedorder(chrarm)] %>%
+    .[, idx := 1:.N] %>% dplyr::as_tibble()
+
+  baf <- dplyr::left_join(baf, ord)
 
   baf_mat <- baf %>%
     dplyr::select(cell_id, chrarm, BAF) %>%
@@ -418,26 +456,55 @@ per_arm_baf_mat <- function(haps){
   row.names(baf_mat) <- baf_mat$cell_id
   baf_mat = subset(baf_mat, select = -c(cell_id))
 
+  idx <- dplyr::distinct(baf, chr, arm, chrarm, idx) %>% dplyr::arrange(idx)
   baf_mat <- baf_mat[, idx$chrarm]
+
+  counts <- baf %>%
+    dplyr::group_by(chr, chrarm, arm) %>%
+    dplyr::summarise(median = median(total)) %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(median < mincounts)
+
+  warning(paste0("The following chromosomes have on average ", mincounts, " or fewer counts: ", paste(counts$chrarm, collapse = ", ")))
 
   return(list(bafperchr = baf, bafperchrmat = baf_mat))
 }
 
 
 #' @export
-per_arm_cn <- function(hscn){
-  hscn_arm <- hscn %>%
-    dplyr::filter(chr != "Y") %>%
-    dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = TRUE)) %>%
-    dplyr::mutate(chrarm = paste0(chr, arm)) %>%
-    dplyr::group_by(chr, arm, chrarm, cell_id) %>%
-    dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
-                     alleleB = sum(alleleB, na.rm = TRUE),
-                     Min = Mode(Min),
-                     Maj = Mode(Maj),
-                     copy = median(copy, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    as.data.table() %>%
+per_arm_cn <- function(hscn, arms = NULL){
+
+  if (is.null(arms)){
+    hscn_arm <- hscn %>%
+      dplyr::filter(chr != "Y") %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+      dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
+                       alleleB = sum(alleleB, na.rm = TRUE),
+                       Min = Mode(Min),
+                       Maj = Mode(Maj),
+                       copy = median(copy, na.rm = TRUE)) %>%
+      dplyr::ungroup() %>%
+      as.data.table()
+    } else {
+      hscn_arm <- hscn %>%
+        dplyr::filter(chr != "Y") %>%
+        dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
+        dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+        dplyr::mutate(arm = ifelse(chrarm %in% arms, arm, "")) %>%
+        dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+        dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+        dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
+                         alleleB = sum(alleleB, na.rm = TRUE),
+                         Min = Mode(Min),
+                         Maj = Mode(Maj),
+                         copy = median(copy, na.rm = TRUE)) %>%
+        dplyr::ungroup() %>%
+        as.data.table()
+    }
+
+  hscn_arm <- hscn_arm %>%
     .[, state := Maj + Min] %>%
     .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
     .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%

@@ -57,20 +57,20 @@ To illustrate these difference, the plot below shows the total number of SNP cou
 ```{r, fig.width = 6}
 g1 <- SA1049hscn$data %>%
   group_by(cell_id) %>%
-  summarise(totalcounts = sum(totalcounts) / 1e6) %>%
+  summarise(totalcounts = sum(totalcounts) / 1e3) %>%
   ggplot(aes(x = totalcounts)) +
   geom_histogram(bins = 50) +
   cowplot::theme_cowplot() +
-  xlab("Millions of counts") +
+  xlab("1000's of counts") +
   ggtitle("DNA")
 
 g2 <- SA1049haps %>%
   group_by(cell_id) %>%
-  summarise(totalcounts = sum(allele0 + allele1) / 1e6) %>%
+  summarise(totalcounts = sum(allele0 + allele1) / 1e3) %>%
   ggplot(aes(x = totalcounts)) +
   geom_histogram(bins = 50) +
   cowplot::theme_cowplot() +
-  xlab("Millions of counts") +
+  xlab("1000's of counts") +
   ggtitle("RNA")
 
 cowplot::plot_grid(g2, g1)
@@ -93,7 +93,7 @@ hscn_rna_arm <- assign_states(haplotypes, SA1049hscn$data, minf = 0.05, shrinkag
 
 In order to compare we'll also pull out arm level CN alterations in the scDNAseq.
 ```{r}
-hscn_dna_arm <- per_arm_cn(SA1049hscn$data)
+hscn_dna_arm <- per_arm_cn(SA1049hscn$data, arms = unique(hscn_rna_arm$chrarm))
 ```
 
 ### QC
@@ -130,7 +130,6 @@ plotHeatmap(hscn_rna_arm,
 
 
 And here for scDNA.
-### Heatmap DNA
 ```{r, fig.width=8.5}
 plotHeatmap(hscn_dna_arm, 
             plotfrequency = TRUE, 
@@ -155,7 +154,7 @@ per_chr_baf(haplotypes_noprior, perarm = TRUE)
 ```
 
 ```{r}
-hscn_rna_arm_noprior <- assign_states_noprior(haplotypes, shrinkage = TRUE, loherror = 0.03)
+hscn_rna_arm_noprior <- assign_states_noprior(haplotypes_noprior, shrinkage = TRUE)
 ```
 We can also plot the raw BAF heatmap as before.
 ```{r, fig.width=7}

@@ -1,29 +1,55 @@
-get_states_dna <- function(hscn, minf = 0.1){
-  possible_states <- hscn %>%
-    dplyr::filter(chr != "Y") %>%
-    dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = TRUE)) %>%
-    dplyr::mutate(chrarm = paste0(chr, arm)) %>%
-    dplyr::group_by(chr, arm, chrarm, cell_id) %>%
-    dplyr::summarise(state_AS_phased = Mode(state_AS_phased),
-                     Maj = Mode(Maj),
-                     Min = Mode(Min)) %>%
-    dplyr::group_by(chr, arm, chrarm, state_AS_phased, Min, Maj) %>%
-    dplyr::summarise(n = n(), f = sum(n)) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(chr, arm, chrarm) %>%
-    dplyr::mutate(f = n / sum(n)) %>%
-    dplyr::ungroup() %>%
-    dplyr::filter(f > minf)
+get_states_dna <- function(hscn, minf = 0.1, arms = NULL){
+
+  if (is.null(arms)){
+    possible_states <- hscn %>%
+      dplyr::filter(chr != "Y") %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+      dplyr::summarise(state_AS_phased = Mode(state_AS_phased),
+                       Maj = Mode(Maj),
+                       Min = Mode(Min)) %>%
+      dplyr::group_by(chr, arm, chrarm, state_AS_phased, Min, Maj) %>%
+      dplyr::summarise(n = n(), f = sum(n)) %>%
+      dplyr::ungroup() %>%
+      dplyr::group_by(chr, arm, chrarm) %>%
+      dplyr::mutate(f = n / sum(n)) %>%
+      dplyr::ungroup() %>%
+      dplyr::filter(f > minf)
+  } else {
+    possible_states <- hscn %>%
+      dplyr::filter(chr != "Y") %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::mutate(arm = ifelse(chrarm %in% arms, arm, "")) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+      dplyr::summarise(state_AS_phased = Mode(state_AS_phased),
+                       Maj = Mode(Maj),
+                       Min = Mode(Min)) %>%
+      dplyr::group_by(chr, arm, chrarm, state_AS_phased, Min, Maj) %>%
+      dplyr::summarise(n = n(), f = sum(n)) %>%
+      dplyr::ungroup() %>%
+      dplyr::group_by(chr, arm, chrarm) %>%
+      dplyr::mutate(f = n / sum(n)) %>%
+      dplyr::ungroup() %>%
+      dplyr::filter(f > minf)
+  }
 
   return(possible_states)
 }
 
 #' @export
-assign_states <- function(haps, hscn, minf = 0.1, shrinkage = FALSE, loherror = 0.03){
+assign_states <- function(haps,
+                          hscn,
+                          minf = 0.1,
+                          shrinkage = FALSE,
+                          loherror = 0.03,
+                          mergelowcounts = TRUE){
 
-  perchrlist <- per_arm_baf_mat(haps)
+  perchrlist <- per_arm_baf_mat(haps, mergelowcounts = mergelowcounts)
   bafperchr <- perchrlist$bafperchr
-  possible_states <- get_states_dna(hscn, minf = minf)
+  possible_states <- get_states_dna(hscn, minf = minf, arms = unique(bafperchr$chrarm))
 
   if (shrinkage == FALSE){
 
@@ -145,9 +171,13 @@ possible_states_df <- function(bafperchr, step = 0.25){
 }
 
 #' @export
-assign_states_noprior <- function(haps, shrinkage = FALSE, step = 0.25, loherror = 0.03){
+assign_states_noprior <- function(haps,
+                                  mergelowcounts = TRUE,
+                                  shrinkage = FALSE,
+                                  step = 0.25,
+                                  loherror = 0.03){
 
-  perchrlist <- per_arm_baf_mat(haps)
+  perchrlist <- per_arm_baf_mat(haps, mergelowcounts = mergelowcounts)
   bafperchr <- perchrlist$bafperchr
   possible_states <- possible_states_df(bafperchr, step = step)
 

@@ -692,7 +692,10 @@ plotHeatmap <- function(cn,
 
   if (widenarm == TRUE){
     dlpbinsarm <- dlpbins %>%
-      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = TRUE), chrarm = paste0(chr, arm)) %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start), chrarm = paste0(chr, arm)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::mutate(arm = ifelse(chrarm %in% unique(CNbins$chrarm), arm, "")) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
       as.data.table()
 
     dlpbinsarm <- data.table::rbindlist(lapply(unique(CNbins$cell_id),
@@ -702,6 +705,7 @@ plotHeatmap <- function(cn,
 
     CNbinst <- setkey(as.data.table(CNbins %>% dplyr::select(-start, -end)), "chr", "arm", "chrarm")
     CNbins <- dlpbinsarm[CNbinst, on = c("chr", "chrarm", "arm", "cell_id")] %>%
+      .[!is.na(cell_id)] %>%
       orderdf(.)
 
     # CNbins3 <- dplyr::full_join(CNbins %>% dplyr::select(-start, -end), dlpbinsarm, by = c("chr", "chrarm", "arm"))
