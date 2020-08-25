@@ -394,9 +394,14 @@ qc_summary <- function(cn){
 }
 
 #' @export
-per_arm_baf_mat <- function(haps, mergelowcounts = TRUE, mincounts = 10){
+per_arm_baf_mat <- function(haps,
+                            mergelowcounts = TRUE,
+                            mincounts = 10,
+                            arms = NULL){
 
   if (mergelowcounts) {
+
+    message(paste0("Only using arms with at least an average ", mincounts, " counts"))
     baf <- haps %>%
       dplyr::filter(chr != "Y") %>%
       dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
@@ -428,10 +433,25 @@ per_arm_baf_mat <- function(haps, mergelowcounts = TRUE, mincounts = 10){
       dplyr::ungroup() %>%
       dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
                     total = alleleB + alleleA)
-  } else {
+  } else if (mergelowcounts == FALSE & is.null(arms)){
+    message("Using all chromosome arms")
     baf <- haps %>%
       dplyr::filter(chr != "Y") %>%
       dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::group_by(chr, arm, chrarm, cell_id) %>%
+      dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
+                       alleleB = sum(alleleB, na.rm = TRUE)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
+                    total = alleleB + alleleA)
+  } else if (mergelowcounts == FALSE & !is.null(arms)) {
+    message(paste0("Only using specific chromosome arms: "), paste0(arms, collapse = ", "))
+    baf <- haps %>%
+      dplyr::filter(chr != "Y") %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::mutate(arm = ifelse(chrarm %in% arms, arm, "")) %>%
       dplyr::mutate(chrarm = paste0(chr, arm)) %>%
       dplyr::group_by(chr, arm, chrarm, cell_id) %>%
       dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),

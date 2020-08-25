@@ -45,9 +45,10 @@ assign_states <- function(haps,
                           minf = 0.1,
                           shrinkage = FALSE,
                           loherror = 0.03,
-                          mergelowcounts = TRUE){
+                          mergelowcounts = TRUE,
+                          arms = NULL){
 
-  perchrlist <- per_arm_baf_mat(haps, mergelowcounts = mergelowcounts)
+  perchrlist <- per_arm_baf_mat(haps, mergelowcounts = mergelowcounts, arms = arms)
   bafperchr <- perchrlist$bafperchr
   possible_states <- get_states_dna(hscn, minf = minf, arms = unique(bafperchr$chrarm))
 
@@ -175,9 +176,10 @@ assign_states_noprior <- function(haps,
                                   mergelowcounts = TRUE,
                                   shrinkage = FALSE,
                                   step = 0.25,
-                                  loherror = 0.03){
+                                  loherror = 0.03,
+                                  arms = NULL){
 
-  perchrlist <- per_arm_baf_mat(haps, mergelowcounts = mergelowcounts)
+  perchrlist <- per_arm_baf_mat(haps, mergelowcounts = mergelowcounts, arms = arms)
   bafperchr <- perchrlist$bafperchr
   possible_states <- possible_states_df(bafperchr, step = step)
 
