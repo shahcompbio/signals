@@ -498,7 +498,7 @@ make_top_annotation_gain <- function(copynumber,
                                      maxf = NULL){
   ncells <- nrow(copynumber)
 
-  if (plotcol == "state" & plotfrequency == TRUE){
+  if ((plotcol == "state" | plotcol == "copy") & plotfrequency == TRUE){
     f1 <- colSums(copynumber > cutoff, na.rm = TRUE) / ncells
     f2 <- -colSums(copynumber < cutoff, na.rm = TRUE) / ncells
     if (is.null(maxf)){
@@ -564,7 +564,7 @@ make_top_annotation_gain <- function(copynumber,
       show_annotation_name = FALSE,
       height = grid::unit(1.4, "cm"))
   }
-  else if (plotcol == "state_BAF" & plotfrequency == TRUE){
+  else if ((plotcol == "state_BAF" | plotcol == "BAF") & plotfrequency == TRUE){
     f1 <- colSums(copynumber < 0.5, na.rm = TRUE) / ncells
     f2 <- -colSums(copynumber > 0.5, na.rm = TRUE) / ncells
     if (is.null(maxf)){
@@ -682,6 +682,7 @@ plotHeatmap <- function(cn,
                         show_legend = TRUE,
                         show_library_label = TRUE,
                         widenarm = FALSE,
+                        umapmetric = "euclidean",
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -769,7 +770,10 @@ plotHeatmap <- function(cn,
 
   if (is.null(tree) & is.null(clusters)){
     message("No tree or cluster information provided, clustering using HDBSCAN")
-    clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), field = "copy")
+    clustering_results <- umap_clustering(CNbins,
+                                          minPts = max(round(pctcells * ncells), 2),
+                                          field = "copy",
+                                          umapmetric = umapmetric)
     tree <- clustering_results$tree
     tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data

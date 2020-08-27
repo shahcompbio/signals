@@ -1,6 +1,33 @@
+make_arm_matrix <- function(df){
+  ord <- dplyr::distinct(df, chr, arm, chrarm) %>%
+    as.data.table() %>%
+    .[gtools::mixedorder(chrarm)] %>%
+    .[, idx := 1:.N] %>% dplyr::as_tibble()
+
+  baf <- dplyr::left_join(df, ord)
+
+  baf_mat <- baf %>%
+    dplyr::select(cell_id, chrarm, BAF) %>%
+    tidyr::pivot_wider(names_from = "chrarm", values_from = "BAF") %>%
+    as.data.frame()
+
+  row.names(baf_mat) <- baf_mat$cell_id
+  baf_mat = subset(baf_mat, select = -c(cell_id))
+
+  idx <- dplyr::distinct(baf, chr, arm, chrarm, idx) %>% dplyr::arrange(idx)
+  baf_mat <- baf_mat[, idx$chrarm]
+
+  return(list(bafperchr = baf, bafperchrmat = baf_mat))
+}
+
 #' @export
-plotHeatmapBAF <- function(df, removelowqcells = TRUE, samplecells = NULL){
-  baf <- per_arm_baf_mat(df)
+plotHeatmapBAF <- function(df, removelowqcells = TRUE, samplecells = NULL, gen_matrix = TRUE){
+
+  if (gen_matrix){
+    baf <- per_arm_baf_mat(df)
+  } else{
+    baf <- make_arm_matrix(df)
+  }
 
   if (removelowqcells) {
     keep <- rowSums(is.na(baf$bafperchrmat)) < floor(dim(baf$bafperchrmat)[2]/2)
@@ -19,7 +46,8 @@ plotHeatmapBAF <- function(df, removelowqcells = TRUE, samplecells = NULL){
     row.names(baf$bafperchrmat) <- cells
   }
 
-  col_fun = circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-LOH"], "white", scCNphase_colors["B-LOH"]))
+  col_fun = circlize::colorRamp2(c(0, 0.5, 1),
+                                 c(scCNphase_colors["A-LOH"], "white", scCNphase_colors["B-LOH"]))
 
   baf_hm <- ComplexHeatmap::Heatmap(
     name="BAF",

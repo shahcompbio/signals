@@ -4,7 +4,8 @@ umap_clustering <- function(CNbins,
                             min_dist = 0.1,
                             minPts = 30,
                             seed = 1,
-                            field = "state"){
+                            field = "state",
+                            umapmetric = "euclidean"){
 
   if(length(unique(CNbins$cell_id)) < n_neighbors) {
     n_neighbors <- length(unique(CNbins$cell_id)) - 1
@@ -28,6 +29,7 @@ umap_clustering <- function(CNbins,
     fast_sgd <- FALSE
   }
   umapresults <- uwot::umap(cnmatrix,
+                      metric = umapmetric,
                       n_neighbors = n_neighbors,
                       n_components = 2,
                       min_dist = min_dist,
