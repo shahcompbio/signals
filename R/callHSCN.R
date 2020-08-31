@@ -109,25 +109,9 @@ callalleleHMMcell <- function(CNBAF,
     .[, Min := fifelse(Min < 0, 0, Min)] %>%
     .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
     .[, Min := fifelse(Min > state, state, Min)] %>%
-    .[, Maj := fifelse(Maj > state, state, Maj)] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
-    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-    .[, phase := c("Balanced", "A", "B")[1 +
-                                         1 * ((Min < Maj)) +
-                                         2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                                 1 * ((Min < Maj) & (Min != 0)) +
-                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                 3 * ((Min < Maj) & (Min == 0)) +
-                                                                                 4 * ((Min > Maj) & (Maj == 0))]
-      ] %>%
-    #.[, c("Maj", "Min") := NULL] %>%
-    .[order(cell_id, chr, start)] %>%
-    .[, state_BAF := round((Min / state)/0.1) * 0.1] %>%
-    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
+    .[, Maj := fifelse(Maj > state, state, Maj)]
+
+  CNBAF <- add_states(CNBAF)
 
   return(list(alleleCN = CNBAF, posterior_prob = hmmresults$posterior_prob, l = hmmresults$l))
 }
@@ -182,24 +166,9 @@ callalleleHMMcell <- function(CNBAF,
     .[, Min := fifelse(Min < 0, 0, Min)] %>%
     .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
     .[, Min := fifelse(Min > state, state, Min)] %>%
-    .[, Maj := fifelse(Maj > state, state, Maj)] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
-    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-    .[, phase := c("Balanced", "A", "B")[1 +
-                                           1 * ((Min < Maj)) +
-                                           2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                                 1 * ((Min < Maj) & (Min != 0)) +
-                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                 3 * ((Min < Maj) & (Min == 0)) +
-                                                                                 4 * ((Min > Maj) & (Maj == 0))]
-      ] %>%
-    .[order(cell_id, chr, start)] %>%
-    .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
-    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
+    .[, Maj := fifelse(Maj > state, state, Maj)]
+
+  alleleCN <- add_states(alleleCN)
 
   return(as.data.frame(alleleCN))
 }

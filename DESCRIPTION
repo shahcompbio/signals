@@ -50,9 +50,13 @@ Suggests:
     VGAM,
     covr,
     ggrastr,
-    GenomeInfoDb
+    GenomeInfoDb,
+    VIBER
 Remotes:
-  VPetukhov/ggrastr
+  VPetukhov/ggrastr,
+  caravagn/VIBER,
+  caravagn/pio,
+  caravagn/easypar
 VignetteBuilder: knitr
 LinkingTo: 
     Rcpp

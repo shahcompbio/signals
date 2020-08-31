@@ -546,7 +546,8 @@ make_top_annotation_gain <- function(copynumber,
       dist2 =  ComplexHeatmap::anno_barplot(
         matrix(data = c(f1a,f1b), ncol = 2),
         bar_width = 1,
-        gp =  grid::gpar(col = c("#66CC99", "#56956E"), fill = c("#66CC99", "#56956E")),
+        gp =  grid::gpar(col = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-LOH"]),
+                         fill = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-LOH"])),
         axis_param = list(at = c(round(maxf / 2, 2), maxf),
                           labels = c(paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(0, maxf),
@@ -555,7 +556,8 @@ make_top_annotation_gain <- function(copynumber,
       dist3 =  ComplexHeatmap::anno_barplot(
         matrix(data = c(f2a,f2b), ncol = 2),
         bar_width = 1,
-        gp =  grid::gpar(col = c("#FF9E26", "#683711"), fill = c("#FF9E26", "#683711")),
+        gp =  grid::gpar(col = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-LOH"]),
+                         fill = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-LOH"])),
         axis_param = list(at = c(0, -round(maxf / 2, 2), -maxf),
                           labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(-maxf,0),
@@ -577,7 +579,7 @@ make_top_annotation_gain <- function(copynumber,
       dist2 =  ComplexHeatmap::anno_barplot(
         f1,
         bar_width = 1,
-        gp =  grid::gpar(col = "#006D2C", fill = "#006D2C"),
+        gp =  grid::gpar(col = scCNphase_colors["A-LOH"], fill = scCNphase_colors["A-LOH"]),
         axis_param = list(at = c(round(maxf / 2, 2), maxf),
                           labels = c(paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(0, maxf),
@@ -586,7 +588,7 @@ make_top_annotation_gain <- function(copynumber,
       dist3 =  ComplexHeatmap::anno_barplot(
         f2,
         bar_width = 1,
-        gp =  grid::gpar(col = "#A63603", fill = "#A63603"),
+        gp =  grid::gpar(col = scCNphase_colors["B-LOH"], fill = scCNphase_colors["B-LOH"]),
         axis_param = list(at = c(0.0, -round(maxf / 2, 2), -maxf),
                           labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(-maxf,0),
@@ -718,7 +720,7 @@ plotHeatmap <- function(cn,
   }
 
   if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF")){
-    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, state_BAF, state_phase, state_AS or state_min"))
+    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS or state_min"))
   }
 
   if (!plotcol %in% names(CNbins)){
@@ -736,7 +738,7 @@ plotHeatmap <- function(cn,
   }
 
   if (plotcol == "BAF"){
-    colvals = circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-LOH"], "white", scCNphase_colors["B-LOH"]))
+    colvals = circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-LOH"], scCNphase_colors["Balanced"], scCNphase_colors["B-LOH"]))
     legendname <- "Allelic Imbalance (Raw)"
   }
 

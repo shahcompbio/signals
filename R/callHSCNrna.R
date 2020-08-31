@@ -63,23 +63,7 @@ assign_states <- function(haps,
       .[, L := dbinom(size = total, x = alleleB, prob = prob)] %>%
       .[, state := Min + Maj]
     perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
-      .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-      .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-      .[, state_min := pmin(Maj, Min)] %>%
-      .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-      .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-      .[, phase := c("Balanced", "A", "B")[1 +
-                                             1 * ((Min < Maj)) +
-                                             2 * ((Min > Maj))]] %>%
-      .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                                   1 * ((Min < Maj) & (Min != 0)) +
-                                                                                   2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                   3 * ((Min < Maj) & (Min == 0)) +
-                                                                                   4 * ((Min > Maj) & (Maj == 0))]
-        ] %>%
-      .[order(cell_id, chr)] %>%
-      .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
-      .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
+      add_states() %>%
       .[, start := data.table::fifelse(arm == "p", 1, 10)] %>%
       .[, end := data.table::fifelse(arm == "p", 2, 11)] %>%
       .[, copy := state]
@@ -131,22 +115,7 @@ assign_states <- function(haps,
                       prob = prob)] %>%
       .[, state := Min + Maj]
     perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
-      .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-      .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-      .[, state_min := pmin(Maj, Min)] %>%
-      .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-      .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-      .[, phase := c("Balanced", "A", "B")[1 +
-                                             1 * ((Min < Maj)) +
-                                             2 * ((Min > Maj))]] %>%
-      .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                                   1 * ((Min < Maj) & (Min != 0)) +
-                                                                                   2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                   3 * ((Min < Maj) & (Min == 0)) +
-                                                                                   4 * ((Min > Maj) & (Maj == 0))]
-        ] %>%
-      .[order(cell_id, chr)] %>%
-      .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+      add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
       .[, start := data.table::fifelse(arm == "p", 1, 10)] %>%
       .[, end := data.table::fifelse(arm == "p", 2, 11)] %>%
@@ -193,23 +162,9 @@ assign_states_noprior <- function(haps,
       .[, prob := fifelse(prob == 1.0, prob - loherror, prob)] %>%
       .[, L := dbinom(size = total, x = alleleB, prob = prob)] %>%
       .[, state := Min + Maj]
+
     perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
-      .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-      .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-      .[, state_min := pmin(Maj, Min)] %>%
-      .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-      .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-      .[, phase := c("Balanced", "A", "B")[1 +
-                                             1 * ((Min < Maj)) +
-                                             2 * ((Min > Maj))]] %>%
-      .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                                   1 * ((Min < Maj) & (Min != 0)) +
-                                                                                   2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                   3 * ((Min < Maj) & (Min == 0)) +
-                                                                                   4 * ((Min > Maj) & (Maj == 0))]
-        ] %>%
-      .[order(cell_id, chr)] %>%
-      .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+      add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
       .[, start := data.table::fifelse(arm == "p", 1, 10)] %>%
       .[, end := data.table::fifelse(arm == "p", 2, 11)] %>%
@@ -262,22 +217,7 @@ assign_states_noprior <- function(haps,
                       prob = prob)] %>%
       .[, state := Min + Maj]
     perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
-      .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-      .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-      .[, state_min := pmin(Maj, Min)] %>%
-      .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-      .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-      .[, phase := c("Balanced", "A", "B")[1 +
-                                             1 * ((Min < Maj)) +
-                                             2 * ((Min > Maj))]] %>%
-      .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
-                                                                                   1 * ((Min < Maj) & (Min != 0)) +
-                                                                                   2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                   3 * ((Min < Maj) & (Min == 0)) +
-                                                                                   4 * ((Min > Maj) & (Maj == 0))]
-        ] %>%
-      .[order(cell_id, chr)] %>%
-      .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+      add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
       .[, start := data.table::fifelse(arm == "p", 1, 10)] %>%
       .[, end := data.table::fifelse(arm == "p", 2, 11)] %>%
@@ -290,3 +230,97 @@ assign_states_noprior <- function(haps,
 
   return(perchr)
 }
+
+#' @export
+assign_states_dp <- function(bafperchr,
+                             samples = 10,
+                             alpha_0 = 1,
+                             K = 20){
+
+  if (!requireNamespace("VIBER", quietly = TRUE)) {
+    stop("Package \"VIBER\" needed to use the beta-binomial model.",
+         call. = FALSE)
+  }
+
+  # make chr ~ cell_id matrix for total counts
+  baf_total <- bafperchr %>%
+    dplyr::select(cell_id, chrarm, total) %>%
+    tidyr::pivot_wider(names_from = "chrarm",
+                       values_from = "total",
+                       values_fill = list(total = 0),
+                       names_prefix = "chr") %>%
+    as.data.frame()
+  row.names(baf_total) <- baf_total$cell_id
+  baf_total = subset(baf_total, select = -c(cell_id))
+
+  # make chr ~ cell_id matrix for B allele counts
+  baf_counts <- bafperchr %>%
+    dplyr::select(cell_id, chrarm, alleleB) %>%
+    tidyr::pivot_wider(names_from = "chrarm",
+                       values_from = "alleleB",
+                       values_fill = list(alleleB = 0),
+                       names_prefix = "chr") %>%
+    as.data.frame()
+  row.names(baf_counts) <- baf_counts$cell_id
+  baf_counts = subset(baf_counts, select = -c(cell_id))
+
+  keepchrs <- paste0("chr", unique(bafperchr$chrarm))
+
+  baf_counts <- baf_counts[,keepchrs]
+  baf_total <- baf_total[,keepchrs]
+
+  fit = VIBER::variational_fit(
+    baf_counts,
+    baf_total,
+    K = K,
+    alpha_0 = alpha_0,
+    samples = samples,
+    q_init = "prior"
+  )
+
+  fit_filt <- VIBER::choose_clusters(fit,
+                              binomial_cutoff = 0,
+                              dimensions_cutoff = 0,
+                              pi_cutoff = 0.01)
+
+  #extract theta
+  theta <- as.data.frame(fit_filt$theta_k)
+  theta$chrarm <- row.names(theta)
+  row.names(theta) <- NULL
+  theta <- theta %>%
+    tidyr::pivot_longer(-chrarm, names_to = "clone_id", values_to = "theta") %>%
+    dplyr::mutate(chrarm = str_remove_all(chrarm, "chr"))
+
+  x <- data.frame(clone_id = fit_filt$labels$cluster.Binomial,
+                  cell_id = row.names(baf_counts))
+
+  states <- bafperchr %>%
+    dplyr::left_join(x, by = "cell_id") %>%
+    dplyr::group_by(chrarm, clone_id) %>%
+    dplyr::summarise(BAF = median(BAF),
+              alleleA = sum(alleleA),
+              alleleB = sum(alleleB),
+              total = sum(total)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(theta, by = c("clone_id", "chrarm")) %>%
+    dplyr::mutate(rounded = round(theta / 0.25) * 0.25) %>%
+    dplyr::mutate(state_phase = dplyr::case_when(
+      rounded == 0.0 ~ "A-LOH",
+      rounded == 0.25 ~ "A-Gained",
+      rounded == 0.5 ~ "Balanced",
+      rounded == 0.75 ~ "B-Gained",
+      rounded == 1.0 ~ "B-LOH"
+    )) %>%
+    dplyr::select(chrarm, clone_id, state_phase)
+
+  bafperchr_new <- bafperchr %>%
+    dplyr::select(chr, arm, chrarm, cell_id, alleleA, alleleB, total, BAF) %>%
+    dplyr::left_join(x, by = "cell_id") %>%
+    dplyr::left_join(states, by = c("chrarm", "clone_id")) %>%
+    dplyr::select(-clone_id) %>%
+    dplyr::mutate(start = 1, end = 2)
+
+
+  return(list(viber_fit = fit_filt, clusters = x, ascn = bafperchr_new))
+}
+

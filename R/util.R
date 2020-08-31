@@ -10,13 +10,22 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, 
 
   CNbins <- data.table::as.data.table(CNbins)
 
-  cnmatrix <- CNbins %>%
-    .[, segid := paste(chr, as.integer(start), as.integer(end), sep = "_")] %>%
-    .[, state := data.table::fifelse(state > maxval, maxval, state)] %>%
-    .[, width := end - start] %>%
-    data.table::dcast(., chr + start + end + width ~ cell_id, value.var = field, fill = NA) %>%
-    .[dfchr, on = "chr"] %>%
-    .[order(idx, start)]
+  if (field == "state"){
+    cnmatrix <- CNbins %>%
+      .[, segid := paste(chr, as.integer(start), as.integer(end), sep = "_")] %>%
+      .[, state := data.table::fifelse(state > maxval, maxval, state)] %>%
+      .[, width := end - start] %>%
+      data.table::dcast(., chr + start + end + width ~ cell_id, value.var = field, fill = NA) %>%
+      .[dfchr, on = "chr"] %>%
+      .[order(idx, start)]
+  } else{
+    cnmatrix <- CNbins %>%
+      .[, segid := paste(chr, as.integer(start), as.integer(end), sep = "_")] %>%
+      .[, width := end - start] %>%
+      data.table::dcast(., chr + start + end + width ~ cell_id, value.var = field, fill = NA) %>%
+      .[dfchr, on = "chr"] %>%
+      .[order(idx, start)]
+  }
 
   if (fillna == TRUE){
   cnmatrix <- cnmatrix %>%
@@ -490,7 +499,6 @@ per_arm_baf_mat <- function(haps,
   return(list(bafperchr = baf, bafperchrmat = baf_mat))
 }
 
-
 #' @export
 per_arm_cn <- function(hscn, arms = NULL){
 
@@ -553,3 +561,28 @@ per_arm_cn <- function(hscn, arms = NULL){
 
   return(hscn_arm)
 }
+
+#' @export
+add_states <- function(df){
+  df <-  df %>%
+    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
+    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
+    .[, state_min := pmin(Maj, Min)] %>%
+    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
+    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
+    .[, phase := c("Balanced", "A", "B")[1 +
+                                           1 * ((Min < Maj)) +
+                                           2 * ((Min > Maj))]] %>%
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+                                                                                 1 * ((Min < Maj) & (Min != 0)) +
+                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
+                                                                                 3 * ((Min < Maj) & (Min == 0)) +
+                                                                                 4 * ((Min > Maj) & (Maj == 0))]
+      ] %>%
+    #.[, c("Maj", "Min") := NULL] %>%
+    #.[order(cell_id, chr, start)] %>%
+    .[, state_BAF := round((Min / state)/0.1) * 0.1] %>%
+    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
+  return(df)
+}
+

@@ -174,3 +174,32 @@ plotHeatmap(hscn_rna_arm_noprior,
             widenarm = TRUE,
             show_legend = FALSE)
 ```
+
+## Dirichlet Process clustering
+
+```{r, fig.width=8.5}
+res <- assign_states_dp(hscn_dna_arm, samples = 5)
+
+plotHeatmap(res$ascn,
+            clusters = res$clusters,
+            reorderclusters = TRUE,
+            plotcol = "state_phase",
+            widenarm = TRUE,
+            plottree = FALSE)
+
+```
+
+
+```{r, fig.width=8.5}
+x <- per_arm_baf_mat(haplotypes)
+res <- assign_states_dp(x$bafperchr, samples = 5)
+
+plotHeatmap(res$ascn,
+            clusters = res$clusters,
+            reorderclusters = TRUE,
+            plotcol = "state_phase",
+            widenarm = TRUE,
+            plottree = FALSE)
+
+
+```

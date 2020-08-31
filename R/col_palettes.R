@@ -57,25 +57,25 @@ scCNminorallele_colors <- c(
 )
 
 scCNphase_colors <- c(
-  `A-LOH` = "#56956E",
-  `B-LOH` = "#683711",
-  `A-Gained` = "#66CC99",
-  `B-Gained` = "#FF9E26",
-  `Balanced` = "#D5D5D4"
+  `A-LOH` = "#006D2C",
+  `B-LOH` = "#535cac",
+  `A-Gained` = "#79a17d",
+  `B-Gained` = "#9796c1",
+  `Balanced` = "#d5d5d4"
 )
 
 scBAFstate_colors <- c(
   `0` = "#006D2C",
-  `0.1` = "#31A354",
-  `0.2` = "#74C476",
-  `0.3` = "#BAE4B3",
-  `0.4` = "#EDF8E9",
-  `0.5` = "white",
-  `0.6` = "#FEEDDE",
-  `0.7` = "#FDBE85",
-  `0.8` = "#FD8D3C",
-  `0.9` = "#E6550D",
-  `1` = "#A63603"
+  `0.1` = "#3f824c",
+  `0.2` = "#66976c",
+  `0.3` = "#8bab8e",
+  `0.4` = "#b0c0b0",
+  `0.5` = "#d5d5d4",
+  `0.6` = "#bdbbcc",
+  `0.7` = "#a4a2c5",
+  `0.8` = "#8b8abd",
+  `0.9` = "#7073b4",
+  `1` = "#535cac"
 )
 
 #' @export
