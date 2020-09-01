@@ -242,7 +242,7 @@ assign_states_dp <- function(bafperchr,
          call. = FALSE)
   }
 
-  # make chr ~ cell_id matrix for total counts
+  message('Generating count matrices...')
   baf_total <- bafperchr %>%
     dplyr::select(cell_id, chrarm, total) %>%
     tidyr::pivot_wider(names_from = "chrarm",
@@ -269,6 +269,7 @@ assign_states_dp <- function(bafperchr,
   baf_counts <- baf_counts[,keepchrs]
   baf_total <- baf_total[,keepchrs]
 
+  message('Fitting mixture model using VIBER...')
   fit = VIBER::variational_fit(
     baf_counts,
     baf_total,
@@ -278,12 +279,13 @@ assign_states_dp <- function(bafperchr,
     q_init = "prior"
   )
 
+  message('Filtering mixture components...')
   fit_filt <- VIBER::choose_clusters(fit,
                               binomial_cutoff = 0,
                               dimensions_cutoff = 0,
                               pi_cutoff = 0.01)
 
-  #extract theta
+  message('Extract cluster means from VIBER object...')
   theta <- as.data.frame(fit_filt$theta_k)
   theta$chrarm <- row.names(theta)
   row.names(theta) <- NULL
@@ -291,9 +293,11 @@ assign_states_dp <- function(bafperchr,
     tidyr::pivot_longer(-chrarm, names_to = "clone_id", values_to = "theta") %>%
     dplyr::mutate(chrarm = str_remove_all(chrarm, "chr"))
 
+  message('Generating dataframe mapping cell_id to clone_id...')
   x <- data.frame(clone_id = fit_filt$labels$cluster.Binomial,
                   cell_id = row.names(baf_counts))
 
+  message('Assign states to clones and chromosomes...')
   states <- bafperchr %>%
     dplyr::left_join(x, by = "cell_id") %>%
     dplyr::group_by(chrarm, clone_id) %>%
@@ -313,6 +317,7 @@ assign_states_dp <- function(bafperchr,
     )) %>%
     dplyr::select(chrarm, clone_id, state_phase)
 
+  message("Format final dataframe...")
   bafperchr_new <- bafperchr %>%
     dplyr::select(chr, arm, chrarm, cell_id, alleleA, alleleB, total, BAF) %>%
     dplyr::left_join(x, by = "cell_id") %>%
