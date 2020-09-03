@@ -238,7 +238,8 @@ assign_states_dp <- function(bafperchr,
                              K = 20,
                              most_variable_chr = TRUE,
                              top_nchr = 5,
-                             overwrite_chr = NULL){
+                             overwrite_chr = NULL,
+                             filtercounts = 0){
 
   if (!requireNamespace("VIBER", quietly = TRUE)) {
     stop("Package \"VIBER\" needed to use the beta-binomial model.",
@@ -267,8 +268,19 @@ assign_states_dp <- function(bafperchr,
   row.names(baf_counts) <- baf_counts$cell_id
   baf_counts = subset(baf_counts, select = -c(cell_id))
 
+  if (filtercounts > 0){
+    filtered_cells <- rowSums(baf_total) > filtercounts
+    filtered_cells <- names(filtered_cells[filtered_cells == TRUE])
+    baf_counts <- baf_counts[filtered_cells, ]
+    baf_total <- baf_total[filtered_cells, ]
+  }
+
   if (most_variable_chr){
-    keepchrs <- sort(sapply(baf_counts / baf_total, function(x) var(x, na.rm = TRUE)), decreasing = TRUE)[1:top_nchr]
+    #keepchrs <- sort(sapply(baf_counts / baf_total, function(x) var(x, na.rm = TRUE)), decreasing = TRUE)[1:top_nchr]
+    keepchrs <- sort(sapply(names(baf_counts),
+                              function(x) matrixStats::weightedVar(baf_counts[,x] / baf_total[,x],
+                                                       w = baf_total[,x], na.rm = TRUE)),
+                     decreasing = TRUE)[1:top_nchr]
     message(paste0("Top ", top_nchr, " most variable chromosomes are: ", paste0(names(keepchrs), collapse = ", ")))
     message("Using these chromosomes for clustering")
     keepchrs <- names(keepchrs)
