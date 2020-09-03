@@ -237,7 +237,8 @@ assign_states_dp <- function(bafperchr,
                              alpha_0 = 1,
                              K = 20,
                              most_variable_chr = TRUE,
-                             top_nchr = 5){
+                             top_nchr = 5,
+                             overwrite_chr = NULL){
 
   if (!requireNamespace("VIBER", quietly = TRUE)) {
     stop("Package \"VIBER\" needed to use the beta-binomial model.",
@@ -271,6 +272,8 @@ assign_states_dp <- function(bafperchr,
     message(paste0("Top ", top_nchr, " most variable chromosomes are: ", paste0(names(keepchrs), collapse = ", ")))
     message("Using these chromosomes for clustering")
     keepchrs <- names(keepchrs)
+  } else if (!is.null(overwrite_chr)) {
+    keepchrs <- overwrite_chr
   } else{
     keepchrs <- paste0("chr", unique(bafperchr$chrarm))
   }
