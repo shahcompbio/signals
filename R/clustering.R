@@ -181,3 +181,8 @@ umap_clustering_breakpoints <- function(CNbins,
               umapresults = umapresults,
               tree = tree))
 }
+
+#' @export
+hc_clustering <- function(){
+
+}
