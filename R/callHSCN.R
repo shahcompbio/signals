@@ -543,7 +543,7 @@ fix_assignments <- function(hscn){
     .[, Min := fifelse(Min > state, state, Min)] %>%
     .[, Maj := fifelse(Maj > state, state, Maj)] %>%
     add_states() %>%
-    dplyr::select(-LLassigned, LLother, -state_min, -alleleBtot, -alleleAtot, -pMin, -pMaj)
+    dplyr::select(-LLassigned, -LLother, -alleleBtot, -alleleAtot, -pMin, -pMaj)
 
   } else{
     hscn_data <- hscn$data %>%
@@ -567,7 +567,7 @@ fix_assignments <- function(hscn){
       .[, Min := fifelse(Min > state, state, Min)] %>%
       .[, Maj := fifelse(Maj > state, state, Maj)] %>%
       add_states() %>%
-      dplyr::select(-LLassigned, LLother, -state_min, -alleleBtot, -alleleAtot, -pMin, -pMaj)
+      dplyr::select(-LLassigned, -LLother, -alleleBtot, -alleleAtot, -pMin, -pMaj)
   }
 
   hscn[["data"]] <- hscn_data %>% as.data.frame()
