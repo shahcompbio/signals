@@ -192,7 +192,7 @@ plotHeatmap(res$ascn,
 
 ```{r, fig.width=8.5}
 x <- per_arm_baf_mat(haplotypes)
-res <- assign_states_dp(x$bafperchr, samples = 5)
+res <- assign_states_dp(x$bafperchr, samples = 5, overwrite_chr = c("1q"))
 
 plotHeatmap(res$ascn,
             clusters = res$clusters,

@@ -4,13 +4,26 @@
 \alias{callHaplotypeSpecificCN}
 \title{Call haplotype specific copy number in single cell datasets}
 \usage{
-callHaplotypeSpecificCN(CNbins, haplotypes, eps = 1e-12,
-  loherror = 0.02, maxCN = NULL, selftransitionprob = 0.999,
-  progressbar = TRUE, ncores = 1, phasebyarm = FALSE,
-  minfrac = 0.8, likelihood = "binomial", minbins = 100,
-  minbinschr = 10, phased_haplotypes = NULL,
-  clustering_method = "copy", maxloherror = 0.035,
-  overwritemincells = NULL)
+callHaplotypeSpecificCN(
+  CNbins,
+  haplotypes,
+  eps = 0.000000000001,
+  loherror = 0.02,
+  maxCN = NULL,
+  selftransitionprob = 0.999,
+  progressbar = TRUE,
+  ncores = 1,
+  phasebyarm = FALSE,
+  minfrac = 0.8,
+  likelihood = "binomial",
+  minbins = 100,
+  minbinschr = 10,
+  phased_haplotypes = NULL,
+  clustering_method = "copy",
+  maxloherror = 0.035,
+  overwritemincells = NULL,
+  Abias = 0
+)
 }
 \arguments{
 \item{CNbins}{single cell copy number dataframe with the following columns: \code{cell_id}, \code{chr}, \code{start}, \code{end}, \code{state}, \code{copy}}

@@ -7,7 +7,8 @@ HaplotypeHMM <- function(n,
                       selftransitionprob = 0.999,
                       eps = 1e-12,
                       likelihood = "binomial",
-                      rho = 0.0){
+                      rho = 0.0,
+                      Abias = 0.0){
 
   minor_cn_mat <- t(replicate(length(binstates), minor_cn))
   total_cn_mat <- replicate(length(minor_cn), binstates)
@@ -24,6 +25,11 @@ HaplotypeHMM <- function(n,
   }
   if (eps > 0.0){
     l <- matrix(vapply(l, function(x) logspace_addcpp(x, log(eps)), FUN.VALUE = numeric(1)), dim(l)[1], dim(l)[2])
+  }
+  if (Abias > 0.0){
+    lA <- l[minor_cn_mat < total_cn_mat / 2]
+    lA <- vapply(lA, function(x) logspace_addcpp(x, log(Abias)), FUN.VALUE = numeric(1))
+    l[minor_cn_mat < total_cn_mat / 2] <- lA
   }
   l[is.na(l)] <- log(0.0)
   l[minor_cn_mat > total_cn_mat] <- log(0.0)
@@ -52,7 +58,8 @@ assignHaplotypeHMM <- function(CNBAF,
                             selftransitionprob = 0.999,
                             pb = NULL,
                             likelihood = "binomial",
-                            rho = 0.0){
+                            rho = 0.0,
+                            Abias = 0.0){
 
   if (!is.null(pb)){
     pb$tick()$print()
@@ -68,7 +75,8 @@ assignHaplotypeHMM <- function(CNBAF,
                                eps = eps,
                                selftransitionprob = selftransitionprob,
                                rho = rho,
-                               likelihood = likelihood)
+                               likelihood = likelihood,
+                               Abias = Abias)
     minorcn_res <- c(minorcn_res, hmmresults$minorcn)
   }
 
@@ -124,7 +132,8 @@ callalleleHMMcell <- function(CNBAF,
                                     progressbar = TRUE,
                                     ncores = 1,
                                     likelihood = "binomial",
-                                    rho = 0.0){
+                                    rho = 0.0,
+                                    Abias = 0.0){
 
   minor_cn <- seq(0, maxCN, 1)
 
@@ -146,6 +155,7 @@ callalleleHMMcell <- function(CNBAF,
                                                                                       selftransitionprob = selftransitionprob,
                                                                                       likelihood = likelihood,
                                                                                       rho = rho,
+                                                                                      Abias = Abias,
                                                                                       pb = pb), mc.cores = ncores)) %>%
       .[order(cell_id, chr, start)]
   } else{
@@ -154,6 +164,7 @@ callalleleHMMcell <- function(CNBAF,
                                                                        eps = eps, loherror = loherror,
                                                                        likelihood = likelihood,
                                                                        rho = rho,
+                                                                       Abias = Abias,
                                                                        selftransitionprob = selftransitionprob,
                                                                        pb = pb))) %>%
       .[order(cell_id, chr, start)]
@@ -488,7 +499,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                                progressbar = progressbar,
                                                ncores = ncores,
                                                likelihood = likelihood,
-                                               rho = bbfit$rho)
+                                               rho = bbfit$rho,
+                                               Abias = Abias)
 
   # Output
   out = list()
@@ -502,5 +514,52 @@ callHaplotypeSpecificCN <- function(CNbins,
   out[["qc_summary"]] <- qc_summary(hscn_data)
   out[["haplotype_phasing"]] <- phased_haplotypes
 
+  out <- fix_assignments(out)
+
   return(out)
+}
+
+#' @export
+fix_assignments <- function(hscn){
+
+  if (hscn$likelihood$likelihood == "binomial"){
+  hscn_data <- hscn$data %>%
+    as.data.table() %>%
+    .[, rlid := data.table::rleid(state_AS_phased)] %>%
+    .[, alleleAtot := sum(alleleA), by = "rlid"] %>%
+    .[, alleleBtot := sum(alleleB), by = "rlid"] %>%
+    .[, LLassigned := dbinom(alleleAtot, alleleAtot + alleleBtot, p = Min / state)] %>%
+    .[, LLother := dbinom(alleleAtot, alleleAtot + alleleBtot, p = Maj / state)] %>%
+    .[, state_min := fifelse(LLother < LLassigned, Maj, Min)] %>%
+    .[, Maj := state - state_min] %>%
+    .[, Min := state_min] %>%
+    .[, Min := fifelse(Min < 0, 0, Min)] %>%
+    .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
+    .[, Min := fifelse(Min > state, state, Min)] %>%
+    .[, Maj := fifelse(Maj > state, state, Maj)] %>%
+    add_states() %>%
+    dplyr::select(-LLassigned, LLother, -state_min, -alleleBtot, -alleleAtot)
+
+  } else{
+    hscn_data <- hscn$data %>%
+      as.data.table() %>%
+      .[, rlid := data.table::rleid(state_AS_phased)] %>%
+      .[, alleleAtot := sum(alleleA), by = "rlid"] %>%
+      .[, alleleBtot := sum(alleleB), by = "rlid"] %>%
+      .[, LLassigned := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot, rho = hscn$likelihood$rho, p = Min / state)] %>%
+      .[, LLother := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot,rho = hscn$likelihood$rho, p = Maj / state)] %>%
+      .[, state_min := fifelse(LLother < LLassigned, Maj, Min)] %>%
+      .[, Maj := state - state_min] %>%
+      .[, Min := state_min] %>%
+      .[, Min := fifelse(Min < 0, 0, Min)] %>%
+      .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
+      .[, Min := fifelse(Min > state, state, Min)] %>%
+      .[, Maj := fifelse(Maj > state, state, Maj)] %>%
+      add_states() %>%
+      dplyr::select(-LLassigned, LLother, -state_min, -alleleBtot, -alleleAtot)
+  }
+
+  hscn[["data"]] <- hscn_data
+  hscn[["qc_summary"]] <- qc_summary(hscn_data)
+  return(hscn)
 }

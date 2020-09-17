@@ -4,8 +4,13 @@
 \alias{coord_to_arm}
 \title{Genomic coordinate to chromosome arm}
 \usage{
-coord_to_arm(chromosome, position, assembly = "hg19", full = FALSE,
-  mergesmallarms = FALSE)
+coord_to_arm(
+  chromosome,
+  position,
+  assembly = "hg19",
+  full = FALSE,
+  mergesmallarms = FALSE
+)
 }
 \arguments{
 \item{chromosome}{Character or numeric vector, with chromosome of genomic coordinate}
