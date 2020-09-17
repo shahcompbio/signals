@@ -528,8 +528,14 @@ fix_assignments <- function(hscn){
     .[, rlid := data.table::rleid(state_AS_phased)] %>%
     .[, alleleAtot := sum(alleleA), by = "rlid"] %>%
     .[, alleleBtot := sum(alleleB), by = "rlid"] %>%
-    .[, LLassigned := dbinom(alleleAtot, alleleAtot + alleleBtot, p = Min / state)] %>%
-    .[, LLother := dbinom(alleleAtot, alleleAtot + alleleBtot, p = Maj / state)] %>%
+    .[, pMin := Min/state] %>%
+    .[, pMin := fifelse(pMin == 0.0, pMin + hscn$loherror, pMin)] %>%
+    .[, pMin := fifelse(pMin == 1.0, pMin - hscn$loherror, pMin)] %>%
+    .[, pMaj := Maj/state] %>%
+    .[, pMaj := fifelse(pMaj == 0.0, pMaj + hscn$loherror, pMaj)] %>%
+    .[, pMaj := fifelse(pMaj == 1.0, pMaj - hscn$loherror, pMaj)] %>%
+    .[, LLassigned := dbinom(alleleAtot, alleleAtot + alleleBtot, p = pMin)] %>%
+    .[, LLother := dbinom(alleleAtot, alleleAtot + alleleBtot, p = pMaj)] %>%
     .[, state_min := fifelse(LLother < LLassigned, Maj, Min)] %>%
     .[, Maj := state - state_min] %>%
     .[, Min := state_min] %>%
@@ -538,7 +544,7 @@ fix_assignments <- function(hscn){
     .[, Min := fifelse(Min > state, state, Min)] %>%
     .[, Maj := fifelse(Maj > state, state, Maj)] %>%
     add_states() %>%
-    dplyr::select(-LLassigned, LLother, -state_min, -alleleBtot, -alleleAtot)
+    dplyr::select(-LLassigned, LLother, -state_min, -alleleBtot, -alleleAtot, -pMin, -pMaj)
 
   } else{
     hscn_data <- hscn$data %>%
@@ -546,8 +552,14 @@ fix_assignments <- function(hscn){
       .[, rlid := data.table::rleid(state_AS_phased)] %>%
       .[, alleleAtot := sum(alleleA), by = "rlid"] %>%
       .[, alleleBtot := sum(alleleB), by = "rlid"] %>%
-      .[, LLassigned := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot, rho = hscn$likelihood$rho, p = Min / state)] %>%
-      .[, LLother := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot,rho = hscn$likelihood$rho, p = Maj / state)] %>%
+      .[, pMin := Min/state] %>%
+      .[, pMin := fifelse(pMin == 0.0, pMin + hscn$loherror, pMin)] %>%
+      .[, pMin := fifelse(pMin == 1.0, pMin - hscn$loherror, pMin)] %>%
+      .[, pMaj := Maj/state] %>%
+      .[, pMaj := fifelse(pMaj == 0.0, pMaj + hscn$loherror, pMaj)] %>%
+      .[, pMaj := fifelse(pMaj == 1.0, pMaj - hscn$loherror, pMaj)] %>%
+      .[, LLassigned := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot, rho = hscn$likelihood$rho, p = pMin)] %>%
+      .[, LLother := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot,rho = hscn$likelihood$rho, p = pMaj)] %>%
       .[, state_min := fifelse(LLother < LLassigned, Maj, Min)] %>%
       .[, Maj := state - state_min] %>%
       .[, Min := state_min] %>%
@@ -556,10 +568,10 @@ fix_assignments <- function(hscn){
       .[, Min := fifelse(Min > state, state, Min)] %>%
       .[, Maj := fifelse(Maj > state, state, Maj)] %>%
       add_states() %>%
-      dplyr::select(-LLassigned, LLother, -state_min, -alleleBtot, -alleleAtot)
+      dplyr::select(-LLassigned, LLother, -state_min, -alleleBtot, -alleleAtot, -pMin, -pMaj)
   }
 
-  hscn[["data"]] <- hscn_data
+  hscn[["data"]] <- hscn_data %>% as.data.frame()
   hscn[["qc_summary"]] <- qc_summary(hscn_data)
   return(hscn)
 }
