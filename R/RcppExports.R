@@ -9,7 +9,3 @@ viterbi <- function(emission, transition, observations) {
     .Call('_schnapps_viterbi', PACKAGE = 'schnapps', emission, transition, observations)
 }
 
-viterbi_probs <- function(emission, transition, observations) {
-    .Call('_schnapps_viterbi_probs', PACKAGE = 'schnapps', emission, transition, observations)
-}
-
