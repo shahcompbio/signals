@@ -499,8 +499,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                                progressbar = progressbar,
                                                ncores = ncores,
                                                likelihood = likelihood,
-                                               rho = bbfit$rho,
-                                               Abias = Abias)
+                                               rho = bbfit$rho)
 
   # Output
   out = list()
