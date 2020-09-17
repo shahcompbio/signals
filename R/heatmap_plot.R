@@ -372,7 +372,9 @@ make_top_annotsnv <- function(mutgroups){
 get_chrom_label_pos <- function(copynumber) {
   chrom_label_pos <- c()
   chroms <- sapply(strsplit(colnames(copynumber), ":"), function(x) x[[1]])
-  uniq_chroms <- c(as.character(1:22), "X", "Y")
+  chromfreq <- table(chroms)
+  uniq_chroms <- names(chromfreq)[chromfreq > 1]
+  uniq_chroms <- uniq_chroms[stringr::str_detect(uniq_chroms, "V", negate = TRUE)]
   for(chrom in uniq_chroms) {
     chrom_idx <- which(chroms == chrom)
     chrom_label_pos[[chrom]] <- as.integer(round(mean(chrom_idx)))
@@ -710,13 +712,6 @@ plotHeatmap <- function(cn,
     CNbins <- dlpbinsarm[CNbinst, on = c("chr", "chrarm", "arm", "cell_id")] %>%
       .[!is.na(cell_id)] %>%
       orderdf(.)
-
-    # CNbins3 <- dplyr::full_join(CNbins %>% dplyr::select(-start, -end), dlpbinsarm, by = c("chr", "chrarm", "arm"))
-    # CNbins2 <- merge.data.table(CNbinst, dlpbinsarm,
-    #                                         #by = c("chr", "arm"),
-    #                                         all = TRUE, allow.cartesian = TRUE))
-    #
-
   }
 
   if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF")){
