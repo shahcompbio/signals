@@ -128,7 +128,8 @@ make_discrete_palette <- function(pal_name, levels) {
   if (length(levels) > 8){
     pal_name <- "Set3"
   }
-  pal <- RColorBrewer::brewer.pal(max(length(levels), 3), pal_name)
+  pal <- colorRampPalette(RColorBrewer::brewer.pal(max(length(levels), 3), pal_name))(length(levels))
+  #pal <- RColorBrewer::brewer.pal(max(length(levels), 3), pal_name)
   names(pal) <- levels
   pal <- pal[levels]
   return(pal)
