@@ -27,7 +27,7 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20){
     dplyr::pull(idx)
 
   #get ticks - median bin of each chromosome
-  chrticks <- bins %>%
+  chrticks <- CNbins %>%
     dplyr::filter(chr %in% unique(CNbins$chr)) %>%
     dplyr::group_by(chr) %>%
     dplyr::summarise(idx = round(median(idx))) %>%
