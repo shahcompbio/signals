@@ -28,9 +28,11 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, 
   }
 
   if (fillna == TRUE){
+  colnames <- names(cnmatrix)
+  colnames <- colnames[!colnames %in% c("chr", "start", "end", "idx", "width")]
   cnmatrix <- cnmatrix %>%
     dplyr::as_tibble() %>%
-    tidyr::fill(., .direction = "updown")
+    tidyr::fill(., colnames, .direction = "updown")
   }
 
   cnmatrix <- as.data.frame(cnmatrix)
