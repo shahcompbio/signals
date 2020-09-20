@@ -300,7 +300,7 @@ make_left_annot <- function(copynumber,
   annot_colours$Sample <- make_discrete_palette("Set2", library_levels)
   annot_colours$Sample <- annot_colours$Sample[!is.na(annot_colours$Sample)]
 
-  library_legend_rows <- 10
+  library_legend_rows <- 3
 
   if(!is.null(clones)) {
     clone_levels <- unique(clones$clone_label)
@@ -324,9 +324,9 @@ make_left_annot <- function(copynumber,
       )
     }
 
-    clone_legend_rows <- 10
-    if(length(clone_levels) > 10) {
-      clone_legend_rows <- round(sqrt(length(clone_levels) * 4))
+    clone_legend_rows <- 3
+    if(length(clone_levels) > 3) {
+      clone_legend_rows <- round(sqrt(length(clone_levels) * 2))
     }
 
     if (show_library_label){
@@ -336,8 +336,8 @@ make_left_annot <- function(copynumber,
         col=annot_colours, show_annotation_name=c(TRUE, FALSE, TRUE),
         which="row", annotation_width=grid::unit(rep(0.4, 3), "cm"),
         annotation_legend_param=list(
-          Clone=list(nrow=clone_legend_rows),
-          Sample=list(nrow=library_legend_rows)
+          Clone=list(nrow=clone_legend_rows, direction = "horizontal"),
+          Sample=list(nrow=library_legend_rows, direction = "horizontal")
         ),
         show_legend = show_legend
       )
@@ -633,7 +633,7 @@ make_copynumber_heatmap <- function(copynumber,
     left_annotation=make_left_annot(copynumber, clones,
                                     library_mapping = library_mapping, clone_pal = clone_pal,
                                     idx = sample_label_idx,show_legend = show_legend, show_library_label = show_library_label),
-    heatmap_legend_param=list(nrow=4),
+    heatmap_legend_param=list(nrow=3, direction = "vertical"),
     top_annotation = make_top_annotation_gain(copynumber, cutoff = cutoff, maxf = maxf,
                                               plotfrequency = plotfrequency, plotcol = plotcol),
     use_raster=TRUE,
@@ -929,6 +929,9 @@ plotHeatmapQC <- function(cn,
                         library_mapping = NULL,
                         clone_pal = NULL,
                         sample_label_idx = 1,
+                        plotfrequency = FALSE,
+                        show_legend = TRUE,
+                        show_library_label = TRUE,
                         ...){
 
   CNbins <- cn$data
@@ -1027,6 +1030,9 @@ plotHeatmapQC <- function(cn,
                                            legendname = legendname,
                                            library_mapping = library_mapping,
                                            clone_pal = clone_pal,
+                                           plotfrequency = plotfrequency,
+                                           show_legend = show_legend,
+                                           show_library_label = show_library_label,
                                            sample_label_idx = sample_label_idx)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
