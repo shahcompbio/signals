@@ -283,10 +283,15 @@ make_left_annot <- function(copynumber,
                             clones,
                             library_mapping = NULL,
                             show_library_label = TRUE,
+                            show_clone_label = TRUE,
                             clone_pal = NULL,
                             idx = 1,
                             show_legend = TRUE) {
   annot_colours <- list()
+
+  if (show_clone_label == FALSE & show_library_label == FALSE){
+    return(NULL)
+  }
 
   library_labels <- get_library_labels(rownames(copynumber), idx = idx)
   if (!is.null(library_mapping)){
@@ -329,7 +334,7 @@ make_left_annot <- function(copynumber,
       clone_legend_rows <- round(sqrt(length(clone_levels) * 2))
     }
 
-    if (show_library_label){
+    if (show_library_label == TRUE & show_clone_label == TRUE){
       left_annot <- ComplexHeatmap::HeatmapAnnotation(
         Clone=clones$clone_label, clone_label=clone_label_generator,
         Sample=library_labels,
@@ -341,7 +346,7 @@ make_left_annot <- function(copynumber,
         ),
         show_legend = show_legend
       )
-    } else {
+    } else if (show_library_label == FALSE & show_clone_label == TRUE) {
       left_annot <- ComplexHeatmap::HeatmapAnnotation(
         Clone=clones$clone_label, clone_label=clone_label_generator,
         col=annot_colours, show_annotation_name=c(TRUE, FALSE),
@@ -351,13 +356,22 @@ make_left_annot <- function(copynumber,
         ),
         show_legend = show_legend
       )
-    }
+    } else if (show_library_label == TRUE & show_clone_label == FALSE){
+      left_annot <- ComplexHeatmap::HeatmapAnnotation(
+        Sample=library_labels, col=annot_colours,
+        which="row", simple_anno_size=grid::unit(0.4, "cm"),
+        annotation_legend_param=list(
+          Sample=list(nrow=library_legend_rows)
+        ),
+        show_legend = show_legend
+      )
+      }
   } else {
     left_annot <- ComplexHeatmap::HeatmapAnnotation(
       Sample=library_labels, col=annot_colours,
       which="row", simple_anno_size=grid::unit(0.4, "cm"),
       annotation_legend_param=list(
-        Sample=list(nrow=library_legend_rows),
+        Sample=list(nrow=library_legend_rows)
       ),
       show_legend = show_legend
     )
@@ -619,6 +633,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     plotfrequency = FALSE,
                                     show_legend = TRUE,
                                     show_library_label = TRUE,
+                                    show_clone_label = TRUE,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -631,7 +646,7 @@ make_copynumber_heatmap <- function(copynumber,
     show_column_names=FALSE,
     bottom_annotation=make_bottom_annot(copynumber),
     left_annotation=make_left_annot(copynumber, clones,
-                                    library_mapping = library_mapping, clone_pal = clone_pal,
+                                    library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
                                     idx = sample_label_idx,show_legend = show_legend, show_library_label = show_library_label),
     heatmap_legend_param=list(nrow=3, direction = "vertical"),
     top_annotation = make_top_annotation_gain(copynumber, cutoff = cutoff, maxf = maxf,
@@ -686,6 +701,7 @@ plotHeatmap <- function(cn,
                         plotfrequency = FALSE,
                         show_legend = TRUE,
                         show_library_label = TRUE,
+                        show_clone_label = TRUE,
                         widenarm = FALSE,
                         umapmetric = "euclidean",
                         ...){
@@ -807,6 +823,30 @@ plotHeatmap <- function(cn,
     ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
   }
 
+  if (!is.null(clusters)){
+    if (!"clone_id" %in% names(clusters)){
+      stop("No clone_id columns in clusters dataframe, you might need to rename your clusters")
+    }
+    else if (reorderclusters == TRUE & !is.null(tree)){
+      message("Reorder clusters dataframe according to clones using tree")
+      if (normalize_tree == T){
+        tree <- format_tree(tree, branch_length)
+      }
+
+      tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal)
+      tree_plot_dat <- tree_ggplot$data
+
+      message("Creating tree...")
+      tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+      ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
+    }
+    else if (reorderclusters == TRUE & is.null(tree)){
+      message("Reorder clusters dataframe according to clones")
+      clusters <- clusters[gtools::mixedorder(clusters$clone_id), ]
+      ordered_cell_ids <- paste0(clusters$cell_id)
+    }
+  }
+
   message("Creating copy number heatmap...")
   copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = fillna)
   if (normalize_ploidy == T){
@@ -836,6 +876,7 @@ plotHeatmap <- function(cn,
                                            plotfrequency = plotfrequency,
                                            show_legend = show_legend,
                                            show_library_label = show_library_label,
+                                           show_clone_label = show_clone_label,
                                            ...)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
