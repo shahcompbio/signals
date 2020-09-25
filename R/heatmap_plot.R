@@ -497,14 +497,27 @@ anno_mark = function(at, labels, which = c("column", "row"),
   return(anno)
 }
 
-make_bottom_annot <- function(copynumber) {
-  chrom_label_pos <- get_chrom_label_pos(copynumber)
-  bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels=anno_mark(
-    at=chrom_label_pos,
-    labels=names(chrom_label_pos),
-    side="bottom",
-    padding=0.5, extend=0.01
-  ), show_annotation_name=FALSE)
+make_bottom_annot <- function(copynumber, chrlabels = NULL) {
+  if (chrlabels == FALSE){
+    return(NULL)
+  } else if (is.null(chrlabels)){
+    chrom_label_pos <- get_chrom_label_pos(copynumber)
+    bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels=anno_mark(
+      at=chrom_label_pos,
+      labels=names(chrom_label_pos),
+      side="bottom",
+      padding=0.5, extend=0.01
+    ), show_annotation_name=FALSE)
+  } else {
+    chrom_label_pos <- get_chrom_label_pos(copynumber)
+    chrom_label_pos <- chrom_label_pos[chrlabels]
+    bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels=anno_mark(
+      at=chrom_label_pos,
+      labels=names(chrom_label_pos),
+      side="bottom",
+      padding=0.5, extend=0.01
+    ), show_annotation_name=FALSE)
+  }
   return(bottom_annot)
 }
 
@@ -634,6 +647,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     show_legend = TRUE,
                                     show_library_label = TRUE,
                                     show_clone_label = TRUE,
+                                    chrlabels = NULL,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -644,7 +658,7 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_rows=FALSE,
     cluster_columns=FALSE,
     show_column_names=FALSE,
-    bottom_annotation=make_bottom_annot(copynumber),
+    bottom_annotation=make_bottom_annot(copynumber, chrlabels = chrlabels),
     left_annotation=make_left_annot(copynumber, clones,
                                     library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
                                     idx = sample_label_idx,show_legend = show_legend, show_library_label = show_library_label),
@@ -704,6 +718,7 @@ plotHeatmap <- function(cn,
                         show_clone_label = TRUE,
                         widenarm = FALSE,
                         umapmetric = "euclidean",
+                        chrlabels = NULL,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -877,6 +892,7 @@ plotHeatmap <- function(cn,
                                            show_legend = show_legend,
                                            show_library_label = show_library_label,
                                            show_clone_label = show_clone_label,
+                                           chrlabels = chrlabels,
                                            ...)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm

@@ -276,7 +276,7 @@ snv_states <- function(SNV, CNbins){
                    on = .(chry == chr, cell_idy == cell_id, starty < start, endy > start)
                    ]
   mappedSNVs <- mappedSNVs %>%
-    .[, end := NULL] %>%
+    #.[, end := NULL] %>%
     data.table::setnames(., "chry", "chr") %>%
     data.table::setnames(., "starty", "start") %>%
     data.table::setnames(., "cell_idy", "cell_id") %>%
