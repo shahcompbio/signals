@@ -497,10 +497,10 @@ anno_mark = function(at, labels, which = c("column", "row"),
   return(anno)
 }
 
-make_bottom_annot <- function(copynumber, chrlabels = NULL) {
+make_bottom_annot <- function(copynumber, chrlabels = TRUE) {
   if (chrlabels == FALSE){
     return(NULL)
-  } else if (is.null(chrlabels)){
+  } else if (chrlabels){
     chrom_label_pos <- get_chrom_label_pos(copynumber)
     bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels=anno_mark(
       at=chrom_label_pos,
@@ -647,7 +647,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     show_legend = TRUE,
                                     show_library_label = TRUE,
                                     show_clone_label = TRUE,
-                                    chrlabels = NULL,
+                                    chrlabels = TRUE,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -718,7 +718,7 @@ plotHeatmap <- function(cn,
                         show_clone_label = TRUE,
                         widenarm = FALSE,
                         umapmetric = "euclidean",
-                        chrlabels = NULL,
+                        chrlabels = TRUE,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
