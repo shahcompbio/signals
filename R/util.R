@@ -502,7 +502,9 @@ per_arm_baf_mat <- function(haps,
 }
 
 #' @export
-per_arm_cn <- function(hscn, arms = NULL){
+per_chrarm_cn <- function(hscn, arms = NULL){
+
+  data("hg19chrom_coordinates", envir=environment())
 
   if (is.null(arms)){
     hscn_arm <- hscn %>%
@@ -514,9 +516,10 @@ per_arm_cn <- function(hscn, arms = NULL){
                        alleleB = sum(alleleB, na.rm = TRUE),
                        Min = Mode(Min),
                        Maj = Mode(Maj),
-                       copy = median(copy, na.rm = TRUE)) %>%
+                       copy = median(copy, na.rm = TRUE),
+                       state_sd = sd(state, na.rm = TRUE)) %>%
       dplyr::ungroup() %>%
-      as.data.table()
+      data.table::as.data.table()
     } else {
       hscn_arm <- hscn %>%
         dplyr::filter(chr != "Y") %>%
@@ -529,7 +532,8 @@ per_arm_cn <- function(hscn, arms = NULL){
                          alleleB = sum(alleleB, na.rm = TRUE),
                          Min = Mode(Min),
                          Maj = Mode(Maj),
-                         copy = median(copy, na.rm = TRUE)) %>%
+                         copy = median(copy, na.rm = TRUE),
+                         state_sd = sd(state, na.rm = TRUE)) %>%
         dplyr::ungroup() %>%
         as.data.table()
     }
@@ -552,16 +556,57 @@ per_arm_cn <- function(hscn, arms = NULL){
       ] %>%
     .[order(cell_id, chr)] %>%
     .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
-    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
+    .[, state_BAF := data.table::fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
     dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
                   total = alleleB + alleleA) %>%
-    dplyr::mutate(idx = ifelse(chr == "X", 2 * 23, 2 * as.numeric(chr))) %>%
-    dplyr::mutate(idx = ifelse(arm == "p", idx - 1, idx)) %>%
-    dplyr::mutate(start = data.table::fifelse(arm == "p", 1, 10)) %>%
-    dplyr::mutate(end = data.table::fifelse(arm == "p", 2, 11)) %>%
+    dplyr::left_join(hg19chrom_coordinates) %>%
     dplyr::mutate(state = ifelse(state >11, 11, state))
 
   return(hscn_arm)
+}
+
+#' @export
+per_chr_cn <- function(hscn, arms = NULL){
+
+  data("hg19chrom_coordinates", envir=environment())
+
+  hscn_chr <- hscn %>%
+    dplyr::filter(chr != "Y") %>%
+    dplyr::group_by(chr,cell_id) %>%
+    dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
+                     alleleB = sum(alleleB, na.rm = TRUE),
+                     Min = Mode(Min),
+                     Maj = Mode(Maj),
+                     copy = median(copy, na.rm = TRUE),
+                     state_sd = sd(state, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    data.table::as.data.table()
+
+  hscn_chr <- hscn_chr %>%
+    .[, state := Maj + Min] %>%
+    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
+    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
+    .[, state_min := pmin(Maj, Min)] %>%
+    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
+    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
+    .[, phase := c("Balanced", "A", "B")[1 +
+                                           1 * ((Min < Maj)) +
+                                           2 * ((Min > Maj))]] %>%
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+                                                                                 1 * ((Min < Maj) & (Min != 0)) +
+                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
+                                                                                 3 * ((Min < Maj) & (Min == 0)) +
+                                                                                 4 * ((Min > Maj) & (Maj == 0))]
+    ] %>%
+    .[order(cell_id, chr)] %>%
+    .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+    .[, state_BAF := data.table::fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
+    dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
+                  total = alleleB + alleleA) %>%
+    dplyr::left_join(hg19chrom_coordinates %>% dplyr::filter(arm == "")) %>%
+    dplyr::mutate(state = ifelse(state >11, 11, state))
+
+  return(hscn_chr)
 }
 
 #' @export

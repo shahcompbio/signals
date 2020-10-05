@@ -32,7 +32,7 @@ format_haplotypes_rna <- function(haplotypes,
     message("Join phased haplotypes...")
     phased_haplotypes <- as.data.table(dplyr::distinct(phased_haplotypes, chr, hap_label, phase))
     haplotypes <- as.data.table(haplotypes)[phased_haplotypes,
-                                            on = .(chr, hap_label)] %>%
+                                            on = .(chr, hap_label), allow.cartesian = TRUE] %>%
       .[!is.na(cell_id)]
   }
 
