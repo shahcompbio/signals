@@ -280,7 +280,7 @@ assign_states_dp <- function(bafperchr,
     #keepchrs <- sort(sapply(baf_counts / baf_total, function(x) var(x, na.rm = TRUE)), decreasing = TRUE)[1:top_nchr]
     chr_names <- names(baf_counts)
     baf_counts_temp <- baf_counts[, setdiff(chr_names, removechr)]
-    keepchrs <- sort(sapply(names(baf_counts),
+    keepchrs <- sort(sapply(names(baf_counts_temp),
                               function(x) matrixStats::weightedVar(baf_counts[,x] / baf_total[,x],
                                                        w = baf_total[,x], na.rm = TRUE)),
                      decreasing = TRUE)[1:top_nchr]
