@@ -354,6 +354,6 @@ assign_states_dp <- function(bafperchr,
     dplyr::mutate(start = 1, end = 2)
 
 
-  return(list(viber_fit = fit_filt, clusters = x, ascn = bafperchr_new))
+  return(list(viber_fit = fit_filt, clusters = x, ascn = bafperchr_new, usedchrs = keepchrs))
 }
 
