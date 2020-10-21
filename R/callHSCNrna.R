@@ -52,6 +52,8 @@ assign_states <- function(haps,
   bafperchr <- perchrlist$bafperchr
   possible_states <- get_states_dna(hscn, minf = minf, arms = unique(bafperchr$chrarm))
 
+  data("hg19chrom_coordinates", envir=environment())
+
   if (shrinkage == FALSE){
 
     perchr <- dplyr::left_join(bafperchr, possible_states) %>%
@@ -64,8 +66,7 @@ assign_states <- function(haps,
       .[, state := Min + Maj]
     perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
       add_states() %>%
-      .[, start := data.table::fifelse(arm == "p", 1, 10)] %>%
-      .[, end := data.table::fifelse(arm == "p", 2, 11)] %>%
+      dplyr::left_join(hg19chrom_coordinates) %>%
       .[, copy := state]
 
     perchr <- as.data.frame(perchr) %>%
@@ -117,8 +118,7 @@ assign_states <- function(haps,
     perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
       add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
-      .[, start := data.table::fifelse(arm == "p", 1, 10)] %>%
-      .[, end := data.table::fifelse(arm == "p", 2, 11)] %>%
+      dplyr::left_join(hg19chrom_coordinates) %>%
       .[, copy := state]
 
     perchr <- as.data.frame(perchr) %>%
@@ -152,6 +152,8 @@ assign_states_noprior <- function(haps,
   bafperchr <- perchrlist$bafperchr
   possible_states <- possible_states_df(bafperchr, step = step)
 
+  data("hg19chrom_coordinates", envir=environment())
+
   if (shrinkage == FALSE){
 
     perchr <- dplyr::left_join(bafperchr, possible_states) %>%
@@ -166,8 +168,7 @@ assign_states_noprior <- function(haps,
     perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
       add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
-      .[, start := data.table::fifelse(arm == "p", 1, 10)] %>%
-      .[, end := data.table::fifelse(arm == "p", 2, 11)] %>%
+      dplyr::left_join(hg19chrom_coordinates) %>%
       .[, copy := state]
 
     perchr <- as.data.frame(perchr) %>%
@@ -219,8 +220,7 @@ assign_states_noprior <- function(haps,
     perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
       add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
-      .[, start := data.table::fifelse(arm == "p", 1, 10)] %>%
-      .[, end := data.table::fifelse(arm == "p", 2, 11)] %>%
+      dplyr::left_join(hg19chrom_coordinates) %>%
       .[, copy := state]
 
     perchr <- as.data.frame(perchr) %>%
@@ -241,6 +241,8 @@ assign_states_dp <- function(bafperchr,
                              overwrite_chr = NULL,
                              removechr = c("chrX"),
                              filtercounts = 0){
+
+  data("hg19chrom_coordinates", envir=environment())
 
   if (!requireNamespace("VIBER", quietly = TRUE)) {
     stop("Package \"VIBER\" needed to use the beta-binomial model.",
@@ -351,7 +353,7 @@ assign_states_dp <- function(bafperchr,
     dplyr::left_join(x, by = "cell_id") %>%
     dplyr::left_join(states, by = c("chrarm", "clone_id")) %>%
     dplyr::select(-clone_id) %>%
-    dplyr::mutate(start = 1, end = 2)
+    dplyr::left_join(hg19chrom_coordinates)
 
 
   return(list(viber_fit = fit_filt, clusters = x, ascn = bafperchr_new, usedchrs = keepchrs))

@@ -13,7 +13,9 @@ phase_haplotypes_rna <- function(haplotypes){
 format_haplotypes_rna <- function(haplotypes,
                               filtern = 0,
                               phased_haplotypes = NULL,
-                              phasing_method = "distribution", ...){
+                              phasing_method = "distribution",
+                              create_cell_id = FALSE,
+                              ...){
 
   message("Phase haplotypes...")
   if (is.null(phased_haplotypes)){
@@ -50,10 +52,13 @@ format_haplotypes_rna <- function(haplotypes,
              start = min(position), end = max(position)), by = c("cell_id", "chr", "sample", "patient", "hap_label")] %>%
     .[, totalcounts := alleleA + alleleB] %>%
     .[totalcounts > filtern, BAF := alleleB / totalcounts] %>%
-    dplyr::select(cell_id, chr, start, end, hap_label, alleleA, alleleB, totalcounts, BAF, sample, patient) %>%
-    dplyr::mutate(cell_id = paste(sample, patient, cell_id, sep = "-")) %>%
-    as.data.frame() %>%
-    orderdf()
+    dplyr::select(cell_id, chr, start, end, hap_label, alleleA, alleleB, totalcounts, BAF, sample, patient)
+
+  if (create_cell_id){
+    haplotypes <- dplyr::mutate(cell_id = paste(sample, patient, cell_id, sep = "-")) %>%
+      as.data.frame() %>%
+      orderdf()
+  }
 
   return(haplotypes)
 }
