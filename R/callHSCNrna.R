@@ -67,6 +67,7 @@ assign_states <- function(haps,
     perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
       add_states() %>%
       dplyr::left_join(hg19chrom_coordinates) %>%
+      as.data.table() %>%
       .[, copy := state]
 
     perchr <- as.data.frame(perchr) %>%
@@ -119,6 +120,7 @@ assign_states <- function(haps,
       add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
       dplyr::left_join(hg19chrom_coordinates) %>%
+      as.data.table() %>%
       .[, copy := state]
 
     perchr <- as.data.frame(perchr) %>%
@@ -169,6 +171,7 @@ assign_states_noprior <- function(haps,
       add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
       dplyr::left_join(hg19chrom_coordinates) %>%
+      as.data.table() %>%
       .[, copy := state]
 
     perchr <- as.data.frame(perchr) %>%
@@ -221,6 +224,7 @@ assign_states_noprior <- function(haps,
       add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
       dplyr::left_join(hg19chrom_coordinates) %>%
+      as.data.table() %>%
       .[, copy := state]
 
     perchr <- as.data.frame(perchr) %>%
