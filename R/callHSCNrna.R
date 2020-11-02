@@ -244,7 +244,8 @@ assign_states_dp <- function(bafperchr,
                              top_nchr = 5,
                              overwrite_chr = NULL,
                              removechr = c("chrX"),
-                             filtercounts = 0){
+                             filtercounts = 0,
+                             pi_cutoff = 0.01){
 
   data("hg19chrom_coordinates", envir=environment())
 
@@ -317,7 +318,7 @@ assign_states_dp <- function(bafperchr,
   fit_filt <- VIBER::choose_clusters(fit,
                               binomial_cutoff = 0,
                               dimensions_cutoff = 0,
-                              pi_cutoff = 0.01)
+                              pi_cutoff = pi_cutoff)
 
   message('Extract cluster means from VIBER object...')
   theta <- as.data.frame(fit_filt$theta_k)
