@@ -511,15 +511,14 @@ per_chrarm_cn <- function(hscn, arms = NULL){
       dplyr::filter(chr != "Y") %>%
       dplyr::mutate(arm = coord_to_arm(chr, start, mergesmallarms = FALSE)) %>%
       dplyr::mutate(chrarm = paste0(chr, arm)) %>%
-      dplyr::group_by(chr, arm, chrarm, cell_id) %>%
-      dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
-                       alleleB = sum(alleleB, na.rm = TRUE),
-                       Min = Mode(Min),
-                       Maj = Mode(Maj),
-                       copy = median(copy, na.rm = TRUE),
-                       state_sd = sd(state, na.rm = TRUE)) %>%
-      dplyr::ungroup() %>%
-      data.table::as.data.table()
+      as.data.table() %>%
+      .[, list(alleleA = sum(alleleA, na.rm = TRUE),
+               alleleB = sum(alleleB, na.rm = TRUE),
+               Min = Mode(Min),
+               Maj = Mode(Maj),
+               copy = median(copy, na.rm = TRUE),
+               state_sd = sd(state, na.rm = TRUE),
+               proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N), by = c("chr", "arm", "chrarm", "cell_id")]
     } else {
       hscn_arm <- hscn %>%
         dplyr::filter(chr != "Y") %>%
@@ -527,15 +526,14 @@ per_chrarm_cn <- function(hscn, arms = NULL){
         dplyr::mutate(chrarm = paste0(chr, arm)) %>%
         dplyr::mutate(arm = ifelse(chrarm %in% arms, arm, "")) %>%
         dplyr::mutate(chrarm = paste0(chr, arm)) %>%
-        dplyr::group_by(chr, arm, chrarm, cell_id) %>%
-        dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
-                         alleleB = sum(alleleB, na.rm = TRUE),
-                         Min = Mode(Min),
-                         Maj = Mode(Maj),
-                         copy = median(copy, na.rm = TRUE),
-                         state_sd = sd(state, na.rm = TRUE)) %>%
-        dplyr::ungroup() %>%
-        as.data.table()
+        as.data.table() %>%
+        .[, list(alleleA = sum(alleleA, na.rm = TRUE),
+                 alleleB = sum(alleleB, na.rm = TRUE),
+                 Min = Mode(Min),
+                 Maj = Mode(Maj),
+                 copy = median(copy, na.rm = TRUE),
+                 state_sd = sd(state, na.rm = TRUE),
+                 proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N), by = c("chr", "arm", "chrarm", "cell_id")]
     }
 
   hscn_arm <- hscn_arm %>%
@@ -572,15 +570,14 @@ per_chr_cn <- function(hscn, arms = NULL){
 
   hscn_chr <- hscn %>%
     dplyr::filter(chr != "Y") %>%
-    dplyr::group_by(chr,cell_id) %>%
-    dplyr::summarise(alleleA = sum(alleleA, na.rm = TRUE),
-                     alleleB = sum(alleleB, na.rm = TRUE),
-                     Min = Mode(Min),
-                     Maj = Mode(Maj),
-                     copy = median(copy, na.rm = TRUE),
-                     state_sd = sd(state, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    data.table::as.data.table()
+    as.data.table() %>%
+    .[, list(alleleA = sum(alleleA, na.rm = TRUE),
+             alleleB = sum(alleleB, na.rm = TRUE),
+             Min = Mode(Min),
+             Maj = Mode(Maj),
+             copy = median(copy, na.rm = TRUE),
+             state_sd = sd(state, na.rm = TRUE),
+             proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N), by = c("chr", "cell_id")]
 
   hscn_chr <- hscn_chr %>%
     .[, state := Maj + Min] %>%
