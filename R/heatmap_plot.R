@@ -497,10 +497,10 @@ anno_mark = function(at, labels, which = c("column", "row"),
   return(anno)
 }
 
-make_bottom_annot <- function(copynumber, chrlabels = TRUE) {
-  if (chrlabels == FALSE){
+make_bottom_annot <- function(copynumber, chrlabels = TRUE, filterlabels = NULL) {
+  if (chrlabels[1] == FALSE){
     return(NULL)
-  } else if (chrlabels){
+  } else if (chrlabels[1] == TRUE){
     chrom_label_pos <- get_chrom_label_pos(copynumber)
     bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels=anno_mark(
       at=chrom_label_pos,
