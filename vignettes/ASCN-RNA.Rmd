@@ -93,7 +93,7 @@ hscn_rna_arm <- assign_states(haplotypes, SA1049hscn$data, minf = 0.05, shrinkag
 
 In order to compare we'll also pull out arm level CN alterations in the scDNAseq.
 ```{r}
-hscn_dna_arm <- per_arm_cn(SA1049hscn$data, arms = unique(hscn_rna_arm$chrarm))
+hscn_dna_arm <- per_chrarm_cn(SA1049hscn$data, arms = unique(hscn_rna_arm$chrarm))
 ```
 
 ### QC
