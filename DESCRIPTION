@@ -39,7 +39,7 @@ Imports:
     Rcpp,
     ggrepel,
     grid
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
 Suggests: 
     knitr,
     rmarkdown,
@@ -50,9 +50,14 @@ Suggests:
     VGAM,
     covr,
     ggrastr,
-    GenomeInfoDb
+    GenomeInfoDb,
+    VIBER,
+    Seurat
 Remotes:
-  VPetukhov/ggrastr
+  VPetukhov/ggrastr,
+  caravagn/VIBER,
+  caravagn/pio,
+  caravagn/easypar
 VignetteBuilder: knitr
 LinkingTo: 
     Rcpp

@@ -43,4 +43,3 @@ NumericVector viterbi(NumericMatrix emission, NumericMatrix transition, NumericV
 
   return(MLP);
 }
-

@@ -128,18 +128,27 @@ make_discrete_palette <- function(pal_name, levels) {
   if (length(levels) > 8){
     pal_name <- "Set3"
   }
-  pal <- RColorBrewer::brewer.pal(max(length(levels), 3), pal_name)
+  pal <- colorRampPalette(RColorBrewer::brewer.pal(max(length(levels), 3), pal_name))(length(levels))
+  #pal <- RColorBrewer::brewer.pal(max(length(levels), 3), pal_name)
   names(pal) <- levels
   pal <- pal[levels]
   return(pal)
 }
 
-format_copynumber_values <- function(copynumber) {
+format_copynumber_values <- function(copynumber, plotcol = "state") {
   #copynumber[copynumber > 11] <- 11
-  for(col in colnames(copynumber)) {
-    values <- as.character(copynumber[, col])
-    values[values == "11"] <- "11+"
-    copynumber[, col] <- values
+
+  if (plotcol %in% c("BAF", "copy")){
+    for(col in colnames(copynumber)) {
+      values <- copynumber[, col]
+      copynumber[, col] <- values
+    }
+  } else {
+    for(col in colnames(copynumber)) {
+      values <- as.character(copynumber[, col])
+      values[values == "11"] <- "11+"
+      copynumber[, col] <- values
+    }
   }
   return(copynumber)
 }
@@ -178,7 +187,10 @@ multi.mixedorder <- function(..., na.last = TRUE, decreasing = FALSE){
   ))
 }
 
-format_copynumber <- function(copynumber, ordered_cell_ids, spacer_cols=20) {
+format_copynumber <- function(copynumber,
+                              ordered_cell_ids,
+                              plotcol = "state",
+                              spacer_cols=20) {
   if (!("chr" %in% colnames(copynumber))) {
     message("No chr column")
     loci <- sapply(rownames(copynumber), strsplit, "_")
@@ -198,7 +210,7 @@ format_copynumber <- function(copynumber, ordered_cell_ids, spacer_cols=20) {
 
   copynumber <- copynumber[ordered_cell_ids, ]
 
-  copynumber <- format_copynumber_values(copynumber)
+  copynumber <- format_copynumber_values(copynumber, plotcol = plotcol)
   copynumber <- space_copynumber_columns(copynumber, spacer_cols)
 
   return(copynumber)
@@ -271,10 +283,15 @@ make_left_annot <- function(copynumber,
                             clones,
                             library_mapping = NULL,
                             show_library_label = TRUE,
+                            show_clone_label = TRUE,
                             clone_pal = NULL,
                             idx = 1,
                             show_legend = TRUE) {
   annot_colours <- list()
+
+  if (show_clone_label == FALSE & show_library_label == FALSE){
+    return(NULL)
+  }
 
   library_labels <- get_library_labels(rownames(copynumber), idx = idx)
   if (!is.null(library_mapping)){
@@ -288,7 +305,7 @@ make_left_annot <- function(copynumber,
   annot_colours$Sample <- make_discrete_palette("Set2", library_levels)
   annot_colours$Sample <- annot_colours$Sample[!is.na(annot_colours$Sample)]
 
-  library_legend_rows <- 10
+  library_legend_rows <- 3
 
   if(!is.null(clones)) {
     clone_levels <- unique(clones$clone_label)
@@ -312,24 +329,24 @@ make_left_annot <- function(copynumber,
       )
     }
 
-    clone_legend_rows <- 10
-    if(length(clone_levels) > 10) {
-      clone_legend_rows <- round(sqrt(length(clone_levels) * 4))
+    clone_legend_rows <- 3
+    if(length(clone_levels) > 3) {
+      clone_legend_rows <- round(sqrt(length(clone_levels) * 2))
     }
 
-    if (show_library_label){
+    if (show_library_label == TRUE & show_clone_label == TRUE){
       left_annot <- ComplexHeatmap::HeatmapAnnotation(
         Clone=clones$clone_label, clone_label=clone_label_generator,
         Sample=library_labels,
         col=annot_colours, show_annotation_name=c(TRUE, FALSE, TRUE),
         which="row", annotation_width=grid::unit(rep(0.4, 3), "cm"),
         annotation_legend_param=list(
-          Clone=list(nrow=clone_legend_rows),
-          Sample=list(nrow=library_legend_rows)
+          Clone=list(nrow=clone_legend_rows, direction = "horizontal"),
+          Sample=list(nrow=library_legend_rows, direction = "horizontal")
         ),
         show_legend = show_legend
       )
-    } else {
+    } else if (show_library_label == FALSE & show_clone_label == TRUE) {
       left_annot <- ComplexHeatmap::HeatmapAnnotation(
         Clone=clones$clone_label, clone_label=clone_label_generator,
         col=annot_colours, show_annotation_name=c(TRUE, FALSE),
@@ -339,13 +356,22 @@ make_left_annot <- function(copynumber,
         ),
         show_legend = show_legend
       )
-    }
+    } else if (show_library_label == TRUE & show_clone_label == FALSE){
+      left_annot <- ComplexHeatmap::HeatmapAnnotation(
+        Sample=library_labels, col=annot_colours,
+        which="row", simple_anno_size=grid::unit(0.4, "cm"),
+        annotation_legend_param=list(
+          Sample=list(nrow=library_legend_rows)
+        ),
+        show_legend = show_legend
+      )
+      }
   } else {
     left_annot <- ComplexHeatmap::HeatmapAnnotation(
       Sample=library_labels, col=annot_colours,
       which="row", simple_anno_size=grid::unit(0.4, "cm"),
       annotation_legend_param=list(
-        Sample=list(nrow=library_legend_rows),
+        Sample=list(nrow=library_legend_rows)
       ),
       show_legend = show_legend
     )
@@ -361,7 +387,9 @@ make_top_annotsnv <- function(mutgroups){
 get_chrom_label_pos <- function(copynumber) {
   chrom_label_pos <- c()
   chroms <- sapply(strsplit(colnames(copynumber), ":"), function(x) x[[1]])
-  uniq_chroms <- c(as.character(1:22), "X", "Y")
+  chromfreq <- table(chroms)
+  uniq_chroms <- names(chromfreq)[chromfreq > 1]
+  uniq_chroms <- uniq_chroms[stringr::str_detect(uniq_chroms, "V", negate = TRUE)]
   for(chrom in uniq_chroms) {
     chrom_idx <- which(chroms == chrom)
     chrom_label_pos[[chrom]] <- as.integer(round(mean(chrom_idx)))
@@ -469,14 +497,27 @@ anno_mark = function(at, labels, which = c("column", "row"),
   return(anno)
 }
 
-make_bottom_annot <- function(copynumber) {
-  chrom_label_pos <- get_chrom_label_pos(copynumber)
-  bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels=anno_mark(
-    at=chrom_label_pos,
-    labels=names(chrom_label_pos),
-    side="bottom",
-    padding=0.5, extend=0.01
-  ), show_annotation_name=FALSE)
+make_bottom_annot <- function(copynumber, chrlabels = TRUE, filterlabels = NULL) {
+  if (chrlabels[1] == FALSE){
+    return(NULL)
+  } else if (chrlabels[1] == TRUE){
+    chrom_label_pos <- get_chrom_label_pos(copynumber)
+    bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels=anno_mark(
+      at=chrom_label_pos,
+      labels=names(chrom_label_pos),
+      side="bottom",
+      padding=0.5, extend=0.01
+    ), show_annotation_name=FALSE)
+  } else {
+    chrom_label_pos <- get_chrom_label_pos(copynumber)
+    chrom_label_pos <- chrom_label_pos[chrlabels]
+    bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels=anno_mark(
+      at=chrom_label_pos,
+      labels=names(chrom_label_pos),
+      side="bottom",
+      padding=0.5, extend=0.01
+    ), show_annotation_name=FALSE)
+  }
   return(bottom_annot)
 }
 
@@ -487,7 +528,7 @@ make_top_annotation_gain <- function(copynumber,
                                      maxf = NULL){
   ncells <- nrow(copynumber)
 
-  if (plotcol == "state" & plotfrequency == TRUE){
+  if ((plotcol == "state" | plotcol == "copy") & plotfrequency == TRUE){
     f1 <- colSums(copynumber > cutoff, na.rm = TRUE) / ncells
     f2 <- -colSums(copynumber < cutoff, na.rm = TRUE) / ncells
     if (is.null(maxf)){
@@ -500,7 +541,7 @@ make_top_annotation_gain <- function(copynumber,
       dist2 =  ComplexHeatmap::anno_barplot(
         f1,
         bar_width = 1,
-        gp =  grid::gpar(col = "#E34A33"),
+        gp =  grid::gpar(col = "#E34A33", fill = "#E34A33"),
         axis_param = list(at = c(round(maxf / 2, 2), maxf),
                           labels = c(paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(0, maxf),
@@ -509,7 +550,7 @@ make_top_annotation_gain <- function(copynumber,
       dist3 =  ComplexHeatmap::anno_barplot(
         f2,
         bar_width = 1,
-        gp =  grid::gpar(col = "#3182BD"),
+        gp =  grid::gpar(col = "#3182BD", fill = "#3182BD"),
         axis_param = list(at = c(0.0, -round(maxf / 2, 2), -maxf),
                           labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(-maxf,0),
@@ -535,7 +576,8 @@ make_top_annotation_gain <- function(copynumber,
       dist2 =  ComplexHeatmap::anno_barplot(
         matrix(data = c(f1a,f1b), ncol = 2),
         bar_width = 1,
-        gp =  grid::gpar(col = c("#66CC99", "#56956E")),
+        gp =  grid::gpar(col = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-LOH"]),
+                         fill = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-LOH"])),
         axis_param = list(at = c(round(maxf / 2, 2), maxf),
                           labels = c(paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(0, maxf),
@@ -544,7 +586,8 @@ make_top_annotation_gain <- function(copynumber,
       dist3 =  ComplexHeatmap::anno_barplot(
         matrix(data = c(f2a,f2b), ncol = 2),
         bar_width = 1,
-        gp =  grid::gpar(col = c("#FF9E26", "#683711")),
+        gp =  grid::gpar(col = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-LOH"]),
+                         fill = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-LOH"])),
         axis_param = list(at = c(0, -round(maxf / 2, 2), -maxf),
                           labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(-maxf,0),
@@ -553,7 +596,7 @@ make_top_annotation_gain <- function(copynumber,
       show_annotation_name = FALSE,
       height = grid::unit(1.4, "cm"))
   }
-  else if (plotcol == "state_BAF" & plotfrequency == TRUE){
+  else if ((plotcol == "state_BAF" | plotcol == "BAF") & plotfrequency == TRUE){
     f1 <- colSums(copynumber < 0.5, na.rm = TRUE) / ncells
     f2 <- -colSums(copynumber > 0.5, na.rm = TRUE) / ncells
     if (is.null(maxf)){
@@ -566,7 +609,7 @@ make_top_annotation_gain <- function(copynumber,
       dist2 =  ComplexHeatmap::anno_barplot(
         f1,
         bar_width = 1,
-        gp =  grid::gpar(col = "#006D2C"),
+        gp =  grid::gpar(col = scCNphase_colors["A-LOH"], fill = scCNphase_colors["A-LOH"]),
         axis_param = list(at = c(round(maxf / 2, 2), maxf),
                           labels = c(paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(0, maxf),
@@ -575,7 +618,7 @@ make_top_annotation_gain <- function(copynumber,
       dist3 =  ComplexHeatmap::anno_barplot(
         f2,
         bar_width = 1,
-        gp =  grid::gpar(col = "#A63603"),
+        gp =  grid::gpar(col = scCNphase_colors["B-LOH"], fill = scCNphase_colors["B-LOH"]),
         axis_param = list(at = c(0.0, -round(maxf / 2, 2), -maxf),
                           labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf))),
         ylim = c(-maxf,0),
@@ -603,6 +646,8 @@ make_copynumber_heatmap <- function(copynumber,
                                     plotfrequency = FALSE,
                                     show_legend = TRUE,
                                     show_library_label = TRUE,
+                                    show_clone_label = TRUE,
+                                    chrlabels = TRUE,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -613,11 +658,11 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_rows=FALSE,
     cluster_columns=FALSE,
     show_column_names=FALSE,
-    bottom_annotation=make_bottom_annot(copynumber),
+    bottom_annotation=make_bottom_annot(copynumber, chrlabels = chrlabels),
     left_annotation=make_left_annot(copynumber, clones,
-                                    library_mapping = library_mapping, clone_pal = clone_pal,
+                                    library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
                                     idx = sample_label_idx,show_legend = show_legend, show_library_label = show_library_label),
-    heatmap_legend_param=list(nrow=4),
+    heatmap_legend_param=list(nrow=3, direction = "vertical"),
     top_annotation = make_top_annotation_gain(copynumber, cutoff = cutoff, maxf = maxf,
                                               plotfrequency = plotfrequency, plotcol = plotcol),
     use_raster=TRUE,
@@ -670,6 +715,10 @@ plotHeatmap <- function(cn,
                         plotfrequency = FALSE,
                         show_legend = TRUE,
                         show_library_label = TRUE,
+                        show_clone_label = TRUE,
+                        widenarm = FALSE,
+                        umapmetric = "euclidean",
+                        chrlabels = TRUE,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -678,8 +727,27 @@ plotHeatmap <- function(cn,
     CNbins <- cn
   }
 
-  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min")){
-    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, state_BAF, state_phase, state_AS or state_min"))
+  if (widenarm == TRUE){
+    dlpbinsarm <- dlpbins %>%
+      dplyr::mutate(arm = coord_to_arm(chr, start), chrarm = paste0(chr, arm)) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      dplyr::mutate(arm = ifelse(chrarm %in% unique(CNbins$chrarm), arm, "")) %>%
+      dplyr::mutate(chrarm = paste0(chr, arm)) %>%
+      as.data.table()
+
+    dlpbinsarm <- data.table::rbindlist(lapply(unique(CNbins$cell_id),
+                                               function(i) cbind(dlpbinsarm,
+                                                                 cell_id = i))) %>%
+      data.table::setkey("chr", "arm", "chrarm", "start", "end")
+
+    CNbinst <- setkey(as.data.table(CNbins %>% dplyr::select(-start, -end)), "chr", "arm", "chrarm")
+    CNbins <- dlpbinsarm[CNbinst, on = c("chr", "chrarm", "arm", "cell_id")] %>%
+      .[!is.na(cell_id)] %>%
+      orderdf(.)
+  }
+
+  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF")){
+    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS or state_min"))
   }
 
   if (!plotcol %in% names(CNbins)){
@@ -694,6 +762,16 @@ plotHeatmap <- function(cn,
   if (plotcol == "state_BAF"){
     colvals <- cn_colours_bafstate
     legendname <- "Allelic Imbalance"
+  }
+
+  if (plotcol == "BAF"){
+    colvals = circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-LOH"], scCNphase_colors["Balanced"], scCNphase_colors["B-LOH"]))
+    legendname <- "Allelic Imbalance (Raw)"
+  }
+
+  if (plotcol == "copy"){
+    colvals = circlize::colorRamp2(seq(0, 11, 1), scCN_colors)
+    legendname <- "Copy"
   }
 
   if (plotcol == "state_AS"){
@@ -721,7 +799,10 @@ plotHeatmap <- function(cn,
 
   if (is.null(tree) & is.null(clusters)){
     message("No tree or cluster information provided, clustering using HDBSCAN")
-    clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), field = "copy")
+    clustering_results <- umap_clustering(CNbins,
+                                          minPts = max(round(pctcells * ncells), 2),
+                                          field = "copy",
+                                          umapmetric = umapmetric)
     tree <- clustering_results$tree
     tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data
@@ -757,13 +838,40 @@ plotHeatmap <- function(cn,
     ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
   }
 
+  if (!is.null(clusters)){
+    if (!"clone_id" %in% names(clusters)){
+      stop("No clone_id columns in clusters dataframe, you might need to rename your clusters")
+    }
+    else if (reorderclusters == TRUE & !is.null(tree)){
+      message("Reorder clusters dataframe according to clones using tree")
+      if (normalize_tree == T){
+        tree <- format_tree(tree, branch_length)
+      }
+
+      tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal)
+      tree_plot_dat <- tree_ggplot$data
+
+      message("Creating tree...")
+      tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+      ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
+    }
+    else if (reorderclusters == TRUE & is.null(tree)){
+      message("Reorder clusters dataframe according to clones")
+      clusters <- clusters[gtools::mixedorder(clusters$clone_id), ]
+      ordered_cell_ids <- paste0(clusters$cell_id)
+    }
+  }
+
   message("Creating copy number heatmap...")
   copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = fillna)
   if (normalize_ploidy == T){
     message("Normalizing ploidy for each cell to 2")
     copynumber <- normalize_cell_ploidy(copynumber)
   }
-  copynumber <- format_copynumber(copynumber, ordered_cell_ids, spacer_cols = spacer_cols)
+  copynumber <- format_copynumber(copynumber,
+                                  ordered_cell_ids,
+                                  spacer_cols = spacer_cols,
+                                  plotcol = plotcol)
   clones_formatted <- format_clones(as.data.frame(clusters), ordered_cell_ids)
   if (!is.null(clone_pal)){
     clones_idx <- dplyr::distinct(clones_formatted, clone_id, clone_label)
@@ -783,6 +891,8 @@ plotHeatmap <- function(cn,
                                            plotfrequency = plotfrequency,
                                            show_legend = show_legend,
                                            show_library_label = show_library_label,
+                                           show_clone_label = show_clone_label,
+                                           chrlabels = chrlabels,
                                            ...)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
@@ -876,6 +986,9 @@ plotHeatmapQC <- function(cn,
                         library_mapping = NULL,
                         clone_pal = NULL,
                         sample_label_idx = 1,
+                        plotfrequency = FALSE,
+                        show_legend = TRUE,
+                        show_library_label = TRUE,
                         ...){
 
   CNbins <- cn$data
@@ -974,6 +1087,9 @@ plotHeatmapQC <- function(cn,
                                            legendname = legendname,
                                            library_mapping = library_mapping,
                                            clone_pal = clone_pal,
+                                           plotfrequency = plotfrequency,
+                                           show_legend = show_legend,
+                                           show_library_label = show_library_label,
                                            sample_label_idx = sample_label_idx)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
