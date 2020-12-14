@@ -4,8 +4,7 @@
 \alias{scale_fill_scCN}
 \title{Fill scale constructor for scCN (single cell Copy Number) colors}
 \usage{
-scale_fill_scCN(palette = "main", discrete = TRUE, reverse = FALSE,
-  ...)
+scale_fill_scCN(palette = "main", discrete = TRUE, reverse = FALSE, ...)
 }
 \arguments{
 \item{palette}{Character name of palette in scCN_palettes}
