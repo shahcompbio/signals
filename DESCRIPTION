@@ -51,7 +51,8 @@ Suggests:
     covr,
     ggrastr,
     GenomeInfoDb,
-    VIBER
+    VIBER,
+    Seurat
 Remotes:
   VPetukhov/ggrastr,
   caravagn/VIBER,

@@ -39,98 +39,6 @@ get_states_dna <- function(hscn, minf = 0.1, arms = NULL){
   return(possible_states)
 }
 
-#' @export
-assign_states <- function(haps,
-                          hscn,
-                          minf = 0.1,
-                          shrinkage = FALSE,
-                          loherror = 0.03,
-                          mergelowcounts = TRUE,
-                          arms = NULL){
-
-  perchrlist <- per_arm_baf_mat(haps, mergelowcounts = mergelowcounts, arms = arms)
-  bafperchr <- perchrlist$bafperchr
-  possible_states <- get_states_dna(hscn, minf = minf, arms = unique(bafperchr$chrarm))
-
-  data("hg19chrom_coordinates", envir=environment())
-
-  if (shrinkage == FALSE){
-
-    perchr <- dplyr::left_join(bafperchr, possible_states) %>%
-      dplyr::arrange(cell_id, chrarm, state_AS_phased) %>%
-      as.data.table() %>%
-      .[, prob := Min / (Min + Maj)] %>%
-      .[, prob := fifelse(prob == 0.0, prob + loherror, prob)] %>%
-      .[, prob := fifelse(prob == 1.0, prob - loherror, prob)] %>%
-      .[, L := dbinom(size = total, x = alleleB, prob = prob)] %>%
-      .[, state := Min + Maj]
-    perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
-      add_states() %>%
-      dplyr::left_join(hg19chrom_coordinates) %>%
-      as.data.table() %>%
-      .[, copy := state]
-
-    perchr <- as.data.frame(perchr) %>%
-      dplyr::select(-L, -n, -f, -prob) %>%
-      as.data.frame()
-  } else {
-
-    if (!requireNamespace("VGAM", quietly = TRUE)) {
-      stop("Package \"VGAM\" needed to use the beta-binomial model. Please install it.",
-           call. = FALSE)
-    }
-
-    # negative log likelihood of data given alpha; beta
-    llfunc <- function(data){
-      ll <- function(alpha, beta) {
-        -sum(VGAM::dbetabinom.ab(data$alleleB, data$total, alpha, beta, log = TRUE))
-      }
-    }
-
-    # identify MLE for alpha and beta per chromosome arm
-    m <- lapply(X = unique(bafperchr$chrarm),
-                function(x) {
-                  m <- stats4::mle(llfunc(dplyr::filter(bafperchr, chrarm == x)),
-                          start = list(alpha = 15, beta = 15), method = "Nelder-Mead")
-                  m_coef <- stats4::coef(m)
-                  return(data.frame(alpha = m_coef[["alpha"]],
-                                    beta = m_coef[["beta"]],
-                                    chrarm = x))
-                  })
-
-    # add mean of distribution
-    m <- dplyr::bind_rows(m) %>%
-      dplyr::mutate(mle_f = alpha / (alpha + beta))
-
-    #use empirical bayes to estimate expected BAF
-    bafperchr <- dplyr::left_join(bafperchr, m) %>%
-      dplyr::mutate(newBAF = (alleleB + alpha) / (total + alpha + beta))
-
-    perchr <- dplyr::left_join(bafperchr, possible_states) %>%
-      dplyr::arrange(cell_id, chrarm, state_AS_phased) %>%
-      as.data.table() %>%
-      .[, prob := Min / (Min + Maj)] %>%
-      .[, prob := fifelse(prob == 0.0, prob + loherror, prob)] %>%
-      .[, prob := fifelse(prob == 1.0, prob - loherror, prob)] %>%
-      .[, L := dbinom(size = round(total + alpha + beta), #empirical bayes correction
-                      x = round(alleleB + alpha),
-                      prob = prob)] %>%
-      .[, state := Min + Maj]
-    perchr <- perchr[perchr[, .I[which.max(L)], by=.(chrarm, cell_id)]$V1] %>%
-      add_states() %>%
-      .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
-      dplyr::left_join(hg19chrom_coordinates) %>%
-      as.data.table() %>%
-      .[, copy := state]
-
-    perchr <- as.data.frame(perchr) %>%
-      dplyr::select(-L, -n, -f, -prob) %>%
-      as.data.frame()
-  }
-
-  return(perchr)
-}
-
 possible_states_df <- function(bafperchr, step = 0.25){
 
   possible_states <- expand.grid(chrarm = unique(bafperchr$chrarm),
@@ -358,9 +266,18 @@ assign_states_dp <- function(bafperchr,
     dplyr::left_join(x, by = "cell_id") %>%
     dplyr::left_join(states, by = c("chrarm", "clone_id")) %>%
     dplyr::select(-clone_id) %>%
-    dplyr::left_join(hg19chrom_coordinates)
+    dplyr::left_join(hg19chrom_coordinates) %>%
+    dplyr::left_join(x) %>%
+    dplyr::mutate(start = start + 1)
 
+  # Output
+  out = list()
+  class(out) <- "hscnrna"
+  out[["viber_fit"]] <- fit_filt
+  out[["clusters"]] <- x
+  out[["hscn"]] <- bafperchr_new
+  out[["chromosomes_fit"]] <- keepchrs
 
-  return(list(viber_fit = fit_filt, clusters = x, ascn = bafperchr_new, usedchrs = keepchrs))
+  return(out)
 }
 

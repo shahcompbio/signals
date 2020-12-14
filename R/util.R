@@ -630,3 +630,49 @@ add_states <- function(df){
   return(df)
 }
 
+#' @export
+createBAFassay <- function(seur, rna_ascn){
+
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
+    stop("Package \"Seurat\" is needed for this function. Please install it.",
+         call. = FALSE)
+  }
+
+  message("Add BAF to Seurat object")
+  x <- tidyr::pivot_wider(rna_ascn$hscn %>%
+                            dplyr::select(cell_id, BAF, chrarm) %>%
+                            dplyr::mutate(chrarm = paste0("BAF-", chrarm)),
+                          names_from = "chrarm",
+                          values_from = c("BAF")) %>%
+    as.data.frame()
+
+  row.names(x) <- x$cell_id
+  x <- as.matrix(subset(x, select = -cell_id))
+  cM <- colMeans(x, na.rm=TRUE)
+  indx <- which(is.na(x), arr.ind=TRUE)
+  x[indx] <- cM[indx[,2]]
+  seur[["BAF"]] <- Seurat::CreateAssayObject(data = t(x))
+
+  message("Add allele specific state to Seurat Object")
+  x <- tidyr::pivot_wider(rna_ascn$hscn %>%
+                            dplyr::select(cell_id, state_phase, chrarm),
+                          names_from = "chrarm",
+                          values_from = c("state_phase")) %>%
+    as.data.frame()
+  row.names(x) <- x$cell_id
+  x <- as.matrix(subset(x, select = -cell_id))
+  seur[["ASDP"]] <- Seurat::CreateAssayObject(data = t(x))
+
+  message("Add clone id to metadata")
+  clonesdf <- dplyr::distinct(rna_ascn$clusters, cell_id, clone_id) %>% as.data.frame() %>%
+    dplyr::mutate(clone_id = ifelse(clone_id == "" | is.na(clone_id), NA, clone_id)) %>%
+    tidyr::fill(clone_id, .direction = "downup")
+  clonesvec <- clonesdf$clone_id
+  names(clonesvec) <- clonesdf$cell_id
+  seur <- AddMetaData(object = seur,
+                      metadata = clonesvec,
+                      col.name = "DP_cloneid")
+
+  return(seur)
+}
+

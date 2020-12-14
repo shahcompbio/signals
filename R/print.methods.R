@@ -2,6 +2,9 @@
 is.hscn <- function(x) inherits(x, "hscn")
 
 #' @export
+is.hscnrna <- function(x) inherits(x, "hscnrna")
+
+#' @export
 is.ascn <- function(x) inherits(x, "ascn")
 
 #' @export
@@ -32,4 +35,13 @@ print.ascn = function(x, ...) {
     cat(paste0("\t Tarones Z score: ", round(x$likelihood$taronesZ, 3), "\n"))
   }
   cat(paste0("Average distance from median to expected BAF = ", round(x$qc_summary$summary, 4), " \n"))
+}
+
+#' @export
+print.hscnrna = function(x, ...) {
+  stopifnot(is.hscnrna(x))
+  cat("Haplotype specific copy number object (RNA) \n \n")
+  cat(paste0("Number of cells: ", length(unique(x$hscn$cell_id)), "\n"))
+  cat(paste0("Number of clusters: ", length(unique(x$clusters$clone_id)), "\n"))
+  cat(paste0("Chromosomes used for clustering: ", paste0(x$chromosomes_fit, collapse = ", "), " \n"))
 }
