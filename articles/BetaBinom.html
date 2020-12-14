@@ -39,7 +39,7 @@
       <ul class="nav navbar-nav">
 <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -54,6 +54,9 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
+      <a href="../articles/ASCN-RNA.html">Allele Specific Copy Number Inference in scRNAseq</a>
+    </li>
+    <li>
       <a href="../articles/ASCN.html">Allele Specific Copy Number Inference</a>
     </li>
     <li>
@@ -88,7 +91,8 @@
 
     
     
-<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">schnapps</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">schnapps</span><span class="op">)</span></code></pre></div>
 <div id="background" class="section level2">
 <h2 class="hasAnchor">
 <a href="#background" class="anchor"></a>Background</h2>
@@ -97,21 +101,22 @@
 <div id="inference" class="section level2">
 <h2 class="hasAnchor">
 <a href="#inference" class="anchor"></a>Inference</h2>
-<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="st">"haplotypes"</span>)
-<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span>(<span class="st">"CNbins"</span>)
-<span class="no">haplotypes</span> <span class="kw">&lt;-</span> <span class="fu">format_haplotypes_dlp</span>(<span class="no">haplotypes</span>, <span class="no">CNbins</span>)
-<span class="no">hscn</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"binomial"</span>)
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span>
+<span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span>
+<span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, likelihood <span class="op">=</span> <span class="st">"binomial"</span><span class="op">)</span>
 
-<span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="no">hscn</span>)
+<span class="fu"><a href="https://rdrr.io/pkg/Seurat/man/print.DimReduc.html">print</a></span><span class="op">(</span><span class="va">hscn</span><span class="op">)</span>
 <span class="co">#&gt; Haplotype specific copy number object </span>
 <span class="co">#&gt;  </span>
 <span class="co">#&gt; Number of cells: 250</span>
 <span class="co">#&gt; Bin size: 0.5 Mb </span>
 <span class="co">#&gt; Inferred LOH error rate: 0.024 </span>
 <span class="co">#&gt; Emission model for HMM: binomial </span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.004</span>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.0039</span>
 
-<span class="no">hscn_bb</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span>(<span class="no">CNbins</span>, <span class="no">haplotypes</span>, <span class="kw">likelihood</span> <span class="kw">=</span> <span class="st">"betabinomial"</span>)
+<span class="va">hscn_bb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, likelihood <span class="op">=</span> <span class="st">"betabinomial"</span><span class="op">)</span>
 <span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -314568.6425</span>
 <span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -311018.7358</span>
 <span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -310553.7121</span>
@@ -120,7 +125,7 @@
 <span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -310532.5538</span>
 <span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -310532.5538</span>
 
-<span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="no">hscn_bb</span>)
+<span class="fu"><a href="https://rdrr.io/pkg/Seurat/man/print.DimReduc.html">print</a></span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">)</span>
 <span class="co">#&gt; Haplotype specific copy number object </span>
 <span class="co">#&gt;  </span>
 <span class="co">#&gt; Number of cells: 250</span>
@@ -129,51 +134,56 @@
 <span class="co">#&gt; Emission model for HMM: betabinomial </span>
 <span class="co">#&gt;   Inferred over dispersion: 0.0105</span>
 <span class="co">#&gt;   Tarones Z score: 194.943</span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.0043</span></pre></body></html></div>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.0043</span></code></pre></div>
 <p>We see that the model inferred a modest degree of overdispersion in the data, but that this was siginificantly different from 0 dispersion (Tarones Z-score is high).</p>
 <p>Below I’ll plot the heatmaps for the two output, which in this case are very similar.</p>
 <div id="binomial-model" class="section level3">
 <h3 class="hasAnchor">
 <a href="#binomial-model" class="anchor"></a>Binomial model</h3>
-<div class="sourceCode" id="cb3"><html><body><pre class="r"><span class="fu">plotHeatmap</span>(<span class="no">hscn</span>, <span class="kw">plotcol</span> <span class="kw">=</span> <span class="st">"state_BAF"</span>, <span class="kw">plottree</span> <span class="kw">=</span> <span class="fl">FALSE</span>, <span class="kw">spacer_cols</span> <span class="kw">=</span> <span class="fl">15</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">plotHeatmap</span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></code></pre></div>
 <p><img src="BetaBinom_files/figure-html/unnamed-chunk-3-1.png" width="960"></p>
 </div>
 <div id="beta-binomial-model" class="section level3">
 <h3 class="hasAnchor">
 <a href="#beta-binomial-model" class="anchor"></a>Beta-Binomial model</h3>
-<div class="sourceCode" id="cb4"><html><body><pre class="r"><span class="fu">plotHeatmap</span>(<span class="no">hscn_bb</span>, <span class="kw">plotcol</span> <span class="kw">=</span> <span class="st">"state_BAF"</span>, <span class="kw">plottree</span> <span class="kw">=</span> <span class="fl">FALSE</span>, <span class="kw">spacer_cols</span> <span class="kw">=</span> <span class="fl">15</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">plotHeatmap</span><span class="op">(</span><span class="va">hscn_bb</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></code></pre></div>
 <p><img src="BetaBinom_files/figure-html/unnamed-chunk-4-1.png" width="960"></p>
 </div>
 <div id="qc-plot" class="section level3">
 <h3 class="hasAnchor">
 <a href="#qc-plot" class="anchor"></a>QC plot</h3>
 <p>To interrogate the difference between the binomial and beta-binomial models we can plot the BAF and overlay the two models.</p>
-<div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="fu">plotBBfit</span>(<span class="no">hscn_bb</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">plotBBfit</span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">)</span></code></pre></div>
 <p><img src="BetaBinom_files/figure-html/unnamed-chunk-5-1.png" width="960"></p>
 <p>We can check how similar the results are by comparing the two dataframes. We find for this data that the results are very similar.</p>
-<div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">hscn</span>$<span class="no">data</span>))
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/Seurat/man/print.DimReduc.html">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span>
 <span class="co">#&gt; [1] 1077621      19</span>
-<span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
+<span class="fu"><a href="https://rdrr.io/pkg/Seurat/man/print.DimReduc.html">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span>
 <span class="co">#&gt; [1] 1077621      19</span>
-<span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span>(<span class="fu">orderdf</span>(<span class="no">hscn</span>$<span class="no">data</span>), <span class="fu">orderdf</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>))
+<span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="fu">orderdf</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span>, <span class="fu">orderdf</span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span>
 <span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.6209029"</span>
-<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.3798929"      </span>
-<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.5202213"      </span>
-<span class="co">#&gt; [4] "Component \"state_AS_phased\": 12074 string mismatches"      </span>
+<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.4289858"      </span>
+<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.6618847"      </span>
+<span class="co">#&gt; [4] "Component \"state_AS_phased\": 12802 string mismatches"      </span>
 <span class="co">#&gt; [5] "Component \"state_AS\": 3963 string mismatches"              </span>
 <span class="co">#&gt; [6] "Component \"LOH\": 3605 string mismatches"                   </span>
-<span class="co">#&gt; [7] "Component \"phase\": 7442 string mismatches"                 </span>
-<span class="co">#&gt; [8] "Component \"state_phase\": 9772 string mismatches"           </span>
-<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.6974686"</span></pre></body></html></div>
+<span class="co">#&gt; [7] "Component \"phase\": 8162 string mismatches"                 </span>
+<span class="co">#&gt; [8] "Component \"state_phase\": 10491 string mismatches"          </span>
+<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 0.9796074"</span></code></pre></div>
 <p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments in the beta-binomial model.</p>
-<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="no">segs</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">segs</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, field <span class="op">=</span> <span class="st">"state_AS_phased"</span><span class="op">)</span>
 
-<span class="no">segs_bb</span> <span class="kw">&lt;-</span> <span class="fu">create_segments</span>(<span class="no">hscn_bb</span>$<span class="no">data</span>, <span class="kw">field</span> <span class="kw">=</span> <span class="st">"state_AS_phased"</span>)
+<span class="va">segs_bb</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">$</span><span class="va">data</span>, field <span class="op">=</span> <span class="st">"state_AS_phased"</span><span class="op">)</span>
 
-<span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs</span>))
-<span class="co">#&gt; [1] 47199     5</span>
-<span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(<span class="no">segs_bb</span>))
-<span class="co">#&gt; [1] 39042     5</span></pre></body></html></div>
+<span class="fu"><a href="https://rdrr.io/pkg/Seurat/man/print.DimReduc.html">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">segs</span><span class="op">)</span><span class="op">)</span>
+<span class="co">#&gt; [1] 46276     5</span>
+<span class="fu"><a href="https://rdrr.io/pkg/Seurat/man/print.DimReduc.html">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">segs_bb</span><span class="op">)</span><span class="op">)</span>
+<span class="co">#&gt; [1] 37941     5</span></code></pre></div>
 </div>
 </div>
 <div id="summary" class="section level2">
@@ -198,7 +208,7 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>
