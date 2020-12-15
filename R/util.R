@@ -546,7 +546,7 @@ per_chrarm_cn <- function(hscn, arms = NULL){
     .[, phase := c("Balanced", "A", "B")[1 +
                                            1 * ((Min < Maj)) +
                                            2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
                                                                                  1 * ((Min < Maj) & (Min != 0)) +
                                                                                  2 * ((Min > Maj) & (Maj != 0)) +
                                                                                  3 * ((Min < Maj) & (Min == 0)) +
@@ -589,7 +589,7 @@ per_chr_cn <- function(hscn, arms = NULL){
     .[, phase := c("Balanced", "A", "B")[1 +
                                            1 * ((Min < Maj)) +
                                            2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
                                                                                  1 * ((Min < Maj) & (Min != 0)) +
                                                                                  2 * ((Min > Maj) & (Maj != 0)) +
                                                                                  3 * ((Min < Maj) & (Min == 0)) +
@@ -617,7 +617,7 @@ add_states <- function(df){
     .[, phase := c("Balanced", "A", "B")[1 +
                                            1 * ((Min < Maj)) +
                                            2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
                                                                                  1 * ((Min < Maj) & (Min != 0)) +
                                                                                  2 * ((Min > Maj) & (Maj != 0)) +
                                                                                  3 * ((Min < Maj) & (Min == 0)) +
@@ -676,3 +676,35 @@ createBAFassay <- function(seur, rna_ascn){
   return(seur)
 }
 
+#' @export
+consensuscopynumber <- function(hscn){
+  if ("state_phase" %in% colnames(hscn)){
+    cn <- hscn %>%
+      dplyr::group_by(chr, start, end) %>%
+      dplyr::summarise(state = schnapps:::Mode(state),
+                       copy = median(copy),
+                       state_min = schnapps:::Mode(state_min),
+                       Min = schnapps:::Mode(Min),
+                       Maj = schnapps:::Mode(Maj),
+                       LOH = schnapps:::Mode(LOH),
+                       phase = schnapps:::Mode(phase),
+                       alleleA = alleleA,
+                       alleleB = alleleB,
+                       BAF = median(BAF),
+                       state_phase = schnapps:::Mode(state_phase),
+                       state_BAF = schnapps:::Mode(state_BAF),
+                       state_AS_phased = schnapps:::Mode(state_phased)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(cell_id = "Merged Cells")
+  } else{
+    cn <- hscn %>%
+      dplyr::group_by(chr, start, end) %>%
+      dplyr::summarise(state = schnapps:::Mode(state),
+                       copy = median(copy)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(cell_id = "Merged Cells")
+
+  }
+
+  return(cn)
+}
