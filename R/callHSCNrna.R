@@ -252,11 +252,11 @@ assign_states_dp <- function(bafperchr,
     dplyr::left_join(theta, by = c("clone_id", "chrarm")) %>%
     dplyr::mutate(rounded = round(BAF / 0.25) * 0.25) %>%
     dplyr::mutate(state_phase = dplyr::case_when(
-      rounded == 0.0 ~ "A-LOH",
+      rounded == 0.0 ~ "A-Hom",
       rounded == 0.25 ~ "A-Gained",
       rounded == 0.5 ~ "Balanced",
       rounded == 0.75 ~ "B-Gained",
-      rounded == 1.0 ~ "B-LOH"
+      rounded == 1.0 ~ "B-Hom"
     )) %>%
     dplyr::select(chrarm, clone_id, state_phase)
 

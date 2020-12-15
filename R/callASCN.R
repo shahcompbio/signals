@@ -212,7 +212,7 @@ callAlleleSpecificCN <- function(CNbins,
                                   ncores = ncores)
 
   infloherror <- hscn %>%
-    dplyr::filter(state_phase == "A-LOH") %>%
+    dplyr::filter(state_phase == "A-Hom") %>%
     dplyr::summarise(err = weighted.mean(x = BAF, w = totalcounts, na.rm = TRUE)) %>% #ensure BAF calculations with low counts don't overwhelm signal
     dplyr::pull(err)
   infloherror <- min(infloherror, maxloherror) #ensure loh error rate is < maxloherror
@@ -290,7 +290,7 @@ callAlleleSpecificCN <- function(CNbins,
     .[, phase := c("Balanced", "A", "B")[1 +
                                            1 * ((Min < Maj)) +
                                            2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
                                                                                  1 * ((Min < Maj) & (Min != 0)) +
                                                                                  2 * ((Min > Maj) & (Maj != 0)) +
                                                                                  3 * ((Min < Maj) & (Min == 0)) +
@@ -303,7 +303,6 @@ callAlleleSpecificCN <- function(CNbins,
 
   #mirror BAF
   alleleCN <- alleleCN[, switch := data.table::fifelse(Min > Maj, "switch", "stick")] %>%
-    .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
     .[, alleleB := totalcounts - alleleA] %>%
     .[, distA := abs(BAF - (Min / state))] %>%
     .[, distB := abs(BAF - (Maj / state))] %>%
