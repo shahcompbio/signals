@@ -676,3 +676,36 @@ createBAFassay <- function(seur, rna_ascn){
   return(seur)
 }
 
+#' @export
+consensuscopynumber <- function(hscn){
+  if ("state_phase" %in% colnames(hscn)){
+    cn <- hscn %>%
+      dplyr::group_by(chr, start, end) %>%
+      dplyr::summarise(state = schnapps:::Mode(state),
+                       copy = median(copy),
+                       state_min = schnapps:::Mode(state_min),
+                       Min = schnapps:::Mode(Min),
+                       Maj = schnapps:::Mode(Maj),
+                       LOH = schnapps:::Mode(LOH),
+                       phase = schnapps:::Mode(phase),
+                       alleleA = alleleA,
+                       alleleB = alleleB,
+                       BAF = median(BAF),
+                       state_phase = schnapps:::Mode(state_phase),
+                       state_BAF = schnapps:::Mode(state_BAF),
+                       state_AS_phased = schnapps:::Mode(state_phased)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(cell_id = "Merged Cells")
+  } else{
+    cn <- hscn %>%
+      dplyr::group_by(chr, start, end) %>%
+      dplyr::summarise(state = schnapps:::Mode(state),
+                       copy = median(copy)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(cell_id = "Merged Cells")
+
+  }
+
+  return(cn)
+}
+
