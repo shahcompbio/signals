@@ -708,4 +708,3 @@ consensuscopynumber <- function(hscn){
 
   return(cn)
 }
-
