@@ -47,7 +47,7 @@ plotHeatmapBAF <- function(df, removelowqcells = TRUE, samplecells = NULL, gen_m
   }
 
   col_fun = circlize::colorRamp2(c(0, 0.5, 1),
-                                 c(scCNphase_colors["A-LOH"], "white", scCNphase_colors["B-LOH"]))
+                                 c(scCNphase_colors["A-Hom"], "white", scCNphase_colors["B-Hom"]))
 
   baf_hm <- ComplexHeatmap::Heatmap(
     name="BAF",

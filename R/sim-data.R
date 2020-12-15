@@ -70,7 +70,7 @@ simulate_cell <- function(nchr = 2,
     .[, phase := c("Balanced", "A", "B")[1 +
                                            1 * ((Min < Maj)) +
                                            2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
                                                                                  1 * ((Min < Maj) & (Min != 0)) +
                                                                                  2 * ((Min > Maj) & (Maj != 0)) +
                                                                                  3 * ((Min < Maj) & (Min == 0)) +

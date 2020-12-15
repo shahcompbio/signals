@@ -546,7 +546,7 @@ per_chrarm_cn <- function(hscn, arms = NULL){
     .[, phase := c("Balanced", "A", "B")[1 +
                                            1 * ((Min < Maj)) +
                                            2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
                                                                                  1 * ((Min < Maj) & (Min != 0)) +
                                                                                  2 * ((Min > Maj) & (Maj != 0)) +
                                                                                  3 * ((Min < Maj) & (Min == 0)) +
@@ -589,7 +589,7 @@ per_chr_cn <- function(hscn, arms = NULL){
     .[, phase := c("Balanced", "A", "B")[1 +
                                            1 * ((Min < Maj)) +
                                            2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
                                                                                  1 * ((Min < Maj) & (Min != 0)) +
                                                                                  2 * ((Min > Maj) & (Maj != 0)) +
                                                                                  3 * ((Min < Maj) & (Min == 0)) +
@@ -617,7 +617,7 @@ add_states <- function(df){
     .[, phase := c("Balanced", "A", "B")[1 +
                                            1 * ((Min < Maj)) +
                                            2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-LOH", "B-LOH")[1 +
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
                                                                                  1 * ((Min < Maj) & (Min != 0)) +
                                                                                  2 * ((Min > Maj) & (Maj != 0)) +
                                                                                  3 * ((Min < Maj) & (Min == 0)) +
