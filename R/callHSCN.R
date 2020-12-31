@@ -244,6 +244,15 @@ proportion_imbalance_manual <- function(ascn, haplotypes, cl, field = "copy", ph
 }
 
 #' @export
+mytempfunc <- function(){
+  ascn_states <- add_states(ascn)
+  ascn_states <- as.data.table(dplyr::left_join(ascn_states, cl$clustering))
+  ascn_clone <- consensuscopynumberbyclone(ascn_states) %>% orderdf(.)
+  segs <- create_segments(ascn_clone %>% as.data.table() %>% add_states(.), "state_AS") %>%
+    dplyr::mutate(width = end - start)
+}
+
+#' @export
 proportion_imbalance <- function(ascn, haplotypes,
                                  field = "copy",
                                  phasebyarm = FALSE,
@@ -291,24 +300,37 @@ proportion_imbalance <- function(ascn, haplotypes,
   return(list(prop = prop, cl = cl))
 }
 
+prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE){
+  if (phasebyarm == TRUE){
+    haplotypes_keep <- inner_join(haplotypes, prop$prop, by = c("chrarm", "clone_id"))
+    chrlist <- split(haplotypes_keep$cell_id, haplotypes_keep$chrarm)
+  } else{
+    haplotypes_keep <- inner_join(haplotypes, prop$prop, by = c("chr", "clone_id"))
+    chrlist <- split(haplotypes_keep$cell_id, haplotypes_keep$chr)
+  }
+  return(chrlist)
+}
+
 #' @export
 phase_haplotypes_bychr <- function(haplotypes, prop, phasebyarm = FALSE){
   haplotypes <- as.data.table(haplotypes)[as.data.table(prop$cl$clustering), on = "cell_id"]
 
   if (phasebyarm) {
     haplotypes$chrarm <- paste0(haplotypes$chr, coord_to_arm(haplotypes$chr, haplotypes$start))
+    chrlist <- prop_to_list(haplotypes, prop, phasebyarm = phasebyarm)
     phased_haplotypes <- data.table()
-    for (i in 1:nrow(prop$prop)){
-      phased_haplotypes_temp <- haplotypes[clone_id == prop$prop[i,"clone_id"] & chrarm == prop$prop[i,"chrarm"]] %>%
+    for (i in names(chrlist)){
+      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chrarm == i] %>%
         .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
         .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
         .[, c("allele1", "allele0") := NULL]
       phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
     }
   }  else {
+    chrlist <- prop_to_list(haplotypes, prop, phasebyarm = phasebyarm)
     phased_haplotypes <- data.table()
-    for (i in 1:nrow(prop$prop)){
-      phased_haplotypes_temp <- haplotypes[clone_id == prop$prop[i,"clone_id"]$clone_id & chr == prop$prop[i,"chr"]$chr] %>%
+    for (i in names(chrlist)){
+      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chr == i] %>%
         .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
         .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
         .[, c("allele1", "allele0") := NULL]
