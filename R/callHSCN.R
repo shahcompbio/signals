@@ -290,34 +290,36 @@ proportion_imbalance <- function(ascn, haplotypes,
     prop <- ascn[, list(propA = round(sum(balance) / .N, 2), n = sum(balance)), by = .(chrarm, clone_id)]
     prop <- prop[order(n, decreasing = TRUE)] # if there are ties make sure the clone with the largest number of cells gets chosen
     prop <- prop[prop[, .I[which.max(propA)], by=chrarm]$V1]
+    chrlist <- prop_to_list(as.data.table(haplotypes)[as.data.table(cl$clustering), on = "cell_id"],
+                            prop, phasebyarm = phasebyarm)
   } else {
     message("Phasing by chromosome (not arm level)..")
     prop <- ascn[, list(propA = round(sum(balance) / .N, 2), n = sum(balance)), by = .(chr, clone_id)]
     prop <- prop[order(n, decreasing = TRUE)]
     prop <- prop[prop[, .I[which.max(propA)], by=chr]$V1]
+    chrlist <- prop_to_list(as.data.table(haplotypes)[as.data.table(cl$clustering), on = "cell_id"], prop, phasebyarm = phasebyarm)
   }
 
-  return(list(prop = prop, cl = cl))
+  return(chrlist)
 }
 
 prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE){
   if (phasebyarm == TRUE){
-    haplotypes_keep <- inner_join(haplotypes, prop$prop, by = c("chrarm", "clone_id"))
+    haplotypes_keep <- inner_join(haplotypes, prop, by = c("chrarm", "clone_id"))
     chrlist <- split(haplotypes_keep$cell_id, haplotypes_keep$chrarm)
   } else{
-    haplotypes_keep <- inner_join(haplotypes, prop$prop, by = c("chr", "clone_id"))
+    haplotypes_keep <- inner_join(haplotypes, prop, by = c("chr", "clone_id"))
     chrlist <- split(haplotypes_keep$cell_id, haplotypes_keep$chr)
   }
   return(chrlist)
 }
 
 #' @export
-phase_haplotypes_bychr <- function(haplotypes, prop, phasebyarm = FALSE){
-  haplotypes <- as.data.table(haplotypes)[as.data.table(prop$cl$clustering), on = "cell_id"]
+phase_haplotypes_bychr <- function(haplotypes, chrlist, phasebyarm = FALSE){
+  haplotypes <- as.data.table(haplotypes)
 
   if (phasebyarm) {
     haplotypes$chrarm <- paste0(haplotypes$chr, coord_to_arm(haplotypes$chr, haplotypes$start))
-    chrlist <- prop_to_list(haplotypes, prop, phasebyarm = phasebyarm)
     phased_haplotypes <- data.table()
     for (i in names(chrlist)){
       phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chrarm == i] %>%
@@ -327,7 +329,6 @@ phase_haplotypes_bychr <- function(haplotypes, prop, phasebyarm = FALSE){
       phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
     }
   }  else {
-    chrlist <- prop_to_list(haplotypes, prop, phasebyarm = phasebyarm)
     phased_haplotypes <- data.table()
     for (i in names(chrlist)){
       phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chr == i] %>%
@@ -494,17 +495,17 @@ callHaplotypeSpecificCN <- function(CNbins,
   ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
   if (is.null(phased_haplotypes)){
-    p <- proportion_imbalance(ascn,
+    chrlist <- proportion_imbalance(ascn,
                               haplotypes,
                               phasebyarm = phasebyarm,
                               minfrac = minfrac,
                               clustering_method = clustering_method,
                               overwritemincells = overwritemincells)
     phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
-                                                prop = p,
+                                                chrlist = chrlist,
                                                 phasebyarm = phasebyarm)
   } else{
-    p <- NULL
+    chrlist <- NULL
   }
 
   cnbaf <- combineBAFCN(haplotypes = haplotypes,
@@ -528,7 +529,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   class(out) <- "hscn"
 
   out[["data"]] <- hscn_data %>% as.data.frame()
-  out[["phasing"]] <- p
+  out[["phasing"]] <- chrlist
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps
   out[["likelihood"]] <- bbfit
