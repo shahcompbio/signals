@@ -688,12 +688,12 @@ consensuscopynumber <- function(hscn){
                        Maj = schnapps:::Mode(Maj),
                        LOH = schnapps:::Mode(LOH),
                        phase = schnapps:::Mode(phase),
-                       alleleA = alleleA,
-                       alleleB = alleleB,
+                       alleleA = sum(alleleA),
+                       alleleB = sum(alleleB),
                        BAF = median(BAF),
                        state_phase = schnapps:::Mode(state_phase),
                        state_BAF = schnapps:::Mode(state_BAF),
-                       state_AS_phased = schnapps:::Mode(state_phased)) %>%
+                       state_AS_phased = schnapps:::Mode(state_AS_phased)) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(cell_id = "Merged Cells")
   } else{
@@ -703,6 +703,39 @@ consensuscopynumber <- function(hscn){
                        copy = median(copy)) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(cell_id = "Merged Cells")
+
+  }
+
+  return(cn)
+}
+
+#' @export
+consensuscopynumberbyclone <- function(hscn){
+  if ("state_phase" %in% colnames(hscn)){
+    cn <- hscn %>%
+      dplyr::group_by(chr, start, end, clone_id) %>%
+      dplyr::summarise(state = schnapps:::Mode(state),
+                       copy = median(copy),
+                       state_min = schnapps:::Mode(state_min),
+                       Min = schnapps:::Mode(Min),
+                       Maj = schnapps:::Mode(Maj),
+                       LOH = schnapps:::Mode(LOH),
+                       phase = schnapps:::Mode(phase),
+                       alleleA = sum(alleleA),
+                       alleleB = sum(alleleB),
+                       BAF = median(BAF),
+                       state_phase = schnapps:::Mode(state_phase),
+                       state_BAF = schnapps:::Mode(state_BAF),
+                       state_AS_phased = schnapps:::Mode(state_AS_phased)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(cell_id = clone_id)
+  } else{
+    cn <- hscn %>%
+      dplyr::group_by(chr, start, end) %>%
+      dplyr::summarise(state = schnapps:::Mode(state),
+                       copy = median(copy)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(cell_id = clone_id)
 
   }
 
