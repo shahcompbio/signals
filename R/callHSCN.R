@@ -187,7 +187,7 @@ callalleleHMMcell <- function(CNBAF,
 min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = NULL){
   nhaps_vec <- c()
   prop_vec <- c()
-  prop <- seq(0.025, 1.0, 0.025)
+  prop <- seq(0.05, 1.0, 0.05)
   mycells <- unique(haplotypes$cell_id)
   ncells <- length(mycells)
   haplotype_counts <- as.data.table(haplotypes) %>%
@@ -206,7 +206,7 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = NULL){
     dplyr::mutate(ncells = round(prop * length(mycells)))
 
   ncells_forclustering <- df %>%
-    dplyr::filter(nhaps > minfrachaplotypes) %>%
+    dplyr::filter(nhaps > minfrachaplotypes - 0.05) %>%
     dplyr::filter(dplyr::row_number() == 1) %>%
     dplyr::pull(ncells)
 
@@ -244,20 +244,20 @@ proportion_imbalance_manual <- function(ascn, haplotypes, cl, field = "copy", ph
 }
 
 #' @export
-proportion_imbalance <- function(ascn, haplotypes,
-                                 field = "copy",
-                                 phasebyarm = FALSE,
-                                 minfrachaplotypes = 0.95,
-                                 clustering_method = "copy",
-                                 overwritemincells = NULL){
-  ncells <- length(unique(ascn$cell_id))
-  if (is.null(overwritemincells)){
-    ncells_for_clustering <- min_cells(haplotypes, minfrachaplotypes = minfrachaplotypes)
-    ncells_for_clustering <- ncells_for_clustering$ncells_forclustering
-  } else{
-    ncells_for_clustering <- overwritemincells
-  }
-  message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
+mytempfunc <- function(){
+  ascn_states <- add_states(ascn)
+  ascn_states <- as.data.table(dplyr::left_join(ascn_states, cl$clustering))
+  ascn_clone <- consensuscopynumberbyclone(ascn_states) %>% orderdf(.)
+  segs <- create_segments(ascn_clone %>% as.data.table() %>% add_states(.), "state_AS") %>%
+    dplyr::mutate(width = end - start)
+}
+
+get_cells_per_chr_global <- function(ascn,
+                              haplotypes,
+                              ncells_for_clustering,
+                              field = "copy",
+                              clustering_method = "copy",
+                              phasebyarm = FALSE){
 
   #cluster cells using umap and the "copy" corrected read count value
   if (clustering_method == "copy"){
@@ -266,9 +266,8 @@ proportion_imbalance <- function(ascn, haplotypes,
                           field = field)
   } else {
     cl <- umap_clustering_breakpoints(ascn,
-                          minPts = ncells_for_clustering)
+                                      minPts = ncells_for_clustering)
   }
-  alleles <- data.table()
   ascn <- as.data.table(dplyr::left_join(ascn, cl$clustering))
 
   #removed cells that are in the unnassigned group
@@ -281,25 +280,112 @@ proportion_imbalance <- function(ascn, haplotypes,
     prop <- ascn[, list(propA = round(sum(balance) / .N, 2), n = sum(balance)), by = .(chrarm, clone_id)]
     prop <- prop[order(n, decreasing = TRUE)] # if there are ties make sure the clone with the largest number of cells gets chosen
     prop <- prop[prop[, .I[which.max(propA)], by=chrarm]$V1]
+    chrlist <- prop_to_list(as.data.table(haplotypes)[as.data.table(cl$clustering), on = "cell_id"],
+                            prop, phasebyarm = phasebyarm)
   } else {
     message("Phasing by chromosome (not arm level)..")
     prop <- ascn[, list(propA = round(sum(balance) / .N, 2), n = sum(balance)), by = .(chr, clone_id)]
     prop <- prop[order(n, decreasing = TRUE)]
     prop <- prop[prop[, .I[which.max(propA)], by=chr]$V1]
+    chrlist <- prop_to_list(as.data.table(haplotypes)[as.data.table(cl$clustering), on = "cell_id"], prop, phasebyarm = phasebyarm)
   }
 
-  return(list(prop = prop, cl = cl))
+  return(chrlist)
+}
+
+get_cells_per_chr_local <- function(ascn,
+                                     haplotypes,
+                                     ncells_for_clustering,
+                                     field = "BAF",
+                                     clustering_method = "copy",
+                                     phasebyarm = FALSE){
+
+  #cluster cells per chromosome
+
+  chrlist <- list()
+  for (mychr in unique(ascn$chr)){
+    message(paste0("Clustering chromosome ", mychr))
+    ascn_chr <- as.data.table(ascn)[chr == mychr]
+    cl <- umap_clustering(ascn_chr,
+                          n_neighbors = 20,
+                          min_dist = 0.0,
+                          minPts = ncells_for_clustering,
+                          field = "state_BAF")
+    prop <- ascn_chr[as.data.table(cl$clustering %>% dplyr::filter(clone_id != "0")), on = "cell_id"] %>%
+      .[, list(propA = round(sum(balance) / .N, 2),
+               n = sum(balance),
+               propModestate = sum(state == Mode(state)) / .N,
+               ncells = length(unique(cell_id))), by = .(chr,cell_id, clone_id)] %>%
+      .[, list(propA = median(propA),
+               n = median(n),
+               propModestate = median(propModestate),
+               ncells = median(ncells)), by = .(chr, clone_id)]
+    prop <- prop[order(propA, propModestate, n, decreasing = TRUE)]
+    prop <- prop[prop[, .I[which.max(propA)], by=chr]$V1]
+    cells <- dplyr::filter(cl$clustering, clone_id == prop$clone_id[1]) %>% dplyr::pull(cell_id)
+    chrlist[[mychr]] <- cells
+  }
+
+  return(chrlist)
 }
 
 #' @export
-phase_haplotypes_bychr <- function(haplotypes, prop, phasebyarm = FALSE){
-  haplotypes <- as.data.table(haplotypes)[as.data.table(prop$cl$clustering), on = "cell_id"]
+proportion_imbalance <- function(ascn,
+                                 haplotypes,
+                                 field = "copy",
+                                 phasebyarm = FALSE,
+                                 minfrachaplotypes = 0.95,
+                                 clustering_method = "copy",
+                                 overwritemincells = NULL,
+                                 cluster_per_chr = TRUE){
+  ncells <- length(unique(ascn$cell_id))
+  if (is.null(overwritemincells)){
+    ncells_for_clustering <- min_cells(haplotypes, minfrachaplotypes = minfrachaplotypes)
+    ncells_for_clustering <- ncells_for_clustering$ncells_forclustering
+  } else{
+    ncells_for_clustering <- overwritemincells
+  }
+  message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
+
+  if (cluster_per_chr){
+    chrlist <- get_cells_per_chr_local(ascn,
+                                        haplotypes,
+                                        ncells_for_clustering,
+                                        field = field,
+                                        clustering_method = clustering_method)
+
+  } else {
+    chrlist <- get_cells_per_chr_global(ascn,
+                                        haplotypes,
+                                        ncells_for_clustering,
+                                        field = field,
+                                        clustering_method = clustering_method)
+  }
+
+
+  return(chrlist)
+}
+
+prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE){
+  if (phasebyarm == TRUE){
+    haplotypes_keep <- dplyr::inner_join(haplotypes, prop, by = c("chrarm", "clone_id"))
+    chrlist <- split(haplotypes_keep$cell_id, haplotypes_keep$chrarm)
+  } else{
+    haplotypes_keep <- dplyr::inner_join(haplotypes, prop, by = c("chr", "clone_id"))
+    chrlist <- split(haplotypes_keep$cell_id, haplotypes_keep$chr)
+  }
+  return(chrlist)
+}
+
+#' @export
+phase_haplotypes_bychr <- function(haplotypes, chrlist, phasebyarm = FALSE){
+  haplotypes <- as.data.table(haplotypes)
 
   if (phasebyarm) {
     haplotypes$chrarm <- paste0(haplotypes$chr, coord_to_arm(haplotypes$chr, haplotypes$start))
     phased_haplotypes <- data.table()
-    for (i in 1:nrow(prop$prop)){
-      phased_haplotypes_temp <- haplotypes[clone_id == prop$prop[i,"clone_id"] & chrarm == prop$prop[i,"chrarm"]] %>%
+    for (i in names(chrlist)){
+      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chrarm == i] %>%
         .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
         .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
         .[, c("allele1", "allele0") := NULL]
@@ -307,8 +393,8 @@ phase_haplotypes_bychr <- function(haplotypes, prop, phasebyarm = FALSE){
     }
   }  else {
     phased_haplotypes <- data.table()
-    for (i in 1:nrow(prop$prop)){
-      phased_haplotypes_temp <- haplotypes[clone_id == prop$prop[i,"clone_id"]$clone_id & chr == prop$prop[i,"chr"]$chr] %>%
+    for (i in names(chrlist)){
+      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chr == i] %>%
         .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
         .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
         .[, c("allele1", "allele0") := NULL]
@@ -413,7 +499,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     phased_haplotypes = NULL,
                                     clustering_method = "copy",
                                     maxloherror = 0.035,
-                                    overwritemincells = NULL) {
+                                    overwritemincells = NULL,
+                                    cluster_per_chr = FALSE) {
 
   if (!clustering_method %in% c("copy", "breakpoints")){
     stop("Clustering method must be one of copy or breakpoints")
@@ -472,17 +559,18 @@ callHaplotypeSpecificCN <- function(CNbins,
   ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
 
   if (is.null(phased_haplotypes)){
-    p <- proportion_imbalance(ascn,
+    chrlist <- proportion_imbalance(ascn,
                               haplotypes,
                               phasebyarm = phasebyarm,
                               minfrac = minfrac,
                               clustering_method = clustering_method,
-                              overwritemincells = overwritemincells)
+                              overwritemincells = overwritemincells,
+                              cluster_per_chr = cluster_per_chr)
     phased_haplotypes <- phase_haplotypes_bychr(haplotypes = haplotypes,
-                                                prop = p,
+                                                chrlist = chrlist,
                                                 phasebyarm = phasebyarm)
   } else{
-    p <- NULL
+    chrlist <- NULL
   }
 
   cnbaf <- combineBAFCN(haplotypes = haplotypes,
@@ -506,7 +594,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   class(out) <- "hscn"
 
   out[["data"]] <- hscn_data %>% as.data.frame()
-  out[["phasing"]] <- p
+  out[["phasing"]] <- chrlist
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps
   out[["likelihood"]] <- bbfit
