@@ -21,7 +21,8 @@ callHaplotypeSpecificCN(
   phased_haplotypes = NULL,
   clustering_method = "copy",
   maxloherror = 0.035,
-  overwritemincells = NULL
+  overwritemincells = NULL,
+  cluster_per_chr = FALSE
 )
 }
 \arguments{
