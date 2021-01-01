@@ -8,7 +8,8 @@ HaplotypeHMM <- function(n,
                       eps = 1e-12,
                       likelihood = "binomial",
                       rho = 0.0,
-                      Abias = 0.0){
+                      Abias = 0.0,
+                      viterbiver = "cpp"){
 
   minor_cn_mat <- t(replicate(length(binstates), minor_cn))
   total_cn_mat <- replicate(length(minor_cn), binstates)
@@ -47,6 +48,10 @@ HaplotypeHMM <- function(n,
 
   res <- viterbi(l, log(tProbs), observations = 1:length(binstates))
 
+  if (viterbiver == "R"){
+    res <- viterbiR(l, log(tProbs), observations = 1:length(binstates))
+  }
+
   return(list(minorcn = res, l = l))
 }
 
@@ -59,7 +64,8 @@ assignHaplotypeHMM <- function(CNBAF,
                             pb = NULL,
                             likelihood = "binomial",
                             rho = 0.0,
-                            Abias = 0.0){
+                            Abias = 0.0,
+                            viterbiver = "cpp"){
 
   if (!is.null(pb)){
     pb$tick()$print()
@@ -76,7 +82,8 @@ assignHaplotypeHMM <- function(CNBAF,
                                selftransitionprob = selftransitionprob,
                                rho = rho,
                                likelihood = likelihood,
-                               Abias = Abias)
+                               Abias = Abias,
+                               viterbiver = viterbiver)
     minorcn_res <- c(minorcn_res, hmmresults$minorcn)
   }
 
@@ -133,7 +140,8 @@ callalleleHMMcell <- function(CNBAF,
                                     ncores = 1,
                                     likelihood = "binomial",
                                     rho = 0.0,
-                                    Abias = 0.0){
+                                    Abias = 0.0,
+                                    viterbiver = "cpp"){
 
   minor_cn <- seq(0, maxCN, 1)
 
@@ -156,7 +164,8 @@ callalleleHMMcell <- function(CNBAF,
                                                                                       likelihood = likelihood,
                                                                                       rho = rho,
                                                                                       Abias = Abias,
-                                                                                      pb = pb), mc.cores = ncores)) %>%
+                                                                                      pb = pb,
+                                                                                      viterbiver = viterbiver), mc.cores = ncores)) %>%
       .[order(cell_id, chr, start)]
   } else{
     alleleCN <- data.table::rbindlist(lapply(unique(CNBAF$cell_id),
@@ -166,7 +175,8 @@ callalleleHMMcell <- function(CNBAF,
                                                                        rho = rho,
                                                                        Abias = Abias,
                                                                        selftransitionprob = selftransitionprob,
-                                                                       pb = pb))) %>%
+                                                                       pb = pb,
+                                                                       viterbiver = viterbiver))) %>%
       .[order(cell_id, chr, start)]
   }
 
@@ -500,7 +510,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     clustering_method = "copy",
                                     maxloherror = 0.035,
                                     overwritemincells = NULL,
-                                    cluster_per_chr = FALSE) {
+                                    cluster_per_chr = FALSE,
+                                    viterbiver = "cpp") {
 
   if (!clustering_method %in% c("copy", "breakpoints")){
     stop("Clustering method must be one of copy or breakpoints")
@@ -530,7 +541,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     maxCN = maxCN,
                                     selftransitionprob = selftransitionprob,
                                     progressbar = progressbar,
-                                    ncores = ncores)
+                                    ncores = ncores,
+                                    viterbiver = viterbiver)
 
   infloherror <- ascn %>%
     dplyr::filter(state_phase == "A-Hom") %>%
@@ -587,7 +599,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                                progressbar = progressbar,
                                                ncores = ncores,
                                                likelihood = likelihood,
-                                               rho = bbfit$rho)
+                                               rho = bbfit$rho,
+                                               viterbiver = viterbiver)
 
   # Output
   out = list()
