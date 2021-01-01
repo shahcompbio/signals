@@ -5,7 +5,7 @@ umap_clustering <- function(CNbins,
                             minPts = 30,
                             seed = 1,
                             field = "state",
-                            umapmetric = "euclidean"){
+                            umapmetric = "correlation"){
 
   if(length(unique(CNbins$cell_id)) < n_neighbors) {
     n_neighbors <- length(unique(CNbins$cell_id)) - 1
