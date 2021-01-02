@@ -321,7 +321,7 @@ get_cells_per_chr_local <- function(ascn,
                           min_dist = 0.0,
                           minPts = ncells_for_clustering,
                           field = "state_BAF")
-    prop <- ascn_chr[as.data.table(cl$clustering %>% dplyr::filter(clone_id != "0")), on = "cell_id"] %>%
+    prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
       .[, list(propA = round(sum(balance) / .N, 2),
                n = sum(balance),
                propModestate = sum(state == Mode(state)) / .N,
