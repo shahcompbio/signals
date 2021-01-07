@@ -410,7 +410,7 @@ per_arm_baf_mat <- function(haps,
                             mincounts = 10,
                             arms = NULL){
 
-  if (mergelowcounts) {
+  if (mergelowcounts & is.null(arms)) {
 
     message(paste0("Only using arms with at least an average ", mincounts, " counts"))
     baf <- haps %>%
