@@ -456,7 +456,7 @@ per_arm_baf_mat <- function(haps,
       dplyr::ungroup() %>%
       dplyr::mutate(BAF = alleleB / (alleleA + alleleB),
                     total = alleleB + alleleA)
-  } else if (mergelowcounts == FALSE & !is.null(arms)) {
+  } else if (!is.null(arms)) {
     message(paste0("Only using specific chromosome arms: "), paste0(arms, collapse = ", "))
     baf <- haps %>%
       dplyr::filter(chr != "Y") %>%
