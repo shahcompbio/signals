@@ -3,15 +3,19 @@ format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
 
   options("scipen"=20)
 
-  bins <- CNbins[c("chr", "start", "end")] %>%
-    as.data.table() %>%
+  haplotypes <- haplotypes %>%
+    data.table::as.data.table()
+
+  CNbins <- CNbins %>%
+    data.table::as.data.table()
+
+  bins <- CNbins[, c("chr", "start", "end")] %>%
     unique(., by = c("chr", "start", "end")) %>%
     .[, binid := paste(chr, start, end, sep = "_")] %>%
     .$binid
   message(paste0("Number of distinct bins in copy number data: ", length(bins)))
 
-  binshaps <- haplotypes[c("chr", "start", "end")] %>%
-    as.data.table() %>%
+  binshaps <- haplotypes[, c("chr", "start", "end")] %>%
     unique(., by = c("chr", "start", "end")) %>%
     .[, start := floor(start / hmmcopybinsize) * hmmcopybinsize + 1] %>%
     .[, end := start + hmmcopybinsize - 1] %>%
@@ -19,9 +23,6 @@ format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
     .$binid
 
   message(paste0("Number of distinct bins in haplotype data: ", length(unique(binshaps))))
-
-  haplotypes <- haplotypes %>%
-    data.table::as.data.table()
 
   formatted_haplotypes <- haplotypes %>%
     .[, allele_id := paste0("allele", allele_id)] %>%
@@ -34,8 +35,7 @@ format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
     .[hbinid %in% bins] %>%
     .[, hbinid := NULL]
 
-  binshaps2 <- formatted_haplotypes %>%
-    as.data.table() %>%
+  binshaps2 <- formatted_haplotypes[, c("chr", "start", "end")] %>%
     unique(., by = c("chr", "start", "end")) %>%
     .[, start := floor(start / hmmcopybinsize) * hmmcopybinsize + 1] %>%
     .[, end := start + hmmcopybinsize - 1] %>%
