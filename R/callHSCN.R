@@ -73,7 +73,6 @@ assignHaplotypeHMM <- function(CNBAF,
 
   minorcn_res <- c()
   for (mychr in unique(CNBAF$chr)){
-    print(mychr)
     hmmresults <- HaplotypeHMM(n = dplyr::filter(CNBAF, chr == mychr)$totalcounts,
                                x = dplyr::filter(CNBAF, chr == mychr)$alleleB,
                                dplyr::filter(CNBAF, chr == mychr)$state,
