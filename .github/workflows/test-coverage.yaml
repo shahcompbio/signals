@@ -20,7 +20,7 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@master
       - name: Install xquartz
-        run: brew cask install xquartz
+        run: brew install --cask xquartz
       - name: Query dependencies
         run: |
           install.packages('remotes')
