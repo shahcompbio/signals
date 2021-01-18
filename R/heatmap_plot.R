@@ -673,28 +673,6 @@ make_copynumber_heatmap <- function(copynumber,
 }
 
 #' @export
-createSNVmatrix <- function(SNVs, allcells = NULL, field = "mutation"){
-  dfmuts <- SNVs %>%
-    dplyr::mutate(mutation = ifelse(alt_counts > 0, 1, 0),
-           nomutation = ifelse(alt_counts == 0, 0, 1)) %>%
-    #dplyr::mutate(alt_counts = paste0(alt_counts)) %>%
-    dplyr::mutate(mutid = paste(chr, as.character(start), sep = "_")) %>%
-    dplyr::select_("mutid", "cell_id", field) %>%
-    tidyr::spread_("mutid", field, fill = 0) %>%
-    as.data.frame()
-
-  if (!is.null(allcells)){
-    message("Adding blank rows to cells that have no mutations...")
-    missingcells <- data.frame(cell_id = clones$cell_id[!clones$cell_id %in% dfmuts$cell_id])
-    dfmuts <- dplyr::bind_rows(dfmuts, missingcells)
-  }
-  rownames(dfmuts) <- dfmuts$cell_id
-  dfmuts <- subset(dfmuts, select = -cell_id)
-
-  return(dfmuts)
-}
-
-#' @export
 plotHeatmap <- function(cn,
                         tree = NULL,
                         clusters = NULL,
@@ -904,72 +882,101 @@ plotHeatmap <- function(cn,
 }
 
 #' @export
+createSNVmatrix <- function(SNVs, allcells = NULL, field = "VAF"){
+  
+  if ("clone_id" %in% names(SNVs)){
+    SNVs$cell_id <- SNVs$clone_id
+  }
+  
+  snvmatrix <- SNVs %>%
+    .[, mutid := paste(chr, as.integer(start), ref, alt, sep = "_")] %>%
+    data.table::dcast(., cell_id ~ mutid, value.var = field, fill = 0) %>%
+    as.data.frame()
+  
+  if (!is.null(allcells)){
+    message("Adding blank rows to cells that have no mutations...")
+    missingcells <- data.frame(cell_id = clones$cell_id[!clones$cell_id %in% dfmuts$cell_id])
+    dfmuts <- dplyr::bind_rows(dfmuts, missingcells)
+  }
+  
+  
+  rownames(snvmatrix) <- snvmatrix$cell_id
+  snvmatrix <- subset(snvmatrix, select = -cell_id)
+  
+  #sort by number of clones with mutation
+  snvmatrix <- snvmatrix[,names(sort(colSums(!is.na(snvmatrix)), decreasing = T))]
+  
+  return(snvmatrix)
+}
+
+#' @export
 plotSNVHeatmap <- function(SNVs,
-                           k = 5,
-                           tree = NULL,
+                           tree,
                            clusters = NULL,
-                           field = "mutation",
-                           reorderclusters = FALSE){
-  muts <- createSNVmatrix(SNVs, field = field)
-  h <- hclust(dist(t(muts)))
-  x <- cutree(h, k = k)
-  mutgroups <- data.frame(MutationGroup = paste0(x), dummy = "x")
-  row.names(mutgroups) <- names(x)
-
-  muts <- muts[, h$order]
-  mutgroups <- mutgroups[names(muts), ]
-  mutgroups <- subset(mutgroups, select = -c(dummy))
-
-  if (!is.null(clusters)){
-    if (!"clone_id" %in% names(clusters)){
-      stop("No clone_id columns in clusters dataframe, you might need to rename your clusters")
-    }
-
-    cells <- intersect(SNVs$cell_id, clusters$cell_id)
-    SNVs <- dplyr::filter(SNVs, cell_id %in% cells)
-    clusters <- dplyr::filter(clusters, cell_id %in% cells)
-
-    if (reorderclusters == TRUE){
-      message("Reorder clusters dataframe according to clones")
-      clusters <- clusters[gtools::mixedorder(clusters$clone_id), ]
-    }
-  }
-
+                           field = "VAF",
+                           reorderclusters = FALSE,
+                           clone_pal = NULL,
+                           show_legend = TRUE,
+                           library_mapping = NULL,
+                           show_library_label = TRUE,
+                           show_clone_label = TRUE, 
+                           plottree = TRUE,
+                           mymaxcol = "firebrick4",
+                           nsample = 10000, 
+                           clustercols = FALSE){
+  
+  muts <- createSNVmatrix(SNVs)
+  
   if (is.null(clusters)){
-    ordered_cell_ids <- paste0(unique(SNVs$cell_id))
-  } else{
-    ordered_cell_ids <- paste0(clusters$cell_id)
+    clusters <- data.frame(cell_id = tree$tip.label, clone_id = "0")
   }
+  
+  tree_ggplot <- make_tree_ggplot(tree, clusters, clone_pal = clone_pal)
+  tree_plot_dat <- tree_ggplot$data
+  
+  message("Creating tree...")
+  tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+  ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
 
   muts <- muts[ordered_cell_ids, ]
 
-  colpal <- make_clone_palette(unique(mutgroups$MutationGroup))
-
-  if (field == "mutation"){
-    cols <- snv_colours
-  } else {
-    #cols <- circlize::colorRamp2(c(0, 0.0001, quantile(as.matrix(muts), 0.95)), c("#7EA5EA", "#FFFFFF", "#9A2E1C"))
+  cols <- circlize::colorRamp2(c(0, 1), c("white", mymaxcol))
+  
+  clones_formatted <- format_clones(as.data.frame(clusters), ordered_cell_ids)
+  
+  muts <- as.matrix(muts)
+  
+  if (dim(muts)[2] > 10000){
+    message(paste0("Sampling ", nsample, " mutations..."))
+    muts <- muts[,sample(ncol(muts), size = nsample), drop = FALSE]
   }
 
   snv_hm <- ComplexHeatmap::Heatmap(
-    name="SNVs",
-    as.matrix(muts),
+    name=field,
+    muts,
     col=cols,
-    na_col="white",
+    na_col="grey20",
     show_row_names=FALSE,
     cluster_rows=FALSE,
-    cluster_columns=FALSE,
+    cluster_columns=clustercols,
     show_column_names=FALSE,
     #bottom_annotation=make_bottom_annot(copynumber),
-    left_annotation=make_left_annot(muts, format_clones(clusters, ordered_cell_ids)),
-    #use_raster=TRUE,
-    top_annotation = HeatmapAnnotation(df = mutgroups,
-                                       col = list(MutationGroup = colpal)),
+    left_annotation=make_left_annot(muts, clones_formatted,
+                                    library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
+                                    idx = sample_label_idx,show_legend = show_legend, show_library_label = show_library_label),
+    use_raster=TRUE,
+    #top_annotation = HeatmapAnnotation(df = mutgroups,col = list(MutationGroup = colpal)),
     #raster_quality=1,
     heatmap_legend_param=list(nrow=4)
   )
-
-  return(snv_hm)
+  
+  if (plottree == TRUE){
+    h <- tree_hm + snv_hm
+  } else {
+    h <- snv_hm
+  }
+  
+  return(h)
 }
 
 plotHeatmapQC <- function(cn,
