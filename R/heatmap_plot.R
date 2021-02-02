@@ -922,6 +922,7 @@ plotSNVHeatmap <- function(SNVs,
                            show_clone_label = TRUE, 
                            plottree = TRUE,
                            mymaxcol = "firebrick4",
+                           sample_label_idx = 1,
                            nsample = 10000, 
                            clustercols = FALSE){
   
