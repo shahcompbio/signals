@@ -169,7 +169,7 @@ callalleleHMMcell <- function(CNBAF,
       .[order(cell_id, chr, start)]
   } else{
     alleleCN <- data.table::rbindlist(lapply(unique(CNBAF$cell_id),
-                                        function(cell) {print(cell)
+                                        function(cell) {
                                           assignHaplotypeHMM(dplyr::filter(CNBAF, cell_id == cell), minor_cn,
                                                                        eps = eps, loherror = loherror,
                                                                        likelihood = likelihood,
@@ -625,110 +625,111 @@ callHaplotypeSpecificCN <- function(CNbins,
 fix_assignments <- function(hscn){
 
   if (hscn$likelihood$likelihood == "binomial"){
-  hscn_data <- hscn$data %>%
-    as.data.table() %>%
-    .[, rlid := data.table::rleid(state_AS_phased), by = .(cell_id, chr)] %>%
-    .[, alleleAtot := sum(alleleA), by = c("rlid", "chr", "cell_id")] %>%
-    .[, alleleBtot := sum(alleleB), by = c("rlid", "chr", "cell_id")] %>%
-    .[, pMin := ifelse(is.nan(Min/state), 0.0, Min/state)] %>% #nan check to stop 0/0
-    .[, pMin := fifelse(pMin == 0.0, pMin + hscn$loherror, pMin)] %>%
-    .[, pMin := fifelse(pMin == 1.0, pMin - hscn$loherror, pMin)] %>%
-    .[, pMaj := ifelse(is.nan(Maj/state), 0.0, Maj/state)] %>%
-    .[, pMaj := fifelse(pMaj == 0.0, pMaj + hscn$loherror, pMaj)] %>%
-    .[, pMaj := fifelse(pMaj == 1.0, pMaj - hscn$loherror, pMaj)] %>%
-    .[, LLassigned := dbinom(alleleAtot, alleleAtot + alleleBtot, p = pMin)] %>%
-    .[, LLother := dbinom(alleleAtot, alleleAtot + alleleBtot, p = pMaj)] %>%
-    .[, state_min := fifelse(LLother < LLassigned, Maj, Min)] %>%
-    .[, Maj := state - state_min] %>%
-    .[, Min := state_min] %>%
-    .[, Min := fifelse(Min < 0, 0, Min)] %>%
-    .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
-    .[, Min := fifelse(Min > state, state, Min)] %>%
-    .[, Maj := fifelse(Maj > state, state, Maj)] %>%
-    add_states() %>%
-    dplyr::select(-LLassigned, -LLother, -alleleBtot, -alleleAtot, -pMin, -pMaj, -rlid)
+    suppressWarnings(hscn_data <- hscn$data %>%
+                       as.data.table() %>%
+                       .[, rlid := data.table::rleid(state_AS_phased), by = .(cell_id, chr)] %>%
+                       .[, nbins := .N, by = c("rlid", "chr", "cell_id")] %>%
+                       .[, Majprev := shift(Maj, fill = 0)] %>%
+                       .[, Minprev := shift(Min, fill = 0)] %>%
+                       .[, Majafter := shift(Maj, fill = 0, type = "lead")] %>%
+                       .[, Minafter := shift(Min, fill = 0, type = "lead")] %>%
+                       .[, pMinafter := ifelse(is.nan(Minafter/state), 0.0, Minafter/state)] %>% #nan check to stop 0/0
+                       .[, pMinafter := fifelse(pMinafter == 0.0, pMinafter + hscn$loherror, pMinafter)] %>%
+                       .[, pMinafter := fifelse(pMinafter == 1.0, pMinafter - hscn$loherror, pMinafter)] %>%
+                       .[, pMinprev := ifelse(is.nan(Minprev/state), 0.0, Minprev/state)] %>% #nan check to stop 0/0
+                       .[, pMinprev := fifelse(pMinprev == 0.0, pMinprev + hscn$loherror, pMinprev)] %>%
+                       .[, pMinprev := fifelse(pMinprev == 1.0, pMinprev - hscn$loherror, pMinprev)] %>%
+                       .[, LLafter := dbinom(alleleA, alleleA + alleleB, p = pMinafter)] %>%
+                       .[, LLafter := fifelse(is.na(LLafter), 0, LLafter)] %>%
+                       .[, LLprev := dbinom(alleleA, alleleA + alleleB, p = pMinprev, )] %>%
+                       .[, LLprev := fifelse(is.na(LLprev), 0, LLafter)] %>%
+                       .[, state_min := fifelse(nbins == 1 & LLafter < LLprev, Minprev, Min)] %>%
+                       .[, state_min := fifelse(nbins == 1 & LLafter >= LLprev, Minafter, Min)] %>%
+                       .[, Maj := state - state_min] %>%
+                       .[, Min := state_min] %>%
+                       .[, Min := fifelse(Min < 0, 0, Min)] %>%
+                       .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
+                       .[, Min := fifelse(Min > state, state, Min)] %>%
+                       .[, Maj := fifelse(Maj > state, state, Maj)] %>%
+                       add_states() %>%
+                       dplyr::select(-LLafter, -LLprev,-Minafter, -Minprev, -Majafter, -Majprev, -rlid))
 
-  suppressWarnings(hscn_data <- hscn_data %>%
-    as.data.table() %>%
-    .[, rlid := data.table::rleid(state_AS_phased), by = .(cell_id, chr)] %>%
-    .[, nbins := .N, by = c("rlid", "chr", "cell_id")] %>%
-    .[, Majprev := shift(Maj, fill = 0)] %>%
-    .[, Minprev := shift(Min, fill = 0)] %>%
-    .[, Majafter := shift(Maj, fill = 0, type = "lead")] %>%
-    .[, Minafter := shift(Min, fill = 0, type = "lead")] %>%
-    .[, pMinafter := ifelse(is.nan(Minafter/state), 0.0, Minafter/state)] %>% #nan check to stop 0/0
-    .[, pMinafter := fifelse(pMinafter == 0.0, pMinafter + hscn$loherror, pMinafter)] %>%
-    .[, pMinafter := fifelse(pMinafter == 1.0, pMinafter - hscn$loherror, pMinafter)] %>%
-    .[, pMinprev := ifelse(is.nan(Minprev/state), 0.0, Minprev/state)] %>% #nan check to stop 0/0
-    .[, pMinprev := fifelse(pMinprev == 0.0, pMinprev + hscn$loherror, pMinprev)] %>%
-    .[, pMinprev := fifelse(pMinprev == 1.0, pMinprev - hscn$loherror, pMinprev)] %>%
-    .[, LLafter := dbinom(alleleA, alleleA + alleleB, p = pMinafter)] %>%
-    .[, LLafter := fifelse(is.na(LLafter), 0, LLafter)] %>%
-    .[, LLprev := dbinom(alleleA, alleleA + alleleB, p = pMinprev, )] %>%
-    .[, LLprev := fifelse(is.na(LLprev), 0, LLafter)] %>%
-    .[, state_min := fifelse(nbins == 1 & LLafter < LLprev, Minprev, Min)] %>%
-    .[, state_min := fifelse(nbins == 1 & LLafter >= LLprev, Minafter, Min)] %>%
-    .[, Maj := state - state_min] %>%
-    .[, Min := state_min] %>%
-    .[, Min := fifelse(Min < 0, 0, Min)] %>%
-    .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
-    .[, Min := fifelse(Min > state, state, Min)] %>%
-    .[, Maj := fifelse(Maj > state, state, Maj)] %>%
-    add_states() %>%
-    dplyr::select(-LLafter, -LLprev,-Minafter, -Minprev, -Majafter, -Majprev, -rlid))
+    hscn_data <- hscn_data %>%
+                as.data.table() %>%
+                .[, rlid := data.table::rleid(state_AS_phased), by = .(cell_id, chr)] %>%
+                .[, alleleAtot := sum(alleleA), by = c("rlid", "chr", "cell_id")] %>%
+                .[, alleleBtot := sum(alleleB), by = c("rlid", "chr", "cell_id")] %>%
+                .[, pMin := ifelse(is.nan(Min/state), 0.0, Min/state)] %>% #nan check to stop 0/0
+                .[, pMin := fifelse(pMin == 0.0, pMin + hscn$loherror, pMin)] %>%
+                .[, pMin := fifelse(pMin == 1.0, pMin - hscn$loherror, pMin)] %>%
+                .[, pMaj := ifelse(is.nan(Maj/state), 0.0, Maj/state)] %>%
+                .[, pMaj := fifelse(pMaj == 0.0, pMaj + hscn$loherror, pMaj)] %>%
+                .[, pMaj := fifelse(pMaj == 1.0, pMaj - hscn$loherror, pMaj)] %>%
+                .[, LLassigned := dbinom(alleleAtot, alleleAtot + alleleBtot, p = pMin)] %>%
+                .[, LLother := dbinom(alleleAtot, alleleAtot + alleleBtot, p = pMaj)] %>%
+                .[, state_min := fifelse(LLother < LLassigned, Maj, Min)] %>%
+                .[, Maj := state - state_min] %>%
+                .[, Min := state_min] %>%
+                .[, Min := fifelse(Min < 0, 0, Min)] %>%
+                .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
+                .[, Min := fifelse(Min > state, state, Min)] %>%
+                .[, Maj := fifelse(Maj > state, state, Maj)] %>%
+                add_states() %>%
+                dplyr::select(-LLassigned, -LLother, -alleleBtot, -alleleAtot, -pMin, -pMaj, -rlid)
 
   } else{
-    hscn_data <- hscn$data %>%
-      as.data.table() %>%
-      .[, rlid := data.table::rleid(state_AS_phased)] %>%
-      .[, alleleAtot := sum(alleleA), by = "rlid"] %>%
-      .[, alleleBtot := sum(alleleB), by = "rlid"] %>%
-      .[, pMin := ifelse(is.nan(Min/state), 0.0, Min/state)] %>%
-      .[, pMin := fifelse(pMin == 0.0, pMin + hscn$loherror, pMin)] %>%
-      .[, pMin := fifelse(pMin == 1.0, pMin - hscn$loherror, pMin)] %>%
-      .[, pMaj := ifelse(is.nan(Maj/state), 0.0, Maj/state)] %>%
-      .[, pMaj := fifelse(pMaj == 0.0, pMaj + hscn$loherror, pMaj)] %>%
-      .[, pMaj := fifelse(pMaj == 1.0, pMaj - hscn$loherror, pMaj)] %>%
-      .[, LLassigned := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot, rho = hscn$likelihood$rho, p = pMin)] %>%
-      .[, LLother := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot,rho = hscn$likelihood$rho, p = pMaj)] %>%
-      .[, state_min := fifelse(LLother < LLassigned, Maj, Min)] %>%
-      .[, Maj := state - state_min] %>%
-      .[, Min := state_min] %>%
-      .[, Min := fifelse(Min < 0, 0, Min)] %>%
-      .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
-      .[, Min := fifelse(Min > state, state, Min)] %>%
-      .[, Maj := fifelse(Maj > state, state, Maj)] %>%
-      add_states() %>%
-      dplyr::select(-LLassigned, -LLother, -alleleBtot, -alleleAtot, -pMin, -pMaj, -rlid)
 
-    suppressWarnings(hscn_data <- hscn_data %>%
-       as.data.table() %>%
-       .[, rlid := data.table::rleid(state_AS_phased), by = .(cell_id, chr)] %>%
-       .[, nbins := .N, by = c("rlid", "chr", "cell_id")] %>%
-       .[, Majprev := shift(Maj, fill = 0)] %>%
-       .[, Minprev := shift(Min, fill = 0)] %>%
-       .[, Majafter := shift(Maj, fill = 0, type = "lead")] %>%
-       .[, Minafter := shift(Min, fill = 0, type = "lead")] %>%
-       .[, pMinafter := ifelse(is.nan(Minafter/state), 0.0, Minafter/state)] %>% #nan check to stop 0/0
-       .[, pMinafter := fifelse(pMinafter == 0.0, pMinafter + hscn$loherror, pMinafter)] %>%
-       .[, pMinafter := fifelse(pMinafter == 1.0, pMinafter - hscn$loherror, pMinafter)] %>%
-       .[, pMinprev := ifelse(is.nan(Minprev/state), 0.0, Minprev/state)] %>% #nan check to stop 0/0
-       .[, pMinprev := fifelse(pMinprev == 0.0, pMinprev + hscn$loherror, pMinprev)] %>%
-       .[, pMinprev := fifelse(pMinprev == 1.0, pMinprev - hscn$loherror, pMinprev)] %>%
-       .[, LLafter := VGAM::dbetabinom(alleleA, alleleA + alleleB, rho = hscn$likelihood$rho, p = pMinafter)] %>%
-       .[, LLafter := fifelse(is.na(LLafter), 0, LLafter)] %>%
-       .[, LLprev := VGAM::dbetabinom(alleleA, alleleA + alleleB, rho = hscn$likelihood$rho, p = pMinprev)] %>%
-       .[, LLprev := fifelse(is.na(LLprev), 0, LLafter)] %>%
-       .[, state_min := fifelse(nbins == 1 & LLafter < LLprev, Minprev, Min)] %>%
-       .[, state_min := fifelse(nbins == 1 & LLafter >= LLprev, Minafter, Min)] %>%
-       .[, Maj := state - state_min] %>%
-       .[, Min := state_min] %>%
-       .[, Min := fifelse(Min < 0, 0, Min)] %>%
-       .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
-       .[, Min := fifelse(Min > state, state, Min)] %>%
-       .[, Maj := fifelse(Maj > state, state, Maj)] %>%
-       add_states() %>%
-       dplyr::select(-LLafter, -LLprev,-Minafter, -Minprev, -Majafter, -Majprev, -rlid))
+    suppressWarnings(hscn_data <- hscn$data %>%
+                       as.data.table() %>%
+                       .[, rlid := data.table::rleid(state_AS_phased), by = .(cell_id, chr)] %>%
+                       .[, nbins := .N, by = c("rlid", "chr", "cell_id")] %>%
+                       .[, Majprev := shift(Maj, fill = 0)] %>%
+                       .[, Minprev := shift(Min, fill = 0)] %>%
+                       .[, Majafter := shift(Maj, fill = 0, type = "lead")] %>%
+                       .[, Minafter := shift(Min, fill = 0, type = "lead")] %>%
+                       .[, pMinafter := ifelse(is.nan(Minafter/state), 0.0, Minafter/state)] %>% #nan check to stop 0/0
+                       .[, pMinafter := fifelse(pMinafter == 0.0, pMinafter + hscn$loherror, pMinafter)] %>%
+                       .[, pMinafter := fifelse(pMinafter == 1.0, pMinafter - hscn$loherror, pMinafter)] %>%
+                       .[, pMinprev := ifelse(is.nan(Minprev/state), 0.0, Minprev/state)] %>% #nan check to stop 0/0
+                       .[, pMinprev := fifelse(pMinprev == 0.0, pMinprev + hscn$loherror, pMinprev)] %>%
+                       .[, pMinprev := fifelse(pMinprev == 1.0, pMinprev - hscn$loherror, pMinprev)] %>%
+                       .[, LLafter := VGAM::dbetabinom(alleleA, alleleA + alleleB, rho = hscn$likelihood$rho, p = pMinafter)] %>%
+                       .[, LLafter := fifelse(is.na(LLafter), 0, LLafter)] %>%
+                       .[, LLprev := VGAM::dbetabinom(alleleA, alleleA + alleleB, rho = hscn$likelihood$rho, p = pMinprev)] %>%
+                       .[, LLprev := fifelse(is.na(LLprev), 0, LLafter)] %>%
+                       .[, state_min := fifelse(nbins == 1 & LLafter < LLprev, Minprev, Min)] %>%
+                       .[, state_min := fifelse(nbins == 1 & LLafter >= LLprev, Minafter, Min)] %>%
+                       .[, Maj := state - state_min] %>%
+                       .[, Min := state_min] %>%
+                       .[, Min := fifelse(Min < 0, 0, Min)] %>%
+                       .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
+                       .[, Min := fifelse(Min > state, state, Min)] %>%
+                       .[, Maj := fifelse(Maj > state, state, Maj)] %>%
+                       add_states() %>%
+                       dplyr::select(-LLafter, -LLprev,-Minafter, -Minprev, -Majafter, -Majprev, -rlid))
+
+    hscn_data <- hscn_data %>%
+            as.data.table() %>%
+            .[, rlid := data.table::rleid(state_AS_phased)] %>%
+            .[, alleleAtot := sum(alleleA), by = "rlid"] %>%
+            .[, alleleBtot := sum(alleleB), by = "rlid"] %>%
+            .[, pMin := ifelse(is.nan(Min/state), 0.0, Min/state)] %>%
+            .[, pMin := fifelse(pMin == 0.0, pMin + hscn$loherror, pMin)] %>%
+            .[, pMin := fifelse(pMin == 1.0, pMin - hscn$loherror, pMin)] %>%
+            .[, pMaj := ifelse(is.nan(Maj/state), 0.0, Maj/state)] %>%
+            .[, pMaj := fifelse(pMaj == 0.0, pMaj + hscn$loherror, pMaj)] %>%
+            .[, pMaj := fifelse(pMaj == 1.0, pMaj - hscn$loherror, pMaj)] %>%
+            .[, LLassigned := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot, rho = hscn$likelihood$rho, p = pMin)] %>%
+            .[, LLother := VGAM::dbetabinom(alleleAtot, alleleAtot + alleleBtot,rho = hscn$likelihood$rho, p = pMaj)] %>%
+            .[, state_min := fifelse(LLother < LLassigned, Maj, Min)] %>%
+            .[, Maj := state - state_min] %>%
+            .[, Min := state_min] %>%
+            .[, Min := fifelse(Min < 0, 0, Min)] %>%
+            .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
+            .[, Min := fifelse(Min > state, state, Min)] %>%
+            .[, Maj := fifelse(Maj > state, state, Maj)] %>%
+            add_states() %>%
+            dplyr::select(-LLassigned, -LLother, -alleleBtot, -alleleAtot, -pMin, -pMaj, -rlid)
   }
 
   hscn[["data"]] <- hscn_data %>% as.data.frame()

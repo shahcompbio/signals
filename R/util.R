@@ -741,3 +741,22 @@ consensuscopynumberbyclone <- function(hscn){
 
   return(cn)
 }
+
+singletons <- function(cn, field){
+  if (is.hscn(cn) | is.ascn(cn)){
+    CNbins <- cn$data
+  } else{
+    CNbins <- cn
+  }
+
+  x <-  CNbins %>%
+    dplyr::mutate(changepoint_forward = dplyr::lag({{field}}) != {{field}}) %>%
+    dplyr::mutate(changepoint_reverse = dplyr::lead({{field}}) != {{field}}) %>%
+    dplyr::mutate(singleton = changepoint_forward & changepoint_reverse) %>%
+    dplyr::select(-changepoint_forward, -changepoint_reverse)
+
+  x_s <- sum(x$singleton)
+  message(paste0("Number of singletons: ", x_s))
+
+  return(x)
+}
