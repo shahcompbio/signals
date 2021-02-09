@@ -742,6 +742,7 @@ consensuscopynumberbyclone <- function(hscn){
   return(cn)
 }
 
+#' @export
 singletons <- function(cn, field){
   if (is.hscn(cn) | is.ascn(cn)){
     CNbins <- cn$data
