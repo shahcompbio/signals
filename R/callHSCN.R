@@ -320,7 +320,7 @@ get_cells_per_chr_local <- function(ascn,
     ascn_chr <- as.data.table(ascn)[chr == mychr]
     cl <- umap_clustering(ascn_chr,
                           n_neighbors = 20,
-                          min_dist = 0.0,
+                          min_dist = 0.001,
                           minPts = ncells_for_clustering,
                           field = "state_BAF")
     prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
