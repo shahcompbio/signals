@@ -648,6 +648,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     show_library_label = TRUE,
                                     show_clone_label = TRUE,
                                     chrlabels = TRUE,
+                                    raster_quality = 20,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -666,7 +667,7 @@ make_copynumber_heatmap <- function(copynumber,
     top_annotation = make_top_annotation_gain(copynumber, cutoff = cutoff, maxf = maxf,
                                               plotfrequency = plotfrequency, plotcol = plotcol),
     use_raster=TRUE,
-    raster_quality=5,
+    raster_quality=raster_quality,
     ...
   )
   return(copynumber_hm)
@@ -697,6 +698,7 @@ plotHeatmap <- function(cn,
                         widenarm = FALSE,
                         umapmetric = "euclidean",
                         chrlabels = TRUE,
+                        raster_quality = 10,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -871,6 +873,7 @@ plotHeatmap <- function(cn,
                                            show_library_label = show_library_label,
                                            show_clone_label = show_clone_label,
                                            chrlabels = chrlabels,
+                                           raster_quality = raster_quality,
                                            ...)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
@@ -883,29 +886,29 @@ plotHeatmap <- function(cn,
 
 #' @export
 createSNVmatrix <- function(SNVs, allcells = NULL, field = "VAF"){
-  
+
   if ("clone_id" %in% names(SNVs)){
     SNVs$cell_id <- SNVs$clone_id
   }
-  
+
   snvmatrix <- SNVs %>%
     .[, mutid := paste(chr, as.integer(start), ref, alt, sep = "_")] %>%
     data.table::dcast(., cell_id ~ mutid, value.var = field, fill = 0) %>%
     as.data.frame()
-  
+
   if (!is.null(allcells)){
     message("Adding blank rows to cells that have no mutations...")
     missingcells <- data.frame(cell_id = clones$cell_id[!clones$cell_id %in% dfmuts$cell_id])
     dfmuts <- dplyr::bind_rows(dfmuts, missingcells)
   }
-  
-  
+
+
   rownames(snvmatrix) <- snvmatrix$cell_id
   snvmatrix <- subset(snvmatrix, select = -cell_id)
-  
+
   #sort by number of clones with mutation
   snvmatrix <- snvmatrix[,names(sort(colSums(!is.na(snvmatrix)), decreasing = T))]
-  
+
   return(snvmatrix)
 }
 
@@ -919,22 +922,22 @@ plotSNVHeatmap <- function(SNVs,
                            show_legend = TRUE,
                            library_mapping = NULL,
                            show_library_label = TRUE,
-                           show_clone_label = TRUE, 
+                           show_clone_label = TRUE,
                            plottree = TRUE,
                            mymaxcol = "firebrick4",
                            sample_label_idx = 1,
-                           nsample = 10000, 
+                           nsample = 10000,
                            clustercols = FALSE){
-  
+
   muts <- createSNVmatrix(SNVs)
-  
+
   if (is.null(clusters)){
     clusters <- data.frame(cell_id = tree$tip.label, clone_id = "0")
   }
-  
+
   tree_ggplot <- make_tree_ggplot(tree, clusters, clone_pal = clone_pal)
   tree_plot_dat <- tree_ggplot$data
-  
+
   message("Creating tree...")
   tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
   ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
@@ -942,11 +945,11 @@ plotSNVHeatmap <- function(SNVs,
   muts <- muts[ordered_cell_ids, ]
 
   cols <- circlize::colorRamp2(c(0, 1), c("white", mymaxcol))
-  
+
   clones_formatted <- format_clones(as.data.frame(clusters), ordered_cell_ids)
-  
+
   muts <- as.matrix(muts)
-  
+
   if (dim(muts)[2] > 10000){
     message(paste0("Sampling ", nsample, " mutations..."))
     muts <- muts[,sample(ncol(muts), size = nsample), drop = FALSE]
@@ -970,13 +973,13 @@ plotSNVHeatmap <- function(SNVs,
     #raster_quality=1,
     heatmap_legend_param=list(nrow=4)
   )
-  
+
   if (plottree == TRUE){
     h <- tree_hm + snv_hm
   } else {
     h <- snv_hm
   }
-  
+
   return(h)
 }
 
