@@ -536,7 +536,11 @@ callHaplotypeSpecificCN <- function(CNbins,
   }
 
 
-  cnbaf <- combineBAFCN(haplotypes = haplotypes, CNbins = CNbins)
+  cnbaf <- combineBAFCN(haplotypes = haplotypes,
+                        CNbins = CNbins,
+                        minbinschr = minbinschr,
+                        minbins = minbins)
+
   ascn <- schnapps:::.callHaplotypeSpecificCN_(cnbaf,
                                     eps = eps,
                                     loherror = loherror,
