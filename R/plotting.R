@@ -98,8 +98,8 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL){
   breakpoints <- breakpoints %>% 
     dplyr::mutate(position_1 = 0.5e6 * floor(position_1 / 0.5e6) + 1,
                   position_2 = 0.5e6 * floor(position_2 / 0.5e6) + 1) %>% 
-    dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx)) %>% 
-    dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx))
+    dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx), by = c("chromosome_1", "position_1")) %>% 
+    dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx), by = c("chromosome_2", "position_2"))
   
   #get breaks - first index of each chromosome
   chrbreaks <- bins %>%
@@ -121,12 +121,21 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL){
   return(list(breakpoints = breakpoints, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
+CapStr <- function(y) {
+  c <- strsplit(y, " ")[[1]]
+  paste(toupper(substring(c, 1,1)), substring(c, 2),
+        sep="", collapse=" ")
+}
+
+
 #' @export
 plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5){
   pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
   
   pl$breakpoints <- pl$breakpoints %>% 
     dplyr::mutate(curve = ifelse(abs(idx_1 - idx_2) < 5, FALSE, TRUE))
+  
+  pl$breakpoints$rearrangement_type <- unlist(lapply(pl$breakpoints$rearrangement_type, CapStr))
   
   curve_data <- pl$breakpoints %>% dplyr::filter(curve == TRUE)
   line_data <- pl$breakpoints %>% dplyr::filter(curve == FALSE)
@@ -144,11 +153,18 @@ plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5){
     ggplot2::ylim(c(0, 2))
   
   if (dim(curve_data)[1] > 0){
-    gSV <- gSV + ggplot2::geom_curve(data = curve_data, aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001), curvature = curvature)
+    gSV <- gSV + ggplot2::geom_curve(data = curve_data, aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001, col = rearrangement_type), curvature = curvature) +
+      ggplot2::labs(col = "Rearrangement") +
+      ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion"), 
+                                  values = c("#fed049", "#c06014", "#536162", "#b7657b", "#78c4d4"))
   }
   
   if (dim(line_data)[1] > 0){
-    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 1, y = 1, yend = 1.3))
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 1, y = 1, yend = 1.3, col = rearrangement_type)) +
+      labs(col = "Rearrangement") +
+      ggplot2::labs(col = "Rearrangement") +
+      ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion"), 
+                                  values = c("#fed049", "#c06014", "#536162", "#b7657b", "#78c4d4"))
   }
   
   return(gSV)
