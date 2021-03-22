@@ -75,6 +75,16 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20){
   return(list(CNbins = CNbins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
+get_gene_idx <- function(mygenes, chr = NULL){
+  gene_df <- gene_locations %>%
+    dplyr::filter(ensembl_gene_symbol %in% mygenes) %>%
+    dplyr::mutate(start = 0.5e6 * floor(start / 0.5e6) + 1,
+           end = 0.5e6 * ceiling(start / 0.5e6))
+  bins <- getBins(binsize = 0.5e6, chromosomes = chr) %>% dplyr::mutate(idx = 1:dplyr::n())
+  gene_bin <- dplyr::left_join(gene_df, bins)
+  return(gene_bin)
+}
+
 #' @export
 plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5, raster = FALSE){
 
@@ -121,7 +131,8 @@ plotCNprofile <- function(CNbins,
                          returnlist = FALSE,
                          raster = FALSE,
                          y_axis_trans = "identity",
-                         xaxis_order = "genome_position"){
+                         xaxis_order = "genome_position",
+                         genes = NULL){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -202,6 +213,13 @@ plotCNprofile <- function(CNbins,
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
   }
 
+  if (!is.null(genes)){
+    gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    gCN <- gCN +
+      ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
+      ggplot2::geom_label(data = gene_idx, ggplot2::aes(x = idx + 6, y = maxCN, label = ensembl_gene_symbol), col = "black")
+  }
+
   if (returnlist == TRUE){
     gCN <- list(CN = gCN, plist = pl)
   }
@@ -223,7 +241,8 @@ plotCNprofileBAF <- function(cn,
                           returnlist = FALSE,
                           raster = FALSE,
                           y_axis_trans = "identity",
-                          xaxis_order = "genome_position"){
+                          xaxis_order = "genome_position",
+                          genes = NULL){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -379,6 +398,15 @@ plotCNprofileBAF <- function(cn,
                                                        override.aes = list(alpha=1, size = 3, shape = 15))) +
         ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
     }
+
+  if (!is.null(genes)){
+    gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    gBAF <- gBAF +
+      ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
+      ggplot2::geom_label(data = gene_idx, ggplot2::aes(x = idx + 6, y = 1.0, label = ensembl_gene_symbol), col = "black")
+    gCN <- gCN +
+      ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+  }
 
   g <- cowplot::plot_grid(gBAF, gCN, align = "v", ncol = 1, rel_heights = c(1, 1.2))
 
