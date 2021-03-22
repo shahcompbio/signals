@@ -75,6 +75,85 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20){
   return(list(CNbins = CNbins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
+plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL){
+  
+  breakpoints$chromosome_1 <- as.character(breakpoints$chromosome_1)
+  breakpoints$chromosome_2 <- as.character(breakpoints$chromosome_2)
+  
+  if (is.null(chrfilt)){
+    bins <- getBins(binsize = binsize) %>%
+      dplyr::filter(chr != "Y") %>% 
+      dplyr::mutate(idx = 1:dplyr::n()) %>% 
+      dplyr::select(chr, start, idx)
+  } else {
+    bins <- getBins(binsize = binsize) %>%
+      dplyr::filter(chr %in% chrfilt) %>%
+      dplyr::filter(chr != "Y") %>% 
+      dplyr::mutate(idx = 1:dplyr::n()) %>% 
+      dplyr::select(chr, start, idx)
+    breakpoints <- breakpoints %>% 
+      dplyr::filter((chromosome_1 %in% chrfilt) | (chromosome_2 %in% chrfilt))
+  }
+  
+  breakpoints <- breakpoints %>% 
+    dplyr::mutate(position_1 = 0.5e6 * floor(position_1 / 0.5e6) + 1,
+                  position_2 = 0.5e6 * floor(position_2 / 0.5e6) + 1) %>% 
+    dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx)) %>% 
+    dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx))
+  
+  #get breaks - first index of each chromosome
+  chrbreaks <- bins %>%
+    dplyr::filter(chr %in% unique(CNbins$chr)) %>%
+    dplyr::group_by(chr) %>%
+    dplyr::filter(dplyr::row_number() == 1) %>%
+    dplyr::pull(idx)
+  
+  #get ticks - median bin of each chromosome
+  chrticks <- bins %>%
+    dplyr::filter(chr %in% unique(CNbins$chr)) %>%
+    dplyr::group_by(chr) %>%
+    dplyr::summarise(idx = round(median(idx))) %>%
+    dplyr::pull(idx)
+  
+  chrlabels <- gtools::mixedsort(unique(bins$chr))
+  minidx <- min(bins$idx)
+  maxidx <- max(bins$idx)
+  return(list(breakpoints = breakpoints, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
+}
+
+#' @export
+plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5){
+  pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
+  
+  pl$breakpoints <- pl$breakpoints %>% 
+    dplyr::mutate(curve = ifelse(abs(idx_1 - idx_2) < 5, FALSE, TRUE))
+  
+  curve_data <- pl$breakpoints %>% dplyr::filter(curve == TRUE)
+  line_data <- pl$breakpoints %>% dplyr::filter(curve == FALSE)
+  
+  gSV <- pl$bins %>% 
+    ggplot(aes(x = idx, y = 1)) +
+    geom_line() +
+    ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
+    ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
+    xlab("Chromosome") +
+    ggplot2::theme(axis.line.y = ggplot2::element_blank(),
+                   axis.title.y = ggplot2::element_blank(),
+                   axis.text.y = ggplot2::element_blank(),
+                   axis.ticks.y = ggplot2::element_blank()) +
+    ggplot2::ylim(c(0, 2))
+  
+  if (dim(curve_data)[1] > 0){
+    gSV <- gSV + ggplot2::geom_curve(data = curve_data, aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001), curvature = curvature)
+  }
+  
+  if (dim(line_data)[1] > 0){
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 1, y = 1, yend = 1.3))
+  }
+  
+  return(gSV)
+}
+
 get_gene_idx <- function(mygenes, chr = NULL){
   gene_df <- gene_locations %>%
     dplyr::filter(ensembl_gene_symbol %in% mygenes) %>%
