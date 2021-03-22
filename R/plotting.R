@@ -152,7 +152,7 @@ plotSV <- function(breakpoints,
     ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
     ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
     xlab("Chromosome") +
-    cowplot::theme_cowplot(...)
+    cowplot::theme_cowplot(...) +
     ggplot2::theme(axis.line.y = ggplot2::element_blank(),
                    axis.text.y = ggplot2::element_blank(),
                    axis.ticks.y = ggplot2::element_blank()) +
