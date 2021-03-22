@@ -76,45 +76,45 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20){
 }
 
 plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL){
-  
+
   breakpoints$chromosome_1 <- as.character(breakpoints$chromosome_1)
   breakpoints$chromosome_2 <- as.character(breakpoints$chromosome_2)
-  
+
   if (is.null(chrfilt)){
     bins <- getBins(binsize = binsize) %>%
-      dplyr::filter(chr != "Y") %>% 
-      dplyr::mutate(idx = 1:dplyr::n()) %>% 
+      dplyr::filter(chr != "Y") %>%
+      dplyr::mutate(idx = 1:dplyr::n()) %>%
       dplyr::select(chr, start, idx)
   } else {
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% chrfilt) %>%
-      dplyr::filter(chr != "Y") %>% 
-      dplyr::mutate(idx = 1:dplyr::n()) %>% 
+      dplyr::filter(chr != "Y") %>%
+      dplyr::mutate(idx = 1:dplyr::n()) %>%
       dplyr::select(chr, start, idx)
-    breakpoints <- breakpoints %>% 
+    breakpoints <- breakpoints %>%
       dplyr::filter((chromosome_1 %in% chrfilt) | (chromosome_2 %in% chrfilt))
   }
-  
-  breakpoints <- breakpoints %>% 
+
+  breakpoints <- breakpoints %>%
     dplyr::mutate(position_1 = 0.5e6 * floor(position_1 / 0.5e6) + 1,
-                  position_2 = 0.5e6 * floor(position_2 / 0.5e6) + 1) %>% 
-    dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx), by = c("chromosome_1", "position_1")) %>% 
+                  position_2 = 0.5e6 * floor(position_2 / 0.5e6) + 1) %>%
+    dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx), by = c("chromosome_1", "position_1")) %>%
     dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx), by = c("chromosome_2", "position_2"))
-  
+
   #get breaks - first index of each chromosome
   chrbreaks <- bins %>%
     dplyr::filter(chr %in% unique(CNbins$chr)) %>%
     dplyr::group_by(chr) %>%
     dplyr::filter(dplyr::row_number() == 1) %>%
     dplyr::pull(idx)
-  
+
   #get ticks - median bin of each chromosome
   chrticks <- bins %>%
     dplyr::filter(chr %in% unique(CNbins$chr)) %>%
     dplyr::group_by(chr) %>%
     dplyr::summarise(idx = round(median(idx))) %>%
     dplyr::pull(idx)
-  
+
   chrlabels <- gtools::mixedsort(unique(bins$chr))
   minidx <- min(bins$idx)
   maxidx <- max(bins$idx)
@@ -129,50 +129,57 @@ CapStr <- function(y) {
 
 
 #' @export
-plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5, returnlist = FALSE, ylims = c(0,2)){
+plotSV <- function(breakpoints,
+                   chrfilt = NULL,
+                   curvature = -0.5,
+                   returnlist = FALSE,
+                   ylims = c(0,2),
+                   ...){
+
   pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
-  
-  pl$breakpoints <- pl$breakpoints %>% 
+
+  pl$breakpoints <- pl$breakpoints %>%
     dplyr::mutate(curve = ifelse(abs(idx_1 - idx_2) < 5, FALSE, TRUE))
-  
+
   pl$breakpoints$rearrangement_type <- unlist(lapply(pl$breakpoints$rearrangement_type, CapStr))
-  
+
   curve_data <- pl$breakpoints %>% dplyr::filter(curve == TRUE)
   line_data <- pl$breakpoints %>% dplyr::filter(curve == FALSE)
-  
-  gSV <- pl$bins %>% 
+
+  gSV <- pl$bins %>%
     ggplot(aes(x = idx, y = 1)) +
     geom_line() +
     ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
     ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
     xlab("Chromosome") +
+    cowplot::theme_cowplot(...)
     ggplot2::theme(axis.line.y = ggplot2::element_blank(),
                    axis.text.y = ggplot2::element_blank(),
                    axis.ticks.y = ggplot2::element_blank()) +
     ylab("SV") +
     ggplot2::ylim(ylims)
-  
+
   if (dim(curve_data)[1] > 0){
     gSV <- gSV + ggplot2::geom_curve(data = curve_data, aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001, col = rearrangement_type), curvature = curvature) +
       ggplot2::labs(col = "Rearrangement") +
-      ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion"), 
+      ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion"),
                                   values = c("#fed049", "#c06014", "#536162", "#e40017", "#78c4d4"))
   }
-  
+
   if (dim(line_data)[1] > 0){
     gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = 1, yend = 1.3, col = rearrangement_type)) +
       labs(col = "Rearrangement") +
       ggplot2::labs(col = "Rearrangement") +
-      ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion"), 
+      ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion"),
                                   values = c("#fed049", "#c06014", "#536162", "#e40017", "#78c4d4"))
   }
-  
+
   if (returnlist == TRUE){
     p <- list(SV = gSV, plist = pl)
   } else {
     p <- gSV
   }
-  
+
   return(p)
 }
 
@@ -233,7 +240,7 @@ plotCNprofile <- function(CNbins,
                          raster = FALSE,
                          y_axis_trans = "identity",
                          xaxis_order = "genome_position",
-                         genes = NULL){
+                         genes = NULL, ...){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -284,7 +291,7 @@ plotCNprofile <- function(CNbins,
       ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN),trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
-      cowplot::theme_cowplot() +
+      cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
                                                      override.aes = list(alpha=1, size = 3, shape = 15))) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
@@ -308,7 +315,7 @@ plotCNprofile <- function(CNbins,
       ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
-      cowplot::theme_cowplot() +
+      cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
                                                      override.aes = list(alpha=1, size = 3, shape = 15))) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
@@ -343,7 +350,8 @@ plotCNprofileBAF <- function(cn,
                           raster = FALSE,
                           y_axis_trans = "identity",
                           xaxis_order = "genome_position",
-                          genes = NULL){
+                          genes = NULL,
+                          ...){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -415,7 +423,7 @@ plotCNprofileBAF <- function(cn,
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("BAF") +
       ggplot2::ggtitle(cellid) +
-      cowplot::theme_cowplot() +
+      cowplot::theme_cowplot(...) +
       ggplot2::geom_hline(yintercept = 0.5, lty = 2, alpha = 0.5) +
       ggplot2::theme(axis.title.x=ggplot2::element_blank(),
             axis.text.x=ggplot2::element_blank(),
@@ -443,7 +451,7 @@ plotCNprofileBAF <- function(cn,
       ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
-      cowplot::theme_cowplot() +
+      cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
                                                      override.aes = list(alpha=1, size = 3, shape = 15))) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
@@ -466,7 +474,7 @@ plotCNprofileBAF <- function(cn,
         ggplot2::xlab("Chromosome") +
         ggplot2::ylab("BAF") +
         ggplot2::ggtitle(cellid) +
-        cowplot::theme_cowplot() +
+        cowplot::theme_cowplot(...) +
         ggplot2::geom_hline(yintercept = 0.5, lty = 2, alpha = 0.5) +
         ggplot2::theme(axis.title.x=ggplot2::element_blank(),
                        axis.text.x=ggplot2::element_blank(),
@@ -494,7 +502,7 @@ plotCNprofileBAF <- function(cn,
         ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
         ggplot2::xlab("Chromosome") +
         ggplot2::ylab("Copy Number") +
-        cowplot::theme_cowplot() +
+        cowplot::theme_cowplot(...) +
         ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
                                                        override.aes = list(alpha=1, size = 3, shape = 15))) +
         ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
@@ -521,7 +529,7 @@ plotCNprofileBAF <- function(cn,
 }
 
 #' @export
-plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
+plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, ...){
   if (is.hscn(cn) | is.ascn(cn)){
     CNbins <- cn$data
   } else{
@@ -550,7 +558,7 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1){
     ggplot2::ggplot(ggplot2::aes(y = BAF, x = copy, col = paste0("CN", state))) +
     ggplot2::geom_point(size = pointsize, alpha = 0.2) +
     ggplot2::xlab("Corrected read counts") +
-    cowplot::theme_cowplot() +
+    cowplot::theme_cowplot(...) +
     ggplot2::ggtitle(plottitle) +
     ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(alpha=1, size=5))) +
     ggplot2::geom_text(data = ASstates, ggplot2::aes(x = state, y = cBAF, label = state_AS), col = "black") +
