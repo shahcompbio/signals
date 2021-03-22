@@ -129,7 +129,7 @@ CapStr <- function(y) {
 
 
 #' @export
-plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5){
+plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5, returnlist = FALSE){
   pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
   
   pl$breakpoints <- pl$breakpoints %>% 
@@ -147,9 +147,9 @@ plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5){
     ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
     xlab("Chromosome") +
     ggplot2::theme(axis.line.y = ggplot2::element_blank(),
-                   axis.title.y = ggplot2::element_blank(),
                    axis.text.y = ggplot2::element_blank(),
                    axis.ticks.y = ggplot2::element_blank()) +
+    ylab("SV") +
     ggplot2::ylim(c(0, 2))
   
   if (dim(curve_data)[1] > 0){
@@ -160,14 +160,20 @@ plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5){
   }
   
   if (dim(line_data)[1] > 0){
-    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 1, y = 1, yend = 1.3, col = rearrangement_type)) +
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = 1, yend = 1.3, col = rearrangement_type)) +
       labs(col = "Rearrangement") +
       ggplot2::labs(col = "Rearrangement") +
       ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion"), 
                                   values = c("#fed049", "#c06014", "#536162", "#e40017", "#78c4d4"))
   }
   
-  return(gSV)
+  if (returnlist == TRUE){
+    p <- list(SV = gSV, plist = pl)
+  } else {
+    p <- gSV
+  }
+  
+  return(p)
 }
 
 get_gene_idx <- function(mygenes, chr = NULL){
