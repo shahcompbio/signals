@@ -129,7 +129,7 @@ CapStr <- function(y) {
 
 
 #' @export
-plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5, returnlist = FALSE){
+plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5, returnlist = FALSE, ylims = c(0,2)){
   pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
   
   pl$breakpoints <- pl$breakpoints %>% 
@@ -150,7 +150,7 @@ plotSV <- function(breakpoints, chrfilt = NULL, curvature = -0.5, returnlist = F
                    axis.text.y = ggplot2::element_blank(),
                    axis.ticks.y = ggplot2::element_blank()) +
     ylab("SV") +
-    ggplot2::ylim(c(0, 2))
+    ggplot2::ylim(ylims)
   
   if (dim(curve_data)[1] > 0){
     gSV <- gSV + ggplot2::geom_curve(data = curve_data, aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001, col = rearrangement_type), curvature = curvature) +
@@ -318,7 +318,7 @@ plotCNprofile <- function(CNbins,
     gene_idx <- get_gene_idx(genes, chr = chrfilt)
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
-      ggplot2::geom_label(data = gene_idx, ggplot2::aes(x = idx + 6, y = maxCN, label = ensembl_gene_symbol), col = "black")
+      ggrepel::geom_label_repel(data = gene_idx, ggplot2::aes(x = idx + 6, y = maxCN, label = ensembl_gene_symbol), col = "black")
   }
 
   if (returnlist == TRUE){
@@ -504,7 +504,7 @@ plotCNprofileBAF <- function(cn,
     gene_idx <- get_gene_idx(genes, chr = chrfilt)
     gBAF <- gBAF +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
-      ggplot2::geom_label(data = gene_idx, ggplot2::aes(x = idx + 6, y = 1.0, label = ensembl_gene_symbol), col = "black")
+      ggrepel::geom_label_repel(data = gene_idx, ggplot2::aes(x = idx + 6, y = 1.0, label = ensembl_gene_symbol), col = "black")
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
   }
