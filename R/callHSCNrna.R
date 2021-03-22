@@ -234,7 +234,7 @@ assign_states_dp <- function(bafperchr,
   row.names(theta) <- NULL
   theta <- theta %>%
     tidyr::pivot_longer(-chrarm, names_to = "clone_id", values_to = "theta") %>%
-    dplyr::mutate(chrarm = str_remove_all(chrarm, "chr"))
+    dplyr::mutate(chrarm = gsub("chr", "", chrarm))
 
   message('Generating dataframe mapping cell_id to clone_id...')
   x <- data.frame(clone_id = fit_filt$labels$cluster.Binomial,
