@@ -336,12 +336,12 @@ make_left_annot <- function(copynumber,
 
     if (show_library_label == TRUE & show_clone_label == TRUE){
       left_annot <- ComplexHeatmap::HeatmapAnnotation(
-        Clone=clones$clone_label, clone_label=clone_label_generator,
+        Cluster=clones$clone_label, clone_label=clone_label_generator,
         Sample=library_labels,
         col=annot_colours, show_annotation_name=c(TRUE, FALSE, TRUE),
         which="row", annotation_width=grid::unit(rep(0.4, 3), "cm"),
         annotation_legend_param=list(
-          Clone=list(nrow=clone_legend_rows, direction = "horizontal"),
+          Cluster=list(nrow=clone_legend_rows, direction = "horizontal"),
           Sample=list(nrow=library_legend_rows, direction = "horizontal")
         ),
         show_legend = show_legend
