@@ -167,7 +167,7 @@ plotSV <- function(breakpoints,
   }
 
   if (dim(line_data)[1] > 0){
-    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = 1, yend = 1.3, col = rearrangement_type)) +
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = 1, yend = max(ylims), col = rearrangement_type)) +
       labs(col = "Rearrangement") +
       ggplot2::labs(col = "Rearrangement") +
       ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion", "Balanced"),
