@@ -243,6 +243,7 @@ plotCNprofile <- function(CNbins,
                          y_axis_trans = "identity",
                          xaxis_order = "genome_position",
                          legend.position = "bottom",
+                         annotateregions = NULL,
                          genes = NULL, ...){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
@@ -331,6 +332,12 @@ plotCNprofile <- function(CNbins,
       ggrepel::geom_label_repel(data = gene_idx, ggplot2::aes(x = idx + 6, y = maxCN, label = ensembl_gene_symbol), col = "black")
   }
 
+  if (!is.null(annotateregions)){
+    datidx <- dplyr::inner_join(annotateregions, pl$CNbins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
+    gCN <- gCN +
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+  }
+
   if (returnlist == TRUE){
     gCN <- list(CN = gCN, plist = pl)
   }
@@ -355,6 +362,7 @@ plotCNprofileBAF <- function(cn,
                           xaxis_order = "genome_position",
                           legend.position = "bottom",
                           genes = NULL,
+                          annotateregions = NULL,
                           ...){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
@@ -519,6 +527,14 @@ plotCNprofileBAF <- function(cn,
       ggrepel::geom_label_repel(data = gene_idx, ggplot2::aes(x = idx + 6, y = 1.0, label = ensembl_gene_symbol), col = "black")
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+  }
+
+  if (!is.null(annotateregions)){
+    datidx <- dplyr::inner_join(annotateregions, pl$CNbins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
+    gBAF <- gBAF +
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+    gCN <- gCN +
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
   }
 
   g <- cowplot::plot_grid(gBAF, gCN, align = "v", ncol = 1, rel_heights = c(1, 1.2))
