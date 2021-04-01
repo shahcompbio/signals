@@ -134,6 +134,7 @@ plotSV <- function(breakpoints,
                    curvature = -0.5,
                    returnlist = FALSE,
                    ylims = c(0,2),
+                   legend.position = "bottom",
                    ...){
 
   pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
@@ -155,7 +156,8 @@ plotSV <- function(breakpoints,
     cowplot::theme_cowplot(...) +
     ggplot2::theme(axis.line.y = ggplot2::element_blank(),
                    axis.text.y = ggplot2::element_blank(),
-                   axis.ticks.y = ggplot2::element_blank()) +
+                   axis.ticks.y = ggplot2::element_blank(),
+                   legend.position = legend.position) +
     ylab("SV") +
     ggplot2::ylim(ylims)
 
@@ -240,6 +242,7 @@ plotCNprofile <- function(CNbins,
                          raster = FALSE,
                          y_axis_trans = "identity",
                          xaxis_order = "genome_position",
+                         legend.position = "bottom",
                          genes = NULL, ...){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
@@ -294,7 +297,7 @@ plotCNprofile <- function(CNbins,
       cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
                                                      override.aes = list(alpha=1, size = 3, shape = 15))) +
-      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
   } else {
     gCN <- pl$CNbins %>%
       dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
@@ -318,7 +321,7 @@ plotCNprofile <- function(CNbins,
       cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
                                                      override.aes = list(alpha=1, size = 3, shape = 15))) +
-      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
   }
 
   if (!is.null(genes)){
@@ -350,6 +353,7 @@ plotCNprofileBAF <- function(cn,
                           raster = FALSE,
                           y_axis_trans = "identity",
                           xaxis_order = "genome_position",
+                          legend.position = "bottom",
                           genes = NULL,
                           ...){
 
@@ -428,7 +432,7 @@ plotCNprofileBAF <- function(cn,
       ggplot2::theme(axis.title.x=ggplot2::element_blank(),
             axis.text.x=ggplot2::element_blank(),
             axis.ticks.x=ggplot2::element_blank()) +
-      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom") +
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position) +
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 3, shape = 15)))
 
     gCN <- pl$CNbins %>%
@@ -454,7 +458,7 @@ plotCNprofileBAF <- function(cn,
       cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
                                                      override.aes = list(alpha=1, size = 3, shape = 15))) +
-      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
     } else {
       gBAF <- pl$CNbins %>%
         dplyr::mutate(state_min = paste0(state_min)) %>%
@@ -479,7 +483,7 @@ plotCNprofileBAF <- function(cn,
         ggplot2::theme(axis.title.x=ggplot2::element_blank(),
                        axis.text.x=ggplot2::element_blank(),
                        axis.ticks.x=ggplot2::element_blank()) +
-        ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom") +
+        ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position) +
         ggplot2::guides(colour = ggplot2::guide_legend(ncol = 5, override.aes = list(alpha=1, size = 3, shape = 15)))
 
       gCN <- pl$CNbins %>%
@@ -505,7 +509,7 @@ plotCNprofileBAF <- function(cn,
         cowplot::theme_cowplot(...) +
         ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
                                                        override.aes = list(alpha=1, size = 3, shape = 15))) +
-        ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "bottom")
+        ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
     }
 
   if (!is.null(genes)){
