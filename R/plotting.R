@@ -72,7 +72,7 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20){
     maxidx <- max(bins$idx)
   }
 
-  return(list(CNbins = CNbins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
+  return(list(CNbins = CNbins,bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
 plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL){
@@ -333,7 +333,7 @@ plotCNprofile <- function(CNbins,
   }
 
   if (!is.null(annotateregions)){
-    datidx <- dplyr::inner_join(annotateregions, pl$CNbins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
+    datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
     gCN <- gCN +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
   }
@@ -530,7 +530,7 @@ plotCNprofileBAF <- function(cn,
   }
 
   if (!is.null(annotateregions)){
-    datidx <- dplyr::inner_join(annotateregions, pl$CNbins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
+    datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
     gBAF <- gBAF +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
     gCN <- gCN +
