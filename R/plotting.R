@@ -164,16 +164,16 @@ plotSV <- function(breakpoints,
   if (dim(curve_data)[1] > 0){
     gSV <- gSV + ggplot2::geom_curve(data = curve_data, aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001, col = rearrangement_type), curvature = curvature) +
       ggplot2::labs(col = "Rearrangement") +
-      ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion", "Balanced"),
-                                  values = c("#fed049", "#c06014", "#536162", "#e40017", "#78c4d4", "#dddddd"))
+      ggplot2::scale_color_manual(breaks = names(SV_colors),
+                                  values = as.vector(SV_colors))
   }
 
   if (dim(line_data)[1] > 0){
     gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = 1, yend = max(ylims), col = rearrangement_type)) +
       labs(col = "Rearrangement") +
       ggplot2::labs(col = "Rearrangement") +
-      ggplot2::scale_color_manual(breaks = c("Inversion", "Foldback", "Unbalanced", "Duplication", "Deletion", "Balanced"),
-                                  values = c("#fed049", "#c06014", "#536162", "#e40017", "#78c4d4", "#dddddd"))
+      ggplot2::scale_color_manual(breaks = names(SV_colors),
+                                  values = as.vector(SV_colors))
   }
 
   if (returnlist == TRUE){
