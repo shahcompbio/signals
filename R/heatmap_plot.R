@@ -49,6 +49,37 @@ normalize_cell_ploidy <- function(copynumber) {
   return(copynumber)
 }
 
+createSVmatforhmap <- function(x, cnmat){
+  options(scipen=999)
+  
+  breakends <- dplyr::bind_rows(dplyr::select(x, chromosome_1, position_1, rearrangement_type, read_count) %>% dplyr::rename(chromosome = chromosome_1, position = position_1),
+                                dplyr::select(x, chromosome_2, position_2, rearrangement_type, read_count) %>% dplyr::rename(chromosome = chromosome_2, position = position_2))
+  
+  breakends <- breakends %>% 
+    dplyr::mutate(position = 0.5e6 * floor(position / 0.5e6) + 1) %>% 
+    dplyr::mutate(loci = paste0(chromosome, ":", position, ":", position + 0.5e6-1)) %>% 
+    dplyr::arrange(desc(read_count)) %>% 
+    dplyr::group_by(loci) %>% 
+    dplyr::filter(row_number() == 1) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::distinct(loci, rearrangement_type)
+  
+  breakends_ <- data.frame(loci = names(cnmat)) %>% 
+    dplyr::left_join(breakends) %>% 
+    dplyr::mutate(y = ifelse(is.na(rearrangement_type), 0, 1)) %>% 
+    dplyr::mutate(col = case_when(
+      is.na(rearrangement_type) ~ NA_character_,
+      rearrangement_type == "inversion" ~ SV_colors2[["Inversion"]],
+      rearrangement_type == "foldback" ~ SV_colors2[["Foldback"]],
+      rearrangement_type == "inbalanced" ~ SV_colors2[["Unbalanced"]],
+      rearrangement_type == "duplication" ~ SV_colors2[["Duplication"]],
+      rearrangement_type == "balanced" ~ SV_colors2[["Balanced"]],
+      rearrangement_type == "deletion" ~ SV_colors2[["Deletion"]]
+    ))
+  
+  return(breakends_)
+}
+
 format_tree <- function(tree, brlen) {
   locus_tips <- grep('locus', tree$tip.label, value=TRUE)
   tree <- ape::drop.tip(tree, locus_tips)
@@ -525,7 +556,8 @@ make_top_annotation_gain <- function(copynumber,
                                      plotcol = "state",
                                      plotfrequency = FALSE,
                                      cutoff = NULL,
-                                     maxf = NULL){
+                                     maxf = NULL,
+                                     SV = NULL){
   ncells <- nrow(copynumber)
 
   if ((plotcol == "state" | plotcol == "copy") & plotfrequency == TRUE){
@@ -630,6 +662,23 @@ make_top_annotation_gain <- function(copynumber,
   else {
     ha2 <- NULL
   }
+  
+  if (!is.null(SV)){
+    breakends <- createSVmatforhmap(SV, copynumber)
+    annotationbreaks <- sort(unique(breakends$rearrangement_type))
+    annotationbreaks <- annotationbreaks[!is.na(annotationbreaks)]
+    annotationlabels <- unlist(lapply(annotationbreaks, CapStr))
+    ha2 = ComplexHeatmap::HeatmapAnnotation(SV = anno_barplot(breakends$y, 
+                 gp = grid::gpar(col = breakends$col, fill = breakends$col), 
+                 ylim = c(0, 1),
+                 axis = FALSE,
+                 #pch = 25,
+                 border = FALSE), 
+                 which = "column",
+                 show_annotation_name = TRUE,
+                 height = grid::unit(0.7, "cm"))
+  }
+  
   return(ha2)
 }
 
@@ -649,6 +698,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     show_clone_label = TRUE,
                                     chrlabels = TRUE,
                                     raster_quality = 20,
+                                    SV = NULL,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name=legendname,
@@ -665,12 +715,20 @@ make_copynumber_heatmap <- function(copynumber,
                                     idx = sample_label_idx,show_legend = show_legend, show_library_label = show_library_label),
     heatmap_legend_param=list(nrow=3, direction = "vertical"),
     top_annotation = make_top_annotation_gain(copynumber, cutoff = cutoff, maxf = maxf,
-                                              plotfrequency = plotfrequency, plotcol = plotcol),
+                                              plotfrequency = plotfrequency, plotcol = plotcol, SV = SV),
     use_raster=TRUE,
     raster_quality=raster_quality,
     ...
   )
   return(copynumber_hm)
+}
+
+getSVlegend <- function(include = NULL){
+  svs <- SV_colors[include]
+  SV = list(
+    ComplexHeatmap::Legend(labels = names(svs), title = "Rearrangement type", type = "points", pch = 16, 
+           legend_gp = grid::gpar(col = as.vector(svs))))
+  return(SV)
 }
 
 #' @export
@@ -699,6 +757,7 @@ plotHeatmap <- function(cn,
                         umapmetric = "euclidean",
                         chrlabels = TRUE,
                         raster_quality = 10,
+                        SV = NULL,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -874,6 +933,7 @@ plotHeatmap <- function(cn,
                                            show_clone_label = show_clone_label,
                                            chrlabels = chrlabels,
                                            raster_quality = raster_quality,
+                                           SV = SV,
                                            ...)
   if (plottree == TRUE){
     h <- tree_hm + copynumber_hm
