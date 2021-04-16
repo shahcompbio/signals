@@ -69,12 +69,12 @@ createSVmatforhmap <- function(x, cnmat){
     dplyr::mutate(y = ifelse(is.na(rearrangement_type), 0, 1)) %>% 
     dplyr::mutate(col = case_when(
       is.na(rearrangement_type) ~ NA_character_,
-      rearrangement_type == "inversion" ~ SV_colors2[["Inversion"]],
-      rearrangement_type == "foldback" ~ SV_colors2[["Foldback"]],
-      rearrangement_type == "inbalanced" ~ SV_colors2[["Unbalanced"]],
-      rearrangement_type == "duplication" ~ SV_colors2[["Duplication"]],
-      rearrangement_type == "balanced" ~ SV_colors2[["Balanced"]],
-      rearrangement_type == "deletion" ~ SV_colors2[["Deletion"]]
+      rearrangement_type == "inversion" ~ SV_colors[["Inversion"]],
+      rearrangement_type == "foldback" ~ SV_colors[["Foldback"]],
+      rearrangement_type == "inbalanced" ~ SV_colors[["Unbalanced"]],
+      rearrangement_type == "duplication" ~ SV_colors[["Duplication"]],
+      rearrangement_type == "balanced" ~ SV_colors[["Balanced"]],
+      rearrangement_type == "deletion" ~ SV_colors[["Deletion"]]
     ))
   
   return(breakends_)

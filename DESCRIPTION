@@ -43,6 +43,7 @@ RoxygenNote: 7.1.1
 Suggests: 
     knitr,
     rmarkdown,
+    markdown,
     testthat (>= 2.1.0),
     regioneR,
     karyoploteR,
