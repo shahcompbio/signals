@@ -496,6 +496,7 @@ plotCNprofileBAF <- function(cn,
   if (homolog == TRUE){
     ghomolog <- plotCNprofileBAFhomolog(cn,
                             cellid = cellid,
+                            chrfilt = chrfilt,
                             pointsize = pointsize,
                             alphaval = alphaval,
                             maxCN = maxCN,
