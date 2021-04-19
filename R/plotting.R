@@ -345,6 +345,133 @@ plotCNprofile <- function(CNbins,
   return(gCN)
 }
 
+#' @export
+plotCNprofileBAFhomolog <- function(cn,
+                             cellid = NULL,
+                             chrfilt = NULL,
+                             pointsize = 1,
+                             alphaval = 0.9,
+                             maxCN = 10,
+                             cellidx = 1,
+                             returnlist = FALSE,
+                             raster = FALSE,
+                             y_axis_trans = "identity",
+                             xaxis_order = "genome_position",
+                             legend.position = "bottom",
+                             genes = NULL,
+                             annotateregions = NULL,
+                             homolog = FALSE,
+                             ...){
+
+  if (!xaxis_order %in% c("bin", "genome_position")){
+    stop("xaxis_order must be either 'bin' or 'genome_position'")
+  }
+
+  if (is.hscn(cn) | is.ascn(cn)){
+    CNbins <- cn$data
+  } else{
+    CNbins <- cn
+  }
+
+  CNbins <- CNbins %>%
+    dplyr::mutate(Acopy = BAF * copy, Bcopy = (1 - BAF) * copy)
+
+  if (y_axis_trans == "squashy"){
+    maxCN <- min(c(20, maxCN))
+  }
+
+  if (is.null(cellid)){
+    cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
+  }
+
+  if (!"BAF" %in% names(CNbins)){
+    stop("No BAF column in dataframe, first calculate the BAF per bin using combineBAFCN and then callAlleleSpecificCN")
+  }
+
+  statecolpal <- scCNstate_cols()
+
+  message(paste0("Making CN profile and BAF plot for cell - ", cellid))
+
+  if (!is.null(chrfilt)){
+    message(paste0("Filtering for chromosome: ", chrfilt))
+    CNbins <- dplyr::filter(CNbins, chr %in% chrfilt)
+  }
+
+  pl <- CNbins %>%
+    dplyr::filter(cell_id == cellid) %>%
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN)
+
+  if (raster == TRUE){
+    if (!requireNamespace("ggrastr", quietly = TRUE)) {
+      stop("Package \"ggrastr\" needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
+
+    gCN <- pl$CNbins %>%
+      dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
+      dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
+      dplyr::mutate(state_min = paste0(state_min)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = idx)) +
+      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
+      ggrastr::geom_point_rast(aes(y = Acopy), col = scCNphase_colors[["A-Hom"]], size = pointsize, alpha = alphaval) +
+      ggrastr::geom_point_rast(aes(y = Bcopy), col = scCNphase_colors[["B-Hom"]], size = pointsize, alpha = alphaval) +
+      ggplot2::scale_color_manual(name = "",
+                                  values = as.vector(scCNphase_colors[c("A-Hom", "B-Hom")]),
+                                  drop = FALSE) +
+      ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                     axis.text.y = ggplot2::element_blank(),
+                     axis.ticks.y = ggplot2::element_blank(),
+                     legend.position = "none") +
+      ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
+      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::xlab("Chromosome") +
+      ggplot2::ylab("Copy Number") +
+      cowplot::theme_cowplot(...) +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
+                                                     override.aes = list(alpha=1, size = 3, shape = 15))) +
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
+  } else {
+
+    gCN <- pl$CNbins %>%
+      dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
+      dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
+      dplyr::mutate(state_min = paste0(state_min)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = idx)) +
+      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
+      ggplot2::geom_point(aes(y = Acopy, col = "Homolog A"), size = pointsize, alpha = alphaval) +
+      ggplot2::geom_point(aes(y = Bcopy, col = "Homolog B"), size = pointsize, alpha = alphaval) +
+      ggplot2::scale_color_manual(name = "",
+                                  values = as.vector(scCNphase_colors[c("A-Hom", "B-Hom")]),
+                                  drop = FALSE) +
+      ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                     axis.text.y = ggplot2::element_blank(),
+                     axis.ticks.y = ggplot2::element_blank(),
+                     legend.position = "none") +
+      ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
+      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::xlab("Chromosome") +
+      ggplot2::ylab("Copy Number") +
+      cowplot::theme_cowplot() +
+      ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
+                                                     override.aes = list(alpha=1, size = 3, shape = 15))) +
+      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
+  }
+
+  if (!is.null(genes)){
+    gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    gCN <- gCN +
+      ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+  }
+
+  if (!is.null(annotateregions)){
+    datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
+    gCN <- gCN +
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+  }
+
+  return(gCN)
+}
+
 
 #' @export
 plotCNprofileBAF <- function(cn,
@@ -363,7 +490,25 @@ plotCNprofileBAF <- function(cn,
                           legend.position = "bottom",
                           genes = NULL,
                           annotateregions = NULL,
+                          homolog = FALSE,
                           ...){
+
+  if (homolog == TRUE){
+    ghomolog <- plotCNprofileBAFhomolog(cn,
+                            cellid = cellid,
+                            pointsize = pointsize,
+                            alphaval = alphaval,
+                            maxCN = maxCN,
+                            raster = raster,
+                            cellidx = cellidx,
+                            returnlist = returnlist,
+                            y_axis_trans = y_axis_trans,
+                            x_axis_order = x_axis_order,
+                            legend.position = legend.position,
+                            genes = genes,
+                            annotateregions = annotateregions)
+    return(ghomolog)
+  }
 
   if (!xaxis_order %in% c("bin", "genome_position")){
     stop("xaxis_order must be either 'bin' or 'genome_position'")
