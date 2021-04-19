@@ -507,7 +507,8 @@ plotCNprofileBAF <- function(cn,
                             x_axis_order = x_axis_order,
                             legend.position = legend.position,
                             genes = genes,
-                            annotateregions = annotateregions)
+                            annotateregions = annotateregions.
+                            ...)
     return(ghomolog)
   }
 
