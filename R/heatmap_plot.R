@@ -51,22 +51,22 @@ normalize_cell_ploidy <- function(copynumber) {
 
 createSVmatforhmap <- function(x, cnmat){
   options(scipen=999)
-  
+
   breakends <- dplyr::bind_rows(dplyr::select(x, chromosome_1, position_1, rearrangement_type, read_count) %>% dplyr::rename(chromosome = chromosome_1, position = position_1),
                                 dplyr::select(x, chromosome_2, position_2, rearrangement_type, read_count) %>% dplyr::rename(chromosome = chromosome_2, position = position_2))
-  
-  breakends <- breakends %>% 
-    dplyr::mutate(position = 0.5e6 * floor(position / 0.5e6) + 1) %>% 
-    dplyr::mutate(loci = paste0(chromosome, ":", position, ":", position + 0.5e6-1)) %>% 
-    dplyr::arrange(desc(read_count)) %>% 
-    dplyr::group_by(loci) %>% 
-    dplyr::filter(row_number() == 1) %>% 
-    dplyr::ungroup() %>% 
+
+  breakends <- breakends %>%
+    dplyr::mutate(position = 0.5e6 * floor(position / 0.5e6) + 1) %>%
+    dplyr::mutate(loci = paste0(chromosome, ":", position, ":", position + 0.5e6-1)) %>%
+    dplyr::arrange(desc(read_count)) %>%
+    dplyr::group_by(loci) %>%
+    dplyr::filter(row_number() == 1) %>%
+    dplyr::ungroup() %>%
     dplyr::distinct(loci, rearrangement_type)
-  
-  breakends_ <- data.frame(loci = names(cnmat)) %>% 
-    dplyr::left_join(breakends) %>% 
-    dplyr::mutate(y = ifelse(is.na(rearrangement_type), 0, 1)) %>% 
+
+  breakends_ <- data.frame(loci = names(cnmat)) %>%
+    dplyr::left_join(breakends) %>%
+    dplyr::mutate(y = ifelse(is.na(rearrangement_type), 0, 1)) %>%
     dplyr::mutate(col = case_when(
       is.na(rearrangement_type) ~ NA_character_,
       rearrangement_type == "inversion" ~ SV_colors[["Inversion"]],
@@ -76,7 +76,7 @@ createSVmatforhmap <- function(x, cnmat){
       rearrangement_type == "balanced" ~ SV_colors[["Balanced"]],
       rearrangement_type == "deletion" ~ SV_colors[["Deletion"]]
     ))
-  
+
   return(breakends_)
 }
 
@@ -379,7 +379,7 @@ make_left_annot <- function(copynumber,
       )
     } else if (show_library_label == FALSE & show_clone_label == TRUE) {
       left_annot <- ComplexHeatmap::HeatmapAnnotation(
-        Clone=clones$clone_label, clone_label=clone_label_generator,
+        Cluster=clones$clone_label, clone_label=clone_label_generator,
         col=annot_colours, show_annotation_name=c(TRUE, FALSE),
         which="row", annotation_width=grid::unit(rep(0.4, 2), "cm"),
         annotation_legend_param=list(
@@ -662,23 +662,23 @@ make_top_annotation_gain <- function(copynumber,
   else {
     ha2 <- NULL
   }
-  
+
   if (!is.null(SV)){
     breakends <- createSVmatforhmap(SV, copynumber)
     annotationbreaks <- sort(unique(breakends$rearrangement_type))
     annotationbreaks <- annotationbreaks[!is.na(annotationbreaks)]
     annotationlabels <- unlist(lapply(annotationbreaks, CapStr))
-    ha2 = ComplexHeatmap::HeatmapAnnotation(SV = anno_barplot(breakends$y, 
-                 gp = grid::gpar(col = breakends$col, fill = breakends$col), 
+    ha2 = ComplexHeatmap::HeatmapAnnotation(SV = anno_barplot(breakends$y,
+                 gp = grid::gpar(col = breakends$col, fill = breakends$col),
                  ylim = c(0, 1),
                  axis = FALSE,
                  #pch = 25,
-                 border = FALSE), 
+                 border = FALSE),
                  which = "column",
                  show_annotation_name = TRUE,
                  height = grid::unit(0.7, "cm"))
   }
-  
+
   return(ha2)
 }
 
@@ -726,7 +726,7 @@ make_copynumber_heatmap <- function(copynumber,
 getSVlegend <- function(include = NULL){
   svs <- SV_colors[include]
   SV = list(
-    ComplexHeatmap::Legend(labels = names(svs), title = "Rearrangement type", type = "points", pch = 16, 
+    ComplexHeatmap::Legend(labels = names(svs), title = "Rearrangement type", type = "points", pch = 16,
            legend_gp = grid::gpar(col = as.vector(svs))))
   return(SV)
 }
