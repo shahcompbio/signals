@@ -374,7 +374,7 @@ plotCNprofileBAFhomolog <- function(cn,
   }
 
   CNbins <- CNbins %>%
-    dplyr::mutate(Acopy = BAF * copy, Bcopy = (1 - BAF) * copy)
+    dplyr::mutate(Bcopy = BAF * copy, Acopy = (1 - BAF) * copy)
 
   if (y_axis_trans == "squashy"){
     maxCN <- min(c(20, maxCN))
