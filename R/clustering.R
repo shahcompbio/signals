@@ -3,7 +3,7 @@ umap_clustering <- function(CNbins,
                             n_neighbors = 10,
                             min_dist = 0.1,
                             minPts = 30,
-                            seed = 1,
+                            seed = NULL,
                             field = "state",
                             umapmetric = "correlation"){
 
@@ -19,7 +19,9 @@ umap_clustering <- function(CNbins,
   cnmatrix <- t(cnmatrix)
   cnmatrix[!is.finite(cnmatrix)] <- 0 # remove non finite values
 
-  set.seed(seed)
+  if (!is.null(seed)){
+    set.seed(seed)
+  }
   message('Calculating UMAP dimensionality reduction...')
   if (nrow(cnmatrix) > 500){
     pca <- 50
@@ -46,6 +48,9 @@ umap_clustering <- function(CNbins,
   message('Clustering cells using hdbscan...')
   gentree <- FALSE
   while(gentree == FALSE){
+    if (!is.null(seed)){
+      set.seed(seed)
+    }
     hdbscanresults <- try(dbscan::hdbscan(dfumap[,1:2], minPts = minPts,
                                       gen_hdbscan_tree = FALSE,
                                       gen_simplified_tree = FALSE))
@@ -116,7 +121,9 @@ umap_clustering_breakpoints <- function(CNbins,
                                         fixjitter = fixjitter)
   segs_matrix <- segs_matrix$bps
 
-  set.seed(seed)
+  if (!is.null(seed)){
+    set.seed(seed)
+  }
   message('Calculating UMAP dimensionality reduction...')
 
   if (nrow(segs_matrix) > 500){
@@ -141,6 +148,9 @@ umap_clustering_breakpoints <- function(CNbins,
   message('Clustering cells using hdbscan...')
   gentree <- FALSE
   while(gentree == FALSE){
+    if (!is.null(seed)){
+      set.seed(seed)
+    }
     hdbscanresults <- try(dbscan::hdbscan(dfumap[,1:2], minPts = minPts,
                                           gen_simplified_tree = FALSE))
     if (class(hdbscanresults) == "try-error"){
