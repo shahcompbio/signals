@@ -126,7 +126,7 @@ umap_clustering_breakpoints <- function(CNbins,
   }
   message('Calculating UMAP dimensionality reduction...')
 
-  if (nrow(segs_matrix) > 500){
+  if (nrow(segs_matrix) > 500 & is.null(seed)){
     fast_sgd <- TRUE
   } else{
     fast_sgd <- FALSE
