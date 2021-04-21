@@ -383,7 +383,7 @@ make_left_annot <- function(copynumber,
         col=annot_colours, show_annotation_name=c(TRUE, FALSE),
         which="row", annotation_width=grid::unit(rep(0.4, 2), "cm"),
         annotation_legend_param=list(
-          Clone=list(nrow=clone_legend_rows)
+          Cluster=list(nrow=clone_legend_rows)
         ),
         show_legend = show_legend
       )
