@@ -6,39 +6,46 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20){
   }
 
   if (xaxis_order == "bin"){
-  chridx <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
-  CNbins <- CNbins %>%
-    dplyr::filter(!is.na(copy)) %>%
-    dplyr::left_join(., chridx, by = c("chr")) %>%
-    dplyr::arrange(cell_id, idx, start) %>%
-    dplyr::group_by(cell_id) %>%
-    dplyr::mutate(idx = 1:dplyr::n()) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(copy = ifelse(copy > maxCN, maxCN, copy)) %>%
-    dplyr::mutate(state = ifelse(state > maxCN, maxCN, state)) %>%
-    dplyr::mutate(idxs = forcats::fct_reorder(factor(idx), idx)) %>%
-    dplyr::mutate(CNs = forcats::fct_reorder(ifelse(is.na(state), NA,
-                                                    paste0("CN", state)), state))
+    binsize <- CNbins$end[1] - CNbins$start[1] + 1
 
-  #get breaks - first index of each chromosome
-  chrbreaks <- CNbins %>%
-    dplyr::group_by(chr) %>%
-    dplyr::filter(dplyr::row_number() == 1) %>%
-    dplyr::pull(idx)
+    bins <- getBins(binsize = binsize) %>%
+      dplyr::filter(chr %in% unique(CNbins$chr)) %>%
+      dplyr::mutate(idx = 1:dplyr::n())
 
-  #get ticks - median bin of each chromosome
-  chrticks <- CNbins %>%
-    dplyr::filter(chr %in% unique(CNbins$chr)) %>%
-    dplyr::group_by(chr) %>%
-    dplyr::summarise(idx = round(median(idx))) %>%
-    dplyr::pull(idx)
+    chridx <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
+    CNbins <- CNbins %>%
+      dplyr::filter(!is.na(copy)) %>%
+      dplyr::left_join(., chridx, by = c("chr")) %>%
+      dplyr::arrange(cell_id, idx, start) %>%
+      dplyr::group_by(cell_id) %>%
+      dplyr::mutate(idx = 1:dplyr::n()) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(copy = ifelse(copy > maxCN, maxCN, copy)) %>%
+      dplyr::mutate(state = ifelse(state > maxCN, maxCN, state)) %>%
+      dplyr::mutate(idxs = forcats::fct_reorder(factor(idx), idx)) %>%
+      dplyr::mutate(CNs = forcats::fct_reorder(ifelse(is.na(state), NA,
+                                                      paste0("CN", state)), state))
 
-  chrlabels <- gtools::mixedsort(unique(CNbins$chr))
+    #get breaks - first index of each chromosome
+    chrbreaks <- CNbins %>%
+      dplyr::group_by(chr) %>%
+      dplyr::filter(dplyr::row_number() == 1) %>%
+      dplyr::pull(idx)
 
-  minidx = min(CNbins$idx)
-  maxidx <- max(CNbins$idx)
+    #get ticks - median bin of each chromosome
+    chrticks <- CNbins %>%
+      dplyr::filter(chr %in% unique(CNbins$chr)) %>%
+      dplyr::group_by(chr) %>%
+      dplyr::summarise(idx = round(median(idx))) %>%
+      dplyr::pull(idx)
+
+    chrlabels <- gtools::mixedsort(unique(CNbins$chr))
+
+    minidx = min(CNbins$idx)
+    maxidx <- max(CNbins$idx)
   } else {
     binsize <- CNbins$end[1] - CNbins$start[1] + 1
+
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
       dplyr::mutate(idx = 1:dplyr::n())
@@ -72,7 +79,7 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20){
     maxidx <- max(bins$idx)
   }
 
-  return(list(CNbins = CNbins,bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
+  return(list(CNbins = CNbins, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
 plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL){
