@@ -21,10 +21,10 @@ make_arm_matrix <- function(df){
 }
 
 #' @export
-plotHeatmapBAF <- function(df, removelowqcells = TRUE, samplecells = NULL, gen_matrix = TRUE){
+plotHeatmapBAF <- function(df, removelowqcells = TRUE, samplecells = NULL, gen_matrix = TRUE, arms = NULL){
 
   if (gen_matrix){
-    baf <- per_arm_baf_mat(df)
+    baf <- per_arm_baf_mat(df, arms = arms)
   } else{
     baf <- make_arm_matrix(df)
   }

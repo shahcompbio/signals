@@ -79,12 +79,13 @@ scBAFstate_colors <- c(
 )
 
 SV_colors <- c(
-  `Inversion` = "#fed049",
+  `Inversion` = "darkorange3",
   `Foldback` = "#fed049",
   `Unbalanced` =  "#536162",
   `Duplication` = "#e40017",
   `Deletion` = "#78c4d4",
-  `Balanced` = "#78c4d4"
+  `Balanced` = "#dddddd",
+  `Translocation` = "#B91AAC"
 )
 
 #' @export
