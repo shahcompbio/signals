@@ -119,9 +119,9 @@ get_clone_members <- function(clones) {
 
 make_clone_palette <- function(levels) {
   if (length(levels) <= 8) {
-    pal <- RColorBrewer::brewer.pal(max(length(levels), 3), "Dark2")
+    pal <- RColorBrewer::brewer.pal(max(length(levels), 3), "Paired")
   } else {
-    pal <- colorRampPalette(RColorBrewer::brewer.pal(max(length(levels), 3), "Dark2"))(length(levels))
+    pal <- colorRampPalette(RColorBrewer::brewer.pal(max(length(levels), 3), "Paired"))(length(levels))
   }
   names(pal) <- levels
   pal <- pal[levels]
@@ -349,7 +349,7 @@ make_left_annot <- function(copynumber,
     if(length(clone_level_none > 0)) {
       clone_pal[[clone_level_none]] <- clone_none_black
     }
-    annot_colours$Clone <- clone_pal
+    annot_colours$Cluster <- clone_pal
 
     clone_label_generator <- function(index) {
       clone_label_pos <- get_clone_label_pos(clones)

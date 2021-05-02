@@ -169,7 +169,11 @@ plotSV <- function(breakpoints,
   }
 
   if (dim(line_data)[1] > 0){
-    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = 1, yend = max(ylims), col = rearrangement_type)) +
+    line_data <- line_data %>% 
+      dplyr::mutate(y = ifelse(rearrangement_type == "Foldback", 1, 1)) %>% 
+      dplyr::mutate(yend = ifelse(rearrangement_type == "Foldback", min(ylims), max(ylims)))
+    
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type)) +
       labs(col = "Rearrangement") +
       ggplot2::labs(col = "Rearrangement") +
       ggplot2::scale_color_manual(breaks = names(SV_colors),
