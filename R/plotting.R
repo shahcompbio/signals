@@ -139,6 +139,67 @@ CapStr <- function(y) {
         sep="", collapse=" ")
 }
 
+#' @export
+plotSV <- function(breakpoints,
+                   chrfilt = NULL,
+                   curvature = -0.5,
+                   returnlist = FALSE,
+                   ylims = c(0,2),
+                   legend.position = "bottom",
+                   ...){
+  
+  pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
+  
+  pl$breakpoints <- pl$breakpoints %>%
+    dplyr::mutate(curve = ifelse(abs(idx_1 - idx_2) < 5, FALSE, TRUE))
+  
+  pl$breakpoints$rearrangement_type <- unlist(lapply(pl$breakpoints$rearrangement_type, CapStr))
+  
+  curve_data <- pl$breakpoints %>% dplyr::filter(curve == TRUE)
+  line_data <- pl$breakpoints %>% dplyr::filter(curve == FALSE)
+  
+  gSV <- pl$bins %>%
+    ggplot(aes(x = idx, y = 1)) +
+    geom_line() +
+    ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
+    ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
+    xlab("Chromosome") +
+    cowplot::theme_cowplot(...) +
+    ggplot2::theme(axis.line.y = ggplot2::element_blank(),
+                   axis.text.y = ggplot2::element_blank(),
+                   axis.ticks.y = ggplot2::element_blank(),
+                   legend.position = legend.position) +
+    ylab("SV") +
+    ggplot2::ylim(ylims)
+  
+  if (dim(curve_data)[1] > 0){
+    gSV <- gSV + ggplot2::geom_curve(data = curve_data, aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001, col = rearrangement_type), curvature = curvature) +
+      ggplot2::labs(col = "Rearrangement") +
+      ggplot2::scale_color_manual(breaks = names(SV_colors),
+                                  values = as.vector(SV_colors))
+  }
+  
+  if (dim(line_data)[1] > 0){
+    line_data <- line_data %>% 
+      dplyr::mutate(y = ifelse(rearrangement_type == "Foldback", 1, 1)) %>% 
+      dplyr::mutate(yend = ifelse(rearrangement_type == "Foldback", min(ylims), max(ylims)))
+    
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type)) +
+      labs(col = "Rearrangement") +
+      ggplot2::labs(col = "Rearrangement") +
+      ggplot2::scale_color_manual(breaks = names(SV_colors),
+                                  values = as.vector(SV_colors))
+  }
+  
+  if (returnlist == TRUE){
+    p <- list(SV = gSV, plist = pl)
+  } else {
+    p <- gSV
+  }
+  
+  return(p)
+}
+
 
 #' @export
 plotSV <- function(breakpoints,
@@ -151,13 +212,9 @@ plotSV <- function(breakpoints,
 
   pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
 
-  pl$breakpoints <- pl$breakpoints %>%
-    dplyr::mutate(curve = ifelse(abs(idx_1 - idx_2) < 5, FALSE, TRUE))
-
   pl$breakpoints$rearrangement_type <- unlist(lapply(pl$breakpoints$rearrangement_type, CapStr))
-
-  curve_data <- pl$breakpoints %>% dplyr::filter(curve == TRUE)
-  line_data <- pl$breakpoints %>% dplyr::filter(curve == FALSE)
+  
+  bezdf <- get_bezier_df_2(pl$breakpoints)
 
   gSV <- pl$bins %>%
     ggplot(aes(x = idx, y = 1)) +
@@ -172,25 +229,13 @@ plotSV <- function(breakpoints,
                    legend.position = legend.position) +
     ylab("SV") +
     ggplot2::ylim(ylims)
-
-  if (dim(curve_data)[1] > 0){
-    gSV <- gSV + ggplot2::geom_curve(data = curve_data, aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001, col = rearrangement_type), curvature = curvature) +
-      ggplot2::labs(col = "Rearrangement") +
-      ggplot2::scale_color_manual(breaks = names(SV_colors),
-                                  values = as.vector(SV_colors))
-  }
-
-  if (dim(line_data)[1] > 0){
-    line_data <- line_data %>% 
-      dplyr::mutate(y = ifelse(rearrangement_type == "Foldback", 1, 1)) %>% 
-      dplyr::mutate(yend = ifelse(rearrangement_type == "Foldback", min(ylims), max(ylims)))
-    
-    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type)) +
-      labs(col = "Rearrangement") +
-      ggplot2::labs(col = "Rearrangement") +
-      ggplot2::scale_color_manual(breaks = names(SV_colors),
-                                  values = as.vector(SV_colors))
-  }
+  
+  gSV <- gSV  +
+    ggforce::geom_bezier(ggplot2::aes(x = idx, y = yidx, group = id, col = rearrangement_type), alpha = 0.5, 
+                                 data = bezdf) +
+    ggplot2::labs(col = "Rearrangement") +
+    ggplot2::scale_color_manual(breaks = names(SV_colors),
+                                values = as.vector(SV_colors))
 
   if (returnlist == TRUE){
     p <- list(SV = gSV, plist = pl)
@@ -243,6 +288,43 @@ squashy_trans <- function() {
     function(x) tanh( 0.075 * x),
     function(x) atanh(x) / 0.075
   )
+}
+
+get_bezier_df_2 <- function(sv){
+  
+  set.seed(123)
+  
+  maxidx <- max(cn$CNbins$idx)
+  idxrange <- 0.1 * maxidx
+  
+  sv_ <- sv %>% 
+    dplyr::mutate(idx_3 = idx_2) %>% 
+    dplyr::mutate(idx_2 = (idx_1 + idx_3) / 2) %>% 
+    dplyr::mutate(yidx_1 = 1, yidx_2 = 2, yidx_3 = 1) %>% 
+    dplyr::mutate(yidx_2 = ifelse(rearrangement_type == "Foldback", 0, 2))
+  
+  x1 <- sv_ %>% 
+    dplyr::select(rearrangement_type, idx_1, idx_2, idx_3, chromosome_1, position_1, position_2) %>% 
+    tidyr::pivot_longer(dplyr::starts_with("idx"), names_to =  "name1", values_to = "idx") %>% 
+    dplyr::arrange(chromosome_1, position_1, position_2, name1) %>% 
+    tidyr::separate(name1, c("i", "bezidx"), sep = "_") %>% 
+    dplyr::select(-i)
+  
+  x2 <- sv_ %>% 
+    dplyr::select(rearrangement_type, yidx_1, yidx_2, yidx_3, chromosome_1, position_1, position_2) %>% 
+    tidyr::pivot_longer(dplyr::starts_with("yidx"), names_to =  "name2", values_to = "yidx") %>% 
+    dplyr::arrange(chromosome_1, position_1, name2) %>% 
+    tidyr::separate(name2, c("i", "bezidx"), sep = "_") %>% 
+    dplyr::select(-i)
+  
+  bez <- dplyr::left_join(x1, x2, 
+                          by = c("rearrangement_type", "chromosome_1", 
+                                 "position_1", "position_2", "bezidx")) %>% 
+    dplyr::mutate(id = paste(chromosome_1, position_1, position_2, 
+                             rearrangement_type, sep = "_")) %>%
+    dplyr::distinct(.)
+  
+  return(bez)
 }
 
 get_bezier_df <- function(sv, cn, maxCN){
