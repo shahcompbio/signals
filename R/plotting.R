@@ -108,6 +108,11 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL){
     dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx), by = c("chromosome_1", "position_1")) %>%
     dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx), by = c("chromosome_2", "position_2"))
 
+  breakpoints <- breakpoints %>% 
+    dplyr::group_by(chromosome_1, position_1, chromosome_2, position_2, type, rearrangement_type, idx_1, idx_2) %>% 
+    dplyr::summarise(read_count = sum(read_count)) %>% 
+    dplyr::ungroup()
+  
   #get breaks - first index of each chromosome
   chrbreaks <- bins %>%
     dplyr::filter(chr %in% unique(CNbins$chr)) %>%
@@ -240,6 +245,58 @@ squashy_trans <- function() {
   )
 }
 
+get_bezier_df <- function(sv, cn, maxCN){
+  
+  set.seed(123)
+  
+  maxidx <- max(cn$CNbins$idx)
+  idxrange <- 0.1 * maxidx
+  
+  svcn1 <- dplyr::left_join(sv$breakpoints, cn$CNbins %>% 
+                              dplyr::rename(chromosome_1 = chr, position_1 = start, copy_1 = copy) %>% 
+                              dplyr::select(chromosome_1, position_1, copy_1))
+  svcn <- dplyr::inner_join(svcn1, cn$CNbins %>% 
+                              dplyr::rename(chromosome_2 = chr, position_2 = start, copy_2 = copy) %>% 
+                              dplyr::select(chromosome_2, position_2, copy_2)) %>% 
+    dplyr::distinct(.) %>% 
+    na.omit(.) %>% 
+    dplyr::rename(idx_3 = idx_2, copy_3 = copy_2) %>% 
+    mutate(copy_1 = ifelse(position_1 == position_2, 0, copy_1))
+  
+  x1 <- svcn %>% 
+    dplyr::select(rearrangement_type, idx_1, idx_3, chromosome_1, position_1, position_2) %>% 
+    dplyr::mutate(minidx = pmin(idx_1, idx_3)) %>% 
+    dplyr::mutate(sr = ifelse(rearrangement_type == "foldback", 0, 
+                              sample(c(-1, 1), dplyr::n(), replace = TRUE) * idxrange)) %>% 
+    dplyr::mutate(idx_2 = minidx + sr) %>% 
+    tidyr::pivot_longer(dplyr::starts_with("idx"), names_to =  "name1", values_to = "idx") %>% 
+    dplyr::arrange(chromosome_1, position_1, position_2, name1) %>% 
+    tidyr::separate(name1, c("i", "bezidx"), sep = "_") %>% 
+    dplyr::select(-sr, -i)
+  
+  x2 <- svcn %>% 
+    dplyr::select(rearrangement_type, copy_1, copy_3, chromosome_1, position_1, position_2) %>% 
+    dplyr::mutate(mincopy = pmin(copy_1, copy_3)) %>% 
+    dplyr::mutate(sr = sample(c(0.25, 0.75), dplyr::n(), replace = TRUE)) %>% 
+    #dplyr::mutate(copy_2 = mincopy + sr * abs(copy_1 - copy_3)) %>% 
+    dplyr::mutate(copy_2 = mincopy + sr * abs(copy_1 - copy_3)) %>% 
+    tidyr::pivot_longer(dplyr::starts_with("copy"), names_to =  "name2", values_to = "copy") %>% 
+    dplyr::arrange(chromosome_1, position_1, name2) %>% 
+    tidyr::separate(name2, c("i", "bezidx"), sep = "_") %>% 
+    dplyr::select(-sr, -i)
+  
+  bez <- dplyr::left_join(x1, x2, 
+                          by = c("rearrangement_type", "chromosome_1", 
+                                 "position_1", "position_2", "bezidx")) %>% 
+    dplyr::mutate(id = paste(chromosome_1, position_1, position_2, 
+                             rearrangement_type, sep = "_")) %>%
+    dplyr::distinct(.) %>% 
+    dplyr::mutate(idx = ifelse(idx > max(cn$CNbins$idx), max(cn$CNbins$idx), idx)) %>% 
+    dplyr::mutate(idx = ifelse(idx < min(cn$CNbins$idx), min(cn$CNbins$idx), idx))
+  
+  return(bez)
+}
+
 #' @export
 plotCNprofile <- function(CNbins,
                          cellid = NULL,
@@ -255,6 +312,7 @@ plotCNprofile <- function(CNbins,
                          xaxis_order = "genome_position",
                          legend.position = "bottom",
                          annotateregions = NULL,
+                         SV = NULL,
                          genes = NULL, ...){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
@@ -348,10 +406,25 @@ plotCNprofile <- function(CNbins,
     gCN <- gCN +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
   }
+  
+  if (!is.null(SV)){
+    svpl <- plottinglistSV(SV, chrfilt = chrfilt)
+    bezdf <- get_bezier_df(svpl, pl)
+    bezdf <- bezdf %>% 
+      dplyr::filter((position_1 != position_2) | rearrangement_type == "foldback")
+    gCN <- gCN +
+      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = 0.5, 
+                  col =  as.vector(SV_colors["Foldback"]),
+                  data = bezdf %>% dplyr::filter(rearrangement_type == "foldback")) +
+      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = 0.5, 
+                  col =  "grey30",
+                  data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")) 
+  }
 
   if (returnlist == TRUE){
     gCN <- list(CN = gCN, plist = pl)
   }
+  
 
   return(gCN)
 }
