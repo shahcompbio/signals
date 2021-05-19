@@ -91,13 +91,19 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL){
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr != "Y") %>%
       dplyr::mutate(idx = 1:dplyr::n()) %>%
-      dplyr::select(chr, start, idx)
+      dplyr::select(chr, start, idx) %>% 
+      dplyr::group_by(chr) %>% 
+      dplyr::mutate(maxidx = max(idx), minidx = min(idx)) %>% 
+      dplyr::ungroup()
   } else {
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% chrfilt) %>%
       dplyr::filter(chr != "Y") %>%
       dplyr::mutate(idx = 1:dplyr::n()) %>%
-      dplyr::select(chr, start, idx)
+      dplyr::select(chr, start, idx) %>% 
+      dplyr::group_by(chr) %>% 
+      dplyr::mutate(maxidx = max(idx), minidx = min(idx)) %>% 
+      dplyr::ungroup()
     breakpoints <- breakpoints %>%
       dplyr::filter((chromosome_1 %in% chrfilt) | (chromosome_2 %in% chrfilt))
   }
@@ -105,11 +111,11 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL){
   breakpoints <- breakpoints %>%
     dplyr::mutate(position_1 = 0.5e6 * floor(position_1 / 0.5e6) + 1,
                   position_2 = 0.5e6 * floor(position_2 / 0.5e6) + 1) %>%
-    dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx), by = c("chromosome_1", "position_1")) %>%
-    dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx), by = c("chromosome_2", "position_2"))
+    dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx, maxidx_1 = maxidx, minidx_1 = minidx), by = c("chromosome_1", "position_1")) %>%
+    dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx, maxidx_2 = maxidx, minidx_2 = minidx), by = c("chromosome_2", "position_2"))
 
   breakpoints <- breakpoints %>% 
-    dplyr::group_by(chromosome_1, position_1, chromosome_2, position_2, type, rearrangement_type, idx_1, idx_2) %>% 
+    dplyr::group_by(chromosome_1, position_1, chromosome_2, position_2, type, rearrangement_type, idx_1, idx_2, maxidx_1, minidx_1, maxidx_2, minidx_2) %>% 
     dplyr::summarise(read_count = sum(read_count)) %>% 
     dplyr::ungroup()
   
@@ -185,7 +191,6 @@ plotSV <- function(breakpoints,
       dplyr::mutate(yend = ifelse(rearrangement_type == "Foldback", min(ylims), max(ylims)))
     
     gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type)) +
-      labs(col = "Rearrangement") +
       ggplot2::labs(col = "Rearrangement") +
       ggplot2::scale_color_manual(breaks = names(SV_colors),
                                   values = as.vector(SV_colors))
@@ -202,7 +207,7 @@ plotSV <- function(breakpoints,
 
 
 #' @export
-plotSV <- function(breakpoints,
+plotSV2 <- function(breakpoints,
                    chrfilt = NULL,
                    curvature = -0.5,
                    returnlist = FALSE,
@@ -211,10 +216,15 @@ plotSV <- function(breakpoints,
                    ...){
 
   pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
-
+  
+  pl$breakpoints <- pl$breakpoints %>%
+    dplyr::mutate(curve = ifelse((abs(idx_1 - idx_2) < 2) & (chromosome_1 == chromosome_2), FALSE, TRUE))
+  
   pl$breakpoints$rearrangement_type <- unlist(lapply(pl$breakpoints$rearrangement_type, CapStr))
   
-  bezdf <- get_bezier_df_2(pl$breakpoints)
+  if (dim(pl$breakpoints)[1] > 0) {
+    bezdf <- get_bezier_df_2(pl$breakpoints %>% dplyr::filter(curve == TRUE))
+  }
 
   gSV <- pl$bins %>%
     ggplot(aes(x = idx, y = 1)) +
@@ -230,12 +240,27 @@ plotSV <- function(breakpoints,
     ylab("SV") +
     ggplot2::ylim(ylims)
   
-  gSV <- gSV  +
-    ggforce::geom_bezier(ggplot2::aes(x = idx, y = yidx, group = id, col = rearrangement_type), alpha = 0.5, 
-                                 data = bezdf) +
-    ggplot2::labs(col = "Rearrangement") +
-    ggplot2::scale_color_manual(breaks = names(SV_colors),
-                                values = as.vector(SV_colors))
+  if (dim(pl$breakpoints)[1] > 0) {
+    gSV <- gSV  +
+      ggforce::geom_bezier(ggplot2::aes(x = idx, y = yidx, group = id, col = rearrangement_type), alpha = 0.5, 
+                                   data = bezdf) +
+      ggplot2::labs(col = "Rearrangement") +
+      ggplot2::scale_color_manual(breaks = names(SV_colors),
+                                  values = as.vector(SV_colors))
+  }
+  
+  line_data <- pl$breakpoints %>% dplyr::filter(curve == FALSE)
+  
+  if (dim(line_data)[1] > 0){
+    line_data <- line_data %>% 
+      dplyr::mutate(y = ifelse(rearrangement_type == "Foldback", 1, 1)) %>% 
+      dplyr::mutate(yend = ifelse(rearrangement_type == "Foldback", min(ylims), max(ylims)))
+    
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type)) +
+      ggplot2::labs(col = "Rearrangement") +
+      ggplot2::scale_color_manual(breaks = names(SV_colors),
+                                  values = as.vector(SV_colors))
+  }
 
   if (returnlist == TRUE){
     p <- list(SV = gSV, plist = pl)
@@ -293,20 +318,24 @@ squashy_trans <- function() {
 get_bezier_df_2 <- function(sv){
   
   set.seed(123)
-  
-  maxidx <- max(cn$CNbins$idx)
-  idxrange <- 0.1 * maxidx
-  
-  sv_ <- sv %>% 
+
+  suppressWarnings( {sv_ <- sv %>% 
+    dplyr::filter(chromosome_1 != "X") %>% 
+    dplyr::mutate(outer = is.na(idx_2)) %>% 
+    dplyr::mutate(idx_2 = ifelse(outer & (as.numeric(chromosome_1) < as.numeric(chromosome_2)), maxidx_1, idx_2)) %>% 
+    dplyr::mutate(idx_2 = ifelse(outer & (as.numeric(chromosome_1) > as.numeric(chromosome_2)), minidx_1, idx_2)) %>% 
+    dplyr::mutate(idx_2 = ifelse(is.na(idx_2), maxidx_1, idx_2)) %>% 
+    dplyr::mutate(idx_2 = ifelse(is.na(idx_1), maxidx_1, idx_2)) %>% 
     dplyr::mutate(idx_3 = idx_2) %>% 
     dplyr::mutate(idx_2 = (idx_1 + idx_3) / 2) %>% 
-    dplyr::mutate(yidx_1 = 1, yidx_2 = 2, yidx_3 = 1) %>% 
-    dplyr::mutate(yidx_2 = ifelse(rearrangement_type == "Foldback", 0, 2))
+    dplyr::mutate(yidx_1 = 1, yidx_2 = 2, yidx_3 = ifelse(outer, 2, 1)) %>% 
+    dplyr::mutate(yidx_2 = ifelse(rearrangement_type == "Foldback", 0, 2)) %>% 
+    dplyr::select(-maxidx_1, -maxidx_2, -minidx_1, -minidx_2)})
   
   x1 <- sv_ %>% 
-    dplyr::select(rearrangement_type, idx_1, idx_2, idx_3, chromosome_1, position_1, position_2) %>% 
+    dplyr::select(rearrangement_type, idx_1, idx_2, idx_3, chromosome_1, chromosome_2, position_1, position_2) %>% 
     tidyr::pivot_longer(dplyr::starts_with("idx"), names_to =  "name1", values_to = "idx") %>% 
-    dplyr::arrange(chromosome_1, position_1, position_2, name1) %>% 
+    dplyr::arrange(chromosome_1, chromosome_2, position_1, position_2, name1) %>% 
     tidyr::separate(name1, c("i", "bezidx"), sep = "_") %>% 
     dplyr::select(-i)
   
@@ -327,12 +356,17 @@ get_bezier_df_2 <- function(sv){
   return(bez)
 }
 
-get_bezier_df <- function(sv, cn, maxCN){
+get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE){
   
   set.seed(123)
   
+  if (homolog == TRUE){
+    cn$CNbins <- cn$CNbins %>% 
+      dplyr::mutate(copy = pmax(Acopy, Bcopy))
+  }
+  
   maxidx <- max(cn$CNbins$idx)
-  idxrange <- 0.1 * maxidx
+  idxrange <- 0.05 * maxidx
   
   svcn1 <- dplyr::left_join(sv$breakpoints, cn$CNbins %>% 
                               dplyr::rename(chromosome_1 = chr, position_1 = start, copy_1 = copy) %>% 
@@ -340,16 +374,23 @@ get_bezier_df <- function(sv, cn, maxCN){
   svcn <- dplyr::inner_join(svcn1, cn$CNbins %>% 
                               dplyr::rename(chromosome_2 = chr, position_2 = start, copy_2 = copy) %>% 
                               dplyr::select(chromosome_2, position_2, copy_2)) %>% 
+    dplyr::mutate(copy_1 = ifelse(is.na(copy_1), 2, copy_1)) %>% 
+    dplyr::mutate(copy_2 = ifelse(is.na(copy_1), 2, copy_2)) %>% 
     dplyr::distinct(.) %>% 
     na.omit(.) %>% 
     dplyr::rename(idx_3 = idx_2, copy_3 = copy_2) %>% 
     mutate(copy_1 = ifelse(position_1 == position_2, 0, copy_1))
   
   x1 <- svcn %>% 
-    dplyr::select(rearrangement_type, idx_1, idx_3, chromosome_1, position_1, position_2) %>% 
+    dplyr::select(rearrangement_type, idx_1, idx_3, chromosome_1, chromosome_2, position_1, position_2) %>% 
     dplyr::mutate(minidx = pmin(idx_1, idx_3)) %>% 
     dplyr::mutate(sr = ifelse(rearrangement_type == "foldback", 0, 
                               sample(c(-1, 1), dplyr::n(), replace = TRUE) * idxrange)) %>% 
+    dplyr::mutate(sr = dplyr::case_when(
+      rearrangement_type == "foldback" ~ 0,
+      idx_3 > idx_1 ~ 1,
+      idx_3 < idx_1 ~ -1
+    )) %>% 
     dplyr::mutate(idx_2 = minidx + sr) %>% 
     tidyr::pivot_longer(dplyr::starts_with("idx"), names_to =  "name1", values_to = "idx") %>% 
     dplyr::arrange(chromosome_1, position_1, position_2, name1) %>% 
@@ -359,13 +400,18 @@ get_bezier_df <- function(sv, cn, maxCN){
   x2 <- svcn %>% 
     dplyr::select(rearrangement_type, copy_1, copy_3, chromosome_1, position_1, position_2) %>% 
     dplyr::mutate(mincopy = pmin(copy_1, copy_3)) %>% 
-    dplyr::mutate(sr = sample(c(0.25, 0.75), dplyr::n(), replace = TRUE)) %>% 
-    #dplyr::mutate(copy_2 = mincopy + sr * abs(copy_1 - copy_3)) %>% 
-    dplyr::mutate(copy_2 = mincopy + sr * abs(copy_1 - copy_3)) %>% 
+    dplyr::mutate(sr1 = sample(c(0.25, 0.75), dplyr::n(), replace = TRUE)) %>% 
+    dplyr::mutate(sr2 = sample(c(-1, 1), dplyr::n(), replace = TRUE)) %>% 
+    dplyr::mutate(copydiff = abs(copy_1 - copy_3)) %>% 
+    dplyr::mutate(copy_2 = ifelse(copydiff > 3, mincopy + sr1 * copydiff, mincopy + sr2 * 2.5)) %>% 
+    dplyr::mutate(copy_2 = ifelse(copy_2 > maxCN, maxCN, copy_2)) %>% 
+    dplyr::mutate(copy_2 = ifelse(copy_2 < 0, 1, copy_2)) %>% 
+    dplyr::mutate(copy_2 = ifelse(rearrangement_type == "foldback", copy_3, copy_2)) %>% 
+    dplyr::select(-copydiff) %>% 
     tidyr::pivot_longer(dplyr::starts_with("copy"), names_to =  "name2", values_to = "copy") %>% 
     dplyr::arrange(chromosome_1, position_1, name2) %>% 
     tidyr::separate(name2, c("i", "bezidx"), sep = "_") %>% 
-    dplyr::select(-sr, -i)
+    dplyr::select(-sr1, -sr2, -i)
   
   bez <- dplyr::left_join(x1, x2, 
                           by = c("rearrangement_type", "chromosome_1", 
@@ -395,6 +441,8 @@ plotCNprofile <- function(CNbins,
                          legend.position = "bottom",
                          annotateregions = NULL,
                          SV = NULL,
+                         svalpha = 0.5,
+                         adj = 0.03,
                          genes = NULL, ...){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
@@ -406,7 +454,10 @@ plotCNprofile <- function(CNbins,
   }
 
   if (y_axis_trans == "squashy"){
-    maxCN <- min(c(20, maxCN))
+    maxCN <- min(c(24, maxCN))
+    ybreaks <- c(0,2,5,10,20)
+  } else{
+    ybreaks <- seq(0, maxCN, 2)
   }
 
   statecolpal <- scCNstate_cols()
@@ -414,7 +465,7 @@ plotCNprofile <- function(CNbins,
   message(paste0("Making CN profile and BAF plot for cell - ", cellid))
 
   if (!is.null(chrfilt)){
-    message(paste0("Filtering for chromosome: ", chrfilt))
+    message(paste0("Filtering for chromosomes: ", paste0(chrfilt, collapse = ",")))
     CNbins <- dplyr::filter(CNbins, chr %in% chrfilt)
   }
 
@@ -443,7 +494,7 @@ plotCNprofile <- function(CNbins,
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN),trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN),trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -467,7 +518,7 @@ plotCNprofile <- function(CNbins,
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -478,27 +529,28 @@ plotCNprofile <- function(CNbins,
 
   if (!is.null(genes)){
     gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    npoints <- dim(pl$CNbins)[1]
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
-      ggrepel::geom_label_repel(data = gene_idx, ggplot2::aes(x = idx + 6, y = maxCN, label = ensembl_gene_symbol), col = "black")
+      ggrepel::geom_text_repel(data = gene_idx, ggplot2::aes(x = idx - npoints * adj, y = maxCN, label = ensembl_gene_symbol), col = "black", alpha = 0.75)
   }
 
   if (!is.null(annotateregions)){
     datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
     gCN <- gCN +
-      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
   }
   
   if (!is.null(SV)){
     svpl <- plottinglistSV(SV, chrfilt = chrfilt)
-    bezdf <- get_bezier_df(svpl, pl)
+    bezdf <- get_bezier_df(svpl, pl, maxCN)
     bezdf <- bezdf %>% 
       dplyr::filter((position_1 != position_2) | rearrangement_type == "foldback")
     gCN <- gCN +
-      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = 0.5, 
+      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = 0.8, 
                   col =  as.vector(SV_colors["Foldback"]),
                   data = bezdf %>% dplyr::filter(rearrangement_type == "foldback")) +
-      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = 0.5, 
+      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = svalpha, 
                   col =  "grey30",
                   data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")) 
   }
@@ -516,7 +568,7 @@ plotCNprofileBAFhomolog <- function(cn,
                              cellid = NULL,
                              chrfilt = NULL,
                              pointsize = 1,
-                             alphaval = 0.9,
+                             alphaval = 0.75,
                              maxCN = 10,
                              cellidx = 1,
                              returnlist = FALSE,
@@ -527,6 +579,9 @@ plotCNprofileBAFhomolog <- function(cn,
                              genes = NULL,
                              annotateregions = NULL,
                              homolog = FALSE,
+                             SV = NULL,
+                             adj = 0.03,
+                             svalpha = 0.5,
                              ...){
 
   if (!xaxis_order %in% c("bin", "genome_position")){
@@ -543,7 +598,10 @@ plotCNprofileBAFhomolog <- function(cn,
     dplyr::mutate(Bcopy = BAF * copy, Acopy = (1 - BAF) * copy)
 
   if (y_axis_trans == "squashy"){
-    maxCN <- min(c(20, maxCN))
+    maxCN <- min(c(24, maxCN))
+    ybreaks <- c(0,2,5,10,20)
+  } else{
+    ybreaks <- seq(0, maxCN, 2)
   }
 
   if (is.null(cellid)){
@@ -559,12 +617,14 @@ plotCNprofileBAFhomolog <- function(cn,
   message(paste0("Making CN profile and BAF plot for cell - ", cellid))
 
   if (!is.null(chrfilt)){
-    message(paste0("Filtering for chromosome: ", chrfilt))
+    message(paste0("Filtering for chromosomes: ", paste0(chrfilt, collapse = ",")))
     CNbins <- dplyr::filter(CNbins, chr %in% chrfilt)
   }
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
+    dplyr::mutate(Acopy = ifelse(Acopy > maxCN, maxCN-0.001, Acopy)) %>% 
+    dplyr::mutate(Bcopy = ifelse(Bcopy > maxCN, maxCN-0.001, Bcopy)) %>% 
     plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN)
 
   if (raster == TRUE){
@@ -589,7 +649,7 @@ plotCNprofileBAFhomolog <- function(cn,
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -614,13 +674,27 @@ plotCNprofileBAFhomolog <- function(cn,
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot() +
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 6, byrow = TRUE,
                                                      override.aes = list(alpha=1, size = 3, shape = 15))) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
+  }
+  
+  if (!is.null(SV)){
+    svpl <- plottinglistSV(SV, chrfilt = chrfilt)
+    bezdf <- get_bezier_df(svpl, pl, maxCN, homolog = TRUE)
+    bezdf <- bezdf %>% 
+      dplyr::filter((position_1 != position_2) | rearrangement_type == "foldback")
+    gCN <- gCN +
+      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = 0.5, 
+                           col =  as.vector(SV_colors["Foldback"]),
+                           data = bezdf %>% dplyr::filter(rearrangement_type == "foldback")) +
+      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = svalpha, 
+                           col =  "grey30",
+                           data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")) 
   }
 
   if (!is.null(genes)){
@@ -632,7 +706,7 @@ plotCNprofileBAFhomolog <- function(cn,
   if (!is.null(annotateregions)){
     datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
     gCN <- gCN +
-      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
   }
 
   return(gCN)
@@ -657,6 +731,9 @@ plotCNprofileBAF <- function(cn,
                           genes = NULL,
                           annotateregions = NULL,
                           homolog = FALSE,
+                          SV = NULL,
+                          adj = 0.03,
+                          svalpha = 0.5,
                           ...){
 
   if (homolog == TRUE){
@@ -674,6 +751,9 @@ plotCNprofileBAF <- function(cn,
                             legend.position = legend.position,
                             genes = genes,
                             annotateregions = annotateregions,
+                            SV = SV,
+                            adj = adj,
+                            svalpha = svalpha,
                             ...)
     return(ghomolog)
   }
@@ -689,8 +769,13 @@ plotCNprofileBAF <- function(cn,
   }
 
   if (y_axis_trans == "squashy"){
-    maxCN <- min(c(20, maxCN))
+    maxCN <- min(c(24, maxCN))
+    ybreaks <- c(0,2,5,10,20)
+  } else{
+    ybreaks <- seq(0, maxCN, 2)
   }
+  
+  
 
   if (is.null(cellid)){
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
@@ -717,7 +802,7 @@ plotCNprofileBAF <- function(cn,
   message(paste0("Making CN profile and BAF plot for cell - ", cellid))
 
   if (!is.null(chrfilt)){
-    message(paste0("Filtering for chromosome: ", chrfilt))
+    message(paste0("Filtering for chromosomes: ", paste0(chrfilt, collapse = ",")))
     CNbins <- dplyr::filter(CNbins, chr %in% chrfilt)
   }
 
@@ -773,7 +858,7 @@ plotCNprofileBAF <- function(cn,
                      axis.ticks.y = ggplot2::element_blank(),
                      legend.position = "none") +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -824,7 +909,7 @@ plotCNprofileBAF <- function(cn,
                        axis.ticks.y = ggplot2::element_blank(),
                        legend.position = "none") +
         ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) + #,guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-        ggplot2::scale_y_continuous(breaks = seq(0, maxCN, 2), limits = c(0, maxCN), trans = y_axis_trans) +
+        ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
         ggplot2::xlab("Chromosome") +
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot(...) +
@@ -832,12 +917,27 @@ plotCNprofileBAF <- function(cn,
                                                        override.aes = list(alpha=1, size = 3, shape = 15))) +
         ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
     }
+  
+  if (!is.null(SV)){
+    svpl <- plottinglistSV(SV, chrfilt = chrfilt)
+    bezdf <- get_bezier_df(svpl, pl, maxCN)
+    bezdf <- bezdf %>% 
+      dplyr::filter((position_1 != position_2) | rearrangement_type == "foldback")
+    gCN <- gCN +
+      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = 0.8, 
+                           col =  as.vector(SV_colors["Foldback"]),
+                           data = bezdf %>% dplyr::filter(rearrangement_type == "foldback")) +
+      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id), alpha = svalpha, 
+                           col =  "grey30",
+                           data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")) 
+  }
 
   if (!is.null(genes)){
     gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    npoints <- dim(pl$CNbins)[1]
     gBAF <- gBAF +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
-      ggrepel::geom_label_repel(data = gene_idx, ggplot2::aes(x = idx + 6, y = 1.0, label = ensembl_gene_symbol), col = "black")
+      ggrepel::geom_text_repel(data = gene_idx, ggplot2::aes(x = idx - npoints * adj, y = 1.0, label = ensembl_gene_symbol), col = "black", alpha = 0.75)
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
   }
@@ -845,9 +945,9 @@ plotCNprofileBAF <- function(cn,
   if (!is.null(annotateregions)){
     datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
     gBAF <- gBAF +
-      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
     gCN <- gCN +
-      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
   }
 
   g <- cowplot::plot_grid(gBAF, gCN, align = "v", ncol = 1, rel_heights = c(1, 1.2))
