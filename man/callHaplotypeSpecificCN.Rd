@@ -10,7 +10,7 @@ callHaplotypeSpecificCN(
   eps = 0.000000000001,
   loherror = 0.02,
   maxCN = NULL,
-  selftransitionprob = 0.999,
+  selftransitionprob = 0.95,
   progressbar = TRUE,
   ncores = 1,
   phasebyarm = FALSE,

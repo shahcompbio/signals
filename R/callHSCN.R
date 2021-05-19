@@ -500,7 +500,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     eps = 1e-12,
                                     loherror = 0.02,
                                     maxCN = NULL,
-                                    selftransitionprob = 0.999,
+                                    selftransitionprob = 0.95,
                                     progressbar = TRUE,
                                     ncores = 1,
                                     phasebyarm = FALSE,
@@ -835,4 +835,141 @@ fix_assignments2 <- function(hscn){
   hscn[["data"]] <- hscn_data %>% as.data.frame()
   hscn[["qc_summary"]] <- qc_summary(hscn_data)
   return(hscn)
+}
+
+myphasedist <- function(A1, A2, B1, B2){
+  x <- sum(A1 != A2, na.rm = T) + 
+    sum(B1 != B2, na.rm = T)
+  return(x)
+}
+
+getphase <- function(A, B){
+  
+  nbins <- dim(A)[1]
+  
+  Df <- data.frame(Dnon = 0, Dswa = 0)
+  Bf <- data.frame(Bnon = -1, Bswa = -1)
+  
+  for (i in 2:nbins){
+    
+    Dnonnon <- Df$Dnon[i - 1] + myphasedist(A[i,], A[i-1,], B[i,], B[i-1,])
+    Dswanon <- Df$Dswa[i - 1] + myphasedist(A[i,], B[i-1,], B[i,], A[i-1,])
+    Dnon <- min(Dnonnon, Dswanon)
+    Bnon <- ifelse(Dnonnon <= Dswanon, 0, 1)
+    
+    Dnonswa <- Df$Dnon[i - 1] + myphasedist(B[i,], A[i-1,], A[i,], B[i-1,])
+    Dswaswa <- Df$Dswa[i - 1] + myphasedist(B[i,], B[i-1,], A[i,], A[i-1,])
+    Dswa <- min(Dnonswa, Dswaswa)
+    Bswa <- ifelse(Dnonswa <= Dswaswa, 0, 1)
+    
+    Df <- dplyr::bind_rows(Df, data.frame(Dnon = Dnon, Dswa = Dswa))
+    Bf <- dplyr::bind_rows(Bf, data.frame(Bnon = Bnon, Bswa = Bswa))
+  }
+  
+  phasebin <- c()
+  if (Df$Dnon[nbins] < Df$Dswa[nbins]){
+    phasebin <- c(phasebin, 0)
+    prev <- Bf$Bnon[nbins]
+  } else{
+    phasebin <- c(phasebin, 1)
+    prev <- Bf$Bswa[nbins]
+  }
+  
+  for (i in (nbins-1):1){
+    phasebintemp <- ifelse(prev == 0, 0, 1)
+    phasebin <- c(phasebin, phasebintemp)
+    prev <- Bf[,prev + 1][i]
+  }
+  
+  phasebin <- !phasebin
+  f <- table(phasebin)
+  
+  if (length(f) == 2){
+    if (f[2] > f[1]){
+      phasebin <- !phasebin
+    }
+  }
+  
+  phase <- unlist(lapply(phasebin, function(x) ifelse(x, "switch", "stick")))
+  
+  return(list(phase = rev(phase), Df = Df, Bf = Bf, phasebin = rev(phasebin)))
+}
+
+rephasehaplotypes <- function(phase_df, haplotype_phasing) {
+  return(dplyr::left_join(haplotype_phasing, phase_df) %>% 
+    dplyr::mutate(phase = dplyr::case_when(
+      phase == "allele0" & phasing == "stick" ~ "allele0",
+      phase == "allele1" & phasing == "stick" ~ "allele1",
+      phase == "allele0" & phasing == "switch" ~ "allele1",
+      phase == "allele1" & phasing == "switch" ~ "allele0"
+    )) %>% 
+    dplyr::select(chr, start, end, hap_label, phase))
+}
+
+#' Rephase haplotype copy number
+#' 
+#' This function implements the dynamic programming algorithm to rephase haplotype copy number first described in CHISEL. 
+#' The objective is to find the phase that minimizes the number of copy number events
+#'
+#' @param cn either a `hscn` object from `callHaplotypeSpecificCN` or a dataframe with haplotype specific copy number ie the `data` slot in an `hscn` object
+#' @param chromosomes vector specifying which chromosomes to phase, default is NULL whereby all chromosomes are phased
+#' 
+#' @return Either a new `hscn` object or a dataframe with rephased bins depdending on the input
+#'
+#' @md
+#' @export
+rephasebins <- function(cn, chromosomes = NULL){
+  
+  if (is.hscn(cn)){
+    cndat <- cn$data
+  } else{
+    cndat <- cn
+  }
+  
+  if (is.null(chromosomes)){
+    chromosomes <- unique(cndat$chr)
+  }
+  
+  phase_df <- data.frame()
+  Amat <- createCNmatrix(cndat, field = "Maj")
+  Bmat <- createCNmatrix(cndat, field = "Min")
+  for (mychr in unique(cndat$chr)){
+    message(paste0("Phasing chromosome ", mychr))
+    coords <- Amat %>% dplyr::filter(chr == mychr) %>% dplyr::select(chr, start, end)
+    A <- Amat %>% dplyr::filter(chr == mychr) %>% dplyr::select(-chr, -start, -end, -width)
+    B <- Bmat %>% dplyr::filter(chr == mychr) %>% dplyr::select(-chr, -start, -end, -width)
+    if (mychr %in% chromosomes){
+      phase <- getphase(A, B)
+      coords <- dplyr::bind_cols(coords, phase$Df)
+      coords <- dplyr::bind_cols(coords, phase$Bf)
+      coords$phasing <- phase$phase
+    } else{
+      message("x")
+      coords$Dnon <- 1
+      coords$Dswa <- 1
+      coords$Bnon <- 1
+      coords$Bswa <- 1
+      coords$phasing <- "stick"
+    }
+    phase_df <- dplyr::bind_rows(phase_df, coords)
+  }
+  
+  newhscn <- as.data.table(cndat)[as.data.table(phase_df), on = c("chr", "start", "end")] %>% 
+    .[, Min := ifelse(phasing == "switch", Maj, Min)] %>% 
+    .[, Maj :=  ifelse(phasing == "switch", state - Min, Maj)] %>% 
+    .[, alleleB := ifelse(phasing == "switch", alleleA, alleleB)] %>% 
+    .[, alleleA :=  ifelse(phasing == "switch", totalcounts - alleleB, alleleA)] %>% 
+    .[, BAF := alleleB / totalcounts] %>% 
+    .[, (c("Dnon", "Dswa", "Bnon", "Bswa", "phasing")) := NULL] %>% 
+    add_states()
+  
+  if (is.hscn(cn)){
+    hscn$haplotype_phasing <- rephasehaplotypes(phase_df, hscn$haplotype_phasing) %>% as.data.frame()
+    hscn$data <- newhscn %>% as.data.frame()
+    x <- hscn
+  } else{
+    x <- list(newhscn = newhscn, phase = phase_df)
+  }
+  
+  return(x)
 }

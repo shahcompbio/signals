@@ -1,4 +1,6 @@
 library(ggplot2)
+library(dplyr)
+library(data.table)
 
 loherror <- 0.02
 sim_data_bb <- simulate_data_cohort(clone_num = c(20, 25, 25, 10),
@@ -51,4 +53,24 @@ test_that("Test plotting", {
   expect_true(is.ggplot(plot7))
   expect_true(is.ggplot(plot8))
   expect_true(is.ggplot(plot9))
+})
+
+#test rephasing by minimizing number of events
+trueA <- data.frame(x = c(1,1,2,2,4,4,2,2,2,2,2,2))
+trueB <- data.frame(x = c(1,1,1,1,1,1,1,1,1,1,1,1))
+
+#scramble the CNAs
+A <- data.frame(x = c(1,1,1,1,4,4,2,1,2,1,2,1))
+B <- data.frame(x = c(1,1,2,2,1,1,1,2,1,2,1,2))
+
+x <- schnapps::getphase(A, B)
+
+mymat <- cbind(as.vector(A$x), as.vector(B$x))
+newA <- c()
+for (i in 1:dim(mymat)[1]){
+  newA <- c(newA, mymat[i, x$phasebin[i] + 1])
+}
+
+test_that("Test rephasing by minimizing number of events", {
+  expect_equal(trueA$x, newA)
 })

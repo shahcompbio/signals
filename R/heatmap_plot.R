@@ -758,6 +758,7 @@ plotHeatmap <- function(cn,
                         chrlabels = TRUE,
                         raster_quality = 10,
                         SV = NULL,
+                        seed = NULL,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -785,8 +786,8 @@ plotHeatmap <- function(cn,
       orderdf(.)
   }
 
-  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF")){
-    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS or state_min"))
+  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj")){
+    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS, Min or Maj"))
   }
 
   if (!plotcol %in% names(CNbins)){
@@ -798,6 +799,16 @@ plotHeatmap <- function(cn,
     legendname <- "Copy Number"
   }
 
+  if (plotcol == "Min"){
+    colvals <- cn_colours
+    legendname <- "Copy Number\nAllele B"
+  }
+  
+  if (plotcol == "Maj"){
+    colvals <- cn_colours
+    legendname <- "Copy Number\nAllele A"
+  }
+  
   if (plotcol == "state_BAF"){
     colvals <- cn_colours_bafstate
     legendname <- "Allelic Imbalance"
@@ -805,7 +816,7 @@ plotHeatmap <- function(cn,
 
   if (plotcol == "BAF"){
     colvals = circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-Hom"], scCNphase_colors["Balanced"], scCNphase_colors["B-Hom"]))
-    legendname <- "Allelic Imbalance (Raw)"
+    legendname <- "Allelic Imbalance"
   }
 
   if (plotcol == "copy"){
@@ -841,7 +852,8 @@ plotHeatmap <- function(cn,
     clustering_results <- umap_clustering(CNbins,
                                           minPts = max(round(pctcells * ncells), 2),
                                           field = "copy",
-                                          umapmetric = umapmetric)
+                                          umapmetric = umapmetric, 
+                                          seed = seed)
     tree <- clustering_results$tree
     tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data
