@@ -668,7 +668,7 @@ make_top_annotation_gain <- function(copynumber,
     annotationbreaks <- sort(unique(breakends$rearrangement_type))
     annotationbreaks <- annotationbreaks[!is.na(annotationbreaks)]
     annotationlabels <- unlist(lapply(annotationbreaks, CapStr))
-    ha2 = ComplexHeatmap::HeatmapAnnotation(SV = anno_barplot(breakends$y,
+    ha2 = ComplexHeatmap::HeatmapAnnotation(SV = ComplexHeatmap::anno_barplot(breakends$y,
                  gp = grid::gpar(col = breakends$col, fill = breakends$col),
                  ylim = c(0, 1),
                  axis = FALSE,
