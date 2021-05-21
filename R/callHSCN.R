@@ -980,7 +980,6 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9){
       phasemat <- cndat %>% 
         as.data.table() %>% 
         .[chr == mychr] %>% 
-        .[cell_id %in% cells] %>% 
         createCNmatrix(., field = "phase")
       
       coords <- phasemat %>% dplyr::select(chr, start, end)
