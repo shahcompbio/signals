@@ -427,6 +427,33 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE){
   return(bez)
 }
 
+#' Plot a single cell copy number profile
+#'
+#' @param CNbins Single cell copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`
+#' @param cellid Which cell to plot, if no cell is specific will plot the first cell in the dataframe
+#' @param chrfilt Vector of chromosomes to plot, if NULL (default) will plot all chromosomes
+#' @param pointsize The point size in the plot
+#' @param alphaval Alpha value of points
+#' @param maxCN The maximum on the y axis, if any points are above this value they will be winsorized rather than removed
+#' @param cellidx idx of cell to plot if cellid = NULL
+#' @param statecol The colour mapping, default is to map colours to the `state` column
+#' @param returnlist Return a list rather than the ggplot object
+#' @param raster use ggrastr or not, default = FALSE
+#' @param y_axis_trans What transformation to use on the y-axis, default is identity, the other option is "squashy" which uses a tanh transformation
+#' @param xaxis_order Default is "genome_position"
+#' @param legend.position Where to place the legend, default is "bottom"
+#' @param annotateregions Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position
+#' @param SV Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.
+#' @param svalpha the alpha scaling of the SV lines, default = 0.5
+#' @param genes vector of genes to annotate, will add a dashed vertical line and label
+#'
+#' @return ggplot2 plot
+#' 
+#' @examples
+#'
+#' plotCNprofile(CNbins)
+#'
+#' @md
 #' @export
 plotCNprofile <- function(CNbins,
                          cellid = NULL,
@@ -565,7 +592,6 @@ plotCNprofile <- function(CNbins,
   return(gCN)
 }
 
-#' @export
 plotCNprofileBAFhomolog <- function(cn,
                              cellid = NULL,
                              chrfilt = NULL,
@@ -714,7 +740,40 @@ plotCNprofileBAFhomolog <- function(cn,
   return(gCN)
 }
 
-
+#' Plot a single cell allele specific copy number profile
+#'
+#' @param Single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy` or a hscn object.
+#' @param cellid Which cell to plot, if no cell is specific will plot the first cell in the dataframe
+#' @param chrfilt Vector of chromosomes to plot, if NULL (default) will plot all chromosomes
+#' @param pointsize The point size in the plot
+#' @param alphaval Alpha value of points
+#' @param maxCN The maximum on the y axis, if any points are above this value they will be winsorized rather than removed
+#' @param cellidx idx of cell to plot if cellid = NULL
+#' @param statecol The colour mapping, default is to map colours to the `state` column
+#' @param returnlist Return a list rather than the ggplot object
+#' @param raster use ggrastr or not, default = FALSE
+#' @param y_axis_trans What transformation to use on the y-axis, default is identity, the other option is "squashy" which uses a tanh transformation
+#' @param xaxis_order Default is "genome_position"
+#' @param legend.position Where to place the legend, default is "bottom"
+#' @param annotateregions Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position
+#' @param SV Default is NULL. If a dataframe with structural variant position is passed it will add a track on the top showin rearrangement links
+#' @param svalpha the alpha scaling of the SV lines, default = 0.5
+#' @param genes vector of genes to annotate, will add a dashed vertical line and label
+#' @param homolog Rather than plot the BAF and CN seperately this will plot the 2 homologs on the same track
+#'
+#' @return ggplot2 plot
+#'
+#' @examples 
+#' 
+#' \dontrun{
+#' data("haplotypes")
+#' data("CNbins")
+#' haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
+#' hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "binomial")
+#' plotCNprofileBAF(hscn, genes = "MYC")
+#' plotCNprofileBAF(hscn, homolog = TRUE, chrfilt = c("1", "8"))
+#' }
+#'
 #' @export
 plotCNprofileBAF <- function(cn,
                           cellid = NULL,
@@ -963,6 +1022,7 @@ plotCNprofileBAF <- function(cn,
   return(p)
 }
 
+
 #' @export
 plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, ...){
   if (is.hscn(cn) | is.ascn(cn)){
@@ -1005,6 +1065,22 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, ...)
   return(g)
 }
 
+#' Plot BAF distributions per allele specific state
+#' 
+#' @param cn Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`
+#' @param minpts minimum number of points to include default = 250
+#' @param minfrac states that are present below this fraction will be removed, default = 0.01
+#' @param maxstate States with total copy number > maxstate will be removed, default = 10
+#' @param dens_adjust density adjustment factor in the violin plots
+#' 
+#' \dontrun{
+#' data("haplotypes")
+#' data("CNbins")
+#' haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
+#' hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "binomial")
+#' plotBAFperstate(hscn, genes = "MYC")
+#' }
+#'   
 #' @export
 plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, dens_adjust = 2.0){
 

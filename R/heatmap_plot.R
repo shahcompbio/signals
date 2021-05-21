@@ -731,6 +731,46 @@ getSVlegend <- function(include = NULL){
   return(SV)
 }
 
+#' Heatmap plot
+#' 
+#' Plot a heatmap where rows are cells, columns are genome coordinates and colours map to (allele-specific) copy-number states
+#' 
+#' @param cn Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`
+#' @param tree Tree in newick format to plot alongside the heatmap, default = NULL
+#' @param cluster data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL
+#' @param normalize_ploidy Normalize ploidy of all cells to 2
+#' @param normalize_tree default = FALSE
+#' @param branch_length scales branch lengths to this size, default = 2
+#' @param spacer_cols number of empty columns between chromosomes, default = 20
+#' @param plottree Binary value of whether to plot tree or not, default = TRUE
+#' @param plotcol Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj"
+#' @param reordercluster Reorder the cells according to cluster if no tree is specified
+#' @param pctcells Minimum size of cluster in terms of % of cells in umap clustering
+#' @param library_mapping Named vector mapping library names to labels for legend
+#' @param clone_pal pallette to colour clusters by
+#' @param sample_label_idx default = 1
+#' @param fillna Smooth over NA values, default = TRUE
+#' @param frequencycutoff default = 2
+#' @param maxf Max frequency when plotting the frequency track, default = NULL infers this from the data
+#' @param plotfrequency Plot the frequency track of gains and losses across the genome
+#' @param show_legend plot legend or not, boolean
+#' @param show_library_label show library label or not, boolean
+#' @param show_clone_label show clone label or not, boolean
+#' @param umapmetric metric to use in umap dimensionality reduction if no clusters are specified
+#' @param chrlabels include chromosome labels or not, boolean
+#' @param SV sv data frame
+#' @param seed seed for UMAP
+#' 
+#' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
+#' 
+#' #' \dontrun{
+#' data("haplotypes")
+#' data("CNbins")
+#' haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
+#' hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "binomial")
+#' plotHeatmap(hscn)
+#' }
+#' 
 #' @export
 plotHeatmap <- function(cn,
                         tree = NULL,

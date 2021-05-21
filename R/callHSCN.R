@@ -462,7 +462,7 @@ fitBB <- function(ascn){
 #' @param eps default 1e-12
 #' @param loherror LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02
 #' @param maxCN maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins
-#' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model
+#' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.95, set to 0.0 for an IID model
 #' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
 #' @param ncores Number of cores to use, default = 1
 #' @param minfrac Minimum proportion of haplotypes to retain when clustering + phasing, default = 0.8
@@ -473,6 +473,7 @@ fitBB <- function(ascn){
 #' @param clustering_method Method to use to cluster cells for haplotype phasing, default is `copy`, other option is `breakpoints`
 #' @param maxloherror Maximum value for LOH error rate
 #' @param overwritemincells default NULL
+#' @param cluster_per_chr Whether to cluster per chromosome to rephase alleles or not
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'

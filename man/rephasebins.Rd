@@ -4,17 +4,20 @@
 \alias{rephasebins}
 \title{Rephase haplotype copy number}
 \usage{
-rephasebins(cn, chromosomes = NULL)
+rephasebins(cn, chromosomes = NULL, method = "mindist", whole_chr_cutoff = 0.9)
 }
 \arguments{
 \item{cn}{either a \code{hscn} object from \code{callHaplotypeSpecificCN} or a dataframe with haplotype specific copy number ie the \code{data} slot in an \code{hscn} object}
 
 \item{chromosomes}{vector specifying which chromosomes to phase, default is NULL whereby all chromosomes are phased}
+
+\item{method}{either \code{mindist} or \code{LOH}}
 }
 \value{
 Either a new \code{hscn} object or a dataframe with rephased bins depdending on the input
 }
 \description{
-This function implements the dynamic programming algorithm to rephase haplotype copy number first described in CHISEL.
-The objective is to find the phase that minimizes the number of copy number events
+This function implements 2 rephasing algorithms. The first \code{mindist}, implementthe dynamic programming algorithm to rephase haplotype copy number first described in CHISEL.
+The objective is to find the phase that minimizes the number of copy number events. The second \code{LOH} finds cells with whole chromosome losses and assumes this was a single
+event and rephases all the bins relative to this.
 }

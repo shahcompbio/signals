@@ -7,7 +7,7 @@
 callHaplotypeSpecificCN(
   CNbins,
   haplotypes,
-  eps = 0.000000000001,
+  eps = 1e-12,
   loherror = 0.02,
   maxCN = NULL,
   selftransitionprob = 0.95,
@@ -37,7 +37,7 @@ callHaplotypeSpecificCN(
 
 \item{maxCN}{maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins}
 
-\item{selftransitionprob}{probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model}
+\item{selftransitionprob}{probability to stay in the same state in the HMM, default = 0.95, set to 0.0 for an IID model}
 
 \item{progressbar}{Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1}
 
@@ -58,6 +58,8 @@ callHaplotypeSpecificCN(
 \item{maxloherror}{Maximum value for LOH error rate}
 
 \item{overwritemincells}{default NULL}
+
+\item{cluster_per_chr}{Whether to cluster per chromosome to rephase alleles or not}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include
