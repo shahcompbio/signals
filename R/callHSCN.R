@@ -906,30 +906,7 @@ rephasehaplotypes <- function(phase_df, haplotype_phasing) {
     dplyr::select(chr, start, end, hap_label, phase))
 }
 
-#' Rephase haplotype copy number
-#' 
-#' This function implements the dynamic programming algorithm to rephase haplotype copy number first described in CHISEL. 
-#' The objective is to find the phase that minimizes the number of copy number events
-#'
-#' @param cn either a `hscn` object from `callHaplotypeSpecificCN` or a dataframe with haplotype specific copy number ie the `data` slot in an `hscn` object
-#' @param chromosomes vector specifying which chromosomes to phase, default is NULL whereby all chromosomes are phased
-#' 
-#' @return Either a new `hscn` object or a dataframe with rephased bins depdending on the input
-#'
-#' @md
-#' @export
-rephasebins <- function(cn, chromosomes = NULL){
-  
-  if (is.hscn(cn)){
-    cndat <- cn$data
-  } else{
-    cndat <- cn
-  }
-  
-  if (is.null(chromosomes)){
-    chromosomes <- unique(cndat$chr)
-  }
-  
+phasing_minevents <- function(cndat, chromosomes){
   phase_df <- data.frame()
   Amat <- createCNmatrix(cndat, field = "Maj")
   Bmat <- createCNmatrix(cndat, field = "Min")
@@ -954,18 +931,132 @@ rephasebins <- function(cn, chromosomes = NULL){
     phase_df <- dplyr::bind_rows(phase_df, coords)
   }
   
-  newhscn <- as.data.table(cndat)[as.data.table(phase_df), on = c("chr", "start", "end")] %>% 
-    .[, Min := ifelse(phasing == "switch", Maj, Min)] %>% 
-    .[, Maj :=  ifelse(phasing == "switch", state - Min, Maj)] %>% 
-    .[, alleleB := ifelse(phasing == "switch", alleleA, alleleB)] %>% 
-    .[, alleleA :=  ifelse(phasing == "switch", totalcounts - alleleB, alleleA)] %>% 
-    .[, BAF := alleleB / totalcounts] %>% 
-    .[, (c("Dnon", "Dswa", "Bnon", "Bswa", "phasing")) := NULL] %>% 
-    add_states()
+  return(phase_df)
+}
+
+phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9){
+  
+  phase_df <- data.frame()
+  
+  for (mychr in unique(cndat$chr)){
+    message(paste0("Phasing chromosome ", mychr))
+    
+    #find cells that have whole chromosome LOH
+    cells <- cndat %>% 
+      as.data.table() %>% 
+      .[chr == mychr] %>% 
+      .[, list(LOH = sum(LOH == "LOH") / .N), by = "cell_id"] %>% 
+      .[order(LOH, decreasing = TRUE)] %>% 
+      .[LOH > 0.9] %>% 
+      .$cell_id
+    
+    message(paste0("\tNumber of cells with whole chromosome LOH = ", length(cells)))
+    
+    if ((length(cells) > 0) & (mychr %in% chromosomes)){
+      
+      #create matrix of allele phases
+      phasemat <- cndat %>% 
+        as.data.table() %>% 
+        .[cell_id %in% cells] %>% 
+        .[chr == mychr] %>% 
+        createCNmatrix(., field = "phase")
+      
+      coords <- phasemat %>% dplyr::select(chr, start, end)
+      
+      #find the average phase across these cells
+      coords$averagephase <- apply(phasemat %>% dplyr::select(-chr, -start, -end, -width), 1, schnapps::Mode)
+      
+      #find switches
+      coords <- coords %>% 
+        dplyr::mutate(phasing = dplyr::case_when(
+          averagephase == "A" ~ "stick",
+          averagephase == "B" ~ "switch",
+          averagephase == "Balanced" ~ "stick"
+        ))
+      message(paste0("\tFraction of bins that will be switched: ", round(sum(coords$phasing == "switch") / dim(coords)[1], 2)))
+    } else {
+      
+      phasemat <- cndat %>% 
+        as.data.table() %>% 
+        .[chr == mychr] %>% 
+        .[cell_id %in% cells] %>% 
+        createCNmatrix(., field = "phase")
+      
+      coords <- phasemat %>% dplyr::select(chr, start, end)
+      coords$averagephase <- "A"
+      coords <- coords %>% 
+        dplyr::mutate(phasing = dplyr::case_when(
+          averagephase == "A" ~ "stick",
+          averagephase == "B" ~ "switch",
+          averagephase == "Balanced" ~ "stick"
+        ))
+      
+    }
+    
+    phase_df <- dplyr::bind_rows(phase_df, coords)
+  }
+  
+  return(phase_df %>% as.data.frame(.))
+  
+}
+
+#' Rephase haplotype copy number
+#' 
+#' This function implements 2 rephasing algorithms. The first `mindist`, implementthe dynamic programming algorithm to rephase haplotype copy number first described in CHISEL. 
+#' The objective is to find the phase that minimizes the number of copy number events. The second `LOH` finds cells with whole chromosome losses and assumes this was a single
+#' event and rephases all the bins relative to this.
+#'
+#' @param cn either a `hscn` object from `callHaplotypeSpecificCN` or a dataframe with haplotype specific copy number ie the `data` slot in an `hscn` object
+#' @param chromosomes vector specifying which chromosomes to phase, default is NULL whereby all chromosomes are phased
+#' @param method either `mindist` or `LOH`
+#' 
+#' @return Either a new `hscn` object or a dataframe with rephased bins depdending on the input
+#'
+#' @md
+#' @export
+rephasebins <- function(cn, chromosomes = NULL, method = "mindist", whole_chr_cutoff = 0.9){
+  
+  if (!method %in% c("mindist", "LOH")){
+    stop(paste0("method must be one of mindist or LOH"))
+  }
+  
+  
+  if (is.hscn(cn)){
+    cndat <- cn$data
+  } else{
+    cndat <- cn
+  }
+  
+  if (is.null(chromosomes)){
+    chromosomes <- unique(cndat$chr)
+  }
+  
+  if (method == "mindist"){
+    phase_df <- phasing_minevents(cndat, chromosomes)
+    newhscn <- as.data.table(cndat)[as.data.table(phase_df), on = c("chr", "start", "end")] %>% 
+      .[, Min := ifelse(phasing == "switch", Maj, Min)] %>% 
+      .[, Maj :=  ifelse(phasing == "switch", state - Min, Maj)] %>% 
+      .[, alleleB := ifelse(phasing == "switch", alleleA, alleleB)] %>% 
+      .[, alleleA :=  ifelse(phasing == "switch", totalcounts - alleleB, alleleA)] %>% 
+      .[, BAF := alleleB / totalcounts] %>% 
+      .[, (c("Dnon", "Dswa", "Bnon", "Bswa", "phasing")) := NULL] %>% 
+      add_states()
+  } else if (method == "LOH") {
+    phase_df <- phasing_LOH(cndat, chromosomes, cutoff = whole_chr_cutoff)
+    newhscn <- as.data.table(cndat)[as.data.table(phase_df), on = c("chr", "start", "end")] %>% 
+      .[, Min := ifelse(phasing == "switch", Maj, Min)] %>% 
+      .[, Maj :=  ifelse(phasing == "switch", state - Min, Maj)] %>% 
+      .[, alleleB := ifelse(phasing == "switch", alleleA, alleleB)] %>% 
+      .[, alleleA :=  ifelse(phasing == "switch", totalcounts - alleleB, alleleA)] %>% 
+      .[, BAF := alleleB / totalcounts] %>% 
+      add_states()
+  }
+
   
   if (is.hscn(cn)){
     hscn$haplotype_phasing <- rephasehaplotypes(phase_df, hscn$haplotype_phasing) %>% as.data.frame()
     hscn$data <- newhscn %>% as.data.frame()
+    hscn$qc_summary <- qc_summary(hscn$data)
     x <- hscn
   } else{
     x <- list(newhscn = newhscn, phase = phase_df)
