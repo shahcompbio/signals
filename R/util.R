@@ -1,5 +1,5 @@
 Mode <- function(x) {
-  ux <- unique(x)
+  ux <- unique(na.exclude(x))
   ux[which.max(tabulate(match(x, ux)))]
 }
 

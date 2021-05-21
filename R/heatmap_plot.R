@@ -71,7 +71,7 @@ createSVmatforhmap <- function(x, cnmat){
       is.na(rearrangement_type) ~ NA_character_,
       rearrangement_type == "inversion" ~ SV_colors[["Inversion"]],
       rearrangement_type == "foldback" ~ SV_colors[["Foldback"]],
-      rearrangement_type == "inbalanced" ~ SV_colors[["Unbalanced"]],
+      rearrangement_type == "unbalanced" ~ SV_colors[["Unbalanced"]],
       rearrangement_type == "duplication" ~ SV_colors[["Duplication"]],
       rearrangement_type == "balanced" ~ SV_colors[["Balanced"]],
       rearrangement_type == "deletion" ~ SV_colors[["Deletion"]]

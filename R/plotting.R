@@ -365,7 +365,8 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE){
       dplyr::mutate(copy = pmax(Acopy, Bcopy))
   }
   
-  maxidx <- max(cn$CNbins$idx)
+  maxidx <- max(cn$CNbins$idx, na.rm = TRUE)
+  minidx <- min(cn$CNbins$idx, na.rm = TRUE)
   idxrange <- 0.05 * maxidx
   
   svcn1 <- dplyr::left_join(sv$breakpoints, cn$CNbins %>% 
@@ -389,7 +390,8 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE){
     dplyr::mutate(sr = dplyr::case_when(
       rearrangement_type == "foldback" ~ 0,
       idx_3 > idx_1 ~ 1,
-      idx_3 < idx_1 ~ -1
+      idx_3 < idx_1 ~ -1,
+      idx_3 == idx_1 ~ 0,
     )) %>% 
     dplyr::mutate(idx_2 = minidx + sr) %>% 
     tidyr::pivot_longer(dplyr::starts_with("idx"), names_to =  "name1", values_to = "idx") %>% 
@@ -419,8 +421,8 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE){
     dplyr::mutate(id = paste(chromosome_1, position_1, position_2, 
                              rearrangement_type, sep = "_")) %>%
     dplyr::distinct(.) %>% 
-    dplyr::mutate(idx = ifelse(idx > max(cn$CNbins$idx), max(cn$CNbins$idx), idx)) %>% 
-    dplyr::mutate(idx = ifelse(idx < min(cn$CNbins$idx), min(cn$CNbins$idx), idx))
+    dplyr::mutate(idx = ifelse(idx > maxidx, maxidx, idx)) %>% 
+    dplyr::mutate(idx = ifelse(idx < minidx, minidx, idx))
   
   return(bez)
 }
