@@ -21,7 +21,7 @@ biocViews:
 Imports: 
     data.table,
     magrittr,
-    dplyr (<= 1.0.5),
+    dplyr (== 1.0.5),
     uwot,
     dbscan,
     gtools,
