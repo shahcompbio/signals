@@ -21,7 +21,7 @@ biocViews:
 Imports: 
     data.table,
     magrittr,
-    dplyr (== 1.0.5),
+    dplyr,
     uwot,
     dbscan,
     gtools,
@@ -32,7 +32,6 @@ Imports:
     ape,
     RColorBrewer,
     tidyr,
-    ggtree,
     ggplot2,
     S4Vectors,
     scales,
@@ -55,7 +54,8 @@ Remotes:
   VPetukhov/ggrastr,
   caravagn/VIBER,
   caravagn/pio,
-  caravagn/easypar
+  caravagn/easypar,
+  YuLab-SMU/ggtree
 VignetteBuilder: knitr
 LinkingTo: 
     Rcpp
