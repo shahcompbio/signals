@@ -63,7 +63,7 @@ trueB <- data.frame(x = c(1,1,1,1,1,1,1,1,1,1,1,1))
 A <- data.frame(x = c(1,1,1,1,4,4,2,1,2,1,2,1))
 B <- data.frame(x = c(1,1,2,2,1,1,1,2,1,2,1,2))
 
-x <- schnapps::getphase(A, B)
+x <- getphase(A, B)
 
 mymat <- cbind(as.vector(A$x), as.vector(B$x))
 newA <- c()

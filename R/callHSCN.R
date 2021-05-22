@@ -935,7 +935,7 @@ phasing_minevents <- function(cndat, chromosomes){
   return(phase_df)
 }
 
-phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9){
+phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9, ncells = 1){
   
   phase_df <- data.frame()
   
@@ -953,7 +953,7 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9){
     
     message(paste0("\tNumber of cells with whole chromosome LOH = ", length(cells)))
     
-    if ((length(cells) > 0) & (mychr %in% chromosomes)){
+    if ((length(cells) > ncells) & (mychr %in% chromosomes)){
       
       #create matrix of allele phases
       phasemat <- cndat %>% 
@@ -1009,12 +1009,13 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9){
 #' @param cn either a `hscn` object from `callHaplotypeSpecificCN` or a dataframe with haplotype specific copy number ie the `data` slot in an `hscn` object
 #' @param chromosomes vector specifying which chromosomes to phase, default is NULL whereby all chromosomes are phased
 #' @param method either `mindist` or `LOH`
+#' @param ncells default 1
 #' 
 #' @return Either a new `hscn` object or a dataframe with rephased bins depdending on the input
 #'
 #' @md
 #' @export
-rephasebins <- function(cn, chromosomes = NULL, method = "mindist", whole_chr_cutoff = 0.9){
+rephasebins <- function(cn, chromosomes = NULL, method = "mindist", whole_chr_cutoff = 0.9, ncells = 1){
   
   if (!method %in% c("mindist", "LOH")){
     stop(paste0("method must be one of mindist or LOH"))
@@ -1042,7 +1043,7 @@ rephasebins <- function(cn, chromosomes = NULL, method = "mindist", whole_chr_cu
       .[, (c("Dnon", "Dswa", "Bnon", "Bswa", "phasing")) := NULL] %>% 
       add_states()
   } else if (method == "LOH") {
-    phase_df <- phasing_LOH(cndat, chromosomes, cutoff = whole_chr_cutoff)
+    phase_df <- phasing_LOH(cndat, chromosomes, cutoff = whole_chr_cutoff, ncells = ncells)
     newhscn <- as.data.table(cndat)[as.data.table(phase_df), on = c("chr", "start", "end")] %>% 
       .[, Min := ifelse(phasing == "switch", Maj, Min)] %>% 
       .[, Maj :=  ifelse(phasing == "switch", state - Min, Maj)] %>% 
