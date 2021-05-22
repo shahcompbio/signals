@@ -748,3 +748,21 @@ singletons <- function(cn, field){
 
   return(x)
 }
+
+#' @export
+BAFdistance <- function(cn){
+  
+  if (is.hscn(cn) | is.ascn(cn)){
+    CNbins <- cn$data
+  } else{
+    CNbins <- cn
+  }
+  
+  celldist <- cn %>% 
+    as.data.table() %>% 
+    .[, dist := sqrt((BAF - (Min / state))^2)] %>% 
+    .[, dist := BAF - (Min / state)] %>% 
+    .[, list(BAF_distance = mean(dist, na.rm = T)), by = c("cell_id", "chr")]
+  
+  return(celldist)
+}

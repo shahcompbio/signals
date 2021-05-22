@@ -4,7 +4,13 @@
 \alias{rephasebins}
 \title{Rephase haplotype copy number}
 \usage{
-rephasebins(cn, chromosomes = NULL, method = "mindist", whole_chr_cutoff = 0.9)
+rephasebins(
+  cn,
+  chromosomes = NULL,
+  method = "mindist",
+  whole_chr_cutoff = 0.9,
+  ncells = 1
+)
 }
 \arguments{
 \item{cn}{either a \code{hscn} object from \code{callHaplotypeSpecificCN} or a dataframe with haplotype specific copy number ie the \code{data} slot in an \code{hscn} object}
@@ -12,6 +18,8 @@ rephasebins(cn, chromosomes = NULL, method = "mindist", whole_chr_cutoff = 0.9)
 \item{chromosomes}{vector specifying which chromosomes to phase, default is NULL whereby all chromosomes are phased}
 
 \item{method}{either \code{mindist} or \code{LOH}}
+
+\item{ncells}{default 1}
 }
 \value{
 Either a new \code{hscn} object or a dataframe with rephased bins depdending on the input

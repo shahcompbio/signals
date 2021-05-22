@@ -844,6 +844,7 @@ myphasedist <- function(A1, A2, B1, B2){
   return(x)
 }
 
+#' @export
 getphase <- function(A, B){
   
   nbins <- dim(A)[1]
@@ -946,10 +947,24 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9, ncells = 1){
     cells <- cndat %>% 
       as.data.table() %>% 
       .[chr == mychr] %>% 
-      .[, list(LOH = sum(LOH == "LOH") / .N), by = "cell_id"] %>% 
+      .[, list(LOH = sum(LOH == "LOH") / .N, 
+               mBAF = mean(BAF - (Min / state), na.rm = T)), #calculate distance between raw BAF and predicted state, we'll remove any cells that are far from this where the HMM may have failed
+               by = "cell_id"] %>%
       .[order(LOH, decreasing = TRUE)] %>% 
-      .[LOH > 0.9] %>% 
+      .[LOH > 0.9 & abs(mBAF) < 0.05] %>% 
       .$cell_id
+    
+    if (length(cells) > ncells){
+      BAFm <- cndat %>% 
+        as.data.table() %>% 
+        .[chr == mychr] %>% 
+        .[cell_id %in% cells] %>% 
+        .[, BAFm := ifelse(BAF > 0.5, 1 - BAF, BAF)] %>% 
+        .$BAFm %>% 
+        mean(.)
+    } else {
+      BAF <- 0.0
+    }
     
     message(paste0("\tNumber of cells with whole chromosome LOH = ", length(cells)))
     
