@@ -1,7 +1,6 @@
 #' @export
-format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6){
-
-  options("scipen"=20)
+format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6) {
+  options("scipen" = 20)
 
   haplotypes <- haplotypes %>%
     data.table::as.data.table()
@@ -52,11 +51,10 @@ format_haplotypes <- function(haplotypes,
                               filtern = 0,
                               hmmcopybinsize = 0.5e6,
                               phased_haplotypes = NULL,
-                              phasing_method = "distribution", ...){
-
+                              phasing_method = "distribution", ...) {
   message("Phase haplotypes...")
-  if (is.null(phased_haplotypes)){
-    if (phasing_method == "distribution"){
+  if (is.null(phased_haplotypes)) {
+    if (phasing_method == "distribution") {
       message("Phasing based on distribution across all cells")
       phased_haplotypes <- phase_haplotypes(haplotypes)
     } else {
@@ -78,7 +76,7 @@ format_haplotypes <- function(haplotypes,
 }
 
 #' @export
-phase_haplotypes <- function(haplotypes){
+phase_haplotypes <- function(haplotypes) {
   phased_haplotypes <- data.table::as.data.table(haplotypes) %>%
     .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
     .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
@@ -88,32 +86,34 @@ phase_haplotypes <- function(haplotypes){
 }
 
 #' @export
-computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE){
-  message(paste0("Phasing based on distribution across top ", ncells," cells with highest imbalance"))
+computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE) {
+  message(paste0("Phasing based on distribution across top ", ncells, " cells with highest imbalance"))
   formatted_haplotypes <- haplotypes %>%
     .[, R := fifelse(allele0 == 0 | allele1 == 0, 0, 1)] %>%
     .[, R0 := fifelse(allele0 == 0, "allele0", "allele1")] %>%
     .[, R1 := fifelse(allele1 == 0, "allele1", "allele0")]
 
-  if (arm == FALSE){
+  if (arm == FALSE) {
     perchr <- formatted_haplotypes %>%
       .[, list(meanR = mean(R), meanR0 = Mode(R0), meanR1 = Mode(R1)),
-        by = c("cell_id", "chr")] %>%
-      #.[, dominant := fifelse(meanR0 < meanR1, "R1", "R0")] %>%
+        by = c("cell_id", "chr")
+      ] %>%
+      # .[, dominant := fifelse(meanR0 < meanR1, "R1", "R0")] %>%
       setkey("meanR") %>%
       .[, head(.SD, ncells), by = c("chr")]
-  } else{
+  } else {
     formatted_haplotypes$arm <- coord_to_arm(formatted_haplotypes$chr, formatted_haplotypes$start)
     perchr <- formatted_haplotypes %>%
       .[, list(meanR = mean(R), meanR0 = Mode(R0), meanR1 = Mode(R1)),
-        by = c("cell_id", "chr", "arm")] %>%
-      #.[, dominant := fifelse(meanR0 < meanR1, "R1", "R0")] %>%
+        by = c("cell_id", "chr", "arm")
+      ] %>%
+      # .[, dominant := fifelse(meanR0 < meanR1, "R1", "R0")] %>%
       setkey("meanR") %>%
       .[, head(.SD, ncells), by = c("chr", "arm")]
   }
 
 
-  if (arm == FALSE){
+  if (arm == FALSE) {
     limitedhaps <- perchr[formatted_haplotypes, on = c("cell_id", "chr"), nomatch = 0] %>%
       .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")]
     phased_haplotypes <- limitedhaps %>%
@@ -121,7 +121,7 @@ computehaplotypecounts <- function(haplotypes, ncells = 10, arm = FALSE){
       dplyr::summarise(phase = Mode(phase), meanR = mean(meanR)) %>%
       dplyr::ungroup() %>%
       data.table::as.data.table()
-  } else{
+  } else {
     limitedhaps <- perchr[formatted_haplotypes, on = c("cell_id", "chr", "arm"), nomatch = 0] %>%
       .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")]
     phased_haplotypes <- limitedhaps %>%
@@ -141,34 +141,34 @@ combineBAFCN <- function(haplotypes,
                          phased_haplotypes = NULL,
                          minbins = 100,
                          minbinschr = 10,
-                         phasing_method = "distribution", ...){
-
+                         phasing_method = "distribution", ...) {
   message("Finding overlapping cell IDs between CN data and haplotype data...")
   cellidoverlap <- intersect(CNbins$cell_id, haplotypes$cell_id)
-  message(paste0("Total number of cells in both CN and haplotypes: " , length(cellidoverlap)))
+  message(paste0("Total number of cells in both CN and haplotypes: ", length(cellidoverlap)))
 
   CNbins <- data.table::as.data.table(CNbins)
   haplotypes <- data.table::as.data.table(haplotypes)
 
-  if (all(cellidoverlap %in% CNbins$cell_id)){
+  if (all(cellidoverlap %in% CNbins$cell_id)) {
     message(paste0("Number of cells in CN data: ", length(unique(CNbins$cell_id))))
     CNbins <- CNbins[cell_id %in% cellidoverlap]
   }
 
-  if (all(cellidoverlap %in% haplotypes$cell_id)){
+  if (all(cellidoverlap %in% haplotypes$cell_id)) {
     message(paste0("Number of cells in haplotype data: ", length(unique(CNbins$cell_id))))
     haplotypes <- haplotypes[cell_id %in% cellidoverlap]
   }
 
   message("Reformatting haplotypes")
   haplotypes <- format_haplotypes(haplotypes,
-                                  phased_haplotypes = phased_haplotypes,
-                                  phasing_method = phasing_method, ...)
+    phased_haplotypes = phased_haplotypes,
+    phasing_method = phasing_method, ...
+  )
   haplotypes <- data.table::as.data.table(haplotypes)
 
   message("Joining bins and haplotypes...")
-  #CNbins <- data.table::merge.data.table(CNbins, haplotypes)
-  CNbins <- CNbins[haplotypes, on = c("chr", "start", "end", "cell_id"), nomatch=0]
+  # CNbins <- data.table::merge.data.table(CNbins, haplotypes)
+  CNbins <- CNbins[haplotypes, on = c("chr", "start", "end", "cell_id"), nomatch = 0]
 
   message("Calculate BAF per bin...")
   CNBAF <- data.table::as.data.table(CNbins) %>%
@@ -186,7 +186,7 @@ combineBAFCN <- function(haplotypes,
     .[, n := NULL] %>%
     .[, ncell := NULL]
 
-  message(paste0("Total number of cells after removing cells with < " , minbins, " bins: ", length(unique(CNBAF$cell_id))))
+  message(paste0("Total number of cells after removing cells with < ", minbins, " bins: ", length(unique(CNBAF$cell_id))))
 
   return(as.data.frame(CNBAF))
 }

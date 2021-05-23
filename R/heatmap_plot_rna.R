@@ -1,8 +1,9 @@
-make_arm_matrix <- function(df){
+make_arm_matrix <- function(df) {
   ord <- dplyr::distinct(df, chr, arm, chrarm) %>%
     as.data.table() %>%
     .[gtools::mixedorder(chrarm)] %>%
-    .[, idx := 1:.N] %>% dplyr::as_tibble()
+    .[, idx := 1:.N] %>%
+    dplyr::as_tibble()
 
   baf <- dplyr::left_join(df, ord)
 
@@ -12,7 +13,7 @@ make_arm_matrix <- function(df){
     as.data.frame()
 
   row.names(baf_mat) <- baf_mat$cell_id
-  baf_mat = subset(baf_mat, select = -c(cell_id))
+  baf_mat <- subset(baf_mat, select = -c(cell_id))
 
   idx <- dplyr::distinct(baf, chr, arm, chrarm, idx) %>% dplyr::arrange(idx)
   baf_mat <- baf_mat[, idx$chrarm]
@@ -21,16 +22,15 @@ make_arm_matrix <- function(df){
 }
 
 #' @export
-plotHeatmapBAF <- function(df, removelowqcells = TRUE, samplecells = NULL, gen_matrix = TRUE, arms = NULL){
-
-  if (gen_matrix){
+plotHeatmapBAF <- function(df, removelowqcells = TRUE, samplecells = NULL, gen_matrix = TRUE, arms = NULL) {
+  if (gen_matrix) {
     baf <- per_arm_baf_mat(df, arms = arms)
-  } else{
+  } else {
     baf <- make_arm_matrix(df)
   }
 
   if (removelowqcells) {
-    keep <- rowSums(is.na(baf$bafperchrmat)) < floor(dim(baf$bafperchrmat)[2]/2)
+    keep <- rowSums(is.na(baf$bafperchrmat)) < floor(dim(baf$bafperchrmat)[2] / 2)
     baf$bafperchrmat <- baf$bafperchrmat[keep, ]
     row.names(baf$bafperchrmat) <- names(keep)[keep]
   }
@@ -46,19 +46,22 @@ plotHeatmapBAF <- function(df, removelowqcells = TRUE, samplecells = NULL, gen_m
     row.names(baf$bafperchrmat) <- cells
   }
 
-  col_fun = circlize::colorRamp2(c(0, 0.5, 1),
-                                 c(scCNphase_colors["A-Hom"], "white", scCNphase_colors["B-Hom"]))
+  col_fun <- circlize::colorRamp2(
+    c(0, 0.5, 1),
+    c(scCNphase_colors["A-Hom"], "white", scCNphase_colors["B-Hom"])
+  )
 
   baf_hm <- ComplexHeatmap::Heatmap(
-    name="BAF",
+    name = "BAF",
     as.matrix(baf$bafperchrmat),
-    col=col_fun,
-    na_col="grey70",
-    use_raster=TRUE,
-    raster_quality=5,
-    show_row_names=FALSE,
+    col = col_fun,
+    na_col = "grey70",
+    use_raster = TRUE,
+    raster_quality = 5,
+    show_row_names = FALSE,
     clustering_distance_rows = "pearson",
-    cluster_columns=FALSE)
+    cluster_columns = FALSE
+  )
 
   return(baf_hm)
 }
