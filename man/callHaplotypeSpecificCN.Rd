@@ -77,12 +77,15 @@ allele specific copy number object which includes dataframe similar to input wit
 Call haplotype specific copy number in single cell datasets
 }
 \examples{
-sim_data <- simulate_data_cohort(clone_num = c(20, 20),
-       clonal_events = list(list("1" = c(2,0), "5" = c(3,1)),
-                       list("2" = c(6,3), "3" = c(1,0))),
-       loherror = 0.02,
-       coverage = 100)
+sim_data <- simulate_data_cohort(
+  clone_num = c(20, 20),
+  clonal_events = list(
+    list("1" = c(2, 0), "5" = c(3, 1)),
+    list("2" = c(6, 3), "3" = c(1, 0))
+  ),
+  loherror = 0.02,
+  coverage = 100
+)
 
 results <- callHaplotypeSpecificCN(sim_data$CNbins, sim_data$haplotypes)
-
 }

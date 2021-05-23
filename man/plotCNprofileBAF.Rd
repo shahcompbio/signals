@@ -72,7 +72,6 @@ ggplot2 plot
 Plot a single cell allele specific copy number profile
 }
 \examples{
-
 \dontrun{
 data("haplotypes")
 data("CNbins")
