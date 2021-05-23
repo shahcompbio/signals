@@ -65,9 +65,6 @@
     <li>
       <a href="articles/BetaBinom.html">Beta-Binomial model for schnapps</a>
     </li>
-    <li>
-      <a href="articles/karyoplot.html">Advanced plotting with schnapps</a>
-    </li>
   </ul>
 </li>
       </ul>
@@ -88,7 +85,7 @@
 <a href="#schnapps" class="anchor"></a>schnapps</h1></div>
 <!-- badges: start -->
 
-<p>schnapps (Single Cell Haplotype copy Number Analysis through Phased Probabilistic States) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (~0.01X). schnapps phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model.</p>
+<p>schnapps (Single Cell Haplotype copy Number Analysis through Phased Probabilistic States) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (~0.01X). schnapps phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model. Documentation is available <a href="https://shahcompbio.github.io/schnapps/">here</a>.</p>
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
@@ -99,6 +96,7 @@
 <div id="input-data" class="section level2">
 <h2 class="hasAnchor">
 <a href="#input-data" class="anchor"></a>Input data</h2>
+<p><code>schnapps</code> was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in <a href="https://www.sciencedirect.com/science/article/pii/S0092867419311766">Laks et al.</a>. As such it works using the output of the the pipeline developed to process this type of data, available <a href="https://github.com/shahcompbio/single_cell_pipeline">here</a>. Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP counts may also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running schnapps please open an issue.</p>
 <p>Below is an example of how to use schnapps with DLP data. You will need the HMM copy results table (<code>CNbins</code>) with the following columns: <code>chr</code>, <code>start</code>,<code>end</code>, <code>cell_id</code>, <code>state</code>, <code>copy</code>, as well as cell specific haplotype counts as outputted by <a href="https://github.com/shahcompbio/scgenome">scgenome</a> with the following command. This includes the following columns: <code>chr</code>, <code>start</code>,<code>end</code>, <code>cell_id</code>, <code>hap_label</code>, <code>allele_id</code>, <code>readcount</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1"></a>allele_results <span class="op">=</span> scgenome.loaders.allele.load_haplotype_allele_data(</span>
 <span id="cb2-2"><a href="#cb2-2"></a>    ticket_directory,</span>
@@ -112,20 +110,29 @@
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">schnapps</span><span class="op">)</span>
 <span class="va">allele_data</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">allele_data</span>, <span class="va">CNbins</span><span class="op">)</span></code></pre></div>
-<p>Then we can call the allele specific states:</p>
+<p>Then we can call haplotype specific state per cell:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">ascn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">allele_data</span><span class="op">)</span></code></pre></div>
-<p>Or alterantively the haplotype specific states:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">allele_data</span><span class="op">)</span></code></pre></div>
+<p>Or alterantively allele specific states:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">allele_data</span><span class="op">)</span></code></pre></div>
 <p>See the vignette for more information on the differences between these two outputs.</p>
 <p>After performing this inference, to QC the results it is useful to plot a different representation of the BAF. Here we plot the BAF as a function of the inferred states. The black lines indicate where we should see the mean BAF based on the state.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">plotBAFperstate</span><span class="op">(</span><span class="va">ascn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">ascn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
 <p>After having ensured the results make sense, you can plot a heatmap of the states across all cells with the following.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">plotHeatmap</span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span><span class="op">)</span></code></pre></div>
 <p>This will cluster the cell using umap and hdbscan.</p>
+<p><code>schnapps</code> includes a number of other utilities for analysing single cell (haplotype-specific) copy number including the following:</p>
+<ul>
+<li>integration with scRNAseq using <a href="https://satijalab.org/seurat/index.html">seurat</a>
+</li>
+<li>extensive plotting functions</li>
+<li>integration and plotting with structural variants</li>
+<li>clustering</li>
+</ul>
+<p>Please see the vignettes for more information.</p>
 </div>
 </div>
   </div>

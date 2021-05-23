@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Fill scale constructor for scCN (single cell Copy Number) colors — scale_fill_scCN • schnapps</title>
+<title>Plot a single cell copy number profile — plotCNprofile • schnapps</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Fill scale constructor for scCN (single cell Copy Number) colors — scale_fill_scCN" />
-<meta property="og:description" content="Fill scale constructor for scCN (single cell Copy Number) colors" />
+<meta property="og:title" content="Plot a single cell copy number profile — plotCNprofile" />
+<meta property="og:description" content="Plot a single cell copy number profile" />
 
 
 
@@ -121,40 +121,119 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Fill scale constructor for scCN (single cell Copy Number) colors</h1>
+    <h1>Plot a single cell copy number profile</h1>
     
-    <div class="hidden name"><code>scale_fill_scCN.Rd</code></div>
+    <div class="hidden name"><code>plotCNprofile.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Fill scale constructor for scCN (single cell Copy Number) colors</p>
+    <p>Plot a single cell copy number profile</p>
     </div>
 
-    <pre class="usage"><span class='fu'>scale_fill_scCN</span><span class='op'>(</span>palette <span class='op'>=</span> <span class='st'>"main"</span>, discrete <span class='op'>=</span> <span class='cn'>TRUE</span>, reverse <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>plotCNprofile</span><span class='op'>(</span>
+  <span class='va'>CNbins</span>,
+  cellid <span class='op'>=</span> <span class='cn'>NULL</span>,
+  chrfilt <span class='op'>=</span> <span class='cn'>NULL</span>,
+  pointsize <span class='op'>=</span> <span class='fl'>1</span>,
+  alphaval <span class='op'>=</span> <span class='fl'>0.9</span>,
+  maxCN <span class='op'>=</span> <span class='fl'>10</span>,
+  cellidx <span class='op'>=</span> <span class='fl'>1</span>,
+  statecol <span class='op'>=</span> <span class='st'>"state"</span>,
+  returnlist <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  raster <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  y_axis_trans <span class='op'>=</span> <span class='st'>"identity"</span>,
+  xaxis_order <span class='op'>=</span> <span class='st'>"genome_position"</span>,
+  legend.position <span class='op'>=</span> <span class='st'>"bottom"</span>,
+  annotateregions <span class='op'>=</span> <span class='cn'>NULL</span>,
+  SV <span class='op'>=</span> <span class='cn'>NULL</span>,
+  svalpha <span class='op'>=</span> <span class='fl'>0.5</span>,
+  adj <span class='op'>=</span> <span class='fl'>0.03</span>,
+  genes <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>palette</th>
-      <td><p>Character name of palette in scCN_palettes</p></td>
+      <th>CNbins</th>
+      <td><p>Single cell copy number dataframe with the following columns: <code>cell_id</code>, <code>chr</code>, <code>start</code>, <code>end</code>, <code>state</code>, <code>copy</code></p></td>
     </tr>
     <tr>
-      <th>discrete</th>
-      <td><p>Boolean indicating whether color aesthetic is discrete or not</p></td>
+      <th>cellid</th>
+      <td><p>Which cell to plot, if no cell is specific will plot the first cell in the dataframe</p></td>
     </tr>
     <tr>
-      <th>reverse</th>
-      <td><p>Boolean indicating whether the palette should be reversed</p></td>
+      <th>chrfilt</th>
+      <td><p>Vector of chromosomes to plot, if NULL (default) will plot all chromosomes</p></td>
     </tr>
     <tr>
-      <th>...</th>
-      <td><p>Additional arguments passed to discrete_scale() or
-scale_fill_gradientn(), used respectively when discrete is TRUE or FALSE</p></td>
+      <th>pointsize</th>
+      <td><p>The point size in the plot</p></td>
+    </tr>
+    <tr>
+      <th>alphaval</th>
+      <td><p>Alpha value of points</p></td>
+    </tr>
+    <tr>
+      <th>maxCN</th>
+      <td><p>The maximum on the y axis, if any points are above this value they will be winsorized rather than removed</p></td>
+    </tr>
+    <tr>
+      <th>cellidx</th>
+      <td><p>idx of cell to plot if cellid = NULL</p></td>
+    </tr>
+    <tr>
+      <th>statecol</th>
+      <td><p>The colour mapping, default is to map colours to the <code>state</code> column</p></td>
+    </tr>
+    <tr>
+      <th>returnlist</th>
+      <td><p>Return a list rather than the ggplot object</p></td>
+    </tr>
+    <tr>
+      <th>raster</th>
+      <td><p>use ggrastr or not, default = FALSE</p></td>
+    </tr>
+    <tr>
+      <th>y_axis_trans</th>
+      <td><p>What transformation to use on the y-axis, default is identity, the other option is "squashy" which uses a tanh transformation</p></td>
+    </tr>
+    <tr>
+      <th>xaxis_order</th>
+      <td><p>Default is "genome_position"</p></td>
+    </tr>
+    <tr>
+      <th>legend.position</th>
+      <td><p>Where to place the legend, default is "bottom"</p></td>
+    </tr>
+    <tr>
+      <th>annotateregions</th>
+      <td><p>Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position</p></td>
+    </tr>
+    <tr>
+      <th>SV</th>
+      <td><p>Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.</p></td>
+    </tr>
+    <tr>
+      <th>svalpha</th>
+      <td><p>the alpha scaling of the SV lines, default = 0.5</p></td>
+    </tr>
+    <tr>
+      <th>genes</th>
+      <td><p>vector of genes to annotate, will add a dashed vertical line and label</p></td>
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
+    <p>ggplot2 plot</p>
+
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'>
+<span class='fu'>plotCNprofile</span><span class='op'>(</span><span class='va'>CNbins</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>Making CN profile and BAF plot for cell - SA921-A90554A-R03-C44</span></div><div class='output co'>#&gt; <span class='message'>Making fixed-width bins for bin size 5e+05 ...</span></div><div class='output co'>#&gt; <span class='warning'>Warning: The following chromosomes are smaller than binsize 5e+05: M</span></div><div class='output co'>#&gt; <span class='message'>Joining, by = c("chr", "start", "end")</span></div><div class='img'><img src='plotCNprofile-1.png' alt='' width='700' height='433' /></div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

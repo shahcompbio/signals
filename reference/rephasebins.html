@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Fill scale constructor for scCN (single cell Copy Number) colors — scale_fill_scCN • schnapps</title>
+<title>Rephase haplotype copy number — rephasebins • schnapps</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,10 @@
 
 
 
-<meta property="og:title" content="Fill scale constructor for scCN (single cell Copy Number) colors — scale_fill_scCN" />
-<meta property="og:description" content="Fill scale constructor for scCN (single cell Copy Number) colors" />
+<meta property="og:title" content="Rephase haplotype copy number — rephasebins" />
+<meta property="og:description" content="This function implements 2 rephasing algorithms. The first mindist, implementthe dynamic programming algorithm to rephase haplotype copy number first described in CHISEL.
+The objective is to find the phase that minimizes the number of copy number events. The second LOH finds cells with whole chromosome losses and assumes this was a single
+event and rephases all the bins relative to this." />
 
 
 
@@ -121,39 +123,49 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Fill scale constructor for scCN (single cell Copy Number) colors</h1>
+    <h1>Rephase haplotype copy number</h1>
     
-    <div class="hidden name"><code>scale_fill_scCN.Rd</code></div>
+    <div class="hidden name"><code>rephasebins.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Fill scale constructor for scCN (single cell Copy Number) colors</p>
+    <p>This function implements 2 rephasing algorithms. The first <code>mindist</code>, implementthe dynamic programming algorithm to rephase haplotype copy number first described in CHISEL.
+The objective is to find the phase that minimizes the number of copy number events. The second <code>LOH</code> finds cells with whole chromosome losses and assumes this was a single
+event and rephases all the bins relative to this.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>scale_fill_scCN</span><span class='op'>(</span>palette <span class='op'>=</span> <span class='st'>"main"</span>, discrete <span class='op'>=</span> <span class='cn'>TRUE</span>, reverse <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>rephasebins</span><span class='op'>(</span>
+  <span class='va'>cn</span>,
+  chromosomes <span class='op'>=</span> <span class='cn'>NULL</span>,
+  method <span class='op'>=</span> <span class='st'>"mindist"</span>,
+  whole_chr_cutoff <span class='op'>=</span> <span class='fl'>0.9</span>,
+  ncells <span class='op'>=</span> <span class='fl'>1</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>palette</th>
-      <td><p>Character name of palette in scCN_palettes</p></td>
+      <th>cn</th>
+      <td><p>either a <code>hscn</code> object from <code>callHaplotypeSpecificCN</code> or a dataframe with haplotype specific copy number ie the <code>data</code> slot in an <code>hscn</code> object</p></td>
     </tr>
     <tr>
-      <th>discrete</th>
-      <td><p>Boolean indicating whether color aesthetic is discrete or not</p></td>
+      <th>chromosomes</th>
+      <td><p>vector specifying which chromosomes to phase, default is NULL whereby all chromosomes are phased</p></td>
     </tr>
     <tr>
-      <th>reverse</th>
-      <td><p>Boolean indicating whether the palette should be reversed</p></td>
+      <th>method</th>
+      <td><p>either <code>mindist</code> or <code>LOH</code></p></td>
     </tr>
     <tr>
-      <th>...</th>
-      <td><p>Additional arguments passed to discrete_scale() or
-scale_fill_gradientn(), used respectively when discrete is TRUE or FALSE</p></td>
+      <th>ncells</th>
+      <td><p>default 1</p></td>
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>Either a new <code>hscn</code> object or a dataframe with rephased bins depdending on the input</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

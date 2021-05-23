@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Fill scale constructor for scCN (single cell Copy Number) colors — scale_fill_scCN • schnapps</title>
+<title>Heatmap plot — plotHeatmap • schnapps</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,7 @@
 
 
 
-<meta property="og:title" content="Fill scale constructor for scCN (single cell Copy Number) colors — scale_fill_scCN" />
-<meta property="og:description" content="Fill scale constructor for scCN (single cell Copy Number) colors" />
+<meta property="og:title" content="Heatmap plot — plotHeatmap" />
 
 
 
@@ -121,36 +120,99 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Fill scale constructor for scCN (single cell Copy Number) colors</h1>
+    <h1>Heatmap plot</h1>
     
-    <div class="hidden name"><code>scale_fill_scCN.Rd</code></div>
+    <div class="hidden name"><code>plotHeatmap.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Fill scale constructor for scCN (single cell Copy Number) colors</p>
     </div>
 
-    <pre class="usage"><span class='fu'>scale_fill_scCN</span><span class='op'>(</span>palette <span class='op'>=</span> <span class='st'>"main"</span>, discrete <span class='op'>=</span> <span class='cn'>TRUE</span>, reverse <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>plotHeatmap</span><span class='op'>(</span>
+  <span class='va'>cn</span>,
+  tree <span class='op'>=</span> <span class='cn'>NULL</span>,
+  clusters <span class='op'>=</span> <span class='cn'>NULL</span>,
+  normalize_ploidy <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  normalize_tree <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  branch_length <span class='op'>=</span> <span class='fl'>1</span>,
+  spacer_cols <span class='op'>=</span> <span class='fl'>20</span>,
+  plottree <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  plotcol <span class='op'>=</span> <span class='st'>"state"</span>,
+  reorderclusters <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  pctcells <span class='op'>=</span> <span class='fl'>0.05</span>,
+  library_mapping <span class='op'>=</span> <span class='cn'>NULL</span>,
+  clone_pal <span class='op'>=</span> <span class='cn'>NULL</span>,
+  sample_label_idx <span class='op'>=</span> <span class='fl'>1</span>,
+  fillna <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  frequencycutoff <span class='op'>=</span> <span class='fl'>2</span>,
+  maxf <span class='op'>=</span> <span class='cn'>NULL</span>,
+  plotfrequency <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  show_legend <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  show_library_label <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  show_clone_label <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  widenarm <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  umapmetric <span class='op'>=</span> <span class='st'>"euclidean"</span>,
+  chrlabels <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  raster_quality <span class='op'>=</span> <span class='fl'>10</span>,
+  SV <span class='op'>=</span> <span class='cn'>NULL</span>,
+  seed <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>palette</th>
-      <td><p>Character name of palette in scCN_palettes</p></td>
+      <th>cn</th>
+      <td><p>Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`</p></td>
     </tr>
     <tr>
-      <th>discrete</th>
-      <td><p>Boolean indicating whether color aesthetic is discrete or not</p></td>
+      <th>tree</th>
+      <td><p>Tree in newick format to plot alongside the heatmap, default = NULL</p></td>
     </tr>
     <tr>
-      <th>reverse</th>
-      <td><p>Boolean indicating whether the palette should be reversed</p></td>
+      <th>normalize_ploidy</th>
+      <td><p>Normalize ploidy of all cells to 2</p></td>
     </tr>
     <tr>
-      <th>...</th>
-      <td><p>Additional arguments passed to discrete_scale() or
-scale_fill_gradientn(), used respectively when discrete is TRUE or FALSE</p></td>
+      <th>normalize_tree</th>
+      <td><p>default = FALSE</p></td>
+    </tr>
+    <tr>
+      <th>branch_length</th>
+      <td><p>scales branch lengths to this size, default = 2</p></td>
+    </tr>
+    <tr>
+      <th>spacer_cols</th>
+      <td><p>number of empty columns between chromosomes, default = 20</p></td>
+    </tr>
+    <tr>
+      <th>plottree</th>
+      <td><p>Binary value of whether to plot tree or not, default = TRUE</p></td>
+    </tr>
+    <tr>
+      <th>plotcol</th>
+      <td><p>Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj"</p></td>
+    </tr>
+    <tr>
+      <th>pctcells</th>
+      <td><p>Minimum size of cluster in terms of <!-- % of cells in umap clustering} --></p>
+<p>library_mappingNamed vector mapping library names to labels for legend</p>
+<p>clone_palpallette to colour clusters by</p>
+<p>sample_label_idxdefault = 1</p>
+<p>fillnaSmooth over NA values, default = TRUE</p>
+<p>frequencycutoffdefault = 2</p>
+<p>maxfMax frequency when plotting the frequency track, default = NULL infers this from the data</p>
+<p>plotfrequencyPlot the frequency track of gains and losses across the genome</p>
+<p>show_legendplot legend or not, boolean</p>
+<p>show_library_labelshow library label or not, boolean</p>
+<p>show_clone_labelshow clone label or not, boolean</p>
+<p>umapmetricmetric to use in umap dimensionality reduction if no clusters are specified</p>
+<p>chrlabelsinclude chromosome labels or not, boolean</p>
+<p>SVsv data frame</p>
+<p>seedseed for UMAPIf clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.#'</p>
+<p>clusterdata.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL</p>
+<p>reorderclusterReorder the cells according to cluster if no tree is specified</p></td>
     </tr>
     </table>
 

@@ -62,9 +62,6 @@
     <li>
       <a href="../articles/BetaBinom.html">Beta-Binomial model for schnapps</a>
     </li>
-    <li>
-      <a href="../articles/karyoplot.html">Advanced plotting with schnapps</a>
-    </li>
   </ul>
 </li>
       </ul>
@@ -164,7 +161,7 @@
 <a href="#heatmap" class="anchor"></a>Heatmap</h3>
 <p>Finally we can plot heatmaps of the resulting outputs. Firstly using the scRNA.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">plotHeatmap</span><span class="op">(</span><span class="va">ascn_rna_dp</span><span class="op">$</span><span class="va">hscn</span>, 
+<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn_rna_dp</span><span class="op">$</span><span class="va">hscn</span>, 
             clusters <span class="op">=</span> <span class="va">ascn_rna_dp</span><span class="op">$</span><span class="va">clusters</span>,
             reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>,
             spacer_cols <span class="op">=</span> <span class="fl">15</span>, 
@@ -179,7 +176,7 @@
 <span class="va">ascn_dna_dp</span> <span class="op">&lt;-</span> <span class="fu">assign_states_dp</span><span class="op">(</span><span class="va">hscn_dna_arm</span><span class="op">$</span><span class="va">bafperchr</span><span class="op">)</span>
 <span class="co">#&gt; [1] 250   5</span>
 <span class="co">#&gt;  [ VIBER - variational fit ]</span>
-<span class="fu">plotHeatmap</span><span class="op">(</span><span class="va">ascn_dna_dp</span><span class="op">$</span><span class="va">hscn</span>,
+<span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn_dna_dp</span><span class="op">$</span><span class="va">hscn</span>,
             clusters <span class="op">=</span> <span class="va">ascn_dna_dp</span><span class="op">$</span><span class="va">clusters</span>,
             reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>,
             spacer_cols <span class="op">=</span> <span class="fl">15</span>, 
