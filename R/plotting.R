@@ -801,7 +801,7 @@ plotCNprofileBAFhomolog <- function(cn,
 
 #' Plot a single cell allele specific copy number profile
 #'
-#' @param Single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy` or a hscn object.
+#' @param cn Single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy` or a hscn object.
 #' @param cellid Which cell to plot, if no cell is specific will plot the first cell in the dataframe
 #' @param chrfilt Vector of chromosomes to plot, if NULL (default) will plot all chromosomes
 #' @param pointsize The point size in the plot
@@ -823,6 +823,7 @@ plotCNprofileBAFhomolog <- function(cn,
 #' @return ggplot2 plot
 #'
 #' @examples
+#' 
 #' \dontrun{
 #' data("haplotypes")
 #' data("CNbins")

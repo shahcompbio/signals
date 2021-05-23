@@ -778,7 +778,7 @@ getSVlegend <- function(include = NULL) {
 #' @param plottree Binary value of whether to plot tree or not, default = TRUE
 #' @param plotcol Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj"
 #' @param reordercluster Reorder the cells according to cluster if no tree is specified
-#' @param pctcells Minimum size of cluster in terms of % of cells in umap clustering
+#' @param pctcells Minimum size of cluster in terms of perecentage of cells in umap clustering
 #' @param library_mapping Named vector mapping library names to labels for legend
 #' @param clone_pal pallette to colour clusters by
 #' @param sample_label_idx default = 1
