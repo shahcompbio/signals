@@ -71,7 +71,7 @@ createSVmatforhmap <- function(x, cnmat){
       is.na(rearrangement_type) ~ NA_character_,
       rearrangement_type == "inversion" ~ SV_colors[["Inversion"]],
       rearrangement_type == "foldback" ~ SV_colors[["Foldback"]],
-      rearrangement_type == "inbalanced" ~ SV_colors[["Unbalanced"]],
+      rearrangement_type == "unbalanced" ~ SV_colors[["Unbalanced"]],
       rearrangement_type == "duplication" ~ SV_colors[["Duplication"]],
       rearrangement_type == "balanced" ~ SV_colors[["Balanced"]],
       rearrangement_type == "deletion" ~ SV_colors[["Deletion"]]
@@ -668,7 +668,7 @@ make_top_annotation_gain <- function(copynumber,
     annotationbreaks <- sort(unique(breakends$rearrangement_type))
     annotationbreaks <- annotationbreaks[!is.na(annotationbreaks)]
     annotationlabels <- unlist(lapply(annotationbreaks, CapStr))
-    ha2 = ComplexHeatmap::HeatmapAnnotation(SV = anno_barplot(breakends$y,
+    ha2 = ComplexHeatmap::HeatmapAnnotation(SV = ComplexHeatmap::anno_barplot(breakends$y,
                  gp = grid::gpar(col = breakends$col, fill = breakends$col),
                  ylim = c(0, 1),
                  axis = FALSE,
@@ -731,6 +731,46 @@ getSVlegend <- function(include = NULL){
   return(SV)
 }
 
+#' Heatmap plot
+#' 
+#' Plot a heatmap where rows are cells, columns are genome coordinates and colours map to (allele-specific) copy-number states
+#' 
+#' @param cn Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`
+#' @param tree Tree in newick format to plot alongside the heatmap, default = NULL
+#' @param cluster data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL
+#' @param normalize_ploidy Normalize ploidy of all cells to 2
+#' @param normalize_tree default = FALSE
+#' @param branch_length scales branch lengths to this size, default = 2
+#' @param spacer_cols number of empty columns between chromosomes, default = 20
+#' @param plottree Binary value of whether to plot tree or not, default = TRUE
+#' @param plotcol Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj"
+#' @param reordercluster Reorder the cells according to cluster if no tree is specified
+#' @param pctcells Minimum size of cluster in terms of % of cells in umap clustering
+#' @param library_mapping Named vector mapping library names to labels for legend
+#' @param clone_pal pallette to colour clusters by
+#' @param sample_label_idx default = 1
+#' @param fillna Smooth over NA values, default = TRUE
+#' @param frequencycutoff default = 2
+#' @param maxf Max frequency when plotting the frequency track, default = NULL infers this from the data
+#' @param plotfrequency Plot the frequency track of gains and losses across the genome
+#' @param show_legend plot legend or not, boolean
+#' @param show_library_label show library label or not, boolean
+#' @param show_clone_label show clone label or not, boolean
+#' @param umapmetric metric to use in umap dimensionality reduction if no clusters are specified
+#' @param chrlabels include chromosome labels or not, boolean
+#' @param SV sv data frame
+#' @param seed seed for UMAP
+#' 
+#' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
+#' 
+#' #' \dontrun{
+#' data("haplotypes")
+#' data("CNbins")
+#' haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
+#' hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "binomial")
+#' plotHeatmap(hscn)
+#' }
+#' 
 #' @export
 plotHeatmap <- function(cn,
                         tree = NULL,
@@ -758,6 +798,7 @@ plotHeatmap <- function(cn,
                         chrlabels = TRUE,
                         raster_quality = 10,
                         SV = NULL,
+                        seed = NULL,
                         ...){
 
   if (is.hscn(cn) | is.ascn(cn)){
@@ -785,8 +826,8 @@ plotHeatmap <- function(cn,
       orderdf(.)
   }
 
-  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF")){
-    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS or state_min"))
+  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj")){
+    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS, Min or Maj"))
   }
 
   if (!plotcol %in% names(CNbins)){
@@ -798,6 +839,16 @@ plotHeatmap <- function(cn,
     legendname <- "Copy Number"
   }
 
+  if (plotcol == "Min"){
+    colvals <- cn_colours
+    legendname <- "Copy Number\nAllele B"
+  }
+  
+  if (plotcol == "Maj"){
+    colvals <- cn_colours
+    legendname <- "Copy Number\nAllele A"
+  }
+  
   if (plotcol == "state_BAF"){
     colvals <- cn_colours_bafstate
     legendname <- "Allelic Imbalance"
@@ -805,7 +856,7 @@ plotHeatmap <- function(cn,
 
   if (plotcol == "BAF"){
     colvals = circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-Hom"], scCNphase_colors["Balanced"], scCNphase_colors["B-Hom"]))
-    legendname <- "Allelic Imbalance (Raw)"
+    legendname <- "Allelic Imbalance"
   }
 
   if (plotcol == "copy"){
@@ -841,7 +892,8 @@ plotHeatmap <- function(cn,
     clustering_results <- umap_clustering(CNbins,
                                           minPts = max(round(pctcells * ncells), 2),
                                           field = "copy",
-                                          umapmetric = umapmetric)
+                                          umapmetric = umapmetric, 
+                                          seed = seed)
     tree <- clustering_results$tree
     tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data

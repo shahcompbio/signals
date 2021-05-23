@@ -32,33 +32,31 @@ Imports:
     ape,
     RColorBrewer,
     tidyr,
-    ggtree,
     ggplot2,
     S4Vectors,
     scales,
     Rcpp,
     ggrepel,
-    grid
+    grid,
+    ggforce,
+    ggtree
 RoxygenNote: 7.1.1
 Suggests: 
     knitr,
     rmarkdown,
     markdown,
     testthat (>= 2.1.0),
-    regioneR,
-    karyoploteR,
-    biomaRt,
     VGAM,
     covr,
     ggrastr,
-    GenomeInfoDb,
     VIBER,
     Seurat
 Remotes:
   VPetukhov/ggrastr,
   caravagn/VIBER,
   caravagn/pio,
-  caravagn/easypar
+  caravagn/easypar,
+  YuLab-SMU/ggtree
 VignetteBuilder: knitr
 LinkingTo: 
     Rcpp
