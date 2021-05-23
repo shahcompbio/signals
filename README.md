@@ -6,7 +6,7 @@
 [![Codecov test coverage](https://codecov.io/gh/shahcompbio/schnapps/branch/master/graph/badge.svg)](https://codecov.io/gh/shahcompbio/schnapps?branch=master)
 <!-- badges: end -->
 
-schnapps (Single Cell Haplotype copy Number Analysis through Phased Probabilistic States) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (~0.01X). schnapps phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model. 
+schnapps (Single Cell Haplotype copy Number Analysis through Phased Probabilistic States) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (~0.01X). schnapps phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model.  Documentation is available [here](https://shahcompbio.github.io/schnapps/).
 
 ## Installation
 
@@ -17,6 +17,8 @@ devtools::install_github("shahcompbio/schnapps")
 ```
 
 ## Input data
+
+`schnapps` was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in [Laks et al.](https://www.sciencedirect.com/science/article/pii/S0092867419311766). As such it works using the output of the the pipeline developed to process this type of data, available [here](https://github.com/shahcompbio/single_cell_pipeline). Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP counts may also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running schnapps please open an issue.
 
 Below is an example of how to use schnapps with DLP data. You will need the HMM copy results table (`CNbins`) with the following columns: `chr`, `start`,`end`, `cell_id`, `state`, `copy`, as well as cell specific haplotype counts as outputted by [scgenome](https://github.com/shahcompbio/scgenome) with the following command. This includes the following columns: `chr`, `start`,`end`, `cell_id`, `hap_label`, `allele_id`, `readcount`.
 
@@ -35,14 +37,14 @@ library(schnapps)
 allele_data <- format_haplotypes_dlp(allele_data, CNbins)
 ```
 
-Then we can call the allele specific states:
-```r
-ascn <- callAlleleSpecificCN(CNbins, allele_data)
-```
-
-Or alterantively the haplotype specific states:
+Then we can call haplotype specific state per cell:
 ```r
 hscn <- callHaplotypeSpecificCN(CNbins, allele_data)
+```
+
+Or alterantively allele specific states:
+```r
+hscn <- callAlleleSpecificCN(CNbins, allele_data)
 ```
 
 See the vignette for more information on the differences between these two outputs.
@@ -57,6 +59,16 @@ After having ensured the results make sense, you can plot a heatmap of the state
 plotHeatmap(ascn, plotcol = "state_BAF")
 ```
 This will cluster the cell using umap and hdbscan.
+
+`schnapps` includes a number of other utilities for analysing single cell (haplotype-specific) copy number including the following:
+
+* integration with scRNAseq using [seurat](https://satijalab.org/seurat/index.html)
+* extensive plotting functions
+* integration and plotting with structural variants
+* clustering
+
+Please see the vignettes for more information.
+
 
 
 

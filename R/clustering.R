@@ -24,7 +24,7 @@ umap_clustering <- function(CNbins,
   }
   message('Calculating UMAP dimensionality reduction...')
   if (nrow(cnmatrix) > 500 & is.null(seed)){
-    pca <- 50
+    pca <- min(50, ncol(cnmatrix))
     fast_sgd <- TRUE
   } else{
     pca <- NULL

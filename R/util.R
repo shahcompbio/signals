@@ -1,5 +1,5 @@
 Mode <- function(x) {
-  ux <- unique(x)
+  ux <- unique(na.exclude(x))
   ux[which.max(tabulate(match(x, ux)))]
 }
 
@@ -7,6 +7,7 @@ Mode <- function(x) {
 createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, fillna = FALSE){
 
   dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
+  dfchr <- dplyr::filter(dfchr, chr %in% unique(CNbins$chr))
 
   CNbins <- data.table::as.data.table(CNbins)
 
@@ -252,17 +253,35 @@ widen_bins <- function(CNbins,
     .[, strand := NULL]
 
   message("Create CN dataframe and merge with new bin coordinates...")
-  widerCNbins <- data.table::as.data.table(CNbinstemp_g[S4Vectors::queryHits(overlaps)]) %>%
-    .[, c("strand", "start", "seqnames", "end", "width") := NULL] %>%
-    dplyr::bind_cols(., bincoords) %>%
-    data.table::setnames(., "seqnames", "chr") %>%
-    data.table::setcolorder(., c("chr", "start", "end", "cell_id")) %>%
-    .[, .(state = round(mean(state, na.rm = TRUE)),
-          copy = mean(copy, na.rm = TRUE)), by = .(chr, start, end, cell_id)]
+  if ("state_phase" %in% colnames(CNbins)){
+    widerCNbins <- data.table::as.data.table(CNbinstemp_g[S4Vectors::queryHits(overlaps)]) %>%
+      .[, c("strand", "start", "seqnames", "end", "width") := NULL] %>%
+      dplyr::bind_cols(., bincoords) %>%
+      data.table::setnames(., "seqnames", "chr") %>%
+      data.table::setcolorder(., c("chr", "start", "end", "cell_id")) %>%
+      .[, .(state = as.double(round(median(state, na.rm = TRUE))),
+            copy = as.double(median(copy, na.rm = TRUE)),
+            Maj = as.double(floor(median(Maj))),
+            alleleA = sum(alleleA),
+            alleleB = sum(alleleB),
+            totalcounts = sum(totalcounts)), by = .(chr, start, end, cell_id)] %>% 
+      .[, BAF := alleleB / totalcounts] %>% 
+      .[, Min := state - Maj] %>% 
+      dplyr::select(cell_id, chr, start, end, state, copy, Min, Maj, dplyr::everything()) %>% 
+      add_states()
+    
+  } else {
+    widerCNbins <- data.table::as.data.table(CNbinstemp_g[S4Vectors::queryHits(overlaps)]) %>%
+      .[, c("strand", "start", "seqnames", "end", "width") := NULL] %>%
+      dplyr::bind_cols(., bincoords) %>%
+      data.table::setnames(., "seqnames", "chr") %>%
+      data.table::setcolorder(., c("chr", "start", "end", "cell_id")) %>%
+      .[, .(state = round(mean(state, na.rm = TRUE)),
+            copy = mean(copy, na.rm = TRUE)), by = .(chr, start, end, cell_id)]
+  }
 
   return(as.data.frame(widerCNbins))
 }
-
 #' @export
 snv_states <- function(SNV, CNbins){
 
@@ -623,8 +642,6 @@ add_states <- function(df){
                                                                                  3 * ((Min < Maj) & (Min == 0)) +
                                                                                  4 * ((Min > Maj) & (Maj == 0))]
       ] %>%
-    #.[, c("Maj", "Min") := NULL] %>%
-    #.[order(cell_id, chr, start)] %>%
     .[, state_BAF := round((Min / state)/0.1) * 0.1] %>%
     .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
   return(df)
@@ -677,66 +694,36 @@ createBAFassay <- function(seur, rna_ascn){
 }
 
 #' @export
-consensuscopynumber <- function(hscn){
-  if ("state_phase" %in% colnames(hscn)){
-    cn <- hscn %>%
-      dplyr::group_by(chr, start, end) %>%
-      dplyr::summarise(state = schnapps:::Mode(state),
-                       copy = median(copy),
-                       state_min = schnapps:::Mode(state_min),
-                       Min = schnapps:::Mode(Min),
-                       Maj = schnapps:::Mode(Maj),
-                       LOH = schnapps:::Mode(LOH),
-                       phase = schnapps:::Mode(phase),
-                       alleleA = sum(alleleA),
-                       alleleB = sum(alleleB),
-                       BAF = median(BAF),
-                       state_phase = schnapps:::Mode(state_phase),
-                       state_BAF = schnapps:::Mode(state_BAF),
-                       state_AS_phased = schnapps:::Mode(state_AS_phased)) %>%
-      dplyr::ungroup() %>%
-      dplyr::mutate(cell_id = "Merged Cells")
+consensuscopynumber <- function(hscn, cl = NULL){
+  
+  if (!is.null(cl)){
+    hscn <- dplyr::left_join(hscn, cl)
   } else{
-    cn <- hscn %>%
-      dplyr::group_by(chr, start, end) %>%
-      dplyr::summarise(state = schnapps:::Mode(state),
-                       copy = median(copy)) %>%
-      dplyr::ungroup() %>%
-      dplyr::mutate(cell_id = "Merged Cells")
-
+    hscn$clone_id <- "Merged Cells"
   }
-
-  return(cn)
-}
-
-#' @export
-consensuscopynumberbyclone <- function(hscn){
+  
   if ("state_phase" %in% colnames(hscn)){
     cn <- hscn %>%
-      dplyr::group_by(chr, start, end, clone_id) %>%
-      dplyr::summarise(state = schnapps:::Mode(state),
-                       copy = median(copy),
-                       state_min = schnapps:::Mode(state_min),
-                       Min = schnapps:::Mode(Min),
-                       Maj = schnapps:::Mode(Maj),
-                       LOH = schnapps:::Mode(LOH),
-                       phase = schnapps:::Mode(phase),
-                       alleleA = sum(alleleA),
-                       alleleB = sum(alleleB),
-                       BAF = median(BAF),
-                       state_phase = schnapps:::Mode(state_phase),
-                       state_BAF = schnapps:::Mode(state_BAF),
-                       state_AS_phased = schnapps:::Mode(state_AS_phased)) %>%
-      dplyr::ungroup() %>%
-      dplyr::mutate(cell_id = clone_id)
+      as.data.table(.) %>% 
+      .[, .(state = as.double(round(median(state, na.rm = TRUE))),
+            copy = as.double(median(copy, na.rm = TRUE)),
+            Maj = as.double(floor(median(Maj))),
+            alleleA = sum(alleleA),
+            alleleB = sum(alleleB),
+            totalcounts = sum(totalcounts)), by = .(chr, start, end, clone_id)] %>% 
+      .[, BAF := alleleB / totalcounts] %>% 
+      .[, Min := state - Maj] %>% 
+      add_states() %>% 
+      dplyr::select(clone_id, chr, start, end, state, copy, Min, Maj, dplyr::everything()) %>% 
+      dplyr::rename(cell_id = clone_id) %>% 
+      as.data.frame(.)
   } else{
     cn <- hscn %>%
-      dplyr::group_by(chr, start, end) %>%
-      dplyr::summarise(state = schnapps:::Mode(state),
-                       copy = median(copy)) %>%
-      dplyr::ungroup() %>%
-      dplyr::mutate(cell_id = clone_id)
-
+      as.data.table(.) %>% 
+      .[, .(state = round(mean(state, na.rm = TRUE)),
+            copy = median(copy, na.rm = TRUE)), by = .(chr, start, end, clone_id)] %>% 
+      dplyr::rename(cell_id = clone_id) %>% 
+      as.data.frame(.)
   }
 
   return(cn)
@@ -760,4 +747,22 @@ singletons <- function(cn, field){
   message(paste0("Number of singletons: ", x_s))
 
   return(x)
+}
+
+#' @export
+BAFdistance <- function(cn){
+  
+  if (is.hscn(cn) | is.ascn(cn)){
+    CNbins <- cn$data
+  } else{
+    CNbins <- cn
+  }
+  
+  celldist <- cn %>% 
+    as.data.table() %>% 
+    .[, dist := sqrt((BAF - (Min / state))^2)] %>% 
+    .[, dist := BAF - (Min / state)] %>% 
+    .[, list(BAF_distance = mean(dist, na.rm = T)), by = c("cell_id", "chr")]
+  
+  return(celldist)
 }

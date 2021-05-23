@@ -85,7 +85,7 @@ SV_colors <- c(
   `Duplication` = "#e40017",
   `Deletion` = "#78c4d4",
   `Balanced` = "#dddddd",
-  `Translocation` = "#B91AAC"
+  `Translocation` = "#313A3A"
 )
 
 #' @export
