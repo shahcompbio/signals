@@ -370,7 +370,8 @@ get_cells_per_chr_local <- function(ascn,
       n_neighbors = 20,
       min_dist = 0.001,
       minPts = ncells_for_clustering,
-      field = "state_BAF"
+      field = "state_BAF",
+      umapmetric = "euclidean"
     )
     prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
       .[, list(
