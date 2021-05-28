@@ -9,7 +9,9 @@ rephasebins(
   chromosomes = NULL,
   method = "mindist",
   whole_chr_cutoff = 0.9,
-  ncells = 1
+  ncells = 1,
+  clusterfirst = FALSE,
+  cl = NULL
 )
 }
 \arguments{
