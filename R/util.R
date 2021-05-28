@@ -556,14 +556,17 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
       dplyr::mutate(chrarm = paste0(chr, arm)) %>%
       as.data.table() %>%
       .[, list(
-        alleleA = sum(alleleA, na.rm = TRUE),
-        alleleB = sum(alleleB, na.rm = TRUE),
-        Min = Mode(Min),
-        Maj = Mode(Maj),
-        copy = median(copy, na.rm = TRUE),
+        state = as.double(round(median(state, na.rm = TRUE))),
+        copy = as.double(median(copy, na.rm = TRUE)),
+        Maj = as.double(floor(median(Maj))),
+        alleleA = sum(alleleA),
+        alleleB = sum(alleleB),
+        totalcounts = sum(totalcounts),
         state_sd = sd(state, na.rm = TRUE),
         proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N
-      ), by = c("chr", "arm", "chrarm", "cell_id")]
+      ), by = c("chr", "arm", "chrarm", "cell_id")] %>% 
+      .[, BAF := alleleB / totalcounts] %>%
+      .[, Min := state - Maj]
   } else {
     hscn_arm <- hscn %>%
       dplyr::filter(chr != "Y") %>%
@@ -573,38 +576,21 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
       dplyr::mutate(chrarm = paste0(chr, arm)) %>%
       as.data.table() %>%
       .[, list(
-        alleleA = sum(alleleA, na.rm = TRUE),
-        alleleB = sum(alleleB, na.rm = TRUE),
-        Min = Mode(Min),
-        Maj = Mode(Maj),
-        copy = median(copy, na.rm = TRUE),
+        state = as.double(round(median(state, na.rm = TRUE))),
+        copy = as.double(median(copy, na.rm = TRUE)),
+        Maj = as.double(floor(median(Maj))),
+        alleleA = sum(alleleA),
+        alleleB = sum(alleleB),
+        totalcounts = sum(totalcounts),
         state_sd = sd(state, na.rm = TRUE),
         proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N
-      ), by = c("chr", "arm", "chrarm", "cell_id")]
+      ), by = c("chr", "arm", "chrarm", "cell_id")] %>% 
+      .[, BAF := alleleB / totalcounts] %>%
+      .[, Min := state - Maj]
   }
 
   hscn_arm <- hscn_arm %>%
-    .[, state := Maj + Min] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
-    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-    .[, phase := c("Balanced", "A", "B")[1 +
-      1 * ((Min < Maj)) +
-      2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
-      1 * ((Min < Maj) & (Min != 0)) +
-      2 * ((Min > Maj) & (Maj != 0)) +
-      3 * ((Min < Maj) & (Min == 0)) +
-      4 * ((Min > Maj) & (Maj == 0))]] %>%
-    .[order(cell_id, chr)] %>%
-    .[, state_BAF := round((Min / state) / 0.1) * 0.1] %>%
-    .[, state_BAF := data.table::fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
-    dplyr::mutate(
-      BAF = alleleB / (alleleA + alleleB),
-      total = alleleB + alleleA
-    ) %>%
+    add_states() %>% 
     dplyr::left_join(hg19chrom_coordinates) %>%
     dplyr::mutate(state = ifelse(state > 11, 11, state))
 
@@ -614,42 +600,23 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
 #' @export
 per_chr_cn <- function(hscn, arms = NULL) {
   data("hg19chrom_coordinates", envir = environment())
-
+  
   hscn_chr <- hscn %>%
     dplyr::filter(chr != "Y") %>%
     as.data.table() %>%
     .[, list(
-      alleleA = sum(alleleA, na.rm = TRUE),
-      alleleB = sum(alleleB, na.rm = TRUE),
-      Min = Mode(Min),
-      Maj = Mode(Maj),
-      copy = median(copy, na.rm = TRUE),
+      state = as.double(round(median(state, na.rm = TRUE))),
+      copy = as.double(median(copy, na.rm = TRUE)),
+      Maj = as.double(floor(median(Maj))),
+      alleleA = sum(alleleA),
+      alleleB = sum(alleleB),
+      totalcounts = sum(totalcounts),
       state_sd = sd(state, na.rm = TRUE),
       proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N
-    ), by = c("chr", "cell_id")]
-
-  hscn_chr <- hscn_chr %>%
-    .[, state := Maj + Min] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
-    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
-    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
-    .[, phase := c("Balanced", "A", "B")[1 +
-      1 * ((Min < Maj)) +
-      2 * ((Min > Maj))]] %>%
-    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
-      1 * ((Min < Maj) & (Min != 0)) +
-      2 * ((Min > Maj) & (Maj != 0)) +
-      3 * ((Min < Maj) & (Min == 0)) +
-      4 * ((Min > Maj) & (Maj == 0))]] %>%
-    .[order(cell_id, chr)] %>%
-    .[, state_BAF := round((Min / state) / 0.1) * 0.1] %>%
-    .[, state_BAF := data.table::fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%
-    dplyr::mutate(
-      BAF = alleleB / (alleleA + alleleB),
-      total = alleleB + alleleA
-    ) %>%
+    ), by = c("chr", "cell_id")] %>% 
+    .[, BAF := alleleB / totalcounts] %>%
+    .[, Min := state - Maj] %>%
+    add_states() %>%
     dplyr::left_join(hg19chrom_coordinates %>% dplyr::filter(arm == "")) %>%
     dplyr::mutate(state = ifelse(state > 11, 11, state))
 
