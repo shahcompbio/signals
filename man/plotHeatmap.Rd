@@ -52,7 +52,7 @@ plotHeatmap(
 
 \item{plotcol}{Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj"}
 
-\item{pctcells}{Minimum size of cluster in terms of % of cells in umap clustering}
+\item{pctcells}{Minimum size of cluster in terms of perecentage of cells in umap clustering}
 
 \item{library_mapping}{Named vector mapping library names to labels for legend}
 

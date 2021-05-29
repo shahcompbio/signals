@@ -70,5 +70,4 @@ Plot a single cell copy number profile
 \examples{
 
 plotCNprofile(CNbins)
-
 }
