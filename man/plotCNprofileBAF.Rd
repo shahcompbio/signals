@@ -29,6 +29,8 @@ plotCNprofileBAF(
 )
 }
 \arguments{
+\item{cn}{Single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy` or a hscn object.}
+
 \item{cellid}{Which cell to plot, if no cell is specific will plot the first cell in the dataframe}
 
 \item{chrfilt}{Vector of chromosomes to plot, if NULL (default) will plot all chromosomes}
@@ -62,8 +64,6 @@ plotCNprofileBAF(
 \item{SV}{Default is NULL. If a dataframe with structural variant position is passed it will add a track on the top showin rearrangement links}
 
 \item{svalpha}{the alpha scaling of the SV lines, default = 0.5}
-
-\item{Single}{cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy` or a hscn object.}
 }
 \value{
 ggplot2 plot

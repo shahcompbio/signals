@@ -1,5 +1,5 @@
-logspace_add <- function(logx,logy) {
-  pmax(logx,logy) + log1p(exp(-abs(logx - logy)))
+logspace_add <- function(logx, logy) {
+  pmax(logx, logy) + log1p(exp(-abs(logx - logy)))
 }
 
 #' @export
@@ -11,47 +11,58 @@ alleleHMM <- function(n,
                       selftransitionprob = 0.999,
                       eps = 1e-12,
                       rho = 0.0,
-                      likelihood = "binomial"){
-
+                      likelihood = "binomial") {
   minor_cn_mat <- t(replicate(length(binstates), minor_cn))
   total_cn_mat <- replicate(length(minor_cn), binstates)
 
-  p <- t(vapply(binstates, function(x) minor_cn / x, FUN.VALUE = numeric(length(minor_cn))))
-  p[minor_cn_mat < total_cn_mat / 2] <- p[minor_cn_mat < total_cn_mat/2] + loherror
-  p[minor_cn_mat > total_cn_mat / 2] <- p[minor_cn_mat > total_cn_mat/2] - loherror
+  p <- t(vapply(binstates, function(x) minor_cn / x,
+    FUN.VALUE = numeric(length(minor_cn))
+  ))
+  p[minor_cn_mat < total_cn_mat / 2] <-
+    p[minor_cn_mat < total_cn_mat / 2] + loherror
+  p[minor_cn_mat > total_cn_mat / 2] <-
+    p[minor_cn_mat > total_cn_mat / 2] - loherror
 
-  if (likelihood == "binomial"){
+  if (likelihood == "binomial") {
     l1log <- suppressWarnings(dbinom(x, n, p, log = T))
     l2log <- suppressWarnings(dbinom(n - x, n, p, log = T))
-    l1l2log <- mapply(function(x,y) logspace_addcpp(x,y), l1log, l2log)
+    l1l2log <- mapply(function(x, y) logspace_addcpp(x, y), l1log, l2log)
     l <- structure(l1l2log, dim = dim(l1log))
   } else {
     l1log <- suppressWarnings(VGAM::dbetabinom(x, n, p, rho = rho, log = T))
     dim(l1log) <- c(length(x), length(minor_cn))
     l2log <- suppressWarnings(VGAM::dbetabinom(n - x, n, p, rho = rho, log = T))
     dim(l2log) <- c(length(x), length(minor_cn))
-    l1l2log <- mapply(function(x,y) logspace_addcpp(x,y), l1log, l2log)
+    l1l2log <- mapply(function(x, y) logspace_addcpp(x, y), l1log, l2log)
     l <- structure(l1l2log, dim = dim(l1log))
   }
-  if (eps > 0.0){
-    ltemp <- vapply(l, function(x) logspace_addcpp(x, log(eps)), FUN.VALUE = double(1))
+  if (eps > 0.0) {
+    ltemp <- vapply(l, function(x) logspace_addcpp(x, log(eps)),
+      FUN.VALUE = double(1)
+    )
     l <- matrix(ltemp, dim(l)[1], dim(l)[2])
   }
   l[is.na(l)] <- log(0.0)
-  l[minor_cn_mat > total_cn_mat/2] <- log(0.0)
+  l[minor_cn_mat > total_cn_mat / 2] <- log(0.0)
 
-  if (selftransitionprob == 0.0){
-    tProbs <- matrix(1 / length(minor_cn), length(minor_cn), length(minor_cn))
-  } else{
-    tProbs <- matrix((1 - selftransitionprob) / (length(minor_cn) -1), length(minor_cn), length(minor_cn))
-    diag(tProbs) <- selftransitionprob
-    colnames(tProbs) <- paste0(minor_cn)
-    row.names(tProbs) <- paste0(minor_cn)
+  if (selftransitionprob == 0.0) {
+    transition_prob <- matrix(
+      1 / length(minor_cn),
+      length(minor_cn), length(minor_cn)
+    )
+  } else {
+    transition_prob <- matrix(
+      (1 - selftransitionprob) / (length(minor_cn) - 1),
+      length(minor_cn), length(minor_cn)
+    )
+    diag(transition_prob) <- selftransitionprob
+    colnames(transition_prob) <- paste0(minor_cn)
+    row.names(transition_prob) <- paste0(minor_cn)
   }
 
-  states <- paste0(minor_cn)
-
-  res <- viterbi(l, log(tProbs), observations = 1:length(binstates))
+  res <- viterbi(l, log(transition_prob),
+    observations = seq_len(length(binstates))
+  )
 
   return(list(minorcn = res, l = l))
 }
@@ -64,23 +75,24 @@ assignalleleHMM <- function(CNBAF,
                             selftransitionprob = 0.999,
                             pb = NULL,
                             rho = 0.0,
-                            likelihood = "binomial"){
-
-  if (!is.null(pb)){
+                            likelihood = "binomial") {
+  if (!is.null(pb)) {
     pb$tick()$print()
   }
 
   minorcn_res <- c()
-  for (mychr in unique(CNBAF$chr)){
-    hmmresults <- alleleHMM(n = dplyr::filter(CNBAF, chr == mychr)$totalcounts,
-                            x = dplyr::filter(CNBAF, chr == mychr)$alleleB,
-                            dplyr::filter(CNBAF, chr == mychr)$state,
-                            minor_cn,
-                            loherror = loherror,
-                            eps = eps,
-                            selftransitionprob = selftransitionprob,
-                            rho = rho,
-                            likelihood = likelihood)
+  for (mychr in unique(CNBAF$chr)) {
+    hmmresults <- alleleHMM(
+      n = dplyr::filter(CNBAF, chr == mychr)$totalcounts,
+      x = dplyr::filter(CNBAF, chr == mychr)$alleleB,
+      dplyr::filter(CNBAF, chr == mychr)$state,
+      minor_cn,
+      loherror = loherror,
+      eps = eps,
+      selftransitionprob = selftransitionprob,
+      rho = rho,
+      likelihood = likelihood
+    )
     minorcn_res <- c(minorcn_res, hmmresults$minorcn)
   }
 
@@ -96,33 +108,57 @@ callalleleHMMcell <- function(CNBAF,
                               minor_cn,
                               eps = 1e-12,
                               loherror = 0.02,
-                              selftransitionprob = 0.999){
-
-  hmmresults <- alleleHMM(n = CNBAF$totalcounts,
-                          x = CNBAF$alleleB,
-                          CNBAF$state,
-                          minor_cn,
-                          loherror = loherror,
-                          eps = eps,
-                          selftransitionprob = selftransitionprob)
+                              selftransitionprob = 0.999) {
+  hmmresults <- alleleHMM(
+    n = CNBAF$totalcounts,
+    x = CNBAF$alleleB,
+    CNBAF$state,
+    minor_cn,
+    loherror = loherror,
+    eps = eps,
+    selftransitionprob = selftransitionprob
+  )
 
   CNBAF$state_min <- as.numeric(hmmresults$minorcn)
 
   CNBAF <- data.table::as.data.table(CNBAF)
 
-  return(list(alleleCN = CNBAF, posterior_prob = hmmresults$posterior_prob, l = hmmresults$l))
+  return(list(
+    alleleCN = CNBAF,
+    posterior_prob = hmmresults$posterior_prob,
+    l = hmmresults$l
+  ))
 }
 
-switch_alleles <- function(cn){
+switch_alleles <- function(cn) {
   phase_cn <- cn %>%
     as.data.table() %>%
-    .[, switch := data.table::fifelse(Min > Maj, "switch", "stick")] %>%
-    .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
+    .[, switch := data.table::fifelse(
+      Min > Maj,
+      "switch",
+      "stick"
+    )] %>%
+    .[, alleleA := data.table::fifelse(
+      switch == "switch",
+      alleleB,
+      alleleA
+    )] %>%
     .[, alleleB := totalcounts - alleleA] %>%
-    .[, switch := data.table::fifelse(phase != "Balanced" & BAF > 0.5, "switch", "stick")] %>%
-    .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
+    .[, switch := data.table::fifelse(
+      phase != "Balanced" & BAF > 0.5,
+      "switch",
+      "stick"
+    )] %>%
+    .[, alleleA := data.table::fifelse(
+      switch == "switch",
+      alleleB,
+      alleleA
+    )] %>%
     .[, alleleB := totalcounts - alleleA] %>%
-    .[, c("chr", "start", "end", "cell_id", "state", "copy","alleleA", "alleleB", "totalcounts")] %>%
+    .[, c(
+      "chr", "start", "end", "cell_id", "state",
+      "copy", "alleleA", "alleleB", "totalcounts"
+    )] %>%
     .[, BAF := alleleB / totalcounts]
   return(phase_cn)
 }
@@ -156,14 +192,17 @@ switch_alleles <- function(cn){
 #' In the allele specific copy number inference Maj is always > Min and state_AS_phased == state_AS
 #'
 #' @examples
-#' sim_data <- simulate_data_cohort(clone_num = c(20, 20),
-#'        clonal_events = list(list("1" = c(2,0), "5" = c(3,1)),
-#'                        list("2" = c(6,3), "3" = c(1,0))),
-#'        loherror = 0.02,
-#'        coverage = 30)
+#' sim_data <- simulate_data_cohort(
+#'   clone_num = c(20, 20),
+#'   clonal_events = list(
+#'     list("1" = c(2, 0), "5" = c(3, 1)),
+#'     list("2" = c(6, 3), "3" = c(1, 0))
+#'   ),
+#'   loherror = 0.02,
+#'   coverage = 30
+#' )
 #'
 #' results <- callAlleleSpecificCN(sim_data$CNbins, sim_data$haplotypes)
-#'
 #' @md
 #' @export
 callAlleleSpecificCN <- function(CNbins,
@@ -177,62 +216,79 @@ callAlleleSpecificCN <- function(CNbins,
                                  likelihood = "binomial",
                                  minbins = 100,
                                  minbinschr = 10,
-                                 maxloherror = 0.03){
-
-  if (!likelihood %in% c("binomial", "betabinomial", "auto")){
-    stop("Likelihood model for HMM emission model must be one of binomial, betabinomial or auto",
-         call. = FALSE)
+                                 maxloherror = 0.03) {
+  if (!likelihood %in% c("binomial", "betabinomial", "auto")) {
+    stop("Likelihood model for HMM emission model must
+         be one of binomial, betabinomial or auto",
+      call. = FALSE
+    )
   }
 
-  if (likelihood == "betabinomial" | likelihood == "auto"){
+  if (likelihood == "betabinomial" | likelihood == "auto") {
     if (!requireNamespace("VGAM", quietly = TRUE)) {
-      stop("Package \"VGAM\" needed to use the beta-binomial model. Please install it.",
-           call. = FALSE)
+      stop("Package \"VGAM\" needed to use the
+           beta-binomial model. Please install it.",
+        call. = FALSE
+      )
     }
   }
 
-  if (is.null(maxCN)){
+  if (is.null(maxCN)) {
     maxCN <- max(CNbins$state)
   }
 
   CNBAF <- combineBAFCN(haplotypes = haplotypes, CNbins = CNbins)
 
-  #Make sure dataframe is in chromosome position order
+  # Make sure dataframe is in chromosome position order
   CNBAF <- CNBAF %>%
     data.table::as.data.table() %>%
     .[order(cell_id, chr, start)]
 
   message("Initial assignment...")
   hscn <- .callHaplotypeSpecificCN_(CNBAF,
-                                  eps = eps,
-                                  loherror = loherror,
-                                  maxCN = maxCN,
-                                  selftransitionprob = selftransitionprob,
-                                  progressbar = progressbar,
-                                  ncores = ncores)
+    eps = eps,
+    loherror = loherror,
+    maxCN = maxCN,
+    selftransitionprob = selftransitionprob,
+    progressbar = progressbar,
+    ncores = ncores
+  )
 
   infloherror <- hscn %>%
     dplyr::filter(state_phase == "A-Hom") %>%
-    dplyr::summarise(err = weighted.mean(x = BAF, w = totalcounts, na.rm = TRUE)) %>% #ensure BAF calculations with low counts don't overwhelm signal
+    dplyr::summarise(err = weighted.mean(
+      x = BAF,
+      w = totalcounts,
+      na.rm = TRUE
+    )) %>%
+    # ensure BAF calculations with low counts don't overwhelm signal
     dplyr::pull(err)
-  infloherror <- min(infloherror, maxloherror) #ensure loh error rate is < maxloherror
+  infloherror <- min(infloherror, maxloherror) # ensure loh error rate is < maxloherror
 
-  if (likelihood == 'betabinomial' | likelihood == "auto"){
+  if (likelihood == "betabinomial" | likelihood == "auto") {
     bbfit <- fitBB(hscn)
-    if (bbfit$taronesZ > 5){
+    if (bbfit$taronesZ > 5) {
       likelihood <- "betabinomial"
-      message(paste0("Tarones Z-score: ", round(bbfit$taronesZ, 3), ", using ", likelihood, " model for inference."))
+      message(paste0(
+        "Tarones Z-score: ", round(bbfit$taronesZ, 3),
+        ", using ", likelihood, " model for inference."
+      ))
     } else {
       likelihood <- "binomial"
-      message(paste0("Tarones Z-score: ", round(bbfit$taronesZ, 3), ", using ", likelihood, " model for inference."))
+      message(paste0(
+        "Tarones Z-score: ", round(bbfit$taronesZ, 3),
+        ", using ", likelihood, " model for inference."
+      ))
     }
-  } else{
-    bbfit <- list(fit = NULL,
-                  rho = 0.0,
-                  likelihood = "binomial",
-                  expBAF = NULL,
-                  state = NULL,
-                  taronesZ = NULL)
+  } else {
+    bbfit <- list(
+      fit = NULL,
+      rho = 0.0,
+      likelihood = "binomial",
+      expBAF = NULL,
+      state = NULL,
+      taronesZ = NULL
+    )
   }
 
   CNBAF <- switch_alleles(hscn)
@@ -240,42 +296,56 @@ callAlleleSpecificCN <- function(CNbins,
 
   message("Rerun using mirrored BAF...")
 
-  if (progressbar == TRUE){
+  if (progressbar == TRUE) {
     pb <- dplyr::progress_estimated(length(unique(CNBAF$cell_id)), min_time = 1)
-  } else{
+  } else {
     pb <- NULL
   }
 
-  if (ncores > 1){
+  if (ncores > 1) {
     alleleCN <- data.table::rbindlist(parallel::mclapply(unique(CNBAF$cell_id),
-                                                    function(cell) assignalleleHMM(dplyr::filter(CNBAF, cell_id == cell), minor_cn,
-                                                                                   eps = eps,
-                                                                                   loherror = infloherror,
-                                                                                   selftransitionprob = selftransitionprob,
-                                                                                   likelihood = likelihood,
-                                                                                   rho = bbfit$rho,
-                                                                                   pb = pb), mc.cores = ncores)) %>%
+      function(cell) {
+        assignalleleHMM(dplyr::filter(CNBAF, cell_id == cell),
+          minor_cn,
+          eps = eps,
+          loherror = infloherror,
+          selftransitionprob = selftransitionprob,
+          likelihood = likelihood,
+          rho = bbfit$rho,
+          pb = pb
+        )
+      },
+      mc.cores = ncores
+    )) %>%
       .[order(cell_id, chr, start)]
-  } else{
-    alleleCN <- data.table::rbindlist(lapply(unique(CNBAF$cell_id),
-                                        function(cell) assignalleleHMM(dplyr::filter(CNBAF, cell_id == cell), minor_cn,
-                                                                       eps = eps,
-                                                                       loherror = infloherror,
-                                                                       likelihood = likelihood,
-                                                                       rho = bbfit$rho,
-                                                                       selftransitionprob = selftransitionprob,
-                                                                       pb = pb))) %>%
+  } else {
+    alleleCN <- data.table::rbindlist(lapply(
+      unique(CNBAF$cell_id),
+      function(cell) {
+        assignalleleHMM(dplyr::filter(CNBAF, cell_id == cell),
+          minor_cn,
+          eps = eps,
+          loherror = infloherror,
+          likelihood = likelihood,
+          rho = bbfit$rho,
+          selftransitionprob = selftransitionprob,
+          pb = pb
+        )
+      }
+    )) %>%
       .[order(cell_id, chr, start)]
   }
 
   alleleCN <- alleleCN %>%
     .[, Maj1 := state - state_min] %>%
     .[, Min1 := state_min] %>%
-    .[, Min := fifelse(Min1 > Maj1, Maj1, Min1)] %>% #catch edge cases where Min > Maj
+    # catch edge cases where Min > Maj:
+    .[, Min := fifelse(Min1 > Maj1, Maj1, Min1)] %>%
     .[, Maj := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
     .[, Maj1 := NULL] %>%
     .[, Min1 := NULL] %>%
-    .[, state_min := fifelse(state_min < 0, 0, state_min)] %>% #catch edge cases of 0|1 and 1|0 states
+    # catch edge cases of 0|1 and 1|0 states:
+    .[, state_min := fifelse(state_min < 0, 0, state_min)] %>%
     .[, Maj := state - state_min] %>%
     .[, Min := state_min] %>%
     .[, Min := fifelse(Min < 0, 0, Min)] %>%
@@ -288,21 +358,23 @@ callAlleleSpecificCN <- function(CNbins,
     .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
     .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
     .[, phase := c("Balanced", "A", "B")[1 +
-                                           1 * ((Min < Maj)) +
-                                           2 * ((Min > Maj))]] %>%
+      1 * ((Min < Maj)) +
+      2 * ((Min > Maj))]] %>%
     .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
-                                                                                 1 * ((Min < Maj) & (Min != 0)) +
-                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                 3 * ((Min < Maj) & (Min == 0)) +
-                                                                                 4 * ((Min > Maj) & (Maj == 0))]
-      ] %>%
-    #.[, c("Maj", "Min") := NULL] %>%
+      1 * ((Min < Maj) & (Min != 0)) +
+      2 * ((Min > Maj) & (Maj != 0)) +
+      3 * ((Min < Maj) & (Min == 0)) +
+      4 * ((Min > Maj) & (Maj == 0))]] %>%
     .[order(cell_id, chr, start)] %>%
-    .[, state_BAF := round((Min / state)/0.1)*0.1] %>%
+    .[, state_BAF := round((Min / state) / 0.1) * 0.1] %>%
     .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
 
-  #mirror BAF
-  alleleCN <- alleleCN[, switch := data.table::fifelse(Min > Maj, "switch", "stick")] %>%
+  # mirror BAF
+  alleleCN <- alleleCN[, switch := data.table::fifelse(
+    Min > Maj,
+    "switch",
+    "stick"
+  )] %>%
     .[, alleleB := totalcounts - alleleA] %>%
     .[, distA := abs(BAF - (Min / state))] %>%
     .[, distB := abs(BAF - (Maj / state))] %>%
@@ -315,7 +387,7 @@ callAlleleSpecificCN <- function(CNbins,
     .[, distB := NULL]
 
   # Output
-  out = list()
+  out <- list()
   class(out) <- "ascn"
 
   out[["data"]] <- as.data.frame(alleleCN)
