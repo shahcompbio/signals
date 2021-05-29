@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">schnapps</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.0</span>
       </span>
     </div>
 
@@ -104,6 +104,9 @@
       <a href="../articles/BetaBinom.html">Beta-Binomial model for schnapps</a>
     </li>
   </ul>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
@@ -157,6 +160,10 @@
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>cn</th>
+      <td><p>Single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy` or a hscn object.</p></td>
+    </tr>
     <tr>
       <th>cellid</th>
       <td><p>Which cell to plot, if no cell is specific will plot the first cell in the dataframe</p></td>
@@ -224,10 +231,6 @@
     <tr>
       <th>svalpha</th>
       <td><p>the alpha scaling of the SV lines, default = 0.5</p></td>
-    </tr>
-    <tr>
-      <th>Single</th>
-      <td><p>cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy` or a hscn object.</p></td>
     </tr>
     </table>
 
