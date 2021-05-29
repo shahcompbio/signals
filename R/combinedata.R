@@ -182,7 +182,9 @@ combineBAFCN <- function(haplotypes,
     .[, n := NULL] %>%
     .[, n := .N, by = c("chr", "cell_id")] %>%
     .[, ncell := min(n), by = c("cell_id")] %>%
-    .[ncell > minbinschr & chr != "X"] %>%
+    #do not filter out if chr X below cutoff
+    .[, ncell := ifelse(chr == "X", 100, ncell)] %>% 
+    .[ncell > minbinschr] %>%
     .[, n := NULL] %>%
     .[, ncell := NULL]
 
