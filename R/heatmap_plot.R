@@ -250,13 +250,13 @@ format_copynumber <- function(copynumber,
 }
 
 format_clones <- function(clones, ordered_cell_ids) {
-  clonesdf <- dplyr::full_join(clones, data.frame(cell_id = ordered_cell_ids))
+  clonesdf <- dplyr::full_join(clones, data.frame(cell_id = ordered_cell_ids), by = "cell_id")
   clonesdf[is.na(clonesdf$clone_id), "clone_id"] <- "None"
   clone_counts <- clones %>%
     dplyr::group_by(clone_id) %>%
     dplyr::summarise(count = dplyr::n())
 
-  clonesdf <- dplyr::left_join(clonesdf, clone_counts) %>%
+  clonesdf <- dplyr::left_join(clonesdf, clone_counts, by = "clone_id") %>%
     dplyr::mutate(clone_label = paste0(clone_id, " (", count, ")")) %>%
     dplyr::select(-count) %>%
     as.data.frame()
@@ -419,12 +419,43 @@ make_top_annotsnv <- function(mutgroups) {
 
 }
 
-get_chrom_label_pos <- function(copynumber) {
+get_genomecoords_label_pos <- function(copynumber, nticks = 3) {
+  chrom_label_pos <- c()
+  chroms <- sapply(strsplit(colnames(copynumber), ":"), function(x) x[[1]])
+  binwidth <- as.numeric(strsplit(colnames(copynumber)[1], ":")[[1]][3]) -
+    as.numeric(strsplit(colnames(copynumber)[1], ":")[[1]][2]) + 1
+  chromfreq <- table(chroms)
+  uniq_chroms <- names(chromfreq)[chromfreq > 1]
+  uniq_chroms <- uniq_chroms[stringr::str_detect(uniq_chroms, "V", negate = TRUE)]
+  for (chrom in uniq_chroms) {
+    chrom_idx <- which(chroms == chrom)
+    max_idx <- max(chrom_idx)
+    nwidth <- 10 * round((max(chrom_idx) / nticks) / 10)
+    mypos <- nwidth
+    for (ticks in 1:nticks){
+      if (mypos > max_idx){
+        next
+      }
+      lab <- paste0(mypos * binwidth / 1e6, "Mb")
+      chrom_label_pos[[lab]] <- mypos
+      mypos <- mypos + nwidth
+    }
+  }
+  return(chrom_label_pos)
+}
+
+get_chrom_label_pos <- function(copynumber, nticks = 3) {
   chrom_label_pos <- c()
   chroms <- sapply(strsplit(colnames(copynumber), ":"), function(x) x[[1]])
   chromfreq <- table(chroms)
   uniq_chroms <- names(chromfreq)[chromfreq > 1]
   uniq_chroms <- uniq_chroms[stringr::str_detect(uniq_chroms, "V", negate = TRUE)]
+
+  if (length(uniq_chroms) == 1){
+   chrom_label_pos <- get_genomecoords_label_pos(copynumber, nticks = nticks)
+   return(chrom_label_pos)
+  }
+
   for (chrom in uniq_chroms) {
     chrom_idx <- which(chroms == chrom)
     chrom_label_pos[[chrom]] <- as.integer(round(mean(chrom_idx)))
@@ -533,11 +564,14 @@ anno_mark <- function(at, labels, which = c("column", "row"),
   return(anno)
 }
 
-make_bottom_annot <- function(copynumber, chrlabels = TRUE, filterlabels = NULL) {
+make_bottom_annot <- function(copynumber,
+                              chrlabels = TRUE,
+                              filterlabels = NULL,
+                              nticks = 3) {
   if (chrlabels[1] == FALSE) {
     return(NULL)
   } else if (chrlabels[1] == TRUE) {
-    chrom_label_pos <- get_chrom_label_pos(copynumber)
+    chrom_label_pos <- get_chrom_label_pos(copynumber, nticks = nticks)
     bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = anno_mark(
       at = chrom_label_pos,
       labels = names(chrom_label_pos),
@@ -726,6 +760,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     chrlabels = TRUE,
                                     raster_quality = 20,
                                     SV = NULL,
+                                    nticks = 4,
                                     ...) {
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name = legendname,
@@ -736,12 +771,14 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_rows = FALSE,
     cluster_columns = FALSE,
     show_column_names = FALSE,
-    bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels),
+    bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, nticks = nticks),
     left_annotation = make_left_annot(copynumber, clones,
       library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
       idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label
     ),
-    heatmap_legend_param = list(nrow = 3, direction = "vertical"),
+    heatmap_legend_param = list(nrow = 3,
+                                direction = "vertical",
+                                at = names(colvals)),
     top_annotation = make_top_annotation_gain(copynumber,
       cutoff = cutoff, maxf = maxf,
       plotfrequency = plotfrequency, plotcol = plotcol, SV = SV
@@ -793,6 +830,8 @@ getSVlegend <- function(include = NULL) {
 #' @param chrlabels include chromosome labels or not, boolean
 #' @param SV sv data frame
 #' @param seed seed for UMAP
+#' @param nticks number of ticks in x-axis label when plotting a single chromosome
+#' @param fillgenome fill in any missing bins and add NA to centromeric regions
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #'
@@ -832,6 +871,8 @@ plotHeatmap <- function(cn,
                         raster_quality = 10,
                         SV = NULL,
                         seed = NULL,
+                        nticks = 4,
+                        fillgenome = FALSE,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -992,7 +1033,12 @@ plotHeatmap <- function(cn,
   }
 
   message("Creating copy number heatmap...")
-  copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = fillna)
+  if (fillgenome) {
+    copynumber <- createCNmatrix(CNbins, field = plotcol, wholegenome = TRUE,
+                                 fillna = fillna, centromere = TRUE)
+  } else {
+    copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = fillna)
+  }
   if (normalize_ploidy == T) {
     message("Normalizing ploidy for each cell to 2")
     copynumber <- normalize_cell_ploidy(copynumber)
@@ -1025,6 +1071,7 @@ plotHeatmap <- function(cn,
     chrlabels = chrlabels,
     raster_quality = raster_quality,
     SV = SV,
+    nticks = nticks,
     ...
   )
   if (plottree == TRUE) {
@@ -1167,11 +1214,11 @@ plotHeatmapQC <- function(cn,
   }
 
   if (arm == FALSE) {
-    CNbins <- dplyr::left_join(CNbins, p$cl$clustering)
+    CNbins <- dplyr::left_join(CNbins, p$cl$clustering, by = "cell_id")
     CNbins <- dplyr::left_join(CNbins, p$prop)
   } else {
     CNbins$chrarm <- paste0(CNbins$chr, schnapps:::coord_to_arm(CNbins$chr, CNbins$start))
-    CNbins <- dplyr::left_join(CNbins, p$cl$clustering)
+    CNbins <- dplyr::left_join(CNbins, p$cl$clustering, by = "cell_id")
     CNbins <- dplyr::left_join(CNbins, p$prop)
   }
 
