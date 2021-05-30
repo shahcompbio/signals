@@ -573,7 +573,7 @@ make_bottom_annot <- function(copynumber,
   } else if (chrlabels[1] == TRUE) {
     chrom_label_pos <- get_chrom_label_pos(copynumber, nticks = nticks)
     bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = anno_mark(
-      at = chrom_label_pos,
+      at = as.vector(unlist(chrom_label_pos)),
       labels = names(chrom_label_pos),
       side = "bottom",
       padding = 0.5, extend = 0.01
@@ -582,7 +582,7 @@ make_bottom_annot <- function(copynumber,
     chrom_label_pos <- get_chrom_label_pos(copynumber)
     chrom_label_pos <- chrom_label_pos[chrlabels]
     bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = anno_mark(
-      at = chrom_label_pos,
+      at = as.vector(unlist(chrom_label_pos)),
       labels = names(chrom_label_pos),
       side = "bottom",
       padding = 0.5, extend = 0.01
@@ -762,6 +762,16 @@ make_copynumber_heatmap <- function(copynumber,
                                     SV = NULL,
                                     nticks = 4,
                                     ...) {
+
+  if (class(colvals) == "function"){
+    leg_params <- list(nrow = 3,
+                       direction = "vertical")
+  } else {
+    leg_params <- list(nrow = 3,
+                       direction = "vertical",
+                       at = names(colvals))
+  }
+
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name = legendname,
     as.matrix(copynumber),
@@ -776,9 +786,7 @@ make_copynumber_heatmap <- function(copynumber,
       library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
       idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label
     ),
-    heatmap_legend_param = list(nrow = 3,
-                                direction = "vertical",
-                                at = names(colvals)),
+    heatmap_legend_param = leg_params,
     top_annotation = make_top_annotation_gain(copynumber,
       cutoff = cutoff, maxf = maxf,
       plotfrequency = plotfrequency, plotcol = plotcol, SV = SV
