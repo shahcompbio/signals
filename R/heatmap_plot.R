@@ -250,13 +250,13 @@ format_copynumber <- function(copynumber,
 }
 
 format_clones <- function(clones, ordered_cell_ids) {
-  clonesdf <- dplyr::full_join(clones, data.frame(cell_id = ordered_cell_ids))
+  clonesdf <- dplyr::full_join(clones, data.frame(cell_id = ordered_cell_ids), by = "cell_id")
   clonesdf[is.na(clonesdf$clone_id), "clone_id"] <- "None"
   clone_counts <- clones %>%
     dplyr::group_by(clone_id) %>%
     dplyr::summarise(count = dplyr::n())
 
-  clonesdf <- dplyr::left_join(clonesdf, clone_counts) %>%
+  clonesdf <- dplyr::left_join(clonesdf, clone_counts, by = "clone_id") %>%
     dplyr::mutate(clone_label = paste0(clone_id, " (", count, ")")) %>%
     dplyr::select(-count) %>%
     as.data.frame()
@@ -831,6 +831,7 @@ getSVlegend <- function(include = NULL) {
 #' @param SV sv data frame
 #' @param seed seed for UMAP
 #' @param nticks number of ticks in x-axis label when plotting a single chromosome
+#' @param fillgenome fill in any missing bins and add NA to centromeric regions
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #'
@@ -871,6 +872,7 @@ plotHeatmap <- function(cn,
                         SV = NULL,
                         seed = NULL,
                         nticks = 4,
+                        fillgenome = FALSE,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1031,7 +1033,12 @@ plotHeatmap <- function(cn,
   }
 
   message("Creating copy number heatmap...")
-  copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = fillna)
+  if (fillgenome) {
+    copynumber <- createCNmatrix(CNbins, field = plotcol, wholegenome = TRUE,
+                                 fillna = fillna, centromere = TRUE)
+  } else {
+    copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = fillna)
+  }
   if (normalize_ploidy == T) {
     message("Normalizing ploidy for each cell to 2")
     copynumber <- normalize_cell_ploidy(copynumber)
@@ -1207,11 +1214,11 @@ plotHeatmapQC <- function(cn,
   }
 
   if (arm == FALSE) {
-    CNbins <- dplyr::left_join(CNbins, p$cl$clustering)
+    CNbins <- dplyr::left_join(CNbins, p$cl$clustering, by = "cell_id")
     CNbins <- dplyr::left_join(CNbins, p$prop)
   } else {
     CNbins$chrarm <- paste0(CNbins$chr, schnapps:::coord_to_arm(CNbins$chr, CNbins$start))
-    CNbins <- dplyr::left_join(CNbins, p$cl$clustering)
+    CNbins <- dplyr::left_join(CNbins, p$cl$clustering, by = "cell_id")
     CNbins <- dplyr::left_join(CNbins, p$prop)
   }
 

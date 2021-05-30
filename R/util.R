@@ -4,11 +4,28 @@ Mode <- function(x) {
 }
 
 #' @export
-createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, fillna = FALSE) {
+createCNmatrix <- function(CNbins,
+                           field = "state",
+                           maxval = 11,
+                           na.rm = FALSE,
+                           fillna = FALSE,
+                           wholegenome = FALSE,
+                           genome = "hg19",
+                           centromere = FALSE) {
   dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
   dfchr <- dplyr::filter(dfchr, chr %in% unique(CNbins$chr))
 
   CNbins <- data.table::as.data.table(CNbins)
+
+  if (wholegenome == TRUE){
+    genome <- as.data.table(getBins(binsize = CNbins$end[1] - CNbins$start[1]+1))
+    CNbins <- lapply(unique(CNbins$cell_id),
+                function(x) merge(genome,
+                                  CNbins[cell_id == x],
+                                  on = c("chr", "start", "end"),
+                                  all = TRUE)[, cell_id := x]) %>%
+              rbindlist(.)
+  }
 
   if (field == "state") {
     cnmatrix <- CNbins %>%
@@ -43,6 +60,26 @@ createCNmatrix <- function(CNbins, field = "state", maxval = 11, na.rm = FALSE, 
 
   rownames(cnmatrix) <- paste(cnmatrix$chr, as.integer(cnmatrix$start), as.integer(cnmatrix$end), sep = "_")
   cnmatrix <- subset(cnmatrix, select = -c(idx))
+
+  if (centromere == TRUE){
+    data("cytoband_map", envir = environment())
+    centromere_location <- cytoband_map[["hg19"]] %>%
+      dplyr::filter(V5 == "acen") %>%
+      dplyr::mutate(V1 = stringr::str_remove(V1, "chr")) %>%
+      dplyr::group_by(V1) %>%
+      dplyr::summarise(start = min(V2), end = max(V3)) %>%
+      dplyr::rename(chr = V1) %>%
+      dplyr::filter(chr %in% dfchr$chr) %>%
+      #acrocentric chroms
+      dplyr::mutate(start = ifelse(chr %in% c("13", "14", "15", "21", "22"), 1, start))
+    genome <- as.data.table(getBins(binsize = CNbins$end[1] - CNbins$start[1]+1))
+    centromere_bins <- dplyr::left_join(genome, centromere_location, by = "chr") %>%
+      dplyr::filter(start.x >= start.y & end.x <= end.y) %>%
+      dplyr::filter(chr %in% dfchr$chr)
+    centromere_bins <- paste(centromere_bins$chr, as.integer(centromere_bins$start.x), as.integer(centromere_bins$end.x), sep = "_")
+    cnmatrix[centromere_bins,5:ncol(cnmatrix)] <- NA
+  }
+
   return(cnmatrix)
 }
 
@@ -162,6 +199,8 @@ getBins <- function(chrom.lengths = hg19_chrlength, binsize = 1e6, chromosomes =
       call. = FALSE
     )
   }
+
+  chrom.lengths <- chrom.lengths[names(chrom.lengths)[names(chrom.lengths) != "M"]]
 
   chrom.lengths <- chrom.lengths[!is.na(names(chrom.lengths))]
   chrom.lengths <- chrom.lengths[!is.na(chrom.lengths)]
@@ -564,7 +603,7 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
         totalcounts = sum(totalcounts),
         state_sd = sd(state, na.rm = TRUE),
         proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N
-      ), by = c("chr", "arm", "chrarm", "cell_id")] %>% 
+      ), by = c("chr", "arm", "chrarm", "cell_id")] %>%
       .[, BAF := alleleB / totalcounts] %>%
       .[, Min := state - Maj]
   } else {
@@ -584,13 +623,13 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
         totalcounts = sum(totalcounts),
         state_sd = sd(state, na.rm = TRUE),
         proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N
-      ), by = c("chr", "arm", "chrarm", "cell_id")] %>% 
+      ), by = c("chr", "arm", "chrarm", "cell_id")] %>%
       .[, BAF := alleleB / totalcounts] %>%
       .[, Min := state - Maj]
   }
 
   hscn_arm <- hscn_arm %>%
-    add_states() %>% 
+    add_states() %>%
     dplyr::left_join(hg19chrom_coordinates) %>%
     dplyr::mutate(state = ifelse(state > 11, 11, state))
 
@@ -600,7 +639,7 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
 #' @export
 per_chr_cn <- function(hscn, arms = NULL) {
   data("hg19chrom_coordinates", envir = environment())
-  
+
   hscn_chr <- hscn %>%
     dplyr::filter(chr != "Y") %>%
     as.data.table() %>%
@@ -613,7 +652,7 @@ per_chr_cn <- function(hscn, arms = NULL) {
       totalcounts = sum(totalcounts),
       state_sd = sd(state, na.rm = TRUE),
       proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N
-    ), by = c("chr", "cell_id")] %>% 
+    ), by = c("chr", "cell_id")] %>%
     .[, BAF := alleleB / totalcounts] %>%
     .[, Min := state - Maj] %>%
     add_states() %>%
