@@ -1,3 +1,7 @@
+# schnapps 0.2.1
+
+* updates to heatmap plotting
+
 # schnapps 0.2.0
 
 * Version associated with preprint
