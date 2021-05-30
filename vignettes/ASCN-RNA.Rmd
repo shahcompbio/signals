@@ -27,16 +27,19 @@ library(ggplot2)
 This vignette illustrates how to perform allele specific copy number inference in scRNAseq data. scRNAseq data is much more sparse than scDNAseq, so we perform inference on a chromosome arm basis by merging counts across arms.
 
 ## Data
-The data needed to perform the allele specific copy number inference are SNP calls of heterozygous positions in individual single cells. Ideally haplotype block calling should also be performed, so that each allele in each cell can be assigned to a haplotype block. To get this data you will ideally need a whole genome sequenced bulk sample of normal tissue to identify heterozygous SNPs and then you can use a tool such as cellSNP or vartrix to get per cell counts. An example dataset from ~814 cells is included here. For this dataset we also have paired scDNAseq, where we have called ASCN using `schnapps`.
+
+The data needed to perform the allele specific copy number inference are SNP calls of heterozygous positions in individual single cells. Ideally haplotype block calling should also be performed, so that each allele in each cell can be assigned to a haplotype block. To get this data you will ideally need a whole genome sequenced bulk sample of normal tissue to identify heterozygous SNPs and then you can use a tool such as cellSNP or vartrix to get per cell counts. An example dataset from ~814 cells is included here. For this dataset we also have paired scDNAseq, where we have called HSCN using `schnapps`.
 
 
 ```{r}
-data(haplotypes_rna)
+data("haplotypes_rna")
 ```
 
 ## scDNA
 
-We can use information from scDNAseq to phase the SNPs in scRNAseq. It's also possible to perform this phasing just based on scRNAseq. We'll first compute haplotype specific copy number in scDNAseq and use this phasing information in the scrnaseq.
+We can use information from scDNAseq to phase the SNPs in scRNAseq. To do this we'll first compute haplotype specific copy number in scDNAseq and use this phasing information in the scRNAseq.
+
+It's also possible to perform this phasing just based on scRNAseq, but in general it will be less accurate.
 
 ```{r}
 data("haplotypes")
