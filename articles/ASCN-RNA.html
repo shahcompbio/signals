@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">schnapps</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.1</span>
       </span>
     </div>
 
@@ -105,14 +105,15 @@
 <div id="data" class="section level2">
 <h2 class="hasAnchor">
 <a href="#data" class="anchor"></a>Data</h2>
-<p>The data needed to perform the allele specific copy number inference are SNP calls of heterozygous positions in individual single cells. Ideally haplotype block calling should also be performed, so that each allele in each cell can be assigned to a haplotype block. To get this data you will ideally need a whole genome sequenced bulk sample of normal tissue to identify heterozygous SNPs and then you can use a tool such as cellSNP or vartrix to get per cell counts. An example dataset from ~814 cells is included here. For this dataset we also have paired scDNAseq, where we have called ASCN using <code>schnapps</code>.</p>
+<p>The data needed to perform the allele specific copy number inference are SNP calls of heterozygous positions in individual single cells. Ideally haplotype block calling should also be performed, so that each allele in each cell can be assigned to a haplotype block. To get this data you will ideally need a whole genome sequenced bulk sample of normal tissue to identify heterozygous SNPs and then you can use a tool such as cellSNP or vartrix to get per cell counts. An example dataset from ~814 cells is included here. For this dataset we also have paired scDNAseq, where we have called HSCN using <code>schnapps</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="va">haplotypes_rna</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"haplotypes_rna"</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="scdna" class="section level2">
 <h2 class="hasAnchor">
 <a href="#scdna" class="anchor"></a>scDNA</h2>
-<p>We can use information from scDNAseq to phase the SNPs in scRNAseq. It’s also possible to perform this phasing just based on scRNAseq. We’ll first compute haplotype specific copy number in scDNAseq and use this phasing information in the scrnaseq.</p>
+<p>We can use information from scDNAseq to phase the SNPs in scRNAseq. To do this we’ll first compute haplotype specific copy number in scDNAseq and use this phasing information in the scRNAseq.</p>
+<p>It’s also possible to perform this phasing just based on scRNAseq, but in general it will be less accurate.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span>
