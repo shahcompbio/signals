@@ -435,7 +435,7 @@ create_segments <- function(CNbins, field = "state") {
 #' @export
 orderdf <- function(CNbins) {
   dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
-  dfchr <- dfchr %>% filter(chr %in% unique(CNbins$chr))
+  dfchr <- dfchr %>% dplyr::filter(chr %in% unique(CNbins$chr))
   return(CNbins %>%
     as.data.table() %>%
     .[dfchr, on = "chr"] %>%
