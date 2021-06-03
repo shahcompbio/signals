@@ -222,6 +222,7 @@ plotSV2 <- function(breakpoints,
                     returnlist = FALSE,
                     ylims = c(0, 2),
                     legend.position = "bottom",
+                    svwidth = 1.0,
                     ...) {
   pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
 
@@ -254,6 +255,7 @@ plotSV2 <- function(breakpoints,
     gSV <- gSV +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = yidx, group = id, col = rearrangement_type),
         alpha = 0.5,
+        size = svwidth,
         data = bezdf
       ) +
       ggplot2::labs(col = "Rearrangement") +
@@ -270,7 +272,7 @@ plotSV2 <- function(breakpoints,
       dplyr::mutate(y = ifelse(rearrangement_type == "Foldback", 1, 1)) %>%
       dplyr::mutate(yend = ifelse(rearrangement_type == "Foldback", min(ylims), max(ylims)))
 
-    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type)) +
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type), size = svwidth) +
       ggplot2::labs(col = "Rearrangement") +
       ggplot2::scale_color_manual(
         breaks = names(SV_colors),
@@ -499,6 +501,7 @@ plotCNprofile <- function(CNbins,
                           annotateregions = NULL,
                           SV = NULL,
                           svalpha = 0.5,
+                          svwidth = 1.0,
                           adj = 0.03,
                           genes = NULL, ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
@@ -618,11 +621,13 @@ plotCNprofile <- function(CNbins,
     gCN <- gCN +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = 0.8,
+        size = svwidth,
         col = as.vector(SV_colors["Foldback"]),
         data = bezdf %>% dplyr::filter(rearrangement_type == "foldback")
       ) +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = svalpha,
+        size = svwidth,
         col = "grey30",
         data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")
       )
@@ -654,6 +659,7 @@ plotCNprofileBAFhomolog <- function(cn,
                                     SV = NULL,
                                     adj = 0.03,
                                     svalpha = 0.5,
+                                    svwidth = 1.0,
                                     ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -774,11 +780,13 @@ plotCNprofileBAFhomolog <- function(cn,
     gCN <- gCN +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = 0.5,
+        size = svwidth,
         col = as.vector(SV_colors["Foldback"]),
         data = bezdf %>% dplyr::filter(rearrangement_type == "foldback")
       ) +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = svalpha,
+        size = svwidth,
         col = "grey30",
         data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")
       )
@@ -817,6 +825,7 @@ plotCNprofileBAFhomolog <- function(cn,
 #' @param annotateregions Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position
 #' @param SV Default is NULL. If a dataframe with structural variant position is passed it will add a track on the top showin rearrangement links
 #' @param svalpha the alpha scaling of the SV lines, default = 0.5
+#' @param svwidth width of rearrangement connections
 #' @param genes vector of genes to annotate, will add a dashed vertical line and label
 #' @param homolog Rather than plot the BAF and CN seperately this will plot the 2 homologs on the same track
 #'
@@ -854,6 +863,7 @@ plotCNprofileBAF <- function(cn,
                              SV = NULL,
                              adj = 0.03,
                              svalpha = 0.5,
+                             svwidth = 1.0,
                              ...) {
   if (homolog == TRUE) {
     ghomolog <- plotCNprofileBAFhomolog(cn,
@@ -873,6 +883,7 @@ plotCNprofileBAF <- function(cn,
       SV = SV,
       adj = adj,
       svalpha = svalpha,
+      svwidth = svwidth,
       ...
     )
     return(ghomolog)
@@ -1071,12 +1082,14 @@ plotCNprofileBAF <- function(cn,
     gCN <- gCN +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = 0.8,
+        size = svwidth,
         col = as.vector(SV_colors["Foldback"]),
         data = bezdf %>% dplyr::filter(rearrangement_type == "foldback")
       ) +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = svalpha,
         col = "grey30",
+        size = svwidth,
         data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")
       )
   }

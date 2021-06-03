@@ -9,6 +9,7 @@ createCNmatrix <- function(CNbins,
                            maxval = 11,
                            na.rm = FALSE,
                            fillna = FALSE,
+                           fillnaplot = FALSE,
                            wholegenome = FALSE,
                            genome = "hg19",
                            centromere = FALSE) {
@@ -44,9 +45,34 @@ createCNmatrix <- function(CNbins,
       .[order(idx, start)]
   }
 
+  if (fillnaplot == TRUE) {
+    
+    colnames <- names(cnmatrix)
+    colnames <- colnames[!colnames %in% c("chr", "start", "end", "idx", "width")]
+    
+    #count proportion of rows that have NA values
+    narows <- cnmatrix[, ..colnames]
+    narows <- apply(narows, 1, function(x) sum(is.na(x))) / length(colnames)
+    #remove the largest region of consecutive NA's, this will the centromere in most chroms
+    narowsdf <- cnmatrix[, 1:4] %>% 
+      dplyr::mutate(id = 1:dplyr::n()) %>% 
+      dplyr::mutate(isna = narows) %>% 
+      dplyr::mutate(runid = rleid(isna > 0.9)) %>% 
+      dplyr::add_count(runid) %>% 
+      dplyr::group_by(chr) %>% 
+      dplyr::mutate(maxn = max(n)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::filter(isna & n == maxn & n > 9)
+    
+    cnmatrix <- cnmatrix %>%
+      dplyr::as_tibble() %>%
+      tidyr::fill(., colnames, .direction = "downup")
+  }
+  
   if (fillna == TRUE) {
     colnames <- names(cnmatrix)
     colnames <- colnames[!colnames %in% c("chr", "start", "end", "idx", "width")]
+    
     cnmatrix <- cnmatrix %>%
       dplyr::as_tibble() %>%
       tidyr::fill(., colnames, .direction = "updown")
@@ -61,23 +87,8 @@ createCNmatrix <- function(CNbins,
   rownames(cnmatrix) <- paste(cnmatrix$chr, as.integer(cnmatrix$start), as.integer(cnmatrix$end), sep = "_")
   cnmatrix <- subset(cnmatrix, select = -c(idx))
 
-  if (centromere == TRUE){
-    data("cytoband_map", envir = environment())
-    centromere_location <- cytoband_map[["hg19"]] %>%
-      dplyr::filter(V5 == "acen") %>%
-      dplyr::mutate(V1 = stringr::str_remove(V1, "chr")) %>%
-      dplyr::group_by(V1) %>%
-      dplyr::summarise(start = min(V2), end = max(V3)) %>%
-      dplyr::rename(chr = V1) %>%
-      dplyr::filter(chr %in% dfchr$chr) %>%
-      #acrocentric chroms
-      dplyr::mutate(start = ifelse(chr %in% c("13", "14", "15", "21", "22"), 1, start))
-    genome <- as.data.table(getBins(binsize = CNbins$end[1] - CNbins$start[1]+1))
-    centromere_bins <- dplyr::left_join(genome, centromere_location, by = "chr") %>%
-      dplyr::filter(start.x >= start.y & end.x <= end.y) %>%
-      dplyr::filter(chr %in% dfchr$chr)
-    centromere_bins <- paste(centromere_bins$chr, as.integer(centromere_bins$start.x), as.integer(centromere_bins$end.x), sep = "_")
-    cnmatrix[centromere_bins,5:ncol(cnmatrix)] <- NA
+  if (centromere == TRUE & fillna == TRUE){
+    cnmatrix[narowsdf$id,5:ncol(cnmatrix)] <- NA
   }
 
   return(cnmatrix)
@@ -424,6 +435,7 @@ create_segments <- function(CNbins, field = "state") {
 #' @export
 orderdf <- function(CNbins) {
   dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
+  dfchr <- dfchr %>% filter(chr %in% unique(CNbins$chr))
   return(CNbins %>%
     as.data.table() %>%
     .[dfchr, on = "chr"] %>%
@@ -737,7 +749,7 @@ createBAFassay <- function(seur, rna_ascn) {
 #' @export
 consensuscopynumber <- function(hscn, cl = NULL) {
   if (!is.null(cl)) {
-    hscn <- dplyr::left_join(hscn, cl)
+    hscn <- dplyr::left_join(hscn, cl,  by = "cell_id")
   } else {
     hscn$clone_id <- "Merged Cells"
   }
