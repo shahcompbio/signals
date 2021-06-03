@@ -429,7 +429,7 @@ get_genomecoords_label_pos <- function(copynumber, nticks = 3) {
   uniq_chroms <- uniq_chroms[stringr::str_detect(uniq_chroms, "V", negate = TRUE)]
   for (chrom in uniq_chroms) {
     chrom_idx <- which(chroms == chrom)
-    max_idx <- max(chrom_idx)
+    max_idx <- round(0.9 * max(chrom_idx))
     nwidth <- 10 * round((max(chrom_idx) / nticks) / 10)
     mypos <- nwidth
     for (ticks in 1:nticks){
@@ -567,7 +567,10 @@ anno_mark <- function(at, labels, which = c("column", "row"),
 make_bottom_annot <- function(copynumber,
                               chrlabels = TRUE,
                               filterlabels = NULL,
-                              nticks = 3) {
+                              nticks = 3,
+                              annotation_height = NULL, 
+                              annofontsize = 14,
+                              linkheight = 1) {
   if (chrlabels[1] == FALSE) {
     return(NULL)
   } else if (chrlabels[1] == TRUE) {
@@ -575,9 +578,12 @@ make_bottom_annot <- function(copynumber,
     bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = anno_mark(
       at = as.vector(unlist(chrom_label_pos)),
       labels = names(chrom_label_pos),
+      link_height = unit(linkheight, "mm"),
+      labels_gp = grid::gpar(fontsize = annofontsize),
       side = "bottom",
       padding = 0.5, extend = 0.01
-    ), show_annotation_name = FALSE)
+    ), show_annotation_name = FALSE,
+    annotation_height = annotation_height)
   } else {
     chrom_label_pos <- get_chrom_label_pos(copynumber)
     chrom_label_pos <- chrom_label_pos[chrlabels]
@@ -585,8 +591,10 @@ make_bottom_annot <- function(copynumber,
       at = as.vector(unlist(chrom_label_pos)),
       labels = names(chrom_label_pos),
       side = "bottom",
+      labels_gp = grid::gpar(fontsize = annofontsize),
       padding = 0.5, extend = 0.01
-    ), show_annotation_name = FALSE)
+    ), show_annotation_name = FALSE,
+    annotation_height = annotation_height)
   }
   return(bottom_annot)
 }
@@ -761,8 +769,12 @@ make_copynumber_heatmap <- function(copynumber,
                                     raster_quality = 20,
                                     SV = NULL,
                                     nticks = 4,
+                                    annotation_height = NULL, 
+                                    annofontsize = 14,
+                                    na_col = "white",
+                                    linkheight = 5,
                                     ...) {
-
+  
   if (class(colvals) == "function"){
     leg_params <- list(nrow = 3,
                        direction = "vertical")
@@ -771,17 +783,17 @@ make_copynumber_heatmap <- function(copynumber,
                        direction = "vertical",
                        at = names(colvals))
   }
-
+  
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name = legendname,
     as.matrix(copynumber),
     col = colvals,
-    na_col = "white",
+    na_col = na_col,
     show_row_names = FALSE,
     cluster_rows = FALSE,
     cluster_columns = FALSE,
     show_column_names = FALSE,
-    bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, nticks = nticks),
+    bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, nticks = nticks, annotation_height = annotation_height, annofontsize = annofontsize, linkheight = linkheight),
     left_annotation = make_left_annot(copynumber, clones,
       library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
       idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label
@@ -840,6 +852,8 @@ getSVlegend <- function(include = NULL) {
 #' @param seed seed for UMAP
 #' @param nticks number of ticks in x-axis label when plotting a single chromosome
 #' @param fillgenome fill in any missing bins and add NA to centromeric regions
+#' @param na_col colour of NA values
+#' @param linkheight height of x-axis ticks
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #'
@@ -881,6 +895,10 @@ plotHeatmap <- function(cn,
                         seed = NULL,
                         nticks = 4,
                         fillgenome = FALSE,
+                        annotation_height = NULL, 
+                        annofontsize = 14,
+                        na_col = "white",
+                        linkheight = 5,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1043,9 +1061,9 @@ plotHeatmap <- function(cn,
   message("Creating copy number heatmap...")
   if (fillgenome) {
     copynumber <- createCNmatrix(CNbins, field = plotcol, wholegenome = TRUE,
-                                 fillna = fillna, centromere = TRUE)
+                                 fillnaplot = fillna, centromere = FALSE)
   } else {
-    copynumber <- createCNmatrix(CNbins, field = plotcol, fillna = fillna)
+    copynumber <- createCNmatrix(CNbins, field = plotcol, fillnaplot = fillna)
   }
   if (normalize_ploidy == T) {
     message("Normalizing ploidy for each cell to 2")
@@ -1080,6 +1098,10 @@ plotHeatmap <- function(cn,
     raster_quality = raster_quality,
     SV = SV,
     nticks = nticks,
+    annotation_height = annotation_height, 
+    annofontsize = annofontsize,
+    na_col = na_col,
+    linkheight = linkheight,
     ...
   )
   if (plottree == TRUE) {
