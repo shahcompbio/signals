@@ -578,7 +578,7 @@ make_bottom_annot <- function(copynumber,
     bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = anno_mark(
       at = as.vector(unlist(chrom_label_pos)),
       labels = names(chrom_label_pos),
-      link_height = unit(linkheight, "mm"),
+      link_height = grid::unit(linkheight, "mm"),
       labels_gp = grid::gpar(fontsize = annofontsize),
       side = "bottom",
       padding = 0.5, extend = 0.01
