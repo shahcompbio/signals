@@ -8,6 +8,8 @@
 
 schnapps (Single Cell Haplotype copy Number Analysis through Phased Probabilistic States) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (~0.01X). schnapps phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model.  Documentation is available [here](https://shahcompbio.github.io/schnapps/).
 
+You can read more about schnapps in our [preprint](https://www.biorxiv.org/content/10.1101/2021.06.04.447031v1).
+
 ## Installation
 
 You can install schnapps with the following command 
