@@ -114,16 +114,16 @@
 <span class="co">#&gt; Bin size: 0.5 Mb </span>
 <span class="co">#&gt; Inferred LOH error rate: 0.023 </span>
 <span class="co">#&gt; Emission model for HMM: binomial </span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.0039</span>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.004</span>
 
 <span class="va">hscn_bb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, likelihood <span class="op">=</span> <span class="st">"betabinomial"</span><span class="op">)</span>
-<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -313162.1734</span>
-<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -309184.036</span>
-<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -308628.9396</span>
-<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -308602.7702</span>
-<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -308602.3781</span>
-<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -308602.3745</span>
-<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -308602.3745</span>
+<span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -313072.0418</span>
+<span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -309064.4647</span>
+<span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -308501.6461</span>
+<span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -308474.9235</span>
+<span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -308474.5235</span>
+<span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -308474.5199</span>
+<span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -308474.5199</span>
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">)</span>
 <span class="co">#&gt; Haplotype specific copy number object </span>
@@ -132,9 +132,9 @@
 <span class="co">#&gt; Bin size: 0.5 Mb </span>
 <span class="co">#&gt; Inferred LOH error rate: 0.023 </span>
 <span class="co">#&gt; Emission model for HMM: betabinomial </span>
-<span class="co">#&gt;   Inferred over dispersion: 0.0096</span>
-<span class="co">#&gt;   Tarones Z score: 180.697</span>
-<span class="co">#&gt; Average distance from median to expected BAF = 0.004</span></code></pre></div>
+<span class="co">#&gt;   Inferred over dispersion: 0.0095</span>
+<span class="co">#&gt;   Tarones Z score: 179.234</span>
+<span class="co">#&gt; Average distance from median to expected BAF = 0.0041</span></code></pre></div>
 <p>We see that the model inferred a modest degree of overdispersion in the data, but that this was siginificantly different from 0 dispersion (Tarones Z-score is high).</p>
 <p>Below I’ll plot the heatmaps for the two output, which in this case are very similar.</p>
 <div id="binomial-model" class="section level3">
@@ -161,37 +161,19 @@
 <p>We can check how similar the results are by comparing the two dataframes. We find for this data that the results are very similar.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt; [1] 1077737      19</span>
+<span class="co">#&gt; [1] 1077733      19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt; [1] 1077736      19</span>
+<span class="co">#&gt; [1] 1077733      19</span>
 <span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="fu">orderdf</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span>, <span class="fu">orderdf</span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt;  [1] "Attributes: &lt; Component \"row.names\": Numeric: lengths (1077737, 1077736) differ &gt;"               </span>
-<span class="co">#&gt;  [2] "Component \"chr\": Lengths (1077737, 1077736) differ (string compare on first 1077736)"            </span>
-<span class="co">#&gt;  [3] "Component \"chr\": 5357 string mismatches"                                                         </span>
-<span class="co">#&gt;  [4] "Component \"start\": Numeric: lengths (1077737, 1077736) differ"                                   </span>
-<span class="co">#&gt;  [5] "Component \"end\": Numeric: lengths (1077737, 1077736) differ"                                     </span>
-<span class="co">#&gt;  [6] "Component \"cell_id\": Lengths (1077737, 1077736) differ (string compare on first 1077736)"        </span>
-<span class="co">#&gt;  [7] "Component \"cell_id\": 232 string mismatches"                                                      </span>
-<span class="co">#&gt;  [8] "Component \"state\": Numeric: lengths (1077737, 1077736) differ"                                   </span>
-<span class="co">#&gt;  [9] "Component \"copy\": Numeric: lengths (1077737, 1077736) differ"                                    </span>
-<span class="co">#&gt; [10] "Component \"alleleA\": Numeric: lengths (1077737, 1077736) differ"                                 </span>
-<span class="co">#&gt; [11] "Component \"alleleB\": Numeric: lengths (1077737, 1077736) differ"                                 </span>
-<span class="co">#&gt; [12] "Component \"totalcounts\": Numeric: lengths (1077737, 1077736) differ"                             </span>
-<span class="co">#&gt; [13] "Component \"BAF\": Numeric: lengths (1077737, 1077736) differ"                                     </span>
-<span class="co">#&gt; [14] "Component \"state_min\": Numeric: lengths (1077737, 1077736) differ"                               </span>
-<span class="co">#&gt; [15] "Component \"Maj\": Numeric: lengths (1077737, 1077736) differ"                                     </span>
-<span class="co">#&gt; [16] "Component \"Min\": Numeric: lengths (1077737, 1077736) differ"                                     </span>
-<span class="co">#&gt; [17] "Component \"state_AS_phased\": Lengths (1077737, 1077736) differ (string compare on first 1077736)"</span>
-<span class="co">#&gt; [18] "Component \"state_AS_phased\": 39154 string mismatches"                                            </span>
-<span class="co">#&gt; [19] "Component \"state_AS\": Lengths (1077737, 1077736) differ (string compare on first 1077736)"       </span>
-<span class="co">#&gt; [20] "Component \"state_AS\": 28280 string mismatches"                                                   </span>
-<span class="co">#&gt; [21] "Component \"LOH\": Lengths (1077737, 1077736) differ (string compare on first 1077736)"            </span>
-<span class="co">#&gt; [22] "Component \"LOH\": 11288 string mismatches"                                                        </span>
-<span class="co">#&gt; [23] "Component \"phase\": Lengths (1077737, 1077736) differ (string compare on first 1077736)"          </span>
-<span class="co">#&gt; [24] "Component \"phase\": 23258 string mismatches"                                                      </span>
-<span class="co">#&gt; [25] "Component \"state_phase\": Lengths (1077737, 1077736) differ (string compare on first 1077736)"    </span>
-<span class="co">#&gt; [26] "Component \"state_phase\": 27152 string mismatches"                                                </span>
-<span class="co">#&gt; [27] "Component \"state_BAF\": Numeric: lengths (1077737, 1077736) differ"</span></code></pre></div>
+<span class="co">#&gt; [1] "Component \"state_min\": Mean relative difference: 0.5828967"</span>
+<span class="co">#&gt; [2] "Component \"Maj\": Mean relative difference: 0.428948"       </span>
+<span class="co">#&gt; [3] "Component \"Min\": Mean relative difference: 0.6991197"      </span>
+<span class="co">#&gt; [4] "Component \"state_AS_phased\": 10647 string mismatches"      </span>
+<span class="co">#&gt; [5] "Component \"state_AS\": 2295 string mismatches"              </span>
+<span class="co">#&gt; [6] "Component \"LOH\": 1358 string mismatches"                   </span>
+<span class="co">#&gt; [7] "Component \"phase\": 7654 string mismatches"                 </span>
+<span class="co">#&gt; [8] "Component \"state_phase\": 8417 string mismatches"           </span>
+<span class="co">#&gt; [9] "Component \"state_BAF\": Mean relative difference: 1.139611"</span></code></pre></div>
 <p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments in the beta-binomial model.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">segs</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, field <span class="op">=</span> <span class="st">"state_AS_phased"</span><span class="op">)</span>
@@ -199,9 +181,9 @@
 <span class="va">segs_bb</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">$</span><span class="va">data</span>, field <span class="op">=</span> <span class="st">"state_AS_phased"</span><span class="op">)</span>
 
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">segs</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt; [1] 39405     5</span>
+<span class="co">#&gt; [1] 39355     5</span>
 <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">segs_bb</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt; [1] 35717     5</span></code></pre></div>
+<span class="co">#&gt; [1] 35429     5</span></code></pre></div>
 </div>
 </div>
 <div id="summary" class="section level2">
