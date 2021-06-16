@@ -1145,7 +1145,9 @@ rephasebins <- function(cn,
     if (clusterfirst){
       if (is.null(cl)){
         ncells <- length(unique(cndat$cell_id))
-        cl <- umap_clustering(cndat, minPts = max(round(0.05 * ncells), 2))
+        cl <- umap_clustering(cndat, 
+                              minPts = max(round(0.05 * ncells), 2), 
+                              field = "copy")
         cl <- cl$clustering
       }
       cndatclone <- consensuscopynumber(cndat, cl = cl)
@@ -1165,11 +1167,11 @@ rephasebins <- function(cn,
   newhscn <- switchbins(cndat, phase_df)
 
   if (is.hscn(cn)) {
-    hscn$haplotype_phasing <-
-      rephasehaplotypes(phase_df, hscn$haplotype_phasing) %>% as.data.frame()
-    hscn$data <- newhscn %>% orderdf(.) %>%  as.data.frame()
-    hscn$qc_summary <- qc_summary(hscn$data)
-    x <- hscn
+    cn$haplotype_phasing <-
+      rephasehaplotypes(phase_df, cn$haplotype_phasing) %>% as.data.frame()
+    cn$data <- newhscn %>% orderdf(.) %>%  as.data.frame()
+    cn$qc_summary <- qc_summary(cn$data)
+    x <- cn
   } else {
     x <- list(newhscn = newhscn %>% orderdf(.), phase = phase_df)
   }
@@ -1202,11 +1204,11 @@ switchbins <- function(cn, phase_df){
   newhscn <- newhscn[, phasing := NULL]
   
   if (is.hscn(cn)) {
-    hscn$haplotype_phasing <-
-      rephasehaplotypes(phase_df, hscn$haplotype_phasing) %>% as.data.frame()
-    hscn$data <- newhscn %>% as.data.frame()
-    hscn$qc_summary <- qc_summary(hscn$data)
-    x <- hscn
+    cn$haplotype_phasing <-
+      rephasehaplotypes(phase_df, cn$haplotype_phasing) %>% as.data.frame()
+    cn$data <- newhscn %>% as.data.frame()
+    cn$qc_summary <- qc_summary(cn$data)
+    x <- cn
   } else {
     x <- newhscn
   }
