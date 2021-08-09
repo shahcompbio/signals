@@ -161,6 +161,12 @@
   raster_quality <span class='op'>=</span> <span class='fl'>10</span>,
   SV <span class='op'>=</span> <span class='cn'>NULL</span>,
   seed <span class='op'>=</span> <span class='cn'>NULL</span>,
+  nticks <span class='op'>=</span> <span class='fl'>4</span>,
+  fillgenome <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  annotation_height <span class='op'>=</span> <span class='cn'>NULL</span>,
+  annofontsize <span class='op'>=</span> <span class='fl'>14</span>,
+  na_col <span class='op'>=</span> <span class='st'>"white"</span>,
+  linkheight <span class='op'>=</span> <span class='fl'>5</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
 
@@ -257,7 +263,23 @@
     </tr>
     <tr>
       <th>seed</th>
-      <td><p>seed for UMAP</p>
+      <td><p>seed for UMAP</p></td>
+    </tr>
+    <tr>
+      <th>nticks</th>
+      <td><p>number of ticks in x-axis label when plotting a single chromosome</p></td>
+    </tr>
+    <tr>
+      <th>fillgenome</th>
+      <td><p>fill in any missing bins and add NA to centromeric regions</p></td>
+    </tr>
+    <tr>
+      <th>na_col</th>
+      <td><p>colour of NA values</p></td>
+    </tr>
+    <tr>
+      <th>linkheight</th>
+      <td><p>height of x-axis ticks</p>
 <p>If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.</p>
 <p>#'</p></td>
     </tr>
