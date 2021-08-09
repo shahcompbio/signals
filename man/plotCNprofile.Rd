@@ -21,6 +21,7 @@ plotCNprofile(
   annotateregions = NULL,
   SV = NULL,
   svalpha = 0.5,
+  svwidth = 1,
   adj = 0.03,
   genes = NULL,
   ...

@@ -25,6 +25,7 @@ plotCNprofileBAF(
   SV = NULL,
   adj = 0.03,
   svalpha = 0.5,
+  svwidth = 1,
   ...
 )
 }
@@ -64,6 +65,8 @@ plotCNprofileBAF(
 \item{SV}{Default is NULL. If a dataframe with structural variant position is passed it will add a track on the top showin rearrangement links}
 
 \item{svalpha}{the alpha scaling of the SV lines, default = 0.5}
+
+\item{svwidth}{width of rearrangement connections}
 }
 \value{
 ggplot2 plot

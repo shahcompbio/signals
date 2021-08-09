@@ -32,6 +32,12 @@ plotHeatmap(
   raster_quality = 10,
   SV = NULL,
   seed = NULL,
+  nticks = 4,
+  fillgenome = FALSE,
+  annotation_height = NULL,
+  annofontsize = 14,
+  na_col = "white",
+  linkheight = 5,
   ...
 )
 }
@@ -80,7 +86,15 @@ plotHeatmap(
 
 \item{SV}{sv data frame}
 
-\item{seed}{seed for UMAP
+\item{seed}{seed for UMAP}
+
+\item{nticks}{number of ticks in x-axis label when plotting a single chromosome}
+
+\item{fillgenome}{fill in any missing bins and add NA to centromeric regions}
+
+\item{na_col}{colour of NA values}
+
+\item{linkheight}{height of x-axis ticks
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 
