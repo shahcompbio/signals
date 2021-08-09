@@ -164,10 +164,10 @@ callalleleHMMcell <- function(CNBAF,
                                       rho = 0.0,
                                       Abias = 0.0,
                                       viterbiver = "cpp") {
-  
+
   chr <- start <- cell_id <- state_min <- Maj <- Min <- state <- state_AS <- NULL
   state_AS_phased <- LOH <- phase <- state_BAF <- state_phase <- NULL
-  
+
   minor_cn <- seq(0, maxCN, 1)
 
   if (progressbar == TRUE) {
@@ -1072,7 +1072,7 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9, ncells = 1) {
 
       # find the average phase across these cells
       coords$averagephase <- apply(phasemat %>%
-        dplyr::select(-chr, -start, -end, -width), 1, schnapps::Mode)
+        dplyr::select(-chr, -start, -end, -width), 1, Mode)
 
       # find switches
       coords <- coords %>%
@@ -1119,10 +1119,10 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9, ncells = 1) {
 #'
 #' @md
 #' @export
-rephasebins <- function(cn, 
-                        chromosomes = NULL, 
-                        method = "mindist", 
-                        whole_chr_cutoff = 0.9, 
+rephasebins <- function(cn,
+                        chromosomes = NULL,
+                        method = "mindist",
+                        whole_chr_cutoff = 0.9,
                         ncells = 1,
                         clusterfirst = FALSE,
                         cl = NULL) {
@@ -1145,15 +1145,15 @@ rephasebins <- function(cn,
     if (clusterfirst){
       if (is.null(cl)){
         ncells <- length(unique(cndat$cell_id))
-        cl <- umap_clustering(cndat, 
-                              minPts = max(round(0.05 * ncells), 2), 
+        cl <- umap_clustering(cndat,
+                              minPts = max(round(0.05 * ncells), 2),
                               field = "copy")
         cl <- cl$clustering
       }
       cndatclone <- consensuscopynumber(cndat, cl = cl)
       phase_df <- phasing_minevents(cndatclone, chromosomes)
     } else {
-      phase_df <- phasing_minevents(cndat, chromosomes) 
+      phase_df <- phasing_minevents(cndat, chromosomes)
     }
   } else if (method == "LOH") {
     phase_df <- phasing_LOH(cndat,
@@ -1162,7 +1162,7 @@ rephasebins <- function(cn,
       ncells = ncells
     )
   }
-  
+
   #switch the bins
   newhscn <- switchbins(cndat, phase_df)
 
@@ -1181,13 +1181,13 @@ rephasebins <- function(cn,
 
 #' @export
 switchbins <- function(cn, phase_df){
-  
+
   if (is.hscn(cn)) {
     cndat <- cn$data
   } else {
     cndat <- cn
   }
-  
+
   newhscn <- as.data.table(cndat)[as.data.table(phase_df %>% dplyr::select(chr, start, end, phasing)),
                                   on = c("chr", "start", "end")
                                   ] %>%
@@ -1200,9 +1200,9 @@ switchbins <- function(cn, phase_df){
     )] %>%
     .[, BAF := alleleB / totalcounts] %>%
     add_states()
-  
+
   newhscn <- newhscn[, phasing := NULL]
-  
+
   if (is.hscn(cn)) {
     cn$haplotype_phasing <-
       rephasehaplotypes(phase_df, cn$haplotype_phasing) %>% as.data.frame()
@@ -1212,6 +1212,6 @@ switchbins <- function(cn, phase_df){
   } else {
     x <- newhscn
   }
-  
+
   return(x)
 }
