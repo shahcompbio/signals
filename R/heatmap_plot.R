@@ -854,6 +854,7 @@ getSVlegend <- function(include = NULL) {
 #' @param fillgenome fill in any missing bins and add NA to centromeric regions
 #' @param na_col colour of NA values
 #' @param linkheight height of x-axis ticks
+#' @param newlegendname overwrite default legend name
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #'
@@ -899,6 +900,7 @@ plotHeatmap <- function(cn,
                         annofontsize = 14,
                         na_col = "white",
                         linkheight = 5,
+                        newlegendname = NULL,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -981,6 +983,10 @@ plotHeatmap <- function(cn,
   if (plotcol == "state_phase") {
     colvals <- cn_colours_phase
     legendname <- "Allelic Imbalance"
+  }
+  
+  if (!is.null(newlegendname)){
+    legendname <- newlegendname
   }
 
   ncells <- length(unique(CNbins$cell_id))
