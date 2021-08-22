@@ -1,3 +1,9 @@
+# schnapps 0.4.0
+
+* Add option to filter haplotypes
+* Added Dockerfile and github actions to push to Dockerhub
+* Added QC metadata table to output
+
 # schnapps 0.3.0
 
 * Version associated with preprint
