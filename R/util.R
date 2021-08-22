@@ -563,8 +563,8 @@ qc_per_cell <- function(cn){
     dplyr::group_by(cell_id) %>% 
     dplyr::summarize(nsegments = dplyr::n() - 22)
   
-  qc <- left_join(qc, pl, by = "cell_id") %>% 
-    left_join(., nsegs, by = "cell_id") %>% 
+  qc <- dplyr::left_join(qc, pl, by = "cell_id") %>% 
+    dplyr::left_join(., nsegs, by = "cell_id") %>% 
     as.data.frame()
   return(qc)
 }
