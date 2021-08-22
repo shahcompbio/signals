@@ -237,7 +237,7 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = NULL) {
   chr <- hap_label <- NULL
   nhaps_vec <- c()
   prop_vec <- c()
-  prop <- seq(0.05, 1.0, 0.05)
+  prop <- c(0.005, 0.01, 0.02, 0.03, 0.04, seq(0.05, 1.0, 0.05))
   mycells <- unique(haplotypes$cell_id)
   ncells <- length(mycells)
   haplotype_counts <- as.data.table(haplotypes) %>%
@@ -267,6 +267,7 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = NULL) {
 
   if (is.null(mincells)) {
     mincells <- round(0.01 * length(unique(mycells)))
+    mincells <- max(mincells, 10)
   }
 
   ncells_forclustering <- max(ncells_forclustering, mincells)
@@ -519,6 +520,20 @@ fitBB <- function(ascn) {
   return(bbfit)
 }
 
+filter_haplotypes <- function(haplotypes){
+  haplotypes <- as.data.table(haplotypes)
+  nhaps <- dim(haplotypes)[1]
+  total_cells <- length(unique(haplotypes$cell_id))
+  haplotypes <- haplotypes %>% 
+    .[, ncells := length(unique(cell_id)), by = .(chr, start, end, hap_label)] %>% 
+    .[, fcells := ncells / total_cells] %>% 
+    .[fcells > 0.1]
+  haplotypes <- haplotypes[, c("fcells", "ncells") := NULL]
+  fracretained <- round(dim(haplotypes)[1] / nhaps, 3)
+  message(paste0("Fraction of haplotypes retained after filtering = ", fracretained))
+  return(haplotypes)
+}
+
 
 #' Call haplotype specific copy number in single cell datasets
 #'
@@ -581,8 +596,9 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     clustering_method = "copy",
                                     maxloherror = 0.035,
                                     overwritemincells = NULL,
-                                    cluster_per_chr = FALSE,
-                                    viterbiver = "cpp") {
+                                    cluster_per_chr = TRUE,
+                                    viterbiver = "cpp", 
+                                    filterhaplotypes = TRUE) {
   if (!clustering_method %in% c("copy", "breakpoints")) {
     stop("Clustering method must be one of copy or breakpoints")
   }
@@ -604,7 +620,10 @@ callHaplotypeSpecificCN <- function(CNbins,
   if (is.null(maxCN)) {
     maxCN <- max(CNbins$state)
   }
-
+  
+  if (filterhaplotypes){
+    haplotypes <- filter_haplotypes(haplotypes)
+  }
 
   cnbaf <- combineBAFCN(
     haplotypes = haplotypes,
@@ -699,6 +718,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   out[["eps"]] <- eps
   out[["likelihood"]] <- bbfit
   out[["qc_summary"]] <- qc_summary(hscn_data)
+  out[["qc_per_cell"]] <- qc_per_cell(hscn_data)
   out[["haplotype_phasing"]] <- phased_haplotypes
 
   out <- fix_assignments(out)
@@ -919,6 +939,7 @@ fix_assignments <- function(hscn) {
 
   hscn[["data"]] <- hscn_data %>% as.data.frame()
   hscn[["qc_summary"]] <- qc_summary(hscn_data)
+  hscn[["qc_per_cell"]] <- qc_per_cell(hscn_data)
   return(hscn)
 }
 
