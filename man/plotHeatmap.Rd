@@ -38,6 +38,7 @@ plotHeatmap(
   annofontsize = 14,
   na_col = "white",
   linkheight = 5,
+  newlegendname = NULL,
   ...
 )
 }
@@ -94,7 +95,9 @@ plotHeatmap(
 
 \item{na_col}{colour of NA values}
 
-\item{linkheight}{height of x-axis ticks
+\item{linkheight}{height of x-axis ticks}
+
+\item{newlegendname}{overwrite default legend name
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 
