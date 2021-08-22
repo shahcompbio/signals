@@ -45,6 +45,8 @@ umap_clustering <- function(CNbins,
     umap2 = umapresults$embedding[, 2],
     cell_id = row.names(cnmatrix)
   )
+  dfumap$umap1 <- unlist(lapply(dfumap$umap1, function(x) ifelse(!is.finite(x), 0.0, x))) # remove non finite values
+  dfumap$umap2 <- unlist(lapply(dfumap$umap2, function(x) ifelse(!is.finite(x), 0.0, x))) # remove non finite values
   rownames(dfumap) <- row.names(cnmatrix)
 
   message("Clustering cells using hdbscan...")
@@ -61,7 +63,7 @@ umap_clustering <- function(CNbins,
     if (class(hdbscanresults) == "try-error") {
       message("Only 1 cluster found, reducing minPts size by 10...")
       minPts <- round(minPts - 10)
-      if (minPts < 0) {
+      if (minPts <= 0) {
         message("Only 1 cluster can be found")
         gentree <- TRUE
       }
