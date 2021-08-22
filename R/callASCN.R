@@ -394,6 +394,7 @@ callAlleleSpecificCN <- function(CNbins,
   out[["loherror"]] <- infloherror
   out[["likelihood"]] <- bbfit
   out[["qc_summary"]] <- qc_summary(alleleCN)
+  out[["qc_per_cell"]] <- qc_per_cell(alleleCN)
 
   return(out)
 }

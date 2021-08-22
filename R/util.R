@@ -526,6 +526,50 @@ qc_summary <- function(cn) {
 }
 
 #' @export
+qc_per_cell <- function(cn){
+  
+  if (is.hscn(cn) | is.ascn(cn)) {
+    cn <- cn$data
+  } else {
+    cn <- cn
+  }
+  
+  qc <- cn %>%
+    dplyr::filter(state_AS_phased != "0|0") %>%
+    dplyr::group_by(state_AS_phased, Min, Maj, cell_id) %>%
+    dplyr::mutate(n = dplyr::n()) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(frac = n / dplyr::n()) %>%
+    dplyr::filter(n > 10) %>%
+    dplyr::group_by(state_AS_phased, Min, Maj, n, frac, cell_id) %>%
+    dplyr::summarise(
+      medianBAF = median(BAF, na.rm = TRUE),
+      meanBAF = mean(BAF, na.rm = TRUE),
+      # modeBAF = densmode(BAF),
+      high95 = quantile(BAF, 0.975, na.rm = TRUE),
+      low95 = quantile(BAF, 0.025, na.rm = TRUE)
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(expBAF = Min / (Min + Maj)) %>%
+    dplyr::mutate(distance = sqrt((expBAF - medianBAF)^2)) %>%
+    dplyr::group_by(cell_id) %>% 
+    dplyr::summarize(average_distance = weighted.mean(distance, frac)) %>% 
+    as.data.frame(.)
+  
+  pl <- cn %>% as.data.table() %>% .[!chr %in% c("X", "Y"), list(ploidy = Mode(state)), by = "cell_id"]
+  
+  nsegs <- create_segments(cn) %>% 
+    dplyr::filter(!chr %in% c("X", "Y")) %>% 
+    dplyr::group_by(cell_id) %>% 
+    dplyr::summarize(nsegments = dplyr::n() - 22)
+  
+  qc <- left_join(qc, pl, by = "cell_id") %>% 
+    left_join(., nsegs, by = "cell_id") %>% 
+    as.data.frame()
+  return(qc)
+}
+
+#' @export
 per_arm_baf_mat <- function(haps,
                             mergelowcounts = TRUE,
                             mincounts = 10,

@@ -20,6 +20,8 @@ print.hscn <- function(x, ...) {
     cat(paste0("\t Tarones Z score: ", round(x$likelihood$taronesZ, 3), "\n"))
   }
   cat(paste0("Average distance from median to expected BAF = ", round(x$qc_summary$summary, 4), " \n"))
+  cat(paste0("Average ploidy = ", round(mean(x$qc_per_cell$ploidy, 2))))
+  cat(paste0("Average number of segments = ", round(mean(x$qc_per_cell$nsegments, 2))))
 }
 
 #' @export
@@ -35,6 +37,9 @@ print.ascn <- function(x, ...) {
     cat(paste0("\t Tarones Z score: ", round(x$likelihood$taronesZ, 3), "\n"))
   }
   cat(paste0("Average distance from median to expected BAF = ", round(x$qc_summary$summary, 4), " \n"))
+  cat(paste0("Average distance from median to expected BAF = ", round(x$qc_summary$summary, 4), " \n"))
+  cat(paste0("Average ploidy = ", round(mean(x$qc_per_cell$ploidy, 2))))
+  cat(paste0("Average number of segments = ", round(mean(x$qc_per_cell$nsegments, 2))))
 }
 
 #' @export

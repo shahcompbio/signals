@@ -22,8 +22,9 @@ callHaplotypeSpecificCN(
   clustering_method = "copy",
   maxloherror = 0.035,
   overwritemincells = NULL,
-  cluster_per_chr = FALSE,
-  viterbiver = "cpp"
+  cluster_per_chr = TRUE,
+  viterbiver = "cpp",
+  filterhaplotypes = TRUE
 )
 }
 \arguments{
