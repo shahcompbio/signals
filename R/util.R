@@ -556,7 +556,9 @@ qc_per_cell <- function(cn){
     dplyr::summarize(average_distance = weighted.mean(distance, frac)) %>% 
     as.data.frame(.)
   
-  pl <- cn %>% as.data.table() %>% .[!chr %in% c("X", "Y"), list(ploidy = Mode(state)), by = "cell_id"]
+  pl <- cn %>% as.data.table() %>% .[!chr %in% c("X", "Y"), 
+                                     list(ploidy = Mode(state), totalhapcounts = sum(totalcounts)), 
+                                     by = "cell_id"]
   
   nsegs <- create_segments(cn) %>% 
     dplyr::filter(!chr %in% c("X", "Y")) %>% 
@@ -955,4 +957,25 @@ BAFdistance <- function(cn) {
     .[, list(BAF_distance = mean(dist, na.rm = T)), by = c("cell_id", "chr")]
 
   return(celldist)
+}
+
+#' @export
+filtercn <- function(cn, 
+                     average_distance_filt = 0.1, 
+                     ploidy_filt = NULL, 
+                     totalcounts_filt = 0, 
+                     nsegments_filt = 0){
+  qcnew <- dplyr::filter(qc, average_distance >= average_distance_filt,
+                             totalcounts >= totalcounts_filt,
+                              nsegments >= nsegments_filt)
+  if (!is.null(ploidy_filt)){
+    qcnew <- dplyr::filter(qcnew, ploidy == ploidy_filt)
+  }
+  
+  cells <- qcnew$cell_id
+  cn$data <- cn$data %>% 
+    dplyr::filter(cell_id %in% cells)
+  cn$qc_summary <- qc_summary(cn)
+  
+  return(cn)
 }
