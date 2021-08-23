@@ -10,6 +10,9 @@ HaplotypeHMM <- function(n,
                          rho = 0.0,
                          Abias = 0.0,
                          viterbiver = "cpp") {
+  
+  #hack to avoid 0/0 numerical errors
+  binstates[binstates == 0] <- 1
   minor_cn_mat <- t(replicate(length(binstates), minor_cn))
   total_cn_mat <- replicate(length(minor_cn), binstates)
 
@@ -115,7 +118,7 @@ callalleleHMMcell <- function(CNBAF,
                               minor_cn,
                               eps = 1e-12,
                               loherror = 0.02,
-                              selftransitionprob = 0.999) {
+                              selftransitionprob = 0.99) {
   minorcn_res <- c()
   for (mychr in unique(CNBAF$chr)) {
     hmmresults <- HaplotypeHMM(
@@ -588,7 +591,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     progressbar = TRUE,
                                     ncores = 1,
                                     phasebyarm = FALSE,
-                                    minfrac = 0.8,
+                                    minfrac = 0.9,
                                     likelihood = "binomial",
                                     minbins = 100,
                                     minbinschr = 10,
