@@ -1,3 +1,8 @@
+# schnapps 0.4.1
+
+* Fix bug in HMM when total copy number = 0
+* Add function to filter hscn object
+
 # schnapps 0.4.0
 
 * Add option to filter haplotypes
