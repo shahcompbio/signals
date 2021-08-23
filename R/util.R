@@ -965,7 +965,7 @@ filtercn <- function(cn,
                      ploidy_filt = NULL, 
                      totalcounts_filt = 0, 
                      nsegments_filt = 0){
-  qcnew <- dplyr::filter(qc, average_distance >= average_distance_filt,
+  qcnew <- dplyr::filter(cn$qc_per_cell, average_distance >= average_distance_filt,
                              totalcounts >= totalcounts_filt,
                               nsegments >= nsegments_filt)
   if (!is.null(ploidy_filt)){
@@ -976,6 +976,7 @@ filtercn <- function(cn,
   cn$data <- cn$data %>% 
     dplyr::filter(cell_id %in% cells)
   cn$qc_summary <- qc_summary(cn)
+  cn$qc_per_cell <- qcnew
   
   return(cn)
 }
