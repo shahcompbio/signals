@@ -1,3 +1,7 @@
+# schnapps 0.4.2
+
+* fix bug with filtering
+
 # schnapps 0.4.1
 
 * Fix bug in HMM when total copy number = 0
