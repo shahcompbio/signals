@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">schnapps</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.4.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.0</span>
       </span>
     </div>
 
@@ -139,13 +139,14 @@
   eps <span class='op'>=</span> <span class='fl'>0.000000000001</span>,
   loherror <span class='op'>=</span> <span class='fl'>0.02</span>,
   maxCN <span class='op'>=</span> <span class='cn'>NULL</span>,
-  selftransitionprob <span class='op'>=</span> <span class='fl'>0.999</span>,
+  selftransitionprob <span class='op'>=</span> <span class='fl'>0.95</span>,
   progressbar <span class='op'>=</span> <span class='cn'>TRUE</span>,
   ncores <span class='op'>=</span> <span class='fl'>1</span>,
   likelihood <span class='op'>=</span> <span class='st'>"binomial"</span>,
   minbins <span class='op'>=</span> <span class='fl'>100</span>,
   minbinschr <span class='op'>=</span> <span class='fl'>10</span>,
-  maxloherror <span class='op'>=</span> <span class='fl'>0.03</span>
+  maxloherror <span class='op'>=</span> <span class='fl'>0.03</span>,
+  filterhaplotypes <span class='op'>=</span> <span class='cn'>TRUE</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -153,11 +154,11 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>CNbins</th>
-      <td><p>single cell copy number dataframe with the following columns: <code>cell_id</code>, <code>chr</code>, <code>start</code>, <code>end</code>, <code>state</code>, <code>copy</code></p></td>
+      <td><p>single cell copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`</p></td>
     </tr>
     <tr>
       <th>haplotypes</th>
-      <td><p>single cell haplotypes dataframe with the following columns: <code>cell_id</code>, <code>chr</code>, <code>start</code>, <code>end</code>, <code>hap_label</code>, <code>allele1</code>, <code>allele0</code>, <code>totalcounts</code></p></td>
+      <td><p>single cell haplotypes dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `hap_label`, `allele1`, `allele0`, `totalcounts`</p></td>
     </tr>
     <tr>
       <th>eps</th>
@@ -185,7 +186,7 @@
     </tr>
     <tr>
       <th>likelihood</th>
-      <td><p>Likelihood model for HMM, default is <code>binomial</code>, other option is <code>betabinomial</code> or use <code>auto</code> and the algorithm will choose the likelihood that best fits the data.</p></td>
+      <td><p>Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.</p></td>
     </tr>
     <tr>
       <th>minbins</th>
@@ -203,33 +204,18 @@
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p><ul>
-<li><p><code>Maj</code> (Major allele copy number)</p></li>
-<li><p><code>Min</code> (Minor allele copy number)</p></li>
-<li><p><code>state_AS_phased</code> (phased state of the form Maj|Min )</p></li>
-<li><p><code>state_AS</code> (mirrored state of the form Maj|Min)</p></li>
-<li><p><code>LOH</code> (is bin LOH or not)</p></li>
-<li><p><code>state_phase</code> (state describing which is the dominant allele and whether it is LOH or not)</p></li>
-<li><p><code>state_BAF</code> (binned discretized BAF value calculated as Min / (Maj + Min))</p></li>
-</ul>
-
+    <p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p>
+<p>* `Maj` (Major allele copy number)
+* `Min` (Minor allele copy number)
+* `state_AS_phased` (phased state of the form Maj|Min )
+* `state_AS` (mirrored state of the form Maj|Min)
+* `LOH` (is bin LOH or not)
+* `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
+* `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>In the allele specific copy number inference Maj is always &gt; Min and state_AS_phased == state_AS</p>
 
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='va'>sim_data</span> <span class='op'>&lt;-</span> <span class='fu'>simulate_data_cohort</span><span class='op'>(</span>
-  clone_num <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>20</span>, <span class='fl'>20</span><span class='op'>)</span>,
-  clonal_events <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span>
-    <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='st'>"1"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2</span>, <span class='fl'>0</span><span class='op'>)</span>, <span class='st'>"5"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>3</span>, <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>,
-    <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='st'>"2"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>6</span>, <span class='fl'>3</span><span class='op'>)</span>, <span class='st'>"3"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>0</span><span class='op'>)</span><span class='op'>)</span>
-  <span class='op'>)</span>,
-  loherror <span class='op'>=</span> <span class='fl'>0.02</span>,
-  coverage <span class='op'>=</span> <span class='fl'>30</span>
-<span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='message'>Joining, by = c("chr", "start", "end", "hap_label")</span></div><div class='input'>
-<span class='va'>results</span> <span class='op'>&lt;-</span> <span class='fu'>callAlleleSpecificCN</span><span class='op'>(</span><span class='va'>sim_data</span><span class='op'>$</span><span class='va'>CNbins</span>, <span class='va'>sim_data</span><span class='op'>$</span><span class='va'>haplotypes</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='message'>Finding overlapping cell IDs between CN data and haplotype data...</span></div><div class='output co'>#&gt; <span class='message'>Total number of cells in both CN and haplotypes: 40</span></div><div class='output co'>#&gt; <span class='message'>Number of cells in CN data: 40</span></div><div class='output co'>#&gt; <span class='message'>Number of cells in haplotype data: 40</span></div><div class='output co'>#&gt; <span class='message'>Reformatting haplotypes</span></div><div class='output co'>#&gt; <span class='message'>Phase haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Phasing based on distribution across all cells</span></div><div class='output co'>#&gt; <span class='message'>Join phased haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Reorder haplotypes based on phase...</span></div><div class='output co'>#&gt; <span class='message'>Joining bins and haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Calculate BAF per bin...</span></div><div class='output co'>#&gt; <span class='message'>Total number of cells after removing cells with &lt; 100 bins: 40</span></div><div class='output co'>#&gt; <span class='message'>Initial assignment...</span></div><div class='output co'>#&gt; <span class='message'>Rerun using mirrored BAF...</span></div><div class='output co'>#&gt; <span class='message'>Average distance from median to expected BAF = 0.0077</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
