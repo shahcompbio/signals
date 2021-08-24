@@ -1,3 +1,7 @@
+# schnapps 0.4.3
+
+* filtering utility function
+
 # schnapps 0.4.2
 
 * fix bug with filtering
