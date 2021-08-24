@@ -191,32 +191,20 @@ switch_alleles <- function(cn) {
 #' @details
 #' In the allele specific copy number inference Maj is always > Min and state_AS_phased == state_AS
 #'
-#' @examples
-#' sim_data <- simulate_data_cohort(
-#'   clone_num = c(20, 20),
-#'   clonal_events = list(
-#'     list("1" = c(2, 0), "5" = c(3, 1)),
-#'     list("2" = c(6, 3), "3" = c(1, 0))
-#'   ),
-#'   loherror = 0.02,
-#'   coverage = 30
-#' )
-#'
-#' results <- callAlleleSpecificCN(sim_data$CNbins, sim_data$haplotypes)
-#' @md
 #' @export
 callAlleleSpecificCN <- function(CNbins,
                                  haplotypes,
                                  eps = 1e-12,
                                  loherror = 0.02,
                                  maxCN = NULL,
-                                 selftransitionprob = 0.999,
+                                 selftransitionprob = 0.95,
                                  progressbar = TRUE,
                                  ncores = 1,
                                  likelihood = "binomial",
                                  minbins = 100,
                                  minbinschr = 10,
-                                 maxloherror = 0.03) {
+                                 maxloherror = 0.03,
+                                 filterhaplotypes = TRUE) {
   if (!likelihood %in% c("binomial", "betabinomial", "auto")) {
     stop("Likelihood model for HMM emission model must
          be one of binomial, betabinomial or auto",
@@ -235,6 +223,10 @@ callAlleleSpecificCN <- function(CNbins,
 
   if (is.null(maxCN)) {
     maxCN <- max(CNbins$state)
+  }
+  
+  if (filterhaplotypes){
+    haplotypes <- filter_haplotypes(haplotypes)
   }
 
   CNBAF <- combineBAFCN(haplotypes = haplotypes, CNbins = CNbins)
@@ -396,5 +388,164 @@ callAlleleSpecificCN <- function(CNbins,
   out[["qc_summary"]] <- qc_summary(alleleCN)
   out[["qc_per_cell"]] <- qc_per_cell(alleleCN)
 
+  return(out)
+}
+
+
+
+#' Call allele specific copy number in single cell datasets
+#'
+#' @param hscn hscn object from callHaplotypeSpecificCN
+#' @param eps default 1e-12
+#' @param maxCN maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins
+#' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model
+#' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
+#' @param ncores Number of cores to use, default = 1
+#'
+#' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
+#'
+#' * `Maj` (Major allele copy number)
+#' * `Min` (Minor allele copy number)
+#' * `state_AS_phased` (phased state of the form Maj|Min )
+#' * `state_AS` (mirrored state of the form Maj|Min)
+#' * `LOH` (is bin LOH or not)
+#' * `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
+#' * `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))
+#'
+#' @details
+#' In the allele specific copy number inference Maj is always > Min and state_AS_phased == state_AS
+#'
+#' @export
+callAlleleSpecificCNfromHSCN <- function(hscn,
+                                 eps = 1e-12,
+                                 maxCN = NULL,
+                                 selftransitionprob = 0.95,
+                                 progressbar = TRUE,
+                                 ncores = 1) {
+  
+  likelihood <- hscn$likelihood$likelihood
+  
+  if (likelihood == "betabinomial" | likelihood == "auto") {
+    if (!requireNamespace("VGAM", quietly = TRUE)) {
+      stop("Package \"VGAM\" needed to use the
+           beta-binomial model. Please install it.",
+           call. = FALSE
+      )
+    }
+  }
+  
+  if (is.null(maxCN)) {
+    maxCN <- max(hscn$data$state)
+  }
+  
+  infloherror <- hscn$loherror
+  
+  CNBAF <- switch_alleles(hscn$data)
+  minor_cn <- seq(0, maxCN, 1)
+  
+  message("Rerun using mirrored BAF...")
+  
+  if (progressbar == TRUE) {
+    pb <- dplyr::progress_estimated(length(unique(CNBAF$cell_id)), min_time = 1)
+  } else {
+    pb <- NULL
+  }
+  
+  if (ncores > 1) {
+    alleleCN <- data.table::rbindlist(parallel::mclapply(unique(CNBAF$cell_id),
+                                                         function(cell) {
+                                                           assignalleleHMM(dplyr::filter(CNBAF, cell_id == cell),
+                                                                           minor_cn,
+                                                                           eps = eps,
+                                                                           loherror = infloherror,
+                                                                           selftransitionprob = selftransitionprob,
+                                                                           likelihood = hscn$likelihood$likelihood,
+                                                                           rho = hscn$likelihood$rho,
+                                                                           pb = pb
+                                                           )
+                                                         },
+                                                         mc.cores = ncores
+    )) %>%
+      .[order(cell_id, chr, start)]
+  } else {
+    alleleCN <- data.table::rbindlist(lapply(
+      unique(CNBAF$cell_id),
+      function(cell) {
+        assignalleleHMM(dplyr::filter(CNBAF, cell_id == cell),
+                        minor_cn,
+                        eps = eps,
+                        loherror = infloherror,
+                        likelihood = hscn$likelihood$likelihood,
+                        rho = hscn$likelihood$rho,
+                        selftransitionprob = selftransitionprob,
+                        pb = pb
+        )
+      }
+    )) %>%
+      .[order(cell_id, chr, start)]
+  }
+  
+  alleleCN <- alleleCN %>%
+    .[, Maj1 := state - state_min] %>%
+    .[, Min1 := state_min] %>%
+    # catch edge cases where Min > Maj:
+    .[, Min := fifelse(Min1 > Maj1, Maj1, Min1)] %>%
+    .[, Maj := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
+    .[, Maj1 := NULL] %>%
+    .[, Min1 := NULL] %>%
+    # catch edge cases of 0|1 and 1|0 states:
+    .[, state_min := Min] %>% 
+    .[, state_min := fifelse(state_min < 0, 0, state_min)] %>%
+    .[, Maj := state - state_min] %>%
+    .[, Min := state_min] %>%
+    .[, Min := fifelse(Min < 0, 0, Min)] %>%
+    .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
+    .[, Min := fifelse(Min > state, state, Min)] %>%
+    .[, Maj := fifelse(Maj > state, state, Maj)] %>%
+    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
+    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
+    .[, state_min := pmin(Maj, Min)] %>%
+    .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
+    .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
+    .[, phase := c("Balanced", "A", "B")[1 +
+                                           1 * ((Min < Maj)) +
+                                           2 * ((Min > Maj))]] %>%
+    .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
+                                                                                 1 * ((Min < Maj) & (Min != 0)) +
+                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
+                                                                                 3 * ((Min < Maj) & (Min == 0)) +
+                                                                                 4 * ((Min > Maj) & (Maj == 0))]] %>%
+    .[order(cell_id, chr, start)] %>%
+    .[, state_BAF := round((Min / state) / 0.1) * 0.1] %>%
+    .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
+  
+  # mirror BAF
+  alleleCN <- alleleCN[, switch := data.table::fifelse(
+    Min > Maj,
+    "switch",
+    "stick"
+  )] %>%
+    .[, alleleB := totalcounts - alleleA] %>%
+    .[, origBAF := BAF] %>% 
+    .[, distA := abs(BAF - (Min / state))] %>%
+    .[, distB := abs(BAF - (Maj / state))] %>%
+    .[, switch := fifelse((distB < distA) & (BAF != 0.5), "switch", "stick")] %>%
+    .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
+    .[, alleleB := totalcounts - alleleA] %>%
+    .[, BAF := alleleB / (totalcounts)] %>%
+    .[, switch := NULL] %>%
+    .[, distA := NULL] %>%
+    .[, distB := NULL]
+  
+  # Output
+  out <- list()
+  class(out) <- "ascn"
+  
+  out[["data"]] <- as.data.frame(alleleCN)
+  out[["loherror"]] <- infloherror
+  out[["likelihood"]] <- hscn$bbfit
+  out[["qc_summary"]] <- qc_summary(alleleCN)
+  out[["qc_per_cell"]] <- qc_per_cell(alleleCN)
+  
   return(out)
 }
