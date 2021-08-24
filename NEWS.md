@@ -1,3 +1,7 @@
+# schnapps 0.5.0
+
+* update ascn inference
+
 # schnapps 0.4.3
 
 * filtering utility function
