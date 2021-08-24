@@ -10,19 +10,20 @@ callAlleleSpecificCN(
   eps = 0.000000000001,
   loherror = 0.02,
   maxCN = NULL,
-  selftransitionprob = 0.999,
+  selftransitionprob = 0.95,
   progressbar = TRUE,
   ncores = 1,
   likelihood = "binomial",
   minbins = 100,
   minbinschr = 10,
-  maxloherror = 0.03
+  maxloherror = 0.03,
+  filterhaplotypes = TRUE
 )
 }
 \arguments{
-\item{CNbins}{single cell copy number dataframe with the following columns: \code{cell_id}, \code{chr}, \code{start}, \code{end}, \code{state}, \code{copy}}
+\item{CNbins}{single cell copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`}
 
-\item{haplotypes}{single cell haplotypes dataframe with the following columns: \code{cell_id}, \code{chr}, \code{start}, \code{end}, \code{hap_label}, \code{allele1}, \code{allele0}, \code{totalcounts}}
+\item{haplotypes}{single cell haplotypes dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `hap_label`, `allele1`, `allele0`, `totalcounts`}
 
 \item{eps}{default 1e-12}
 
@@ -36,7 +37,7 @@ callAlleleSpecificCN(
 
 \item{ncores}{Number of cores to use, default = 1}
 
-\item{likelihood}{Likelihood model for HMM, default is \code{binomial}, other option is \code{betabinomial} or use \code{auto} and the algorithm will choose the likelihood that best fits the data.}
+\item{likelihood}{Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.}
 
 \item{minbins}{Minimum number of bins containing both haplotype counts and copy number data for a cell to be included}
 
@@ -46,32 +47,18 @@ callAlleleSpecificCN(
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include
-\itemize{
-\item \code{Maj} (Major allele copy number)
-\item \code{Min} (Minor allele copy number)
-\item \code{state_AS_phased} (phased state of the form Maj|Min )
-\item \code{state_AS} (mirrored state of the form Maj|Min)
-\item \code{LOH} (is bin LOH or not)
-\item \code{state_phase} (state describing which is the dominant allele and whether it is LOH or not)
-\item \code{state_BAF} (binned discretized BAF value calculated as Min / (Maj + Min))
-}
+
+* `Maj` (Major allele copy number)
+* `Min` (Minor allele copy number)
+* `state_AS_phased` (phased state of the form Maj|Min )
+* `state_AS` (mirrored state of the form Maj|Min)
+* `LOH` (is bin LOH or not)
+* `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
+* `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))
 }
 \description{
 Call allele specific copy number in single cell datasets
 }
 \details{
 In the allele specific copy number inference Maj is always > Min and state_AS_phased == state_AS
-}
-\examples{
-sim_data <- simulate_data_cohort(
-  clone_num = c(20, 20),
-  clonal_events = list(
-    list("1" = c(2, 0), "5" = c(3, 1)),
-    list("2" = c(6, 3), "3" = c(1, 0))
-  ),
-  loherror = 0.02,
-  coverage = 30
-)
-
-results <- callAlleleSpecificCN(sim_data$CNbins, sim_data$haplotypes)
 }
