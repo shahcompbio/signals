@@ -1391,3 +1391,19 @@ plot_variance_state <- function(hscn, by_allele_specific_state = FALSE) {
 
   return(plot_var)
 }
+
+#' @export
+plot_clusters_used_for_phasing <- function(hscn){
+  myplots <- list()
+  for (mychr in gtools::mixedsort(names(hscn$phasing))){
+    cells <- hscn$phasing[[mychr]]
+    myplots[[mychr]] <- hscn$data %>% 
+      dplyr::filter(cell_id %in% cells) %>% 
+      consensuscopynumber(.) %>% 
+      dplyr::mutate(cell_id = paste0("chr ", mychr)) %>% 
+      plotCNprofileBAF(, chrfilt = mychr, legend.position = "none")
+  }
+  
+  g <- cowplot::plot_grid(plotlist = myplots, ncol = 6)
+  return(g)
+}

@@ -236,12 +236,16 @@ callalleleHMMcell <- function(CNBAF,
   return(as.data.frame(alleleCN))
 }
 
-min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = NULL) {
+min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = 5) {
   chr <- hap_label <- NULL
   nhaps_vec <- c()
   prop_vec <- c()
   prop <- c(0.005, 0.01, 0.02, 0.03, 0.04, seq(0.05, 1.0, 0.05))
   mycells <- unique(haplotypes$cell_id)
+  prop <- c(5 / length(mycells), 6 / length(mycells), 7 / length(mycells), 
+            8 / length(mycells), 9 / length(mycells), 10 / length(mycells), 
+            20 / length(mycells), 50 / length(mycells), prop)
+  prop <- sort(prop)
   ncells <- length(mycells)
   haplotype_counts <- as.data.table(haplotypes) %>%
     .[, list(n = .N, nfrac = .N / ncells),
@@ -264,13 +268,13 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = NULL) {
     dplyr::mutate(ncells = round(prop * length(mycells)))
 
   ncells_forclustering <- df %>%
-    dplyr::filter(nhaps > minfrachaplotypes - 0.05) %>%
+    dplyr::filter(nhaps >= minfrachaplotypes) %>%
     dplyr::filter(dplyr::row_number() == 1) %>%
     dplyr::pull(ncells)
 
   if (is.null(mincells)) {
     mincells <- round(0.01 * length(unique(mycells)))
-    mincells <- max(mincells, 10)
+    mincells <- max(mincells, 5)
   }
 
   ncells_forclustering <- max(ncells_forclustering, mincells)
@@ -414,9 +418,11 @@ proportion_imbalance <- function(ascn,
     ncells_for_clustering <- min_cells(haplotypes,
       minfrachaplotypes = minfrachaplotypes
     )
+    propdf <- ncells_for_clustering$prop
     ncells_for_clustering <- ncells_for_clustering$ncells_forclustering
   } else {
     ncells_for_clustering <- overwritemincells
+    propdf <- NULL
   }
   message(paste0("Using ", ncells_for_clustering, " cells for clustering..."))
 
@@ -437,7 +443,7 @@ proportion_imbalance <- function(ascn,
   }
 
 
-  return(chrlist)
+  return(list(chrlist = chrlist, propdf = propdf))
 }
 
 prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE) {
@@ -527,6 +533,7 @@ filter_haplotypes <- function(haplotypes){
   haplotypes <- as.data.table(haplotypes)
   nhaps <- dim(haplotypes)[1]
   total_cells <- length(unique(haplotypes$cell_id))
+  message("Filtering out haplotypes present < 10% of cells...")
   haplotypes <- haplotypes %>% 
     .[, ncells := length(unique(cell_id)), by = .(chr, start, end, hap_label)] %>% 
     .[, fcells := ncells / total_cells] %>% 
@@ -591,7 +598,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     progressbar = TRUE,
                                     ncores = 1,
                                     phasebyarm = FALSE,
-                                    minfrac = 0.9,
+                                    minfrac = 0.85,
                                     likelihood = "binomial",
                                     minbins = 100,
                                     minbinschr = 10,
@@ -682,6 +689,8 @@ callHaplotypeSpecificCN <- function(CNbins,
       overwritemincells = overwritemincells,
       cluster_per_chr = cluster_per_chr
     )
+    propdf <- chrlist$propdf
+    chrlist <- chrlist$chrlist
     phased_haplotypes <- phase_haplotypes_bychr(
       haplotypes = haplotypes,
       chrlist = chrlist,
@@ -689,6 +698,7 @@ callHaplotypeSpecificCN <- function(CNbins,
     )
   } else {
     chrlist <- NULL
+    propdf <- NULL
   }
 
   cnbaf <- combineBAFCN(
@@ -717,12 +727,13 @@ callHaplotypeSpecificCN <- function(CNbins,
 
   out[["data"]] <- hscn_data %>% as.data.frame()
   out[["phasing"]] <- chrlist
+  out[["haplotype_phasing"]] <- phased_haplotypes
+  out[["haplotypesretained"]] <- propdf
   out[["loherror"]] <- infloherror
   out[["eps"]] <- eps
   out[["likelihood"]] <- bbfit
   out[["qc_summary"]] <- qc_summary(hscn_data)
   out[["qc_per_cell"]] <- qc_per_cell(hscn_data)
-  out[["haplotype_phasing"]] <- phased_haplotypes
 
   out <- fix_assignments(out)
 
