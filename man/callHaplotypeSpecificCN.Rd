@@ -14,7 +14,7 @@ callHaplotypeSpecificCN(
   progressbar = TRUE,
   ncores = 1,
   phasebyarm = FALSE,
-  minfrac = 0.9,
+  minfrac = 0.85,
   likelihood = "binomial",
   minbins = 100,
   minbinschr = 10,
