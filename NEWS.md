@@ -1,3 +1,7 @@
+# schnapps 0.5.1
+
+* updated default parameters
+
 # schnapps 0.5.0
 
 * update ascn inference
