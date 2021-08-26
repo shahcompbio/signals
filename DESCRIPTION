@@ -1,6 +1,6 @@
 Package: schnapps
 Title: Single Cell Haplotype copy Number Analysis through Phased Probabilistic States
-Version: 0.5.0
+Version: 0.5.1
 Author@R: c(person("Marc", "Williams", email = "marcjwilliams1@gmail.com",
                   role = c("aut", "cre")),
             person("Tyler", "Funnell",
