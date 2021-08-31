@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">schnapps</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.2</span>
       </span>
     </div>
 
@@ -101,7 +101,7 @@
 <div id="data" class="section level2">
 <h2 class="hasAnchor">
 <a href="#data" class="anchor"></a>Data</h2>
-<p>The data needed to perform the allele specific copy number inference are the binned copy number data and cell specific haplotype calls. The copy number data and the haplotype data should use the same bins.</p>
+<p>The data needed to perform the allele specific copy number inference are binned copy number data and cell specific haplotype calls. The copy number data and the haplotype data should use the same bins.</p>
 <p>A small test data set of 250 cells is provided with the package, we’ll load this data and inspect these 2 dataframe.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span>
@@ -148,40 +148,44 @@
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">ascn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-6-1.png" width="960"></p>
-<p>Now we can plot the copy number heatmaps. First we’ll plot the heatmap based on copy number states. By default the <code>plotHeatmap</code> function does some clustering using hdbscan, we’ll set a seed so we get the same clustering for each of the heatmaps below.</p>
+<p>Now we can plot the copy number heatmaps. First we’ll plot the heatmap based on copy number states. We can provide the <code>plotHeatmap</code> function with a tree in newick format to plot an ordered heatmap and/or a dataframe with cluster assignments. By default the <code>plotHeatmap</code> function does some clustering using hdbscan if neither of these is provided.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>
-<span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"state"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-7-1.png" width="960"></p>
-<p>Now we can plot some heatmaps to visualize the allele specific state. This heatmap plots the minor copy number state.</p>
+<code class="sourceCode R"><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">umap_clustering</span><span class="op">(</span><span class="va">ascn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"state_min"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, 
+            plotcol <span class="op">=</span> <span class="st">"state"</span>, 
+            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
+            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
+            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
+            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-8-1.png" width="960"></p>
-<p>Allelic imbalance:</p>
+<p>Now we can plot some heatmaps to visualize the allele specific state. This heatmap plots the minor copy number state.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"Min"</span>,
+            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
+            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
+            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
+            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-9-1.png" width="960"></p>
 <p>Discrete representation of allelic imbalance:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"state_phase"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, 
+            plotcol <span class="op">=</span> <span class="st">"state_phase"</span>, 
+            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
+            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
+            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
+            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-10-1.png" width="960"></p>
 <p>There are also some function to plot per cell BAF and state plots. You can specify a cell, or the default will take the first cell in the data frame.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">ascn</span><span class="op">)</span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-11-1.png" width="960"></p>
-<p>Here we’ll plot and equivalent plot merging across cells</p>
+<p>Here we’ll plot an equivalent plot merging data across cell clusters using the utility function <code>consensyscopynumber</code>. Here, the <code>cell_id</code> column becomes the</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span>
-<span class="va">ascn</span><span class="op">$</span><span class="va">data</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">chr</span>, <span class="va">start</span>, <span class="va">end</span><span class="op">)</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span>state <span class="op">=</span> <span class="fu">schnapps</span><span class="fu">:::</span><span class="fu">Mode</span><span class="op">(</span><span class="va">state</span><span class="op">)</span>, 
-              state_min <span class="op">=</span> <span class="fu">schnapps</span><span class="fu">:::</span><span class="fu">Mode</span><span class="op">(</span><span class="va">state_min</span><span class="op">)</span>, 
-              BAF <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">BAF</span><span class="op">)</span>, 
-              state_phase <span class="op">=</span> <span class="fu">schnapps</span><span class="fu">:::</span><span class="fu">Mode</span><span class="op">(</span><span class="va">state_phase</span><span class="op">)</span>, 
-              copy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">copy</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">ungroup</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>cell_id <span class="op">=</span> <span class="st">"Merged Cells"</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="co"># add dummy cell id</span>
-    <span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R">
+<span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">ascn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span>
+
+<span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"A"</span><span class="op">)</span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-12-1.png" width="960"></p>
 <p>The object returned by the inference function is of type <code>ascn</code>, if you want to pull out the data to use in your own scripts you can just do <code>ascn$data</code>. This will return a <code>data.frame</code> similar to the input data frames but with additional columns specifying the allele specific states.</p>
 </div>
@@ -191,62 +195,36 @@
 </h3>
 <p>Now we’ll do the analysis that phases haplotypes across cells.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, phasebyarm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></code></pre></div>
 <p>We’ll now generate the same plots as before. We can see in the BAF per state plot that we now observe states with BAF &gt; 0.5 meaning that we see different alleles gained or lost in different cells.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">hscn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-14-1.png" width="960"></p>
 <p>In the allelic imbalance heatmap we can see that some cells have gained the “B” allele and others the “A” allele resulting in imbalance spanning from 0 to 1.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>
-<span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">15</span>, plotfrequency <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-15-1.png" width="960"></p>
 <p>In the discrete version of this plot we see similar patterns.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"state_phase"</span>,
+            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
+            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
+            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
+            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering </span></code></pre></div>
+<p><img src="ASCN_files/figure-html/unnamed-chunk-15-1.png" width="960"></p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>
-<span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"state_phase"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">15</span>, plotfrequency <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"Min"</span>,
+            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
+            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
+            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
+            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering </span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-16-1.png" width="960"></p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">hscn</span><span class="op">)</span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-17-1.png" width="960"></p>
 <p>Here we’ll merge all cells and plot together.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hscn</span><span class="op">$</span><span class="va">data</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">chr</span>, <span class="va">start</span>, <span class="va">end</span><span class="op">)</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span>state <span class="op">=</span> <span class="fu">schnapps</span><span class="fu">:::</span><span class="fu">Mode</span><span class="op">(</span><span class="va">state</span><span class="op">)</span>, 
-              state_min <span class="op">=</span> <span class="fu">schnapps</span><span class="fu">:::</span><span class="fu">Mode</span><span class="op">(</span><span class="va">state_min</span><span class="op">)</span>, 
-              BAF <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">BAF</span><span class="op">)</span>, 
-              state_phase <span class="op">=</span> <span class="fu">schnapps</span><span class="fu">:::</span><span class="fu">Mode</span><span class="op">(</span><span class="va">state_phase</span><span class="op">)</span>, 
-              copy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">copy</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">ungroup</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>cell_id <span class="op">=</span> <span class="st">"Merged Cells"</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="co"># add dummy cell id</span>
-    <span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-18-1.png" width="960"></p>
-</div>
-<div id="dealing-with-noisy-data" class="section level3">
-<h3 class="hasAnchor">
-<a href="#dealing-with-noisy-data" class="anchor"></a>Dealing with noisy data</h3>
-<p>If the coverage per cell is on average low then estimating allele specific copy number can be challenging. This can result in “grainy” heatmaps, noisy cell profiles and inconsistent <code>plotBAFperstate</code> plots. One way to overcome this is to use larger bin sizes, <code>schnapps</code> provides 2 utility functions to “widen” the bins by taking an average across bins. To use this, we also need to decrease the requirements for the number of bins per chromosome.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">CNbins_wide</span> <span class="op">&lt;-</span> <span class="fu">widen_bins</span><span class="op">(</span><span class="va">CNbins</span>, binsize <span class="op">=</span> <span class="fl">2e6</span><span class="op">)</span>
-<span class="va">haplotypes_wide</span> <span class="op">&lt;-</span> <span class="fu">widen_haplotypebins</span><span class="op">(</span><span class="va">haplotypes</span>, binsize <span class="op">=</span> <span class="fl">2e6</span><span class="op">)</span>
+<code class="sourceCode R"><span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span>
 
-<span class="va">hscn_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins_wide</span>, <span class="va">haplotypes_wide</span>, minbins <span class="op">=</span> <span class="fl">10</span>, minbinschr <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">hscn_wide</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-20-1.png" width="960"></p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>
-<span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn_wide</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-21-1.png" width="960"></p>
-<p>In the discrete version of this plot we see similar patterns.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>
-<span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn_wide</span>, plotcol <span class="op">=</span> <span class="st">"state_phase"</span>, plottree <span class="op">=</span> <span class="cn">FALSE</span>, spacer_cols <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-22-1.png" width="960"></p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">hscn_wide</span><span class="op">)</span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-23-1.png" width="960"></p>
+<span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"B"</span><span class="op">)</span></code></pre></div>
+<p><img src="ASCN_files/figure-html/unnamed-chunk-18-1.png" width="960"></p>
 </div>
 </div>
   </div>
