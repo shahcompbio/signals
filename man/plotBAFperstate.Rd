@@ -9,11 +9,12 @@ plotBAFperstate(
   minpts = 250,
   minfrac = 0.01,
   maxstate = 10,
-  dens_adjust = 2
+  dens_adjust = 2,
+  mincounts = 6
 )
 }
 \arguments{
-\item{cn}{Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`}
+\item{cn}{Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`, `BAF`}
 
 \item{minpts}{minimum number of points to include default = 250}
 
@@ -21,7 +22,9 @@ plotBAFperstate(
 
 \item{maxstate}{States with total copy number > maxstate will be removed, default = 10}
 
-\item{dens_adjust}{density adjustment factor in the violin plots
+\item{dens_adjust}{density adjustment factor in the violin plots}
+
+\item{mincounts}{filter out bins < mincounts from plotting, default = 6
 
 \dontrun{
 data("haplotypes")

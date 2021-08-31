@@ -1,3 +1,4 @@
+
 cn_colours <- structure(
   c(
     "#3182BD", "#9ECAE1", "#CCCCCC", "#FDCC8A", "#FC8D59", "#E34A33",
@@ -1017,6 +1018,11 @@ plotHeatmap <- function(cn,
   }
 
   if (!is.null(clusters)) {
+    cells_clusters <- length(unique(clusters$cell_id))
+    cells_data <- length(unique(CNbins$cell_id))
+    if (cells_data != cells_clusters){
+      warning("Number of cells in clusters dataframe !=  number of cells in the bins data!")
+    }
     if (!"clone_id" %in% names(clusters)) {
       stop("No clone_id columns in clusters dataframe, you might need to rename your clusters")
     }
