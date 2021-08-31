@@ -376,8 +376,7 @@ get_cells_per_chr_global <- function(ascn,
 get_cells_per_chr_local <- function(ascn,
                                     haplotypes,
                                     ncells_for_clustering,
-                                    field = "BAF",
-                                    clustering_method = "copy",
+                                    field = "state_BAF",
                                     phasebyarm = FALSE) {
 
   # cluster cells per chromosome
@@ -390,7 +389,7 @@ get_cells_per_chr_local <- function(ascn,
       n_neighbors = 20,
       min_dist = 0.001,
       minPts = ncells_for_clustering,
-      field = "state_BAF",
+      field = field,
       umapmetric = "euclidean"
     )
     prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
@@ -398,15 +397,17 @@ get_cells_per_chr_local <- function(ascn,
         propA = round(sum(balance) / .N, 2),
         n = sum(balance),
         propModestate = sum(state == Mode(state)) / .N,
+        propLOH = sum(LOH == "LOH") / .N,
         ncells = length(unique(cell_id))
       ), by = .(chr, cell_id, clone_id)] %>%
       .[, list(
         propA = median(propA),
         n = median(n),
         propModestate = median(propModestate),
+        propLOH = median(propLOH),
         ncells = median(ncells)
       ), by = .(chr, clone_id)]
-    prop <- prop[order(propA, propModestate, n, decreasing = TRUE)]
+    prop <- prop[order(propA, propModestate, propLOH, ncells, n, decreasing = TRUE)]
     prop <- prop[prop[, .I[which.max(propA)], by = chr]$V1]
     cells <- dplyr::filter(cl$clustering, clone_id == prop$clone_id[1]) %>%
       dplyr::pull(cell_id)
@@ -421,8 +422,8 @@ proportion_imbalance <- function(ascn,
                                  haplotypes,
                                  field = "copy",
                                  phasebyarm = FALSE,
-                                 minfrachaplotypes = 0.95,
                                  clustering_method = "copy",
+                                 minfrachaplotypes = 0.95,
                                  overwritemincells = NULL,
                                  cluster_per_chr = TRUE) {
   ncells <- length(unique(ascn$cell_id))
@@ -442,8 +443,7 @@ proportion_imbalance <- function(ascn,
     chrlist <- get_cells_per_chr_local(ascn,
       haplotypes,
       ncells_for_clustering,
-      field = field,
-      clustering_method = clustering_method
+      field = field
     )
   } else {
     chrlist <- get_cells_per_chr_global(ascn,
@@ -453,7 +453,6 @@ proportion_imbalance <- function(ascn,
       clustering_method = clustering_method
     )
   }
-
 
   return(list(chrlist = chrlist, propdf = propdf))
 }
