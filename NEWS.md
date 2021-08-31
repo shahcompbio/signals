@@ -1,3 +1,7 @@
+# schnapps 0.5.2
+
+* update to vignette and plotting
+
 # schnapps 0.5.1
 
 * updated default parameters
