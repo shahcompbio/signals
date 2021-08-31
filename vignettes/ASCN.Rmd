@@ -23,7 +23,7 @@ library(schnapps)
 This vignette illustrates how to perform allele specific copy number inference with DLP+ data. However the method should be generally applicable to any single cell copy number method. The input requirements are discussed below.
 
 ## Data
-The data needed to perform the allele specific copy number inference are the binned copy number data and cell specific haplotype calls. The copy number data and the haplotype data should use the same bins.
+The data needed to perform the allele specific copy number inference are binned copy number data and cell specific haplotype calls. The copy number data and the haplotype data should use the same bins.
 
 A small test data set of 250 cells is provided with the package, we'll load this data and inspect these 2 dataframe.
 
@@ -58,26 +58,38 @@ As a sanity check we can plot the B allele frequency (BAF) as a function of infe
 plotBAFperstate(ascn, maxstate = 10)
 ```
 
-Now we can plot the copy number heatmaps. First we'll plot the heatmap based on copy number states. By default the ```plotHeatmap``` function does some clustering using hdbscan, we'll set a seed so we get the same clustering for each of the heatmaps below.
+Now we can plot the copy number heatmaps. First we'll plot the heatmap based on copy number states. We can provide the `plotHeatmap` function with a tree in newick format to plot an ordered heatmap and/or a dataframe with cluster assignments. By default the ```plotHeatmap``` function does some clustering using hdbscan if neither of these is provided. 
+
+```{r}
+cl <- umap_clustering(ascn$data)
+```
 
 ```{r, fig.show='hold', fig.height=4 , fig.width=10}
-set.seed(1)
-plotHeatmap(ascn, plotcol = "state", plottree = FALSE, spacer_cols = 15)
+plotHeatmap(ascn, 
+            plotcol = "state", 
+            clusters = cl$clustering,
+            tree = cl$tree, 
+            reorderclusters = TRUE, #order according to tree
+            plottree = FALSE) #do not plot the tree but keep the ordering )
 ```
 
 Now we can plot some heatmaps to visualize the allele specific state. This heatmap plots the minor copy number state.
 ```{r, fig.show='hold', fig.height=4 , fig.width=10}
-plotHeatmap(ascn, plotcol = "state_min", plottree = FALSE, spacer_cols = 15)
-```
-
-Allelic imbalance:
-```{r, fig.show='hold', fig.height=4 , fig.width=10}
-plotHeatmap(ascn, plotcol = "state_BAF", plottree = FALSE, spacer_cols = 15)
+plotHeatmap(ascn, plotcol = "Min",
+            clusters = cl$clustering,
+            tree = cl$tree, 
+            reorderclusters = TRUE, #order according to tree
+            plottree = FALSE) #do not plot the tree but keep the ordering )
 ```
 
 Discrete representation of allelic imbalance:
 ```{r, fig.show='hold', fig.height=4 , fig.width=10}
-plotHeatmap(ascn, plotcol = "state_phase", plottree = FALSE, spacer_cols = 15)
+plotHeatmap(ascn, 
+            plotcol = "state_phase", 
+            clusters = cl$clustering,
+            tree = cl$tree, 
+            reorderclusters = TRUE, #order according to tree
+            plottree = FALSE) #do not plot the tree but keep the ordering )
 ```
 
 There are also some function to plot per cell BAF and state plots. You can specify a cell, or the default will take the first cell in the data frame.
@@ -85,19 +97,12 @@ There are also some function to plot per cell BAF and state plots. You can speci
 plotCNprofileBAF(ascn)
 ```
 
-Here we'll plot and equivalent plot merging across cells
+Here we'll plot an equivalent plot merging data across cell clusters using the utility function `consensyscopynumber`. Here, the `cell_id` column becomes the 
 ```{r, fig.show='hold', fig.height=5 , fig.width=10}
-library(dplyr)
-ascn$data %>%
-    group_by(chr, start, end) %>%
-    summarise(state = schnapps:::Mode(state), 
-              state_min = schnapps:::Mode(state_min), 
-              BAF = median(BAF), 
-              state_phase = schnapps:::Mode(state_phase), 
-              copy = median(copy)) %>%
-    ungroup() %>%
-    mutate(cell_id = "Merged Cells") %>% # add dummy cell id
-    plotCNprofileBAF(.)
+
+consensus_clusters <- consensuscopynumber(ascn$data, cl = cl$clustering)
+
+plotCNprofileBAF(consensus_clusters, cellid = "A")
 ```
 
 The object returned by the inference function is of type `ascn`, if you want to pull out the data to use in your own scripts you can just do `ascn$data`. This will return a `data.frame` similar to the input data frames but with additional columns specifying the allele specific states.
@@ -105,7 +110,7 @@ The object returned by the inference function is of type `ascn`, if you want to 
 ### `callHaplotypeSpecificCN`
 Now we'll do the analysis that phases haplotypes across cells.
 ```{r, message = FALSE}
-hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, phasebyarm = FALSE)
+hscn <- callHaplotypeSpecificCN(CNbins, haplotypes)
 ```
 
 We'll now generate the same plots as before. We can see in the BAF per state plot that we now observe states with BAF > 0.5 meaning that we see different alleles gained or lost in different cells.
@@ -115,15 +120,22 @@ plotBAFperstate(hscn, maxstate = 10)
 ```
 
 In the allelic imbalance heatmap we can see that some cells have gained the "B" allele and others the "A" allele resulting in imbalance spanning from 0 to 1.
-```{r, fig.show='hold', fig.height=4 , fig.width=10}
-set.seed(1)
-plotHeatmap(hscn, plotcol = "state_BAF", plottree = FALSE, spacer_cols = 15, plotfrequency = TRUE)
-```
 
 In the discrete version of this plot we see similar patterns. 
 ```{r, fig.show='hold', fig.height=4 , fig.width=10}
-set.seed(1)
-plotHeatmap(hscn, plotcol = "state_phase", plottree = FALSE, spacer_cols = 15, plotfrequency = TRUE)
+plotHeatmap(hscn, plotcol = "state_phase",
+            clusters = cl$clustering,
+            tree = cl$tree, 
+            reorderclusters = TRUE, #order according to tree
+            plottree = FALSE) #do not plot the tree but keep the ordering 
+```
+
+```{r, fig.show='hold', fig.height=4 , fig.width=10}
+plotHeatmap(hscn, plotcol = "Min",
+            clusters = cl$clustering,
+            tree = cl$tree, 
+            reorderclusters = TRUE, #order according to tree
+            plottree = FALSE) #do not plot the tree but keep the ordering 
 ```
 
 ```{r, fig.show='hold', fig.height=5, fig.width=10}
@@ -132,45 +144,7 @@ plotCNprofileBAF(hscn)
 
 Here we'll merge all cells and plot together.
 ```{r, fig.show='hold', fig.height=5 , fig.width=10}
-hscn$data %>%
-    group_by(chr, start, end) %>%
-    summarise(state = schnapps:::Mode(state), 
-              state_min = schnapps:::Mode(state_min), 
-              BAF = median(BAF), 
-              state_phase = schnapps:::Mode(state_phase), 
-              copy = median(copy)) %>%
-    ungroup() %>%
-    mutate(cell_id = "Merged Cells") %>% # add dummy cell id
-    plotCNprofileBAF(.)
+consensus_clusters <- consensuscopynumber(hscn$data, cl = cl$clustering)
+
+plotCNprofileBAF(consensus_clusters, cellid = "B")
 ```
-
-### Dealing with noisy data
-If the coverage per cell is on average low then estimating allele specific copy number can be challenging. This can result in "grainy" heatmaps, noisy cell profiles and inconsistent `plotBAFperstate` plots. One way to overcome this is to use larger bin sizes, `schnapps` provides 2 utility functions to "widen" the bins by taking an average across bins. To use this, we also need to decrease the requirements for the number of bins per chromosome.
-
-```{r}
-CNbins_wide <- widen_bins(CNbins, binsize = 2e6)
-haplotypes_wide <- widen_haplotypebins(haplotypes, binsize = 2e6)
-
-hscn_wide <- callHaplotypeSpecificCN(CNbins_wide, haplotypes_wide, minbins = 10, minbinschr = 2)
-```
-
-
-```{r, fig.show='hold', fig.height=4 , fig.width=10}
-plotBAFperstate(hscn_wide, maxstate = 10)
-```
-
-```{r, fig.show='hold', fig.height=4 , fig.width=10}
-set.seed(1)
-plotHeatmap(hscn_wide, plotcol = "state_BAF", plottree = FALSE, spacer_cols = 3)
-```
-
-In the discrete version of this plot we see similar patterns. 
-```{r, fig.show='hold', fig.height=4 , fig.width=10}
-set.seed(1)
-plotHeatmap(hscn_wide, plotcol = "state_phase", plottree = FALSE, spacer_cols = 3)
-```
-
-```{r, fig.show='hold', fig.height=5, fig.width=10}
-plotCNprofileBAF(hscn_wide)
-```
-

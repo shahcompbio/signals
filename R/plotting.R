@@ -1170,11 +1170,12 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, ...)
 
 #' Plot BAF distributions per allele specific state
 #'
-#' @param cn Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`
+#' @param cn Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`, `BAF`
 #' @param minpts minimum number of points to include default = 250
 #' @param minfrac states that are present below this fraction will be removed, default = 0.01
 #' @param maxstate States with total copy number > maxstate will be removed, default = 10
 #' @param dens_adjust density adjustment factor in the violin plots
+#' @param mincounts filter out bins < mincounts from plotting, default = 6
 #'
 #' \dontrun{
 #' data("haplotypes")
@@ -1185,7 +1186,7 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, ...)
 #' }
 #'
 #' @export
-plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, dens_adjust = 2.0) {
+plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, dens_adjust = 2.0, mincounts = 6) {
   if (is.hscn(cn) | is.ascn(cn)) {
     alleleCN <- cn$data
   } else {
@@ -1205,6 +1206,7 @@ plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, den
   allASstates$cBAF[is.nan(allASstates$cBAF)] <- 0.0
 
   forplot <- alleleCN %>%
+    dplyr::filter(totalcounts > mincounts) %>% 
     dplyr::group_by(state_AS_phased) %>%
     dplyr::mutate(n = dplyr::n()) %>%
     dplyr::ungroup() %>%

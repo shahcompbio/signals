@@ -236,36 +236,48 @@ callalleleHMMcell <- function(CNBAF,
   return(as.data.frame(alleleCN))
 }
 
-min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = 5) {
+min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = 5, samplen = 10) {
   chr <- hap_label <- NULL
   nhaps_vec <- c()
   prop_vec <- c()
-  prop <- c(0.005, 0.01, 0.02, 0.03, 0.04, seq(0.05, 1.0, 0.05))
+  prop <- c(0.005, 0.01, 0.02, 0.03, 0.04, 0.05, seq(0.1, 1.0, 0.1))
   mycells <- unique(haplotypes$cell_id)
-  prop <- c(5 / length(mycells), 6 / length(mycells), 7 / length(mycells), 
+  prop <- c(1 / length(mycells), 5 / length(mycells), 6 / length(mycells), 7 / length(mycells), 
             8 / length(mycells), 9 / length(mycells), 10 / length(mycells), 
             20 / length(mycells), 50 / length(mycells), prop)
-  prop <- sort(prop)
+  prop <- unique(sort(prop))
+  prop <- prop[prop < 1.0]
   ncells <- length(mycells)
   haplotype_counts <- as.data.table(haplotypes) %>%
     .[, list(n = .N, nfrac = .N / ncells),
       by = c("chr", "start", "end", "hap_label")
     ]
   nhaps <- dim(dplyr::distinct(haplotype_counts, chr, start, hap_label))[1]
+  
+  haplotype <- as.data.table(haplotypes)
+  
   for (i in prop) {
-    samp_cells <- sample(mycells, round(i * length(mycells)))
-    haplotype_counts_temp <-
-      as.data.table(dplyr::filter(haplotypes, cell_id %in% samp_cells)) %>%
-      .[, list(n = .N, nfrac = .N / ncells),
-        by = c("chr", "start", "end", "hap_label")
-      ]
-    nhaps_temp <- dim(dplyr::distinct(haplotype_counts_temp, chr, start, hap_label))[1]
-    nhaps_vec <- c(nhaps_vec, nhaps_temp)
-    prop_vec <- c(prop_vec, i)
+    for (j in 1:samplen){
+      if (round(i * length(mycells)) == 0){
+        next
+      }
+      #sample cells
+      samp_cells <- sample(mycells, round(i * length(mycells)))
+      #filter haplotypes down to sampled cells
+      haplotypes_temp <- haplotypes[cell_id %in% samp_cells]
+      #count the number of haplotype blocks that have been retained
+      nhaps_temp <- dim(dplyr::distinct(haplotypes_temp, chr, start, hap_label))[1]
+      nhaps_vec <- c(nhaps_vec, nhaps_temp)
+      prop_vec <- c(prop_vec, i)
+    }
   }
 
   df <- data.frame(prop = prop_vec, nhaps = nhaps_vec / nhaps) %>%
-    dplyr::mutate(ncells = round(prop * length(mycells)))
+    dplyr::mutate(ncells = round(prop * length(mycells))) %>% 
+    dplyr::group_by(prop, ncells) %>% 
+    dplyr::summarise(nhaps = mean(nhaps), min_nhaps = min(nhaps)) %>% 
+    dplyr::ungroup(.) %>% 
+    as.data.frame(.)
 
   ncells_forclustering <- df %>%
     dplyr::filter(nhaps >= minfrachaplotypes) %>%
@@ -364,8 +376,7 @@ get_cells_per_chr_global <- function(ascn,
 get_cells_per_chr_local <- function(ascn,
                                     haplotypes,
                                     ncells_for_clustering,
-                                    field = "BAF",
-                                    clustering_method = "copy",
+                                    field = "state_BAF",
                                     phasebyarm = FALSE) {
 
   # cluster cells per chromosome
@@ -378,7 +389,7 @@ get_cells_per_chr_local <- function(ascn,
       n_neighbors = 20,
       min_dist = 0.001,
       minPts = ncells_for_clustering,
-      field = "state_BAF",
+      field = field,
       umapmetric = "euclidean"
     )
     prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
@@ -386,15 +397,17 @@ get_cells_per_chr_local <- function(ascn,
         propA = round(sum(balance) / .N, 2),
         n = sum(balance),
         propModestate = sum(state == Mode(state)) / .N,
+        propLOH = sum(LOH == "LOH") / .N,
         ncells = length(unique(cell_id))
       ), by = .(chr, cell_id, clone_id)] %>%
       .[, list(
         propA = median(propA),
         n = median(n),
         propModestate = median(propModestate),
+        propLOH = median(propLOH),
         ncells = median(ncells)
       ), by = .(chr, clone_id)]
-    prop <- prop[order(propA, propModestate, n, decreasing = TRUE)]
+    prop <- prop[order(propA, propModestate, propLOH, ncells, n, decreasing = TRUE)]
     prop <- prop[prop[, .I[which.max(propA)], by = chr]$V1]
     cells <- dplyr::filter(cl$clustering, clone_id == prop$clone_id[1]) %>%
       dplyr::pull(cell_id)
@@ -409,8 +422,8 @@ proportion_imbalance <- function(ascn,
                                  haplotypes,
                                  field = "copy",
                                  phasebyarm = FALSE,
-                                 minfrachaplotypes = 0.95,
                                  clustering_method = "copy",
+                                 minfrachaplotypes = 0.95,
                                  overwritemincells = NULL,
                                  cluster_per_chr = TRUE) {
   ncells <- length(unique(ascn$cell_id))
@@ -430,8 +443,7 @@ proportion_imbalance <- function(ascn,
     chrlist <- get_cells_per_chr_local(ascn,
       haplotypes,
       ncells_for_clustering,
-      field = field,
-      clustering_method = clustering_method
+      field = field
     )
   } else {
     chrlist <- get_cells_per_chr_global(ascn,
@@ -441,7 +453,6 @@ proportion_imbalance <- function(ascn,
       clustering_method = clustering_method
     )
   }
-
 
   return(list(chrlist = chrlist, propdf = propdf))
 }

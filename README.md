@@ -45,7 +45,7 @@ Then we can call haplotype specific state per cell:
 hscn <- callHaplotypeSpecificCN(CNbins, allele_data)
 ```
 
-Or alterantively allele specific states:
+Or alternatively allele specific states:
 ```r
 hscn <- callAlleleSpecificCN(CNbins, allele_data)
 ```

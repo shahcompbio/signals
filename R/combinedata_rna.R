@@ -57,7 +57,7 @@ format_haplotypes_rna <- function(haplotypes,
     dplyr::select(cell_id, chr, start, end, hap_label, alleleA, alleleB, totalcounts, BAF, sample, patient)
 
   if (create_cell_id) {
-    haplotypes <- dplyr::mutate(cell_id = paste(sample, patient, cell_id, sep = "-")) %>%
+    haplotypes <- dplyr::mutate(cell_id = paste(patient, sample, cell_id, sep = "-")) %>%
       as.data.frame() %>%
       orderdf()
   }
