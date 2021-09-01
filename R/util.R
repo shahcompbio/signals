@@ -900,9 +900,9 @@ consensuscopynumber <- function(hscn, cl = NULL) {
         Maj = as.double(floor(median(Maj))),
         alleleA = sum(alleleA),
         alleleB = sum(alleleB),
-        totalcounts = sum(totalcounts)
+        totalcounts = sum(totalcounts),
+        BAF = median(BAF)
       ), by = .(chr, start, end, clone_id)] %>%
-      .[, BAF := alleleB / totalcounts] %>%
       .[, Min := state - Maj] %>%
       add_states() %>%
       dplyr::select(clone_id, chr, start, end, state, copy, Min, Maj, dplyr::everything()) %>%
@@ -912,7 +912,7 @@ consensuscopynumber <- function(hscn, cl = NULL) {
     cn <- hscn %>%
       as.data.table(.) %>%
       .[, .(
-        state = round(mean(state, na.rm = TRUE)),
+        state = round(median(state, na.rm = TRUE)),
         copy = median(copy, na.rm = TRUE)
       ), by = .(chr, start, end, clone_id)] %>%
       dplyr::rename(cell_id = clone_id) %>%
