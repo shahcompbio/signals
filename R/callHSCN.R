@@ -240,10 +240,10 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = 5, sample
   chr <- hap_label <- NULL
   nhaps_vec <- c()
   prop_vec <- c()
-  prop <- c(0.005, 0.01, 0.02, 0.03, 0.04, 0.05, seq(0.1, 1.0, 0.1))
+  prop <- c(0.005, 0.01, 0.02, 0.03, 0.04, 0.05, seq(0.1, 0.5, 0.1))
   mycells <- unique(haplotypes$cell_id)
   prop <- c(1 / length(mycells), 5 / length(mycells), 6 / length(mycells), 7 / length(mycells), 
-            8 / length(mycells), 9 / length(mycells), 10 / length(mycells), 
+            8 / length(mycells), 9 / length(mycells), 10 / length(mycells), 15 / length(mycells),
             20 / length(mycells), 50 / length(mycells), prop)
   prop <- unique(sort(prop))
   prop <- prop[prop < 1.0]
@@ -275,12 +275,12 @@ min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = 5, sample
   df <- data.frame(prop = prop_vec, nhaps = nhaps_vec / nhaps) %>%
     dplyr::mutate(ncells = round(prop * length(mycells))) %>% 
     dplyr::group_by(prop, ncells) %>% 
-    dplyr::summarise(nhaps = mean(nhaps), min_nhaps = min(nhaps)) %>% 
+    dplyr::summarise(min_nhaps = min(nhaps), nhaps = mean(nhaps)) %>% 
     dplyr::ungroup(.) %>% 
     as.data.frame(.)
 
   ncells_forclustering <- df %>%
-    dplyr::filter(nhaps >= minfrachaplotypes) %>%
+    dplyr::filter(min_nhaps >= minfrachaplotypes) %>%
     dplyr::filter(dplyr::row_number() == 1) %>%
     dplyr::pull(ncells)
 
@@ -379,8 +379,14 @@ get_cells_per_chr_local <- function(ascn,
                                     field = "state_BAF",
                                     phasebyarm = FALSE) {
 
+  #remove cells with expected BAF far away from observed BAF for clustering + phasing
+  qc <- qc_per_cell(ascn)
+  keep_cells <- qc %>% dplyr::filter(average_distance < 0.1) %>% 
+    dplyr::pull(cell_id)
+  ascn <- dplyr::filter(ascn, cell_id %in% keep_cells)
+  
   # cluster cells per chromosome
-
+  
   chrlist <- list()
   for (mychr in unique(ascn$chr)) {
     message(paste0("Clustering chromosome ", mychr))
@@ -389,26 +395,26 @@ get_cells_per_chr_local <- function(ascn,
       n_neighbors = 20,
       min_dist = 0.001,
       minPts = ncells_for_clustering,
-      field = field,
+      field = "state_BAF",
       umapmetric = "euclidean"
     )
     prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
       .[, list(
         propA = round(sum(balance) / .N, 2),
         n = sum(balance),
-        propModestate = sum(state == Mode(state)) / .N,
-        propLOH = sum(LOH == "LOH") / .N,
-        ncells = length(unique(cell_id))
+        propModestate = round(sum(state == Mode(state)) / .N, 2),
+        propLOH = round(sum(LOH == "LOH") / .N, 2)
       ), by = .(chr, cell_id, clone_id)] %>%
       .[, list(
         propA = median(propA),
         n = median(n),
         propModestate = median(propModestate),
         propLOH = median(propLOH),
-        ncells = median(ncells)
+        ncells = length(unique(cell_id))
       ), by = .(chr, clone_id)]
-    prop <- prop[order(propA, propModestate, propLOH, ncells, n, decreasing = TRUE)]
+    prop <- prop[order(propA, propModestate, n, decreasing = TRUE)]
     prop <- prop[prop[, .I[which.max(propA)], by = chr]$V1]
+    prop <- prop[ncells >= ncells_for_clustering]
     cells <- dplyr::filter(cl$clustering, clone_id == prop$clone_id[1]) %>%
       dplyr::pull(cell_id)
     chrlist[[mychr]] <- cells
@@ -642,6 +648,9 @@ callHaplotypeSpecificCN <- function(CNbins,
     maxCN <- max(CNbins$state)
   }
   
+  #get the number of distinct haplotype blocks
+  nhaplotypes <- dim(dplyr::distinct(haplotypes, chr, start, end, hap_label))[1]
+  
   if (filterhaplotypes){
     haplotypes <- filter_haplotypes(haplotypes)
   }
@@ -719,6 +728,9 @@ callHaplotypeSpecificCN <- function(CNbins,
     minbinschr = minbinschr,
     minbins = minbins
   )
+  
+  new_nhaplotypes <- dim(phased_haplotypes)[1]
+  message(paste0("Total fraction of haplotypes retained after filtering + clustering: ", round(new_nhaplotypes / nhaplotypes, 2), " (", new_nhaplotypes, "/", nhaplotypes, ")"))
 
   hscn_data <- .callHaplotypeSpecificCN_(cnbaf,
     eps = eps,
