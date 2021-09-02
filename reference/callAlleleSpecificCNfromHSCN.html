@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Genomic coordinate to chromosome arm — coord_to_arm • schnapps</title>
+<title>Call allele specific copy number in single cell datasets — callAlleleSpecificCNfromHSCN • schnapps</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Genomic coordinate to chromosome arm — coord_to_arm" />
-<meta property="og:description" content="Returns chromosome arms for given chromosome and genomic position." />
+<meta property="og:title" content="Call allele specific copy number in single cell datasets — callAlleleSpecificCNfromHSCN" />
+<meta property="og:description" content="Call allele specific copy number in single cell datasets" />
 
 
 
@@ -124,46 +124,66 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Genomic coordinate to chromosome arm</h1>
+    <h1>Call allele specific copy number in single cell datasets</h1>
     
-    <div class="hidden name"><code>coord_to_arm.Rd</code></div>
+    <div class="hidden name"><code>callAlleleSpecificCNfromHSCN.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Returns chromosome arms for given chromosome and genomic position.</p>
+    <p>Call allele specific copy number in single cell datasets</p>
     </div>
 
-    <pre class="usage"><span class='fu'>coord_to_arm</span><span class='op'>(</span>
-  <span class='va'>chromosome</span>,
-  <span class='va'>position</span>,
-  assembly <span class='op'>=</span> <span class='st'>"hg19"</span>,
-  full <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  mergesmallarms <span class='op'>=</span> <span class='cn'>FALSE</span>
+    <pre class="usage"><span class='fu'>callAlleleSpecificCNfromHSCN</span><span class='op'>(</span>
+  <span class='va'>hscn</span>,
+  eps <span class='op'>=</span> <span class='fl'>0.000000000001</span>,
+  maxCN <span class='op'>=</span> <span class='cn'>NULL</span>,
+  selftransitionprob <span class='op'>=</span> <span class='fl'>0.95</span>,
+  progressbar <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  ncores <span class='op'>=</span> <span class='fl'>1</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>chromosome</th>
-      <td><p>Character or numeric vector, with chromosome of genomic coordinate</p></td>
+      <th>hscn</th>
+      <td><p>hscn object from callHaplotypeSpecificCN</p></td>
     </tr>
     <tr>
-      <th>position</th>
-      <td><p>Numeric vector, with genomic position within chromosome</p></td>
+      <th>eps</th>
+      <td><p>default 1e-12</p></td>
     </tr>
     <tr>
-      <th>assembly</th>
-      <td><p>a string specifying which genome assembly version should be applied
-to determine chromosome arms. Allowed options are "hg38", hg19", "hg18", "hg17"
-and "hg16" (corresponding to the five latest human genome annotations in the
-UCSC genome browser).</p></td>
+      <th>maxCN</th>
+      <td><p>maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins</p></td>
+    </tr>
+    <tr>
+      <th>selftransitionprob</th>
+      <td><p>probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model</p></td>
+    </tr>
+    <tr>
+      <th>progressbar</th>
+      <td><p>Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1</p></td>
+    </tr>
+    <tr>
+      <th>ncores</th>
+      <td><p>Number of cores to use, default = 1</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>Character vector, with choromosome arm of given genomic coordinates</p>
+    <p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p>
+<p>* `Maj` (Major allele copy number)
+* `Min` (Minor allele copy number)
+* `state_AS_phased` (phased state of the form Maj|Min )
+* `state_AS` (mirrored state of the form Maj|Min)
+* `LOH` (is bin LOH or not)
+* `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
+* `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))</p>
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>In the allele specific copy number inference Maj is always &gt; Min and state_AS_phased == state_AS</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
