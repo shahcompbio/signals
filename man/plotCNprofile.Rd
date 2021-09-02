@@ -9,7 +9,7 @@ plotCNprofile(
   cellid = NULL,
   chrfilt = NULL,
   pointsize = 1,
-  alphaval = 0.9,
+  alphaval = 0.6,
   maxCN = 10,
   cellidx = 1,
   statecol = "state",
