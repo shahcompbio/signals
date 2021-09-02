@@ -159,18 +159,15 @@ combineBAFCN <- function(haplotypes,
     haplotypes <- haplotypes[cell_id %in% cellidoverlap]
   }
 
-  message("Reformatting haplotypes")
+  message("Joining bins and haplotypes...")
   haplotypes <- format_haplotypes(haplotypes,
     phased_haplotypes = phased_haplotypes,
     phasing_method = phasing_method, ...
   )
   haplotypes <- data.table::as.data.table(haplotypes)
 
-  message("Joining bins and haplotypes...")
-  # CNbins <- data.table::merge.data.table(CNbins, haplotypes)
   CNbins <- CNbins[haplotypes, on = c("chr", "start", "end", "cell_id"), nomatch = 0]
 
-  message("Calculate BAF per bin...")
   CNBAF <- data.table::as.data.table(CNbins) %>%
     .[totalcounts > filtern] %>%
     .[, lapply(.SD, sum), by = .(chr, start, end, cell_id, state, copy), .SDcols = c("alleleA", "alleleB", "totalcounts")] %>%
