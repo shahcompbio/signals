@@ -447,8 +447,7 @@ proportion_imbalance <- function(ascn,
     chrlist <- get_cells_per_chr_local(ascn,
                                        haplotypes,
                                        ncells_for_clustering,
-                                       field = field,
-                                       clustering_method = clustering_method
+                                       field = field
     )
   } else {
     chrlist <- get_cells_per_chr_global(ascn,
