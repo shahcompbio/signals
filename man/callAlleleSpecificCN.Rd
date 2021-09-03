@@ -17,7 +17,7 @@ callAlleleSpecificCN(
   minbins = 100,
   minbinschr = 10,
   maxloherror = 0.03,
-  filterhaplotypes = TRUE
+  filterhaplotypes = 0.1
 )
 }
 \arguments{
@@ -44,6 +44,8 @@ callAlleleSpecificCN(
 \item{minbinschr}{Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included}
 
 \item{maxloherror}{Maximum value for LOH error rate}
+
+\item{filterhaplotypes}{filter out haplotypes present in less than X fraction, default is 0.1}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include

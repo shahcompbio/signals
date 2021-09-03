@@ -549,7 +549,7 @@ filter_haplotypes <- function(haplotypes, fraction){
   haplotypes <- as.data.table(haplotypes)
   nhaps <- dim(haplotypes)[1]
   total_cells <- length(unique(haplotypes$cell_id))
-  message("Filtering out haplotypes present < 10% of cells...")
+  message(paste0("Filtering out haplotypes present < ", fraction * 100, "% of cells..."))
   haplotypes <- haplotypes %>% 
     .[, ncells := length(unique(cell_id)), by = .(chr, start, end, hap_label)] %>% 
     .[, fcells := ncells / total_cells] %>% 
