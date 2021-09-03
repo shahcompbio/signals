@@ -21,6 +21,7 @@ callHaplotypeSpecificCN(
   phased_haplotypes = NULL,
   clustering_method = "copy",
   maxloherror = 0.035,
+  mincells = 5,
   overwritemincells = NULL,
   cluster_per_chr = TRUE,
   viterbiver = "cpp",
@@ -58,7 +59,9 @@ callHaplotypeSpecificCN(
 
 \item{maxloherror}{Maximum value for LOH error rate}
 
-\item{overwritemincells}{default NULL}
+\item{mincells}{Minimum cluster size used for phasing}
+
+\item{overwritemincells}{Overwrite the the number of cells to use for clustering/phasing}
 
 \item{cluster_per_chr}{Whether to cluster per chromosome to rephase alleles or not}
 }

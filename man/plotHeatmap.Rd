@@ -29,7 +29,6 @@ plotHeatmap(
   widenarm = FALSE,
   umapmetric = "euclidean",
   chrlabels = TRUE,
-  raster_quality = 10,
   SV = NULL,
   seed = NULL,
   nticks = 4,
