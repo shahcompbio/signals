@@ -428,11 +428,13 @@ proportion_imbalance <- function(ascn,
                                  phasebyarm = FALSE,
                                  clustering_method = "copy",
                                  minfrachaplotypes = 0.95,
+                                 mincells = 5,
                                  overwritemincells = NULL,
                                  cluster_per_chr = TRUE) {
   ncells <- length(unique(ascn$cell_id))
   if (is.null(overwritemincells)) {
     ncells_for_clustering <- min_cells(haplotypes,
+                                       mincells = mincells,
                                        minfrachaplotypes = minfrachaplotypes
     )
     propdf <- ncells_for_clustering$prop
@@ -576,7 +578,8 @@ filter_haplotypes <- function(haplotypes){
 #' @param phased_haplotypes Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by schnapps does not return a good fit.
 #' @param clustering_method Method to use to cluster cells for haplotype phasing, default is `copy`, other option is `breakpoints`
 #' @param maxloherror Maximum value for LOH error rate
-#' @param overwritemincells default NULL
+#' @param mincells Minimum cluster size used for phasing
+#' @param overwritemincells Overwrite the the number of cells to use for clustering/phasing
 #' @param cluster_per_chr Whether to cluster per chromosome to rephase alleles or not
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
@@ -619,6 +622,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     phased_haplotypes = NULL,
                                     clustering_method = "copy",
                                     maxloherror = 0.035,
+                                    mincells = 5,
                                     overwritemincells = NULL,
                                     cluster_per_chr = TRUE,
                                     viterbiver = "cpp", 
@@ -716,6 +720,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     haplotypes,
                                     phasebyarm = phasebyarm,
                                     minfrac = minfrac,
+                                    mincells = mincells,
                                     clustering_method = clustering_method,
                                     overwritemincells = overwritemincells,
                                     cluster_per_chr = cluster_per_chr
