@@ -411,7 +411,7 @@ get_cells_per_chr_local <- function(ascn,
         propLOH = median(propLOH),
         ncells = median(ncells)
       ), by = .(chr, clone_id)]
-    prop <- prop[order(propA, propModestate, propLOH, n, decreasing = TRUE)]
+    prop <- prop[order(propA, propModestate, ncells, propLOH, n, decreasing = TRUE)]
     prop <- prop[prop[, .I[which.max(propA)], by = chr]$V1]
     cells <- dplyr::filter(cl$clustering, clone_id == prop$clone_id[1]) %>%
       dplyr::pull(cell_id)
@@ -545,7 +545,7 @@ fitBB <- function(ascn) {
   return(bbfit)
 }
 
-filter_haplotypes <- function(haplotypes){
+filter_haplotypes <- function(haplotypes, fraction){
   haplotypes <- as.data.table(haplotypes)
   nhaps <- dim(haplotypes)[1]
   total_cells <- length(unique(haplotypes$cell_id))
@@ -553,7 +553,7 @@ filter_haplotypes <- function(haplotypes){
   haplotypes <- haplotypes %>% 
     .[, ncells := length(unique(cell_id)), by = .(chr, start, end, hap_label)] %>% 
     .[, fcells := ncells / total_cells] %>% 
-    .[fcells > 0.1]
+    .[fcells > fraction]
   haplotypes <- haplotypes[, c("fcells", "ncells") := NULL]
   fracretained <- round(dim(haplotypes)[1] / nhaps, 3)
   message(paste0("Fraction of haplotypes retained after filtering = ", fracretained))
@@ -581,6 +581,7 @@ filter_haplotypes <- function(haplotypes){
 #' @param mincells Minimum cluster size used for phasing
 #' @param overwritemincells Overwrite the the number of cells to use for clustering/phasing
 #' @param cluster_per_chr Whether to cluster per chromosome to rephase alleles or not
+#' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -626,7 +627,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     overwritemincells = NULL,
                                     cluster_per_chr = TRUE,
                                     viterbiver = "cpp", 
-                                    filterhaplotypes = TRUE) {
+                                    filterhaplotypes = 0.1) {
   if (!clustering_method %in% c("copy", "breakpoints")) {
     stop("Clustering method must be one of copy or breakpoints")
   }
@@ -660,9 +661,7 @@ callHaplotypeSpecificCN <- function(CNbins,
     dplyr::summarize(totalcounts = sum(totalcounts), ncells = length(unique(cell_id))) %>% 
     dplyr::ungroup()
   
-  if (filterhaplotypes){
-    haplotypes <- filter_haplotypes(haplotypes)
-  }
+  haplotypes <- filter_haplotypes(haplotypes, filterhaplotypes)
   
   nhaplotypes_filt <- haplotypes %>% 
     dplyr::group_by(cell_id) %>% 

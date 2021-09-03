@@ -5,7 +5,8 @@ umap_clustering <- function(CNbins,
                             minPts = 30,
                             seed = NULL,
                             field = "state",
-                            umapmetric = "correlation") {
+                            umapmetric = "correlation",
+                            hscn = FALSE) {
   if (length(unique(CNbins$cell_id)) < n_neighbors) {
     n_neighbors <- length(unique(CNbins$cell_id)) - 1
   }
@@ -13,10 +14,31 @@ umap_clustering <- function(CNbins,
   minPts <- max(minPts, 2)
 
   message("Creating CN matrix...")
-  cnmatrix <- createCNmatrix(CNbins, fillna = TRUE, field = field)
-  cnmatrix <- subset(cnmatrix, select = -c(chr, start, end, width))
-  cnmatrix <- t(cnmatrix)
-  cnmatrix[!is.finite(cnmatrix)] <- 0 # remove non finite values
+  if (hscn){
+    CNbins$A <- CNbins$copy * CNbins$BAF
+    CNbins$B <- CNbins$copy * (1 - CNbins$BAF)
+    
+    cnmatrixA <- createCNmatrix(CNbins, fillna = TRUE, field = "A")
+    cnmatrixA <- subset(cnmatrixA, select = -c(chr, start, end, width))
+    cnmatrixA <- t(cnmatrixA)
+    cnmatrixA[!is.finite(cnmatrixA)] <- 0 # remove non finite values
+    
+    cnmatrixB <- createCNmatrix(CNbins, fillna = TRUE, field = "B")
+    cnmatrixB <- subset(cnmatrixB, select = -c(chr, start, end, width))
+    cnmatrixB <- t(cnmatrixB)
+    cnmatrixB[!is.finite(cnmatrixB)] <- 0 # remove non finite values
+    
+    colnames(cnmatrixA) <- paste0(colnames(cnmatrixA), "_A")
+    colnames(cnmatrixB) <- paste0(colnames(cnmatrixB), "_B")
+    
+    cnmatrix <- cbind(cnmatrixA, cnmatrixB)
+    
+  } else{
+    cnmatrix <- createCNmatrix(CNbins, fillna = TRUE, field = field)
+    cnmatrix <- subset(cnmatrix, select = -c(chr, start, end, width))
+    cnmatrix <- t(cnmatrix)
+    cnmatrix[!is.finite(cnmatrix)] <- 0 # remove non finite values
+  }
 
   if (!is.null(seed)) {
     set.seed(seed)
