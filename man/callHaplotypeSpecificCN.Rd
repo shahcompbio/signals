@@ -25,7 +25,7 @@ callHaplotypeSpecificCN(
   overwritemincells = NULL,
   cluster_per_chr = TRUE,
   viterbiver = "cpp",
-  filterhaplotypes = TRUE
+  filterhaplotypes = 0.1
 )
 }
 \arguments{
@@ -64,6 +64,8 @@ callHaplotypeSpecificCN(
 \item{overwritemincells}{Overwrite the the number of cells to use for clustering/phasing}
 
 \item{cluster_per_chr}{Whether to cluster per chromosome to rephase alleles or not}
+
+\item{filterhaplotypes}{filter out haplotypes present in less than X fraction, default is 0.1}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include

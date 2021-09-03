@@ -177,6 +177,7 @@ switch_alleles <- function(cn) {
 #' @param minbins Minimum number of bins containing both haplotype counts and copy number data for a cell to be included
 #' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
 #' @param maxloherror Maximum value for LOH error rate
+#' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -204,7 +205,7 @@ callAlleleSpecificCN <- function(CNbins,
                                  minbins = 100,
                                  minbinschr = 10,
                                  maxloherror = 0.03,
-                                 filterhaplotypes = TRUE) {
+                                 filterhaplotypes = 0.1) {
   if (!likelihood %in% c("binomial", "betabinomial", "auto")) {
     stop("Likelihood model for HMM emission model must
          be one of binomial, betabinomial or auto",
@@ -226,7 +227,7 @@ callAlleleSpecificCN <- function(CNbins,
   }
   
   if (filterhaplotypes){
-    haplotypes <- filter_haplotypes(haplotypes)
+    haplotypes <- filter_haplotypes(haplotypes, filterhaplotypes)
   }
 
   CNBAF <- combineBAFCN(haplotypes = haplotypes, CNbins = CNbins)
