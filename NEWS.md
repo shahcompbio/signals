@@ -1,3 +1,7 @@
+# schnapps 0.5.4
+
+* update docker
+
 # schnapps 0.5.3
 
 * some small updates to plotting and default params
