@@ -13,13 +13,15 @@ RUN Rscript -e "install.packages(pkgs = c('tidyverse', \
 
 RUN apt-get update && apt-get -y upgrade && \
         apt-get install -y build-essential wget \
-                libncurses5-dev zlib1g-dev libbz2-dev liblzma-dev libcurl3-dev libcairo2-dev && \
+                libncurses5-dev zlib1g-dev libbz2-dev liblzma-dev libcurl3-dev libcairo2-dev libxt-dev && \
         apt-get clean && apt-get purge && \
         rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN Rscript -e "install.packages('argparse')"
 RUN Rscript -e "install.packages('R.utils')"
 RUN Rscript -e "install.packages('magick')"
+
+ADD policy.xml /etc/ImageMagick-6/policy.xml
 
 RUN Rscript -e "BiocManager::install('ggtree')"
 RUN Rscript -e "BiocManager::install('ComplexHeatmap')"
