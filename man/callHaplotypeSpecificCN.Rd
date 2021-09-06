@@ -21,7 +21,7 @@ callHaplotypeSpecificCN(
   phased_haplotypes = NULL,
   clustering_method = "copy",
   maxloherror = 0.035,
-  mincells = 5,
+  mincells = 10,
   overwritemincells = NULL,
   cluster_per_chr = TRUE,
   viterbiver = "cpp",

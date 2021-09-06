@@ -308,9 +308,29 @@ get_clone_label_pos <- function(clones) {
   return(clone_label_pos)
 }
 
-get_library_labels <- function(cell_ids, idx = 1) {
-  labels <- sapply(strsplit(cell_ids, "-"), function(x) {
-    return(x[idx])
+get_label <- function(cell_id, idx, str_to_remove){
+  totndash <- stringr::str_count(cell_id, "-")
+  ndash <- totndash - 2
+  #remove last 2 dashes (-R*-C*)
+  lab <- sub(paste0("^(([^-]*-){", ndash, "}[^-]*).*"), "\\1", cell_id)
+  if (idx == 2){
+    #get the library id
+    lab <- strsplit(lab, "-")[[1]][ndash + 1]
+  } else if (idx == 1){
+    #get the sample id (complicated because some sample IDs have -'s)
+    lab <- sub(paste0("^(([^-]*-){", ndash - 1, "}[^-]*).*"), "\\1", lab)
+  }
+  
+  if (!is.null(str_to_remove)){
+    lab <- stringr::str_remove(lab, str_to_remove)
+  }
+  
+  return(lab)
+}
+
+get_library_labels <- function(cell_ids, idx = 1, str_to_remove = NULL) {
+  labels <- sapply(cell_ids, function(x) {
+    return(get_label(x, idx, str_to_remove))
   })
   return(labels)
 }
@@ -322,14 +342,15 @@ make_left_annot <- function(copynumber,
                             show_clone_label = TRUE,
                             clone_pal = NULL,
                             idx = 1,
-                            show_legend = TRUE) {
+                            show_legend = TRUE,
+                            str_to_remove = NULL) {
   annot_colours <- list()
 
   if (show_clone_label == FALSE & show_library_label == FALSE) {
     return(NULL)
   }
 
-  library_labels <- get_library_labels(rownames(copynumber), idx = idx)
+  library_labels <- get_library_labels(rownames(copynumber), idx = idx, str_to_remove = str_to_remove)
   if (!is.null(library_mapping)) {
     library_labels <- unlist(library_mapping[library_labels])
     if (!all(library_labels %in% names(library_mapping)) == FALSE) {
@@ -773,6 +794,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     annofontsize = 14,
                                     na_col = "white",
                                     linkheight = 5,
+                                    str_to_remove = NULL,
                                     ...) {
   
   if (class(colvals) == "function"){
@@ -796,7 +818,8 @@ make_copynumber_heatmap <- function(copynumber,
     bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, nticks = nticks, annotation_height = annotation_height, annofontsize = annofontsize, linkheight = linkheight),
     left_annotation = make_left_annot(copynumber, clones,
       library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
-      idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label
+      idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,
+      str_to_remove = str_to_remove
     ),
     heatmap_legend_param = leg_params,
     top_annotation = make_top_annotation_gain(copynumber,
@@ -854,6 +877,7 @@ getSVlegend <- function(include = NULL) {
 #' @param na_col colour of NA values
 #' @param linkheight height of x-axis ticks
 #' @param newlegendname overwrite default legend name
+#' @param str_to_remove string to remove from cell_id's when plotting labels
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #'
@@ -899,6 +923,7 @@ plotHeatmap <- function(cn,
                         na_col = "white",
                         linkheight = 5,
                         newlegendname = NULL,
+                        str_to_remove = NULL,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1110,6 +1135,7 @@ plotHeatmap <- function(cn,
     annofontsize = annofontsize,
     na_col = na_col,
     linkheight = linkheight,
+    str_to_remove = str_to_remove,
     ...
   )
   if (plottree == TRUE) {
@@ -1163,7 +1189,8 @@ plotSNVHeatmap <- function(SNVs,
                            mymaxcol = "firebrick4",
                            sample_label_idx = 1,
                            nsample = 10000,
-                           clustercols = FALSE) {
+                           clustercols = FALSE,
+                           str_to_remove = NULL) {
   muts <- createSNVmatrix(SNVs)
 
   if (is.null(clusters)) {
@@ -1202,7 +1229,8 @@ plotSNVHeatmap <- function(SNVs,
     # bottom_annotation=make_bottom_annot(copynumber),
     left_annotation = make_left_annot(muts, clones_formatted,
       library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
-      idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label
+      idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,
+      str_to_remove = strstr_to_remove
     ),
     use_raster = TRUE,
     # top_annotation = HeatmapAnnotation(df = mutgroups,col = list(MutationGroup = colpal)),
