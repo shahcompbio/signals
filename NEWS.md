@@ -1,3 +1,7 @@
+# schnapps 0.5.5
+
+* update plotting and clustering
+
 # schnapps 0.5.4
 
 * update docker
