@@ -38,6 +38,7 @@ plotHeatmap(
   na_col = "white",
   linkheight = 5,
   newlegendname = NULL,
+  str_to_remove = NULL,
   ...
 )
 }
@@ -96,7 +97,9 @@ plotHeatmap(
 
 \item{linkheight}{height of x-axis ticks}
 
-\item{newlegendname}{overwrite default legend name
+\item{newlegendname}{overwrite default legend name}
+
+\item{str_to_remove}{string to remove from cell_id's when plotting labels
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 
