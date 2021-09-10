@@ -4,7 +4,7 @@
 \alias{getBins}
 \title{Make fixed-width bins}
 \usage{
-getBins(chrom.lengths = hg19_chrlength, binsize = 1000000, chromosomes = NULL)
+getBins(chrom.lengths = hg19_chrlength, binsize = 1e+06, chromosomes = NULL)
 }
 \arguments{
 \item{chrom.lengths}{A named character vector with chromosome lengths. Names correspond to chromosomes.}

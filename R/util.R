@@ -1076,3 +1076,22 @@ convertchiselhaplotypes <- function(chiselhaplotypes, hapbinsize = 50e3, cnbinsi
 
   return(chiselhaplotypes)
 }
+
+#' @export
+assign_haplotype_label <- function(chiselhaplotypes, hapbinsize = 50e3){
+  colnames(chiselhaplotypes) <- c("chr", "pos", "cell_id", "allele0", "allele1")
+  chiselhaplotypes$chr <- as.character(chiselhaplotypes$chr)
+  chiselhaplotypes$pos2 <- chiselhaplotypes$pos
+  
+  bins <- getBins(binsize = hapbinsize) %>%
+    dplyr::rename(start_bins = start, end_bins = end, chr_bins = chr) %>%
+    dplyr::select(-width) %>%
+    as.data.table() %>%
+    .[, hap_label := 1:.N]
+  
+  chiselhaplotypes <- chiselhaplotypes[bins, on = .(chr == chr_bins, pos > start_bins, pos < end_bins)]
+  chiselhaplotypes <- na.omit(chiselhaplotypes)
+  
+  hap_labels <- dplyr::distinct(chiselhaplotypes, chr, pos2, hap_label) %>% dplyr::rename(position = pos2)
+  return(hap_label)
+}
