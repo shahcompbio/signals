@@ -182,8 +182,7 @@
 <p><img src="ASCN_files/figure-html/unnamed-chunk-11-1.png" width="960"></p>
 <p>Here we’ll plot an equivalent plot merging data across cell clusters using the utility function <code>consensyscopynumber</code>. Here, the <code>cell_id</code> column becomes the</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R">
-<span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">ascn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span>
+<code class="sourceCode R"><span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">ascn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span>
 
 <span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"A"</span><span class="op">)</span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-12-1.png" width="960"></p>
