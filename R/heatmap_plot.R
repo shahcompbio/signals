@@ -827,6 +827,7 @@ make_copynumber_heatmap <- function(copynumber,
       plotfrequency = plotfrequency, plotcol = plotcol, SV = SV
     ),
     use_raster = TRUE,
+    raster_quality = 10,
     ...
   )
   return(copynumber_hm)
