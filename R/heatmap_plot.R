@@ -485,107 +485,6 @@ get_chrom_label_pos <- function(copynumber, nticks = 3) {
   return(chrom_label_pos)
 }
 
-# From ComplexHeatmap, needed for modified anno_mark
-recycle_gp <- function(gp, n = 1) {
-  for (i in seq_along(gp)) {
-    x <- gp[[i]]
-    gp[[i]] <- c(rep(x, floor(n / length(x))), x[seq_len(n %% length(x))])
-  }
-  return(gp)
-}
-
-# From ComplexHeatmap, modified
-anno_mark <- function(at, labels, which = c("column", "row"),
-                      side = ifelse(which == "column", "top", "right"),
-                      lines_gp = grid::gpar(), labels_gp = grid::gpar(), padding = 0.5,
-                      link_width = grid::unit(5, "mm"), link_height = link_width,
-                      link_gp = lines_gp,
-                      extend = grid::unit(0, "mm")) {
-  which <- match.arg(which)[1]
-
-  if (!is.numeric(at)) {
-    message(paste0("`at` should be numeric ", which, " index corresponding to the matrix."))
-  }
-
-  n <- length(at)
-  link_gp <- recycle_gp(link_gp, n)
-  labels_gp <- recycle_gp(labels_gp, n)
-  labels2index <- structure(seq_along(at), names = labels)
-  at2labels <- structure(labels, names = at)
-
-  if (length(extend) == 1) extend <- rep(extend, 2)
-  if (length(extend) > 2) extend <- extend[1:2]
-  if (!inherits(extend, "unit")) extend <- grid::unit(extend, "npc")
-
-  height <- link_width + ComplexHeatmap::max_text_width(labels, gp = labels_gp)
-  width <- grid::unit(1, "npc")
-
-  .pos <- NULL
-  .scale <- NULL
-
-  column_fun <- function(index) {
-    n <- length(index)
-
-    # adjust at and labels
-    at <- intersect(index, at)
-    if (length(at) == 0) {
-      return(NULL)
-    }
-    labels <- at2labels[as.character(at)]
-
-    # labels_gp = subset_gp(labels_gp, labels2index[labels])
-    # link_gp = subset_gp(link_gp, labels2index[labels])
-
-    if (is.null(.scale)) {
-      .scale <- c(0.5, n + 0.5)
-    }
-    pushViewport(viewport(yscale = c(0, 1), xscale = .scale))
-    if (inherits(extend, "unit")) extend <- convertWidth(extend, "native", valueOnly = TRUE)
-    # text_height = convertWidth(grobHeight(textGrob(labels, gp = labels_gp))*(1+padding), "native", valueOnly = TRUE)
-    text_height <- convertWidth(grobWidth(textGrob(labels, gp = labels_gp)) * (2 + padding), "native", valueOnly = TRUE)
-    if (is.null(.pos)) {
-      i2 <- which(index %in% at)
-      pos <- i2 # position of rows
-    } else {
-      pos <- .pos[which(index %in% at)]
-    }
-    h1 <- pos - text_height * 0.5
-    h2 <- pos + text_height * 0.5
-    pos_adjusted <- smartAlign(h1, h2, c(.scale[1] - extend[1], .scale[2] + extend[2]))
-    h <- (pos_adjusted[, 1] + pos_adjusted[, 2]) / 2
-
-    n2 <- length(labels)
-    # grid.text(labels, h, rep(max_text_width(labels, gp = labels_gp), n2), default.units = "native", gp = labels_gp, rot = 0, just = "center")
-    grid.text(labels, h, rep(grobHeight(textGrob(labels, gp = labels_gp)), n2), default.units = "native", gp = labels_gp, rot = 0, just = "center")
-    link_height <- link_height - grid::unit(1, "mm")
-    grid.segments(pos, grid::unit(rep(1, n2), "npc"), pos, grid::unit(1, "npc") - rep(link_height * (1 / 3), n2), default.units = "native", gp = link_gp)
-    grid.segments(pos, grid::unit(1, "npc") - rep(link_height * (1 / 3), n2), h, grid::unit(1, "npc") - rep(link_height * (2 / 3), n2), default.units = "native", gp = link_gp)
-    grid.segments(h, grid::unit(1, "npc") - rep(link_height * (2 / 3), n2), h, grid::unit(1, "npc") - rep(link_height, n2), default.units = "native", gp = link_gp)
-    upViewport()
-  }
-
-  fun <- column_fun
-
-  anno <- ComplexHeatmap::AnnotationFunction(
-    fun = fun,
-    fun_name = "anno_mark",
-    which = which,
-    width = width,
-    height = height,
-    n = -1,
-    var_import = list(
-      at, labels2index, at2labels, link_gp, labels_gp, padding, .pos, .scale,
-      side, link_width, link_height, extend
-    ),
-    show_name = FALSE
-  )
-
-  # anno@subset_rule$at = subset_by_intersect
-
-  anno@subsetable <- TRUE
-  return(anno)
-}
-
 make_bottom_annot <- function(copynumber,
                               chrlabels = TRUE,
                               filterlabels = NULL,
@@ -603,7 +502,7 @@ make_bottom_annot <- function(copynumber,
       link_height = grid::unit(linkheight, "mm"),
       labels_gp = grid::gpar(fontsize = annofontsize),
       side = "bottom",
-      padding = 0.5, extend = 0.01
+      padding = unit(1.25, "mm"), extend = 0.01, labels_rot = 0
     ), show_annotation_name = FALSE,
     annotation_height = annotation_height)
   } else {
@@ -614,7 +513,7 @@ make_bottom_annot <- function(copynumber,
       labels = names(chrom_label_pos),
       side = "bottom",
       labels_gp = grid::gpar(fontsize = annofontsize),
-      padding = 0.5, extend = 0.01
+      padding = unit(1.25, "mm"), extend = 0.01, labels_rot = 0
     ), show_annotation_name = FALSE,
     annotation_height = annotation_height)
   }
