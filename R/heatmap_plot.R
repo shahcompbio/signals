@@ -496,7 +496,7 @@ make_bottom_annot <- function(copynumber,
     return(NULL)
   } else if (chrlabels[1] == TRUE) {
     chrom_label_pos <- get_chrom_label_pos(copynumber, nticks = nticks)
-    bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = anno_mark(
+    bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = ComplexHeatmap::anno_mark(
       at = as.vector(unlist(chrom_label_pos)),
       labels = names(chrom_label_pos),
       link_height = grid::unit(linkheight, "mm"),
@@ -508,7 +508,7 @@ make_bottom_annot <- function(copynumber,
   } else {
     chrom_label_pos <- get_chrom_label_pos(copynumber)
     chrom_label_pos <- chrom_label_pos[chrlabels]
-    bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = anno_mark(
+    bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = ComplexHeatmap::anno_mark(
       at = as.vector(unlist(chrom_label_pos)),
       labels = names(chrom_label_pos),
       side = "bottom",
