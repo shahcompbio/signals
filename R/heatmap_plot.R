@@ -502,7 +502,7 @@ make_bottom_annot <- function(copynumber,
       link_height = grid::unit(linkheight, "mm"),
       labels_gp = grid::gpar(fontsize = annofontsize),
       side = "bottom",
-      padding = unit(1.25, "mm"), extend = 0.01, labels_rot = 0
+      padding = grid::unit(1.25, "mm"), extend = 0.01, labels_rot = 0
     ), show_annotation_name = FALSE,
     annotation_height = annotation_height)
   } else {
@@ -513,7 +513,7 @@ make_bottom_annot <- function(copynumber,
       labels = names(chrom_label_pos),
       side = "bottom",
       labels_gp = grid::gpar(fontsize = annofontsize),
-      padding = unit(1.25, "mm"), extend = 0.01, labels_rot = 0
+      padding = grid::unit(1.25, "mm"), extend = 0.01, labels_rot = 0
     ), show_annotation_name = FALSE,
     annotation_height = annotation_height)
   }
