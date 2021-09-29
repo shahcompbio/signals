@@ -582,6 +582,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param overwritemincells Overwrite the the number of cells to use for clustering/phasing
 #' @param cluster_per_chr Whether to cluster per chromosome to rephase alleles or not
 #' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
+#' @param firstpassfiltering Filter out cells with large discrepancy after first pass state assignment
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -627,7 +628,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     overwritemincells = NULL,
                                     cluster_per_chr = TRUE,
                                     viterbiver = "cpp", 
-                                    filterhaplotypes = 0.1) {
+                                    filterhaplotypes = 0.1,
+                                    firstpassfiltering = TRUE) {
   if (!clustering_method %in% c("copy", "breakpoints")) {
     stop("Clustering method must be one of copy or breakpoints")
   }
@@ -685,6 +687,18 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     ncores = ncores,
                                     viterbiver = viterbiver
   )
+  
+  if (firstpassfiltering){
+    #calculate average distances between expectation and data
+    ave_dist <- qc_per_cell(ascn)
+    cells_to_keep <- ave_dist %>% 
+      dplyr::filter(average_distance < 0.05)
+    cells_to_remove <- ave_dist %>% 
+      dplyr::filter(average_distance >= 0.05)
+    message(paste0("Removing ", dim(cells_to_remove)[1], " cells for phasing"))
+    ascn <- ascn %>% dplyr::filter(cell_id %in% cells_to_keep$cell_id)
+    haplotypes <- haplotypes %>% dplyr::filter(cell_id %in% cells_to_keep$cell_id)
+  }
   
   infloherror <- ascn %>%
     dplyr::filter(state_phase == "A-Hom") %>%
