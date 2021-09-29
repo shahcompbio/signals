@@ -1,3 +1,7 @@
+# schnapps 0.6.0
+
+* add option to remove noisy cells from phasing
+
 # schnapps 0.5.5
 
 * update plotting and clustering
