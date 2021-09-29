@@ -7,7 +7,7 @@
 callHaplotypeSpecificCN(
   CNbins,
   haplotypes,
-  eps = 0.000000000001,
+  eps = 1e-12,
   loherror = 0.02,
   maxCN = NULL,
   selftransitionprob = 0.95,
@@ -25,7 +25,8 @@ callHaplotypeSpecificCN(
   overwritemincells = NULL,
   cluster_per_chr = TRUE,
   viterbiver = "cpp",
-  filterhaplotypes = 0.1
+  filterhaplotypes = 0.1,
+  firstpassfiltering = TRUE
 )
 }
 \arguments{
@@ -66,6 +67,8 @@ callHaplotypeSpecificCN(
 \item{cluster_per_chr}{Whether to cluster per chromosome to rephase alleles or not}
 
 \item{filterhaplotypes}{filter out haplotypes present in less than X fraction, default is 0.1}
+
+\item{firstpassfiltering}{Filter out cells with large discrepancy after first pass state assignment}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include

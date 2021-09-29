@@ -1217,6 +1217,9 @@ plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, den
 
   text_fraction <- dplyr::distinct(forplot, state_AS_phased, f) %>%
     dplyr::mutate(pct = paste0(100 * round(f, 2), "%"), y = 0.95)
+  
+  maxCN <- min(11, max(alleleCN$state, na.rm = TRUE))
+  minCN <- min(alleleCN$state, na.rm = TRUE)
 
   g <- forplot %>%
     dplyr::mutate(cncol = paste0("CN", state)) %>%
@@ -1228,9 +1231,9 @@ plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, den
     ggplot2::geom_boxplot(width = 0.1, outlier.shape = NA, col = "white", ggplot2::aes(fill = cncol)) +
     ggplot2::scale_fill_manual(
       name = "Copy number \n state",
-      breaks = paste0("CN", seq(min(alleleCN$state, na.rm = TRUE), max(alleleCN$state, na.rm = TRUE), 1)),
-      labels = seq(min(alleleCN$state, na.rm = TRUE), max(alleleCN$state, na.rm = TRUE), 1),
-      values = scCN_cols(paste0("CN", seq(min(alleleCN$state, na.rm = TRUE), max(alleleCN$state, na.rm = TRUE), 1)))
+      breaks = paste0("CN", seq(minCN, maxCN, 1)),
+      labels = seq(minCN, maxCN, 1),
+      values = scCN_cols(paste0("CN", seq(minCN, maxCN, 1)))
     ) +
     cowplot::theme_cowplot() +
     ggplot2::geom_crossbar(
