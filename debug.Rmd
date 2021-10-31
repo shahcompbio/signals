@@ -1,0 +1,291 @@
+---
+title: "Debugging"
+author: "Marc J Williams"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: kable
+    number_sections: yes
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  warning=FALSE, message=FALSE, 
+  comment = "#>"
+)
+```
+
+```{r}
+library(devtools)
+load_all()
+data(haplotypes)
+data(CNbins)
+haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
+head(haplotypes)
+haplotypes <- as.data.table(haplotypes)
+total_cells <- 250
+haplotypes <- filter_haplotypes(haplotypes)
+x <- min_cells(haplotypes)
+hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, phasebyarm = FALSE, ncores = 10, cluster_per_chr = TRUE)
+plotHeatmap(hscn, plotcol = "state_phase")
+```
+
+
+```{r}
+cnbaf <- combineBAFCN(
+  haplotypes = haplotypes,
+  CNbins = CNbins
+)
+
+ascn <- .callHaplotypeSpecificCN_(cnbaf, ncores = 10)
+ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
+
+chrlist <- proportion_imbalance(ascn,
+  haplotypes,
+  phasebyarm = FALSE,
+  minfrac = 0.7,
+  cluster_per_chr = TRUE
+)
+
+chrlist <- get_cells_per_bin_local(ascn,
+  haplotypes,
+  12,
+  field = "state_BAF",
+  clustering_method = clustering_method
+)
+
+phased_haplotypes <- phase_haplotypes_bybin(
+  haplotypes = haplotypes,
+  chrlist = chrlist,
+  phasebyarm = phasebyarm
+)
+
+cnbaf2 <- combineBAFCN(
+  haplotypes = haplotypes,
+  CNbins = CNbins,
+  phased_haplotypes = phased_haplotypes
+)
+
+hscn_data <- .callHaplotypeSpecificCN_(cnbaf2,ncores = 10)
+
+cl <- umap_clustering(hscn$data, seed = 123)
+
+plotHeatmap(ascn, plotcol = "state_phase", clusters = cl$clustering, tree = cl$tree, reorderclusters = TRUE)
+plotHeatmap(hscn, plotcol = "state_phase", clusters = cl$clustering, tree = cl$tree, reorderclusters = TRUE)
+plotHeatmap(hscn_data, plotcol = "state_phase", clusters = cl$clustering, tree = cl$tree, reorderclusters = TRUE)
+plotHeatmap(hscn, plotcol = "state", clusters = cl$clustering, tree = cl$tree, reorderclusters = TRUE)
+
+get_cells_per_bin_local <- function(ascn,
+                                    haplotypes,
+                                    ncells_for_clustering,
+                                    field = "BAF",
+                                    clustering_method = "copy",
+                                    phasebyarm = FALSE) {
+
+  # cluster cells per chromosome
+
+  chrlist <- list()
+  for (mychr in unique(ascn$chr)) {
+    message(paste0("Clustering chromosome ", mychr))
+    ascn_chr <- as.data.table(ascn)[chr == mychr]
+    cl <- umap_clustering(ascn_chr,
+      n_neighbors = 20,
+      min_dist = 0.001,
+      minPts = ncells_for_clustering,
+      field = "state_BAF",
+      umapmetric = "euclidean"
+    )
+    cl$clustering <- dplyr::filter(cl$clustering, clone_id != "0")
+    prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>% 
+        .[, list(
+          propimb = round(sum(balance) / .N, 2),
+          propA = sum(phase == "A") / .N,
+          propB = sum(phase == "B") / .N,
+          n = sum(balance),
+          propModestate = sum(state == Mode(state)) / .N,
+          ncells = length(unique(cell_id))
+        ), by = .(chr, start, end, clone_id)]
+    prop <- prop[order(chr, start, end, propA, decreasing = TRUE)]
+    prop <- prop %>% 
+      .[order(chr, start)]
+    prop <- prop[, maxA := max(propA), by = .(chr, start, end)] %>% 
+      .[, maxB := max(propB), by = .(chr, start, end)] %>% 
+      .[, maximb := max(propimb), by = .(chr, start, end)] %>% 
+      .[, phase := ifelse(maxA >= maxB, "A", "B")] %>% 
+      .[(phase == "A" & (propA >= maxA | propA >= 0.9) & (propA > propB)) | (phase == "B" & (propB >= maxB | propB >= 0.9) & (propB > propA))]
+    
+    bins <- distinct(prop, chr, start, end)
+    df <- dplyr::tibble()
+    for (i in 1:nrow(bins)){
+      bins_ <- bins[i, ]
+      clones <- prop[chr == bins_$chr & start == bins_$start] %>% .$clone_id
+      newdf <- bins_ %>% as_tibble()
+      newdf$cell_id <- list(cl$clustering %>% filter(clone_id %in% clones) %>% pull(cell_id))
+      newdf$ncells <- length(newdf$cell_id[[1]])
+      newdf$clones <- paste0(clones, collapse = ", ")
+      df <- dplyr::bind_rows(df, newdf)
+    }
+    
+    chrlist[[mychr]] <- df
+  }
+
+  return(chrlist)
+}
+
+phase_haplotypes_bybin <- function(haplotypes, chrlist, phasebyarm = FALSE) {
+  haplotypes <- as.data.table(haplotypes)
+
+  phased_haplotypes <- data.table()
+  for (i in names(chrlist)) {
+    phased_haplotypes_temp1 <- haplotypes[chr == i]
+    dftemp <- chrlist[[i]]
+    for (x in 1:nrow(dftemp)){
+      phased_haplotypes_temp2 <- phased_haplotypes_temp1[(start == dftemp$start[x]) & (cell_id %in% dftemp$cell_id[x][[1]])] %>% 
+        .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+        .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
+        .[, c("allele1", "allele0") := NULL]
+         phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp2)
+    }
+  }
+
+  return(phased_haplotypes)
+}
+
+prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>% 
+    .[, list(
+      propimb = round(sum(balance) / .N, 2),
+      propA = sum(phase == "A") / .N,
+      propB = sum(phase == "B") / .N,
+      n = sum(balance),
+      propModestate = sum(state == Mode(state)) / .N,
+      ncells = length(unique(cell_id))
+    ), by = .(chr, start, end, clone_id)]
+prop <- prop[order(chr, start, end, propA, decreasing = TRUE)]
+prop <- prop %>% 
+  .[order(chr, start)]
+prop <- prop[, maxA := max(propA), by = .(chr, start, end)] %>% 
+  .[, maxB := max(propB), by = .(chr, start, end)] %>% 
+  .[, maximb := max(propimb), by = .(chr, start, end)] %>% 
+  .[, phase := ifelse(maxA >= maxB, "A", "B")] %>% 
+  .[(phase == "A" & (propA >= maxA | propA >= 0.9)) | (phase == "B" & (propB >= maxB | propB >= 0.9))]
+prop <- prop[prop[, .I[which.max(propA)], by = .(chr, start, end)]$V1]
+
+bins <- distinct(prop, chr, start, end)
+df <- tibble()
+for (i in 1:nrow(bins)){
+  bins_ <- bins[i, ]
+  clones <- prop[chr == bins_$chr & start == bins_$start] %>% .$clone_id
+  newdf <- bins_ %>% as_tibble()
+  newdf$cell_id <- list(cl$clustering %>% filter(clone_id %in% clones) %>% pull(cell_id))
+  newdf$ncells <- length(newdf$cell_id[[1]])
+  df <- bind_rows(df, newdf)
+}
+
+ascn_chr_segs <- consensuscopynumber(ascn_chr, cl = cl$clustering) %>% create_segments(., field = "phase") %>% 
+  mutate(w = (end - start + 1) / 1e6)
+
+ascn_chr_segs <- create_segments(ascn_chr, field = "phase") %>% 
+  mutate(w = (end - start + 1) / 1e6)
+
+
+phase_haplotypes_bybin2 <- function(haplotypes, chrlist, phasebyarm = FALSE) {
+  haplotypes <- as.data.table(haplotypes)
+
+  if (phasebyarm) {
+    haplotypes$chrarm <- paste0(haplotypes$chr, coord_to_arm(haplotypes$chr, haplotypes$start))
+    phased_haplotypes <- data.table()
+    for (i in names(chrlist)) {
+      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chrarm == i] %>%
+        .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+        .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
+        .[, c("allele1", "allele0") := NULL]
+      phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
+    }
+  } else {
+    phased_haplotypes <- data.table()
+    for (i in names(chrlist)) {
+      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chr == i] %>%
+        .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+        .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
+        .[, c("allele1", "allele0") := NULL]
+      phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
+    }
+  }
+
+  return(phased_haplotypes)
+}
+
+chrlist <- list()
+for (mychr in unique(ascn$chr)) {
+  message(paste0("Clustering chromosome ", mychr))
+  ascn_chr <- as.data.table(ascn)[chr == mychr]
+  cl <- umap_clustering(ascn_chr,
+    n_neighbors = 20,
+    min_dist = 0.001,
+    minPts = ncells_for_clustering,
+    field = "state_BAF",
+    umapmetric = "euclidean"
+  )
+  prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
+    .[, list(
+      propA = round(sum(balance) / .N, 2),
+      n = sum(balance),
+      propModestate = sum(state == Mode(state)) / .N,
+      ncells = length(unique(cell_id))
+    ), by = .(chr, cell_id, clone_id)] %>%
+    .[, list(
+      propA = median(propA),
+      n = median(n),
+      propModestate = median(propModestate),
+      ncells = median(ncells)
+    ), by = .(chr, clone_id)]
+  prop <- prop[order(propA, propModestate, n, decreasing = TRUE)]
+  prop <- prop[prop[, .I[which.max(propA)], by = chr]$V1]
+  cells <- dplyr::filter(cl$clustering, clone_id == prop$clone_id[1]) %>%
+    dplyr::pull(cell_id)
+  chrlist[[mychr]] <- cells
+}
+
+```
+
+
+# HMM
+
+```{r}
+x <- c(rep(1, 10), rep(0, 10), c(1,1,1), 0)
+sampb <- function(x){
+  if (x == 1){
+    xst <- rbeta(1, 10, 1)
+  } else {
+    xst <- rbeta(1, 1, 10)
+  }
+  return(xst)
+}
+x_st <- unlist(lapply(X = x, FUN = sampb))
+
+x1 <- dbeta(x_st, 1, 10)
+x2 <- dbeta(x_st, 10, 1)
+
+tr <- matrix(c(0.95, 0.05, 0.05, 0.95), ncol = 2)
+
+res <- schnapps:::viterbiR(matrix(c(x1, x2), ncol = 2), tr, seq(1, length(x), 1))
+
+
+sum(res == x) / length(x)
+
+
+phaseHMM <- function(x){
+  x1 <- dbeta(x, 1, 8)
+  x2 <- dbeta(x, 8, 1)
+  
+  tr <- matrix(c(0.95, 0.05, 0.05, 0.95), ncol = 2)
+  
+  res <- schnapps:::viterbiR(matrix(c(x1, x2), ncol = 2), tr, seq(1, length(x), 1))
+}
+
+```

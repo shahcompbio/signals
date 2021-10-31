@@ -25,6 +25,8 @@ callAlleleSpecificCNfromHSCN(
 \item{progressbar}{Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1}
 
 \item{ncores}{Number of cores to use, default = 1}
+
+\item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include

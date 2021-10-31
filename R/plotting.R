@@ -660,6 +660,7 @@ plotCNprofileBAFhomolog <- function(cn,
                                     adj = 0.03,
                                     svalpha = 0.5,
                                     svwidth = 1.0,
+                                    shuffle = TRUE,
                                     ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -704,6 +705,12 @@ plotCNprofileBAFhomolog <- function(cn,
     dplyr::mutate(Bcopy = ifelse(Bcopy > maxCN, maxCN - 0.001, Bcopy)) %>%
     plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN)
 
+  pl$CNbins <- pl$CNbins %>% 
+    tidyr::pivot_longer(cols = c("Acopy", "Bcopy"))
+  if (shuffle){
+    pl$CNbins <- dplyr::sample_frac(pl$CNbins, 1L)
+  }
+    
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
       stop("Package \"ggrastr\" needed for this function to work. Please install it.",
@@ -717,10 +724,10 @@ plotCNprofileBAFhomolog <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(aes(y = Acopy), col = scCNphase_colors[["A-Hom"]], size = pointsize, alpha = alphaval) +
-      ggrastr::geom_point_rast(aes(y = Bcopy), col = scCNphase_colors[["B-Hom"]], size = pointsize, alpha = alphaval) +
+      ggrastr::geom_point_rast(aes(y = value, col = name), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(
         name = "",
+        labels = c("Homolog A", "Homolog B"),
         values = as.vector(scCNphase_colors[c("A-Hom", "B-Hom")]),
         drop = FALSE
       ) +
@@ -747,10 +754,10 @@ plotCNprofileBAFhomolog <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(aes(y = Acopy, col = "Homolog A"), size = pointsize, alpha = alphaval) +
-      ggplot2::geom_point(aes(y = Bcopy, col = "Homolog B"), size = pointsize, alpha = alphaval) +
+      ggplot2::geom_point(aes(y = value, col = name), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(
         name = "",
+        labels = c("Homolog A", "Homolog B"),
         values = as.vector(scCNphase_colors[c("A-Hom", "B-Hom")]),
         drop = FALSE
       ) +

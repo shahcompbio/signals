@@ -56,27 +56,42 @@ scCNminorallele_colors <- c(
   `5` = "#1C0713"
 )
 
+# scCNphase_colors <- c(
+#   `A-Hom` = "#025767",
+#   `B-Hom` = "#A75200",
+#   `A-Gained` = "#53AFC0",
+#   `B-Gained` = "#FF9E41",
+#   `Balanced` = "#d5d5d4"
+# )
+
 scCNphase_colors <- c(
-  `A-Hom` = "#025767",
-  `B-Hom` = "#A75200",
-  `A-Gained` = "#53AFC0",
-  `B-Gained` = "#FF9E41",
+  `A-Hom` = "#56941E",
+  `B-Hom` = "#471871",
+  `A-Gained` = "#94C773",
+  `B-Gained` = "#7B52AE",
   `Balanced` = "#d5d5d4"
 )
 
-scBAFstate_colors <- c(
-  `0` = "#025767",
-  `0.1` = "#036F83",
-  `0.2` = "#0E8BA3",
-  `0.3` = "#2F99AC",
-  `0.4` = "#53AFC0",
-  `0.5` = "#d5d5d4",
-  `0.6` = "#FFB36B",
-  `0.7` = "#FF9E41",
-  `0.8` = "#FF8511",
-  `0.9` = "#D56800",
-  `1` = "#A75200"
-)
+#colvals <- circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-Hom"], scCNphase_colors["Balanced"], scCNphase_colors["B-Hom"]))
+
+# scBAFstate_colors <- c(
+#   `0` = "#025767",
+#   `0.1` = "#036F83",
+#   `0.2` = "#0E8BA3",
+#   `0.3` = "#2F99AC",
+#   `0.4` = "#53AFC0",
+#   `0.5` = "#d5d5d4",
+#   `0.6` = "#FFB36B",
+#   `0.7` = "#FF9E41",
+#   `0.8` = "#FF8511",
+#   `0.9` = "#D56800",
+#   `1` = "#A75200"
+# )
+
+colvals <- circlize::colorRamp2(c(0, 0.5, 1), c(scCNphase_colors["A-Hom"], scCNphase_colors["Balanced"], scCNphase_colors["B-Hom"]))
+scBAFstate_colors <- unlist(lapply(seq(0.0, 1.0, 0.1), colvals))
+names(scBAFstate_colors) <- paste0(seq(0.0, 1.0, 0.1))
+
 
 SV_colors <- c(
   `Inversion` = "darkorange3",

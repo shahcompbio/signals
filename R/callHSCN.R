@@ -389,13 +389,18 @@ get_cells_per_chr_local <- function(ascn,
   for (mychr in unique(ascn$chr)) {
     message(paste0("Clustering chromosome ", mychr))
     ascn_chr <- as.data.table(ascn)[chr == mychr]
-    cl <- umap_clustering(ascn_chr,
-                          n_neighbors = 20,
-                          min_dist = 0.001,
-                          minPts = ncells_for_clustering,
-                          field = "state_BAF",
-                          umapmetric = "euclidean"
-    )
+    if (ncells_for_clustering > 1){
+      cl <- umap_clustering(ascn_chr,
+                            n_neighbors = 20,
+                            min_dist = 0.001,
+                            minPts = ncells_for_clustering,
+                            field = "state_BAF",
+                            umapmetric = "euclidean")
+    } else{
+      cl <- list(clustering = data.frame(cell_id = unique(ascn_chr$cell_id)) %>% 
+                   dplyr::mutate(clone_id = paste0(1:dplyr::n())))
+    }
+    
     prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
       .[, list(
         propA = round(sum(balance) / .N, 2),
@@ -583,6 +588,8 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param cluster_per_chr Whether to cluster per chromosome to rephase alleles or not
 #' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
 #' @param firstpassfiltering Filter out cells with large discrepancy after first pass state assignment
+#' @param smoothsingletons Remove singleton bins by smoothing over based on states in adjacent bins
+#' @param fillmissing For bins with missing counts fill in values based on neighbouring bins
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -629,7 +636,9 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     cluster_per_chr = TRUE,
                                     viterbiver = "cpp", 
                                     filterhaplotypes = 0.1,
-                                    firstpassfiltering = TRUE) {
+                                    firstpassfiltering = TRUE,
+                                    smoothsingletons = TRUE,
+                                    fillmissing = TRUE) {
   if (!clustering_method %in% c("copy", "breakpoints")) {
     stop("Clustering method must be one of copy or breakpoints")
   }
@@ -782,6 +791,12 @@ callHaplotypeSpecificCN <- function(CNbins,
   out <- list()
   class(out) <- "hscn"
   
+  if (fillmissing){
+    hscn_data <- dplyr::left_join(CNbins, hscn_data)
+    hscn_data <- tidyr::fill(hscn_data, c("state_min", "Maj", "Min", "state_phase", "state_AS", 
+                                "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup")
+  }
+  
   haplotype_counts <- dplyr::left_join(haplotype_counts, phased_haplotypes, by = c("chr", "start", "end", "hap_label")) %>% 
     dplyr::mutate(phase = ifelse(is.na(phase), "removed", phase)) %>% as.data.frame(.)
   
@@ -796,7 +811,9 @@ callHaplotypeSpecificCN <- function(CNbins,
   out[["qc_summary"]] <- qc_summary(hscn_data)
   out[["qc_per_cell"]] <- qc_per_cell(hscn_data)
   
-  out <- fix_assignments(out)
+  if (smoothsingletons){
+    out <- fix_assignments(out)
+  }
   
   return(out)
 }
@@ -1141,7 +1158,7 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9, ncells = 1) {
       .[LOH > 0.9 & abs(mBAF) < 0.05] %>%
       .$cell_id
     
-    if (length(cells) > ncells) {
+    if (length(cells) >= ncells) {
       BAFm <- cndat %>%
         as.data.table() %>%
         .[chr == mychr] %>%
@@ -1155,7 +1172,7 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9, ncells = 1) {
     
     message(paste0("\tNumber of cells with whole chromosome LOH = ", length(cells)))
     
-    if ((length(cells) > ncells) & (mychr %in% chromosomes)) {
+    if ((length(cells) >= ncells) & (mychr %in% chromosomes)) {
       
       # create matrix of allele phases
       phasemat <- cndat %>%
