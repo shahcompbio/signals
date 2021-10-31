@@ -358,7 +358,7 @@ make_left_annot <- function(copynumber,
       library_labels <- get_library_labels(rownames(copynumber))
     }
   }
-  library_levels <- gtools::mixedsort(unique(library_labels))
+  library_levels <- gtools::mixedsort(unlist(unique(library_labels)))
   annot_colours$Sample <- make_discrete_palette("Set2", library_levels)
   annot_colours$Sample <- annot_colours$Sample[!is.na(annot_colours$Sample)]
 

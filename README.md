@@ -21,33 +21,51 @@ devtools::install_github("shahcompbio/schnapps")
 
 ## Input data
 
-`schnapps` was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in [Laks et al.](https://www.sciencedirect.com/science/article/pii/S0092867419311766). As such it works using the output of the the pipeline developed to process this type of data, available [here](https://github.com/shahcompbio/single_cell_pipeline). Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP counts may also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running schnapps please open an issue.
+`schnapps` was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in [Laks et al.](https://www.sciencedirect.com/science/article/pii/S0092867419311766). As such it works using the output of the the pipeline developed to process this type of data, available [here](https://github.com/shahcompbio/single_cell_pipeline). Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP counts may also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running schnapps please open an issue. We describe in more detail the 
 
-Below is an example of how to use schnapps with DLP data. You will need the HMM copy results table (`CNbins`) with the following columns: `chr`, `start`,`end`, `cell_id`, `state`, `copy`, as well as cell specific haplotype counts as outputted by [scgenome](https://github.com/shahcompbio/scgenome) with the following command. This includes the following columns: `chr`, `start`,`end`, `cell_id`, `hap_label`, `allele_id`, `readcount`.
+### DLP+ data
 
-```py
-allele_results = scgenome.loaders.allele.load_haplotype_allele_data(
-    ticket_directory,
-)
-allele_data = allele_results['allele_counts']
+You will need the HMM copy results table (`CNbins`) with the following columns: `chr`, `start`,`end`, `cell_id`, `state`, `copy`. `state` is the inferred total copy number state. `copy` values are GC-correceted, ploidy corrected normalized read counts (this is what HMMcopy uses to infer the states). You will also need the cell specific haplotype counts (`allele_data`) as outputted by the `inferhaps` and `couthaps` sub commands in the pipeline. This includes the following columns: `chr`, `start`,`end`, `cell_id`, `hap_label`, `allele_id`, `readcount`. `allele_id` gives the haplotype phasing, often this is designated as `1|0` or `0|1`, you'll notice in the test data each haplotype has 2 rows, one for each phase. `hap_label` is a label given to the haplotype block, these labels are consistent across cells, and in combination with `chr` gives each block a unique ID. These blocks are computed by finding SNP's that can be confidently phased together. See the section of "phasing uncertainty" in SHAPEIT [here](https://mathgen.stats.ox.ac.uk/genetics_software/shapeit/shapeit.html#uncertainty). This notion of phasing uncertainty is also used in [remixt](https://github.com/amcpherson/remixt). Note that this notion of haplotype block is different to other tools such as CHISEL (single cells) or where it is assumed that the the phasing remains consistent over seem specified length such as 50kb. Finally the `readcount` columns gives the sum of the number of reads for each allele in each block
+
+### Other technologies
+
+Other technologies and software should also be compatible with schnapps. For example, we have used 10X data successfully. If you have single cell bam files or fastq files see the detailed documentation for running our single cell pipeline [here](https://github.com/shahcompbio/single_cell_pipeline/blob/master/docs/source/install.md). Alternatively, we provide a lightweight snakemake pipeline with the key steps [here](https://github.com/marcjwilliams1/hscn_pipeline). Also included there are some scripts to demultiplex 10X CNV bams.
+
+If you total copy number calls from other software such as 10X cellranger or [scope](https://github.com/rujinwang/SCOPE), these may also work but not something we have tried. Feel free to open an issue if you need some advice.
+
+### Data conventions
+
+Some of the plotting tools assume that the `cell_id`'s conform to the following naming conventions
+
 ```
+{sample}-{library}-{R*}-{C*}
+```
+
+Here R and C refer the rows and columns on the chip. If you're using another technology and your cells are named differently, we would reccomend renaming your cell's for easy compatability. For example, if you have 10X data where cell_id's are barcodes that look like `CCGTACTTCACGGTAT-1` something like this would work
+
+```{r}
+new_cell_id <- paste("mysample", "mylibrary", "CCGTACTTCACGGTAT-1", sep = "-")
+```
+
+It is imortant to have 4 string's seperated by "-", but the unique cell identifier should be one of the last 2 strings for the heatmap labelling to format nicely.
 
 ## Example
 
-First we need to do some data wrangling to convert the `allele_data` table from long to wide format.
+Here we'll show an example of running schnapps with a small dataset of 250 cells from the DLP platform. First we need to do some data wrangling to convert the `allele_data` table from long to wide format.
+
 ``` r
 library(schnapps)
-allele_data <- format_haplotypes_dlp(allele_data, CNbins)
+haplotypes<- format_haplotypes_dlp(haplotypes, CNbins)
 ```
 
 Then we can call haplotype specific state per cell:
 ```r
-hscn <- callHaplotypeSpecificCN(CNbins, allele_data)
+hscn <- callHaplotypeSpecificCN(CNbins, haplotypes)
 ```
 
 Or alternatively allele specific states:
 ```r
-hscn <- callAlleleSpecificCN(CNbins, allele_data)
+hscn <- callAlleleSpecificCN(CNbins, haplotypes)
 ```
 
 See the vignette for more information on the differences between these two outputs.
@@ -69,6 +87,7 @@ This will cluster the cell using umap and hdbscan.
 * extensive plotting functions
 * integration and plotting with structural variants
 * clustering
+* utilities such as consensus copy number in cell clusters and arm level changes etc
 
 Please see the vignettes for more information.
 

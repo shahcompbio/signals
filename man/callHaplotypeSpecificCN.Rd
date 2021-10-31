@@ -26,7 +26,9 @@ callHaplotypeSpecificCN(
   cluster_per_chr = TRUE,
   viterbiver = "cpp",
   filterhaplotypes = 0.1,
-  firstpassfiltering = TRUE
+  firstpassfiltering = TRUE,
+  smoothsingletons = TRUE,
+  fillmissing = TRUE
 )
 }
 \arguments{
@@ -69,6 +71,10 @@ callHaplotypeSpecificCN(
 \item{filterhaplotypes}{filter out haplotypes present in less than X fraction, default is 0.1}
 
 \item{firstpassfiltering}{Filter out cells with large discrepancy after first pass state assignment}
+
+\item{smoothsingletons}{Remove singleton bins by smoothing over based on states in adjacent bins}
+
+\item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include

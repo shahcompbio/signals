@@ -17,7 +17,8 @@ callAlleleSpecificCN(
   minbins = 100,
   minbinschr = 10,
   maxloherror = 0.03,
-  filterhaplotypes = 0.1
+  filterhaplotypes = 0.1,
+  fillmissing = TRUE
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ callAlleleSpecificCN(
 \item{maxloherror}{Maximum value for LOH error rate}
 
 \item{filterhaplotypes}{filter out haplotypes present in less than X fraction, default is 0.1}
+
+\item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include

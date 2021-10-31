@@ -178,6 +178,7 @@ switch_alleles <- function(cn) {
 #' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
 #' @param maxloherror Maximum value for LOH error rate
 #' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
+#' @param fillmissing For bins with missing counts fill in values based on neighbouring bins
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -188,6 +189,7 @@ switch_alleles <- function(cn) {
 #' * `LOH` (is bin LOH or not)
 #' * `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
 #' * `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))
+#' 
 #'
 #' @details
 #' In the allele specific copy number inference Maj is always > Min and state_AS_phased == state_AS
@@ -205,7 +207,8 @@ callAlleleSpecificCN <- function(CNbins,
                                  minbins = 100,
                                  minbinschr = 10,
                                  maxloherror = 0.03,
-                                 filterhaplotypes = 0.1) {
+                                 filterhaplotypes = 0.1, 
+                                 fillmissing = TRUE) {
   if (!likelihood %in% c("binomial", "betabinomial", "auto")) {
     stop("Likelihood model for HMM emission model must
          be one of binomial, betabinomial or auto",
@@ -378,6 +381,13 @@ callAlleleSpecificCN <- function(CNbins,
     .[, switch := NULL] %>%
     .[, distA := NULL] %>%
     .[, distB := NULL]
+  
+  
+  if (fillmissing){
+    alleleCN <- dplyr::left_join(CNbins, alleleCN)
+    alleleCN <- tidyr::fill(alleleCN, c("state_min", "Maj", "Min", "state_phase", "state_AS", 
+                                        "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup")
+  }
 
   # Output
   out <- list()
@@ -402,6 +412,7 @@ callAlleleSpecificCN <- function(CNbins,
 #' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model
 #' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
 #' @param ncores Number of cores to use, default = 1
+#' @param fillmissing For bins with missing counts fill in values based on neighbouring bins
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
@@ -537,6 +548,12 @@ callAlleleSpecificCNfromHSCN <- function(hscn,
     .[, switch := NULL] %>%
     .[, distA := NULL] %>%
     .[, distB := NULL]
+  
+  if (fillmissing){
+    alleleCN <- dplyr::left_join(CNbins, alleleCN)
+    alleleCN <- tidyr::fill(alleleCN, c("state_min", "Maj", "Min", "state_phase", "state_AS", 
+                                          "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup")
+  }
   
   # Output
   out <- list()

@@ -18,6 +18,7 @@ simulate_cell <- function(nchr = 2,
                           maxCN = 8,
                           copysd = 0.25,
                           likelihood = "binomial",
+                          sampling_dist = "poisson",
                           rho = 0.0,
                           loherror = 0.01) {
   if (likelihood == "betabinomial") {
@@ -81,8 +82,13 @@ simulate_cell <- function(nchr = 2,
 
   CNbins <- dplyr::select(ascn, cell_id, chr, start, end, state, copy)
 
-  haps <- ascn %>%
-    .[, totalcounts := rpois(1, coverage * state), by = .(chr, start, end)]
+  if (sampling_dist == "poisson"){
+    haps <- ascn %>%
+      .[, totalcounts := rpois(1, coverage * state), by = .(chr, start, end)]
+  } else {
+    haps <- ascn %>%
+      .[, totalcounts := round(state * rgamma(1, shape = 1.76, rate = 0.09)), by = .(chr, start, end)]
+  }
 
   if (likelihood == "binomial") {
     haps <- haps %>%
@@ -118,6 +124,7 @@ simulate_cells <- function(ncells,
                            maxCN = 8,
                            copysd = 0.25,
                            likelihood = "binomial",
+                           sampling_dist = "poisson",
                            rho = 0.0,
                            loherror = 0.01) {
   ascn <- data.frame()
@@ -134,6 +141,7 @@ simulate_cells <- function(ncells,
       maxCN = maxCN,
       copysd = copysd,
       likelihood = likelihood,
+      sampling_dist = sampling_dist,
       rho = rho,
       loherror = loherror
     )
@@ -172,6 +180,7 @@ simulate_data_cohort <- function(clone_num = c(10),
                                  maxCN = 8,
                                  copysd = 0.25,
                                  likelihood = "binomial",
+                                 sampling_dist = "poisson",
                                  rho = 0.0,
                                  loherror = 0.01) {
   ascn <- data.frame()
@@ -188,6 +197,7 @@ simulate_data_cohort <- function(clone_num = c(10),
         maxCN = maxCN,
         copysd = copysd,
         likelihood = likelihood,
+        sampling_dist = sampling_dist,
         rho = rho,
         loherror = loherror
       )
