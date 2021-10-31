@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">schnapps</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.5</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.6.0</span>
       </span>
     </div>
 
@@ -146,7 +146,8 @@
   minbins <span class='op'>=</span> <span class='fl'>100</span>,
   minbinschr <span class='op'>=</span> <span class='fl'>10</span>,
   maxloherror <span class='op'>=</span> <span class='fl'>0.03</span>,
-  filterhaplotypes <span class='op'>=</span> <span class='fl'>0.1</span>
+  filterhaplotypes <span class='op'>=</span> <span class='fl'>0.1</span>,
+  fillmissing <span class='op'>=</span> <span class='cn'>TRUE</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -203,6 +204,10 @@
     <tr>
       <th>filterhaplotypes</th>
       <td><p>filter out haplotypes present in less than X fraction, default is 0.1</p></td>
+    </tr>
+    <tr>
+      <th>fillmissing</th>
+      <td><p>For bins with missing counts fill in values based on neighbouring bins</p></td>
     </tr>
     </table>
 

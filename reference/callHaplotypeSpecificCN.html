@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">schnapps</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.5</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.6.0</span>
       </span>
     </div>
 
@@ -155,7 +155,9 @@
   cluster_per_chr <span class='op'>=</span> <span class='cn'>TRUE</span>,
   viterbiver <span class='op'>=</span> <span class='st'>"cpp"</span>,
   filterhaplotypes <span class='op'>=</span> <span class='fl'>0.1</span>,
-  firstpassfiltering <span class='op'>=</span> <span class='cn'>TRUE</span>
+  firstpassfiltering <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  smoothsingletons <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  fillmissing <span class='op'>=</span> <span class='cn'>TRUE</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -241,6 +243,14 @@
       <th>firstpassfiltering</th>
       <td><p>Filter out cells with large discrepancy after first pass state assignment</p></td>
     </tr>
+    <tr>
+      <th>smoothsingletons</th>
+      <td><p>Remove singleton bins by smoothing over based on states in adjacent bins</p></td>
+    </tr>
+    <tr>
+      <th>fillmissing</th>
+      <td><p>For bins with missing counts fill in values based on neighbouring bins</p></td>
+    </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
@@ -257,18 +267,217 @@
 
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='va'>sim_data</span> <span class='op'>&lt;-</span> <span class='fu'>simulate_data_cohort</span><span class='op'>(</span>
-  clone_num <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>20</span>, <span class='fl'>20</span><span class='op'>)</span>,
-  clonal_events <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span>
-    <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='st'>"1"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2</span>, <span class='fl'>0</span><span class='op'>)</span>, <span class='st'>"5"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>3</span>, <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>,
-    <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='st'>"2"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>6</span>, <span class='fl'>3</span><span class='op'>)</span>, <span class='st'>"3"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>0</span><span class='op'>)</span><span class='op'>)</span>
-  <span class='op'>)</span>,
-  loherror <span class='op'>=</span> <span class='fl'>0.02</span>,
-  coverage <span class='op'>=</span> <span class='fl'>100</span>
-<span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='message'>Joining, by = c("chr", "start", "end", "hap_label")</span></div><div class='input'>
-<span class='va'>results</span> <span class='op'>&lt;-</span> <span class='fu'>callHaplotypeSpecificCN</span><span class='op'>(</span><span class='va'>sim_data</span><span class='op'>$</span><span class='va'>CNbins</span>, <span class='va'>sim_data</span><span class='op'>$</span><span class='va'>haplotypes</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='message'>Filtering out haplotypes present &lt; 10% of cells...</span></div><div class='output co'>#&gt; <span class='message'>Fraction of haplotypes retained after filtering = 1</span></div><div class='output co'>#&gt; <span class='message'>Finding overlapping cell IDs between CN data and haplotype data...</span></div><div class='output co'>#&gt; <span class='message'>Total number of cells in both CN and haplotypes: 40</span></div><div class='output co'>#&gt; <span class='message'>Number of cells in CN data: 40</span></div><div class='output co'>#&gt; <span class='message'>Number of cells in haplotype data: 40</span></div><div class='output co'>#&gt; <span class='message'>Joining bins and haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Phase haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Phasing based on distribution across all cells</span></div><div class='output co'>#&gt; <span class='message'>Join phased haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Reorder haplotypes based on phase...</span></div><div class='output co'>#&gt; <span class='message'>Total number of cells after removing cells with &lt; 100 bins: 40</span></div><div class='output co'>#&gt; <span class='message'>Removing 0 cells for phasing</span></div><div class='output co'>#&gt; <span class='message'>Using 10 cells for clustering...</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 1</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 2 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster A: 20</span></div><div class='output co'>#&gt; <span class='message'>  Cluster B: 20</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 10</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 11</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 12</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 13</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 14</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 15</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 16</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 17</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 18</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 19</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 2</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 20</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 21</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 22</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 3</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 2 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster A: 20</span></div><div class='output co'>#&gt; <span class='message'>  Cluster B: 20</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 4</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 5</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 2 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster A: 21</span></div><div class='output co'>#&gt; <span class='message'>  Cluster B: 19</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 6</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 7</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 8</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome 9</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome X</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Clustering chromosome Y</span></div><div class='output co'>#&gt; <span class='message'>Creating CN matrix...</span></div><div class='output co'>#&gt; <span class='message'>Calculating UMAP dimensionality reduction...</span></div><div class='output co'>#&gt; <span class='message'>Clustering cells using hdbscan...</span></div><div class='output co'>#&gt; <span class='message'>Identified 1 clusters</span></div><div class='output co'>#&gt; <span class='message'>Distribution of clusters:</span></div><div class='output co'>#&gt; <span class='message'>  Cluster 0: 40</span></div><div class='output co'>#&gt; <span class='message'>Finding overlapping cell IDs between CN data and haplotype data...</span></div><div class='output co'>#&gt; <span class='message'>Total number of cells in both CN and haplotypes: 40</span></div><div class='output co'>#&gt; <span class='message'>Number of cells in CN data: 40</span></div><div class='output co'>#&gt; <span class='message'>Number of cells in haplotype data: 40</span></div><div class='output co'>#&gt; <span class='message'>Joining bins and haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Phase haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Join phased haplotypes...</span></div><div class='output co'>#&gt; <span class='message'>Reorder haplotypes based on phase...</span></div><div class='output co'>#&gt; <span class='message'>Total number of cells after removing cells with &lt; 100 bins: 40</span></div><div class='output co'>#&gt; <span class='message'>Total fraction of haplotype counts retained: 1 (Total counts (Millions): 0.94579175, after filtering: 0.94579175, after phasing:0.94579175)</span></div><div class='output co'>#&gt; <span class='message'>Average distance from median to expected BAF = 0.0053</span></div><div class='output co'>#&gt; <span class='message'>Average distance from median to expected BAF = 0.0053</span></div></pre>
+    <pre class="examples"><span class='r-in'><span class='va'>sim_data</span> <span class='op'>&lt;-</span> <span class='fu'>simulate_data_cohort</span><span class='op'>(</span></span>
+<span class='r-in'>  clone_num <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>20</span>, <span class='fl'>20</span><span class='op'>)</span>,</span>
+<span class='r-in'>  clonal_events <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span></span>
+<span class='r-in'>    <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='st'>"1"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2</span>, <span class='fl'>0</span><span class='op'>)</span>, <span class='st'>"5"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>3</span>, <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>,</span>
+<span class='r-in'>    <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='st'>"2"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>6</span>, <span class='fl'>3</span><span class='op'>)</span>, <span class='st'>"3"</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>0</span><span class='op'>)</span><span class='op'>)</span></span>
+<span class='r-in'>  <span class='op'>)</span>,</span>
+<span class='r-in'>  loherror <span class='op'>=</span> <span class='fl'>0.02</span>,</span>
+<span class='r-in'>  coverage <span class='op'>=</span> <span class='fl'>100</span></span>
+<span class='r-in'><span class='op'>)</span></span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Joining, by = c("chr", "start", "end", "hap_label")</span>
+<span class='r-in'></span>
+<span class='r-in'><span class='va'>results</span> <span class='op'>&lt;-</span> <span class='fu'>callHaplotypeSpecificCN</span><span class='op'>(</span><span class='va'>sim_data</span><span class='op'>$</span><span class='va'>CNbins</span>, <span class='va'>sim_data</span><span class='op'>$</span><span class='va'>haplotypes</span><span class='op'>)</span></span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Filtering out haplotypes present &lt; 10% of cells...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Fraction of haplotypes retained after filtering = 1</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Finding overlapping cell IDs between CN data and haplotype data...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Total number of cells in both CN and haplotypes: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Number of cells in CN data: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Number of cells in haplotype data: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Joining bins and haplotypes...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Phase haplotypes...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Phasing based on distribution across all cells</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Join phased haplotypes...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Reorder haplotypes based on phase...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Total number of cells after removing cells with &lt; 100 bins: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Removing 0 cells for phasing</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Using 10 cells for clustering...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 1</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 2 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster A: 20</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster B: 20</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 10</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 11</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 12</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 13</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 14</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 15</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 16</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 17</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 18</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 19</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 2</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 20</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 21</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 22</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 3</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 2 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster A: 20</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster B: 20</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 4</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 5</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 2 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster A: 21</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster B: 19</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 6</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 7</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 8</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome 9</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome X</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering chromosome Y</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Creating CN matrix...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Calculating UMAP dimensionality reduction...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Clustering cells using hdbscan...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Identified 1 clusters</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Distribution of clusters:</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span>   Cluster 0: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Finding overlapping cell IDs between CN data and haplotype data...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Total number of cells in both CN and haplotypes: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Number of cells in CN data: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Number of cells in haplotype data: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Joining bins and haplotypes...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Phase haplotypes...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Join phased haplotypes...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Reorder haplotypes based on phase...</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Total number of cells after removing cells with &lt; 100 bins: 40</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Total fraction of haplotype counts retained: 1 (Total counts (Millions): 0.94579175, after filtering: 0.94579175, after phasing:0.94579175)</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Joining, by = c("cell_id", "chr", "start", "end", "state", "copy")</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Average distance from median to expected BAF = 0.0053</span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> Average distance from median to expected BAF = 0.0053</span>
+</pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
