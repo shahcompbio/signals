@@ -1,3 +1,9 @@
+# schnapps 0.6.1
+
+* changed colours
+* fill in missing bins
+* improved documentation about inputs
+
 # schnapps 0.6.0
 
 * add option to remove noisy cells from phasing
