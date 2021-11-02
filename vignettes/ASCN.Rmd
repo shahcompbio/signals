@@ -142,9 +142,14 @@ plotHeatmap(hscn, plotcol = "Min",
 plotCNprofileBAF(hscn)
 ```
 
-Here we'll merge all cells and plot together.
 ```{r, fig.show='hold', fig.height=5 , fig.width=10}
 consensus_clusters <- consensuscopynumber(hscn$data, cl = cl$clustering)
 
 plotCNprofileBAF(consensus_clusters, cellid = "B")
+```
+
+
+An alternative plotting style is to plot the copy number of the individual copy number.
+```{r, fig.show='hold', fig.height=5 , fig.width=10}
+plotCNprofileBAF(consensus_clusters, cellid = "C", homolog = TRUE)
 ```

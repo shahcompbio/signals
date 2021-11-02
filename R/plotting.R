@@ -168,8 +168,8 @@ plotSV <- function(breakpoints,
   line_data <- pl$breakpoints %>% dplyr::filter(curve == FALSE)
 
   gSV <- pl$bins %>%
-    ggplot(aes(x = idx, y = 1)) +
-    geom_line() +
+    ggplot2::ggplot(ggplot2::aes(x = idx, y = 1)) +
+    ggplot2::geom_line() +
     ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
     ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
     xlab("Chromosome") +
@@ -184,7 +184,7 @@ plotSV <- function(breakpoints,
     ggplot2::ylim(ylims)
 
   if (dim(curve_data)[1] > 0) {
-    gSV <- gSV + ggplot2::geom_curve(data = curve_data, aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001, col = rearrangement_type), curvature = curvature) +
+    gSV <- gSV + ggplot2::geom_curve(data = curve_data, ggplot2::aes(x = idx_1, xend = idx_2, y = 1, yend = 1.0001, col = rearrangement_type), curvature = curvature) +
       ggplot2::labs(col = "Rearrangement") +
       ggplot2::scale_color_manual(
         breaks = names(SV_colors),
@@ -197,7 +197,7 @@ plotSV <- function(breakpoints,
       dplyr::mutate(y = ifelse(rearrangement_type == "Foldback", 1, 1)) %>%
       dplyr::mutate(yend = ifelse(rearrangement_type == "Foldback", min(ylims), max(ylims)))
 
-    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type)) +
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, ggplot2::aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type)) +
       ggplot2::labs(col = "Rearrangement") +
       ggplot2::scale_color_manual(
         breaks = names(SV_colors),
@@ -236,8 +236,8 @@ plotSV2 <- function(breakpoints,
   }
 
   gSV <- pl$bins %>%
-    ggplot(aes(x = idx, y = 1)) +
-    geom_line() +
+    ggplot2::ggplot(ggplot2::aes(x = idx, y = 1)) +
+    ggplot2::geom_line() +
     ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
     ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
     xlab("Chromosome") +
@@ -272,7 +272,7 @@ plotSV2 <- function(breakpoints,
       dplyr::mutate(y = ifelse(rearrangement_type == "Foldback", 1, 1)) %>%
       dplyr::mutate(yend = ifelse(rearrangement_type == "Foldback", min(ylims), max(ylims)))
 
-    gSV <- gSV + ggplot2::geom_segment(data = line_data, aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type), size = svwidth) +
+    gSV <- gSV + ggplot2::geom_segment(data = line_data, ggplot2::aes(x = idx_1, xend = idx_1 + 0.001, y = y, yend = yend, col = rearrangement_type), size = svwidth) +
       ggplot2::labs(col = "Rearrangement") +
       ggplot2::scale_color_manual(
         breaks = names(SV_colors),
@@ -724,7 +724,7 @@ plotCNprofileBAFhomolog <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(aes(y = value, col = name), size = pointsize, alpha = alphaval) +
+      ggrastr::geom_point_rast(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(
         name = "",
         labels = c("Homolog A", "Homolog B"),
@@ -754,7 +754,7 @@ plotCNprofileBAFhomolog <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(aes(y = value, col = name), size = pointsize, alpha = alphaval) +
+      ggplot2::geom_point(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval) +
       ggplot2::scale_color_manual(
         name = "",
         labels = c("Homolog A", "Homolog B"),

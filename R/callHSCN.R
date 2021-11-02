@@ -791,12 +791,6 @@ callHaplotypeSpecificCN <- function(CNbins,
   out <- list()
   class(out) <- "hscn"
   
-  if (fillmissing){
-    hscn_data <- dplyr::left_join(CNbins, hscn_data)
-    hscn_data <- tidyr::fill(hscn_data, c("state_min", "Maj", "Min", "state_phase", "state_AS", 
-                                "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup")
-  }
-  
   haplotype_counts <- dplyr::left_join(haplotype_counts, phased_haplotypes, by = c("chr", "start", "end", "hap_label")) %>% 
     dplyr::mutate(phase = ifelse(is.na(phase), "removed", phase)) %>% as.data.frame(.)
   
@@ -813,6 +807,13 @@ callHaplotypeSpecificCN <- function(CNbins,
   
   if (smoothsingletons){
     out <- fix_assignments(out)
+  }
+  
+  if (fillmissing){
+    out[["data"]] <- dplyr::left_join(CNbins, out[["data"]], by = c("chr", "start", "end", "copy", "state", "cell_id"))
+    out[["data"]] <- tidyr::fill(out[["data"]], c("state_min", "Maj", "Min", "state_phase", "state_AS", 
+                                          "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup")
+    out[["data"]] <- as.data.frame(out[["data"]])
   }
   
   return(out)
