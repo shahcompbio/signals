@@ -798,11 +798,13 @@ plotCNprofileBAFhomolog <- function(cn,
         data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")
       )
   }
-
+  
   if (!is.null(genes)) {
     gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    npoints <- dim(pl$CNbins)[1]
     gCN <- gCN +
-      ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3)
+      ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
+      ggrepel::geom_text_repel(data = gene_idx, ggplot2::aes(x = idx - npoints * adj, y = maxCN, label = ensembl_gene_symbol), col = "black", alpha = 0.75)
   }
 
   if (!is.null(annotateregions)) {

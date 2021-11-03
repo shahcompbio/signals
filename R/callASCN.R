@@ -433,7 +433,8 @@ callAlleleSpecificCNfromHSCN <- function(hscn,
                                  maxCN = NULL,
                                  selftransitionprob = 0.95,
                                  progressbar = TRUE,
-                                 ncores = 1) {
+                                 ncores = 1,
+                                 fillmissing = TRUE) {
   
   likelihood <- hscn$likelihood$likelihood
   
