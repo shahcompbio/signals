@@ -1,3 +1,7 @@
+# schnapps 0.6.2
+
+* fix missing argument
+
 # schnapps 0.6.1
 
 * changed colours
