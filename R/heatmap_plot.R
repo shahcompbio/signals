@@ -340,6 +340,7 @@ make_left_annot <- function(copynumber,
                             library_mapping = NULL,
                             show_library_label = TRUE,
                             show_clone_label = TRUE,
+                            show_clone_text = TRUE,
                             clone_pal = NULL,
                             idx = 1,
                             show_legend = TRUE,
@@ -391,9 +392,10 @@ make_left_annot <- function(copynumber,
       clone_legend_rows <- round(sqrt(length(clone_levels) * 2))
     }
 
-    if (show_library_label == TRUE & show_clone_label == TRUE) {
+    if (show_library_label == TRUE & show_clone_label == TRUE & show_clone_text == TRUE) {
       left_annot <- ComplexHeatmap::HeatmapAnnotation(
-        Cluster = clones$clone_label, clone_label = clone_label_generator,
+        Cluster = clones$clone_label, 
+        clone_label = clone_label_generator,
         Sample = library_labels,
         col = annot_colours, show_annotation_name = c(TRUE, FALSE, TRUE),
         which = "row", annotation_width = grid::unit(rep(0.4, 3), "cm"),
@@ -403,26 +405,49 @@ make_left_annot <- function(copynumber,
         ),
         show_legend = show_legend
       )
-    } else if (show_library_label == FALSE & show_clone_label == TRUE) {
+    } else if (show_library_label == FALSE & show_clone_label == TRUE & show_clone_text == TRUE) {
       left_annot <- ComplexHeatmap::HeatmapAnnotation(
-        Cluster = clones$clone_label, clone_label = clone_label_generator,
+        Cluster = clones$clone_label, 
+        clone_label = clone_label_generator,
         col = annot_colours, show_annotation_name = c(TRUE, FALSE),
         which = "row", annotation_width = grid::unit(rep(0.4, 2), "cm"),
         annotation_legend_param = list(
           Cluster = list(nrow = clone_legend_rows)
         ),
         show_legend = show_legend
-      )
-    } else if (show_library_label == TRUE & show_clone_label == FALSE) {
-      left_annot <- ComplexHeatmap::HeatmapAnnotation(
-        Sample = library_labels, col = annot_colours,
-        which = "row", simple_anno_size = grid::unit(0.4, "cm"),
-        annotation_legend_param = list(
-          Sample = list(nrow = library_legend_rows)
-        ),
-        show_legend = show_legend
-      )
-    }
+      ) 
+      } else if (show_library_label == TRUE & show_clone_label == TRUE & show_clone_text == FALSE){
+        left_annot <- ComplexHeatmap::HeatmapAnnotation(
+          Cluster = clones$clone_label, 
+          Sample = library_labels,
+          col = annot_colours, show_annotation_name = c(TRUE, FALSE, TRUE),
+          which = "row", annotation_width = grid::unit(rep(0.4, 3), "cm"),
+          annotation_legend_param = list(
+            Cluster = list(nrow = clone_legend_rows, direction = "horizontal"),
+            Sample = list(nrow = library_legend_rows, direction = "horizontal")
+          ),
+          show_legend = show_legend
+        )
+      } else if (show_library_label == TRUE & show_clone_label == FALSE) {
+        left_annot <- ComplexHeatmap::HeatmapAnnotation(
+          Sample = library_labels, col = annot_colours,
+          which = "row", simple_anno_size = grid::unit(0.4, "cm"),
+          annotation_legend_param = list(
+            Sample = list(nrow = library_legend_rows)
+          ),
+          show_legend = show_legend
+        )
+      } else if (show_library_label == FALSE & show_clone_label == TRUE & show_clone_text == FALSE) {
+        left_annot <- ComplexHeatmap::HeatmapAnnotation(
+          Cluster = clones$clone_label, 
+          col = annot_colours, show_annotation_name = c(TRUE, FALSE),
+          which = "row", annotation_width = grid::unit(rep(0.4, 2), "cm"),
+          annotation_legend_param = list(
+            Cluster = list(nrow = clone_legend_rows)
+          ),
+          show_legend = show_legend
+        ) 
+      }
   } else {
     left_annot <- ComplexHeatmap::HeatmapAnnotation(
       Sample = library_labels, col = annot_colours,
@@ -686,6 +711,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     show_legend = TRUE,
                                     show_library_label = TRUE,
                                     show_clone_label = TRUE,
+                                    show_clone_text = TRUE,
                                     chrlabels = TRUE,
                                     SV = NULL,
                                     nticks = 4,
@@ -716,7 +742,7 @@ make_copynumber_heatmap <- function(copynumber,
     show_column_names = FALSE,
     bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, nticks = nticks, annotation_height = annotation_height, annofontsize = annofontsize, linkheight = linkheight),
     left_annotation = make_left_annot(copynumber, clones,
-      library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label,
+      library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label, show_clone_text = show_clone_text,
       idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,
       str_to_remove = str_to_remove
     ),
@@ -811,6 +837,7 @@ plotHeatmap <- function(cn,
                         show_legend = TRUE,
                         show_library_label = TRUE,
                         show_clone_label = TRUE,
+                        show_clone_text = TRUE,
                         widenarm = FALSE,
                         umapmetric = "euclidean",
                         chrlabels = TRUE,
@@ -1028,6 +1055,7 @@ plotHeatmap <- function(cn,
     show_legend = show_legend,
     show_library_label = show_library_label,
     show_clone_label = show_clone_label,
+    show_clone_text = show_clone_text,
     chrlabels = chrlabels,
     SV = SV,
     nticks = nticks,
