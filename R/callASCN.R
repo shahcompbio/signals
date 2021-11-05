@@ -451,6 +451,9 @@ callAlleleSpecificCNfromHSCN <- function(hscn,
     maxCN <- max(hscn$data$state)
   }
   
+  CNbins <- hscn$data %>% 
+    dplyr::select(cell_id, chr, start, end, state, copy)
+  
   infloherror <- hscn$loherror
   
   CNBAF <- switch_alleles(hscn$data)
