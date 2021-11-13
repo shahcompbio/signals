@@ -964,6 +964,7 @@ plotCNprofileBAF <- function(cn,
                              svwidth = 1.0,
                              plotdata = TRUE,
                              offset = NULL,
+                             my_title = NULL,
                              ...) {
   if (homolog == TRUE) {
     ghomolog <- plotCNprofileBAFhomolog(cn,
@@ -1006,6 +1007,10 @@ plotCNprofileBAF <- function(cn,
     ybreaks <- c(0, 2, 5, 10, 20)
   } else {
     ybreaks <- seq(0, maxCN, 2)
+  }
+  
+  if (is.null(my_title)){
+    my_title <- cellid
   }
 
 
@@ -1070,7 +1075,7 @@ plotCNprofileBAF <- function(cn,
       ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("BAF") +
-      ggplot2::ggtitle(cellid) +
+      ggplot2::ggtitle(my_title) +
       cowplot::theme_cowplot(...) +
       ggplot2::geom_hline(yintercept = 0.5, lty = 2, alpha = 0.5) +
       ggplot2::theme(
@@ -1133,7 +1138,7 @@ plotCNprofileBAF <- function(cn,
       ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
       ggplot2::xlab("Chromosome") +
       ggplot2::ylab("BAF") +
-      ggplot2::ggtitle(cellid) +
+      ggplot2::ggtitle(my_title) +
       cowplot::theme_cowplot(...) +
       ggplot2::geom_hline(yintercept = 0.5, lty = 2, alpha = 0.5) +
       ggplot2::theme(
