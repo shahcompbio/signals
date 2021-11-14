@@ -26,6 +26,7 @@ plotHeatmap(
   show_legend = TRUE,
   show_library_label = TRUE,
   show_clone_label = TRUE,
+  show_clone_text = TRUE,
   widenarm = FALSE,
   umapmetric = "euclidean",
   chrlabels = TRUE,

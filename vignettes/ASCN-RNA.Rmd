@@ -57,54 +57,65 @@ haplotypes_rna <- format_haplotypes_rna(haplotypes_rna,
                                     phased_haplotypes = hscn$haplotype_phasing)
 ```
 
-As a first look at the data we can calculate the BAF per arm in each cell and plot these distributions using `per_chr_baf`. Notice on this dataset that the BAFs in chromosomes `3p`, `2p`, and `17` in almost all cells are very left skewed towards 0 suggesting clonal LOH events in these chromosomes. We can also see other chromosome arms such as 4p and 2q that have multimodal distributions, suggesting different clusters of cells.
+As a first look at the data we can calculate the BAF per arm in each cell and plot these distributions using `per_chr_baf_plot`. Notice on this dataset that the BAFs in chromosomes `3p`, `2p`, and `17` in almost all cells are very left skewed towards 0 suggesting clonal LOH events in these chromosomes. We can also see other chromosome arms such as 4p and 2q that have multimodal distributions, suggesting different clusters of cells.
 ```{r, fig.width = 6, fig.height=6}
-per_chr_baf(haplotypes_rna, perarm = TRUE)
+per_chr_baf_plot(haplotypes_rna$block_counts, perarm = TRUE)
 ```
 
 For comparison we can plot a similar distribution from our scDNAseq dataset. Here we notice similar trends but note that data from the scRNAseq is much more dispersed due to the lower number of counts per cell. scRNAseq will have 1-2 orders of magnitude lower reads so our ability to identify SNPs is reduced.
 
 ```{r,  fig.width = 6, fig.height=6}
-per_chr_baf(hscn$data, perarm = TRUE)
+per_chr_baf_plot(hscn$data, perarm = TRUE)
 ```
 
-We can also plot heatmaps of the 2 modalities as shown below.
+We can also plot heatmaps of the 2 modalities as shown below, rows are clustered by hierarchical clustering.
 
 ```{r, fig.width=7}
-plotHeatmapBAF(haplotypes_rna)
+plotHeatmapBAF(haplotypes_rna$block_counts)
 ```
 
 ```{r, fig.width=7}
 plotHeatmapBAF(hscn$data)
 ```
 
-We'll now move on to inferring the allele specific copy number in the scRNAseq. We use dirichilet process clustering using [Viber](https://github.com/caravagn/VIBER) to cluster cells that share similar BAF distributions across chromosomes.
+We'll now move on to inferring the allele specific copy number in the scRNAseq. Rather than use chromosome arms, we first use the single cell DNA sequencing data to identify segments that have different allele specific copy number. We compute consensus copy number across all cells, identify segments where the allele specific copy number phased state is consistent and then finally merge any segments that are smaller than 10Mb.
 
 ```{r}
-haplotypes_per_arm <- per_arm_baf_mat(haplotypes_rna)
+consensus <- consensuscopynumber(hscn$data)
+segments <- create_segments(consensus, field = "state_phase")
+segments <- filter_segments(segments, binwidth = 10e6)
+```
 
-ascn_rna_dp <- assign_states_dp(haplotypes_per_arm$bafperchr)
+Note, that if you have some other ways to obtain segments such as bulk whole genome sequencing then that would also work. The `segments` data frame needs to have the columns `chr`, `start` and `end`. Alternatively, if you don't have any data that can be used to identify segments a priori you can just use chromosome arms as the segmentation. To do this just leave the segments option in any of the following function empty and the functions will revert to the default of using chromosome arms.
+
+Our inference scheme is based on using dirichilet process clustering using [Viber](https://github.com/caravagn/VIBER) to cluster cells that share similar BAF distributions across segments. We first compute BAF frequencies across each segment in each cell.
+
+```{r}
+haplotypes_per_segment <- per_segment_baf_mat(haplotypes_rna$block_counts, segments = segments)
+
+ascn_rna_dp <- assign_states_dp(haplotypes_per_segment$bafpersegment)
 ascn_rna_dp
 ```
 
-Here, we found 2 clusters. We can visualize the separation of clusters using the same plot as before.
+Here, we found 2 clusters. We can visualize the separation of clusters using a similar plot to before. Setting `lableclones = TRUE` will colour each cell by their clone assignment.
 
 ```{r, fig.width = 6, fig.height=6}
-per_chr_baf(ascn_rna_dp$hscn, perarm = TRUE, labelclones = TRUE)
+per_segment_baf_plot(ascn_rna_dp$hscn, labelclones = TRUE)
 ```
 
 ### Heatmap
 
-Finally we can plot heatmaps of the resulting outputs.
+Finally we can plot heatmaps of the resulting outputs. 
 Firstly using the scRNA.
 ```{r, fig.width=8.5}
-plotHeatmap(ascn_rna_dp$hscn, 
+bins <- segments_to_bins(ascn_rna_dp$hscn)
+
+plotHeatmap(bins, 
             clusters = ascn_rna_dp$clusters,
             reorderclusters = TRUE,
             spacer_cols = 15, 
             plotcol = "BAF", 
             plottree = FALSE,
-            widenarm = TRUE, #make sure this is true
             show_legend = FALSE)
 ```
 
@@ -112,15 +123,17 @@ plotHeatmap(ascn_rna_dp$hscn,
 We can also do this for the scDNAseq data. For more straightforward comparison we'll perform the dirichilet process arm level inference as we do for the scRNAseq. We can see that the scRNAseq has much lower resolution that scDNAseq, but we are still able to recover the events shared across all cells and clones that are at a reasonably high frequency.
 
 ```{r, fig.width=8.5}
-hscn_dna_arm <- per_arm_baf_mat(hscn$data)
-ascn_dna_dp <- assign_states_dp(hscn_dna_arm$bafperchr)
-plotHeatmap(ascn_dna_dp$hscn,
+hscn_dna_segment <- per_segment_baf_mat(hscn$data, segments)
+ascn_dna_dp <- assign_states_dp(hscn_dna_segment$bafpersegment)
+
+bins_dna <- segments_to_bins(ascn_dna_dp$hscn)
+
+plotHeatmap(bins_dna,
             clusters = ascn_dna_dp$clusters,
             reorderclusters = TRUE,
             spacer_cols = 15, 
             plotcol = "BAF", 
             plottree = FALSE,
-            widenarm = TRUE, #make sure this is true
             show_legend = FALSE)
 ```
 
@@ -145,7 +158,7 @@ x <- RunUMAP(object = x,  dims = 1:20, reduction = "pca")
 Then we can use `createBAFassay` to add a `BAF` assay and add `clone_id` to the metadata.
 
 ```{r}
-x <- createBAFassay(x, ascn_rna_dp)
+x <- createBAFassay(x, ascn_rna_dp, haplotypes_rna)
 ```
 
 This means all the Seurat functionality is available to analyse the allele specific copy number. For example we can plot low dimensional embeddings of BAF values per cell per chromosome or coloured by clone as shown below.
@@ -153,15 +166,41 @@ This means all the Seurat functionality is available to analyse the allele speci
 ```{r}
 DimPlot(x, group.by = "DP_cloneid")
 ```
+
 ```{r}
-FeaturePlot(x, "BAF-3q") + scale_color_gradientn(colors = scBAFstate_cols())
+rownames(x@assays$BAF)
+FeaturePlot(x, "BAF-3-75500001-178500000") + scale_color_gradientn(colors = scBAFstate_cols())
 ```
 
 ```{r}
-FeaturePlot(x, "BAF-10p") + scale_color_gradientn(colors = scBAFstate_cols())
+FeaturePlot(x, "BAF-10-500001-97000000") + scale_color_gradientn(colors = scBAFstate_cols())
 ```
 
 ```{r}
-VlnPlot(x,"BAF-10p", group.by = "DP_cloneid")
+FeaturePlot(x, "BAF-2-99000001-225500000") + scale_color_gradientn(colors = scBAFstate_cols())
+```
+
+```{r}
+VlnPlot(x,"BAF-2-99000001-225500000", group.by = "DP_cloneid") + ylab("BAF")
 
 ```
+
+We can also pull out the allelic imbalance in individual genes. Let's look at some genes on 4p, where one group of cells is homozygous. Most genes have very few counts, so we'll pull out genes with a large number of genotyped SNPs to take a look at. 
+
+
+```{r}
+chr4pgenes <- x[["gBAF"]]@meta.features %>% filter(arm == "4p") %>% 
+  arrange(desc(totalsnpcounts))
+
+mygene <- chr4pgenes$ensembl_gene_symbol[2]
+
+cowplot::plot_grid(
+  FeaturePlot(x, paste0("BAF-", mygene)) + 
+    scale_color_gradientn(colors = scBAFstate_cols()),
+  FeaturePlot(x, mygene),
+  DimPlot(x, group.by = "DP_cloneid"),
+  VlnPlot(x, paste0("BAF-", mygene), group.by = "DP_cloneid") + ylab("BAF"))
+  
+```
+
+Note that even in this example where we have been able to identify lots of SNP counts in this gene, most individual cells will still have very few counts. This explains why in cluster C2, the violin plot shows that there are lots of cells with BAF of 0.0 or 1.0, suggesting these cells are homozygous. This however is likely just because the number of counts is very small, even for a heterozygous SNP we're very likely to see cells where we have only sampled the reference or the alternate allele. The key here, is that in cluster C1 we *only* see cells with BAF = 0.0 which is unlikely to be down to sampling alone. In contrast in C2 we see cells across a range of BAF, consistent with expression of of both alleles + random sampling.

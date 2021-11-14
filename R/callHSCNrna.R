@@ -153,12 +153,12 @@ assign_states_noprior <- function(haps,
 }
 
 #' @export
-assign_states_dp <- function(bafperchr,
+assign_states_dp <- function(bafpersegment,
                              samples = 10,
                              alpha_0 = 1,
                              K = 20,
-                             most_variable_chr = TRUE,
-                             top_nchr = 5,
+                             most_variable_segment = TRUE,
+                             top_nseg = 5,
                              overwrite_chr = NULL,
                              removechr = c("chrX"),
                              filtercounts = 0,
@@ -172,10 +172,10 @@ assign_states_dp <- function(bafperchr,
   }
 
   message("Generating count matrices...")
-  baf_total <- bafperchr %>%
-    dplyr::select(cell_id, chrarm, total) %>%
+  baf_total <- bafpersegment %>%
+    dplyr::select(cell_id, segid, total) %>%
     tidyr::pivot_wider(
-      names_from = "chrarm",
+      names_from = "segid",
       values_from = "total",
       values_fill = list(total = 0),
       names_prefix = "chr"
@@ -185,10 +185,10 @@ assign_states_dp <- function(bafperchr,
   baf_total <- subset(baf_total, select = -c(cell_id))
 
   # make chr ~ cell_id matrix for B allele counts
-  baf_counts <- bafperchr %>%
-    dplyr::select(cell_id, chrarm, alleleB) %>%
+  baf_counts <- bafpersegment %>%
+    dplyr::select(cell_id, segid, alleleB) %>%
     tidyr::pivot_wider(
-      names_from = "chrarm",
+      names_from = "segid",
       values_from = "alleleB",
       values_fill = list(alleleB = 0),
       names_prefix = "chr"
@@ -204,11 +204,12 @@ assign_states_dp <- function(bafperchr,
     baf_total <- baf_total[filtered_cells, ]
   }
 
-  if (most_variable_chr) {
+  if (most_variable_segment) {
     # keepchrs <- sort(sapply(baf_counts / baf_total, function(x) var(x, na.rm = TRUE)), decreasing = TRUE)[1:top_nchr]
-    chr_names <- names(baf_counts)
-    baf_counts_temp <- baf_counts[, setdiff(chr_names, removechr)]
-    keepchrs <- sort(sapply(
+    seg_names <- names(baf_counts)
+    #baf_counts_temp <- baf_counts[, setdiff(chr_names, removechr)]
+    baf_counts_temp <- baf_counts
+    keepsegs <- sort(sapply(
       names(baf_counts_temp),
       function(x) {
         matrixStats::weightedVar(baf_counts[, x] / baf_total[, x],
@@ -217,18 +218,18 @@ assign_states_dp <- function(bafperchr,
       }
     ),
     decreasing = TRUE
-    )[1:top_nchr]
-    message(paste0("Top ", top_nchr, " most variable chromosomes are: ", paste0(names(keepchrs), collapse = ", ")))
-    message("Using these chromosomes for clustering")
-    keepchrs <- names(keepchrs)
-  } else if (!is.null(overwrite_chr)) {
-    keepchrs <- overwrite_chr
+    )[1:top_nseg]
+    message(paste0("Top ", top_nseg, " most variable segments are: ", paste0(names(keepsegs), collapse = ", ")))
+    message("Using these segments for clustering")
+    keepsegs <- names(keepsegs)
+  } else if (!is.null(overwrite_segs)) {
+    keepsegs <- overwrite_segs
   } else {
-    keepchrs <- paste0("chr", unique(bafperchr$chrarm))
+    keepsegs <- paste0("chr", unique(bafpersegment$chrarm))
   }
 
-  baf_counts <- baf_counts[, keepchrs]
-  baf_total <- baf_total[, keepchrs]
+  baf_counts <- baf_counts[, keepsegs]
+  baf_total <- baf_total[, keepsegs]
   print(dim(baf_counts))
 
   message("Fitting mixture model using VIBER...")
@@ -250,11 +251,10 @@ assign_states_dp <- function(bafperchr,
 
   message("Extract cluster means from VIBER object...")
   theta <- as.data.frame(fit_filt$theta_k)
-  theta$chrarm <- row.names(theta)
+  theta$segid <- row.names(theta)
   row.names(theta) <- NULL
   theta <- theta %>%
-    tidyr::pivot_longer(-chrarm, names_to = "clone_id", values_to = "theta") %>%
-    dplyr::mutate(chrarm = gsub("chr", "", chrarm))
+    tidyr::pivot_longer(-segid, names_to = "clone_id", values_to = "theta") #%>%dplyr::mutate(chrarm = gsub("chr", "", chrarm))
 
   message("Generating dataframe mapping cell_id to clone_id...")
   x <- data.frame(
@@ -263,9 +263,9 @@ assign_states_dp <- function(bafperchr,
   )
 
   message("Assign states to clones and chromosomes...")
-  states <- bafperchr %>%
+  states <- bafpersegment %>%
     dplyr::left_join(x, by = "cell_id") %>%
-    dplyr::group_by(chrarm, clone_id) %>%
+    dplyr::group_by(segid, clone_id) %>%
     dplyr::summarise(
       BAF = median(BAF),
       alleleA = sum(alleleA),
@@ -273,7 +273,7 @@ assign_states_dp <- function(bafperchr,
       total = sum(total)
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::left_join(theta, by = c("clone_id", "chrarm")) %>%
+    dplyr::left_join(theta, by = c("clone_id", "segid")) %>%
     dplyr::mutate(rounded = round(BAF / 0.25) * 0.25) %>%
     dplyr::mutate(state_phase = dplyr::case_when(
       rounded == 0.0 ~ "A-Hom",
@@ -282,25 +282,77 @@ assign_states_dp <- function(bafperchr,
       rounded == 0.75 ~ "B-Gained",
       rounded == 1.0 ~ "B-Hom"
     )) %>%
-    dplyr::select(chrarm, clone_id, state_phase)
+    dplyr::select(segid, clone_id, state_phase)
 
   message("Format final dataframe...")
-  bafperchr_new <- bafperchr %>%
-    dplyr::select(chr, arm, chrarm, cell_id, alleleA, alleleB, total, BAF) %>%
+  bafpersegment_new <- bafpersegment %>%
+    dplyr::select(chr, segid, cell_id, alleleA, alleleB, total, BAF) %>%
     dplyr::left_join(x, by = "cell_id") %>%
-    dplyr::left_join(states, by = c("chrarm", "clone_id")) %>%
+    dplyr::left_join(states, by = c("segid", "clone_id")) %>%
     dplyr::select(-clone_id) %>%
-    dplyr::left_join(hg19chrom_coordinates) %>%
-    dplyr::left_join(x) %>%
-    dplyr::mutate(start = start + 1)
+    dplyr::left_join(x) %>% 
+    tidyr::separate(segid, c("chr2", "start", "end"), remove = FALSE, convert = TRUE) %>% 
+    dplyr::select(segid, chr, start, end, -chr2, dplyr::everything()) %>% 
+    as.data.frame()
 
   # Output
   out <- list()
   class(out) <- "hscnrna"
   out[["viber_fit"]] <- fit_filt
   out[["clusters"]] <- x
-  out[["hscn"]] <- bafperchr_new
-  out[["chromosomes_fit"]] <- keepchrs
+  out[["hscn"]] <- bafpersegment_new %>% as.data.frame()
+  out[["segments_fits"]] <- keepsegs
 
   return(out)
+}
+
+
+getCNstatefunc <- function(segments, bins, ncores = 1){
+  bins_g <- plyranges::as_granges(dlpbins %>% dplyr::rename(seqnames = chr))
+  segments_g <- plyranges::as_granges(segments %>% dplyr::rename(seqnames = chr), keep_mcols = TRUE)
+  
+  bins <- plyranges::find_overlaps(bins_g, segments_g) %>%
+    as.data.frame() %>%
+    dplyr::rename(chr = seqnames) %>%
+    dplyr::select(-width, -strand) %>%
+    dplyr::select(cell_id, chr, start, end, dplyr::everything()) %>%
+    orderdf()
+  
+  return(bins)
+}
+
+#' @export
+segments_to_bins <- function(segments, binsize = 0.5e6, ncores = 1){
+  
+  if (!requireNamespace("plyranges", quietly = TRUE)) {
+    stop("Package \"plyranges\" needed to use this function. Please install it.",
+         call. = FALSE
+    )
+  }
+  
+  bins <- schnapps::getBins(binsize = binsize)
+  
+  if (ncores == 1) {
+    df <- data.table::rbindlist(lapply(unique(segments$cell_id),
+                                       function(x){
+                                         segments %>% dplyr::filter(cell_id == x) %>% 
+                                           getCNstatefunc(., bins = bins)
+                                       })) %>%
+      dplyr::group_by(chr, start, end, cell_id) %>% 
+      dplyr::filter(dplyr::row_number() == 1) %>% 
+      as.data.frame() %>%
+      dplyr::filter(!is.na(cell_id))
+  } else{
+    df <- data.table::rbindlist(parallel::mclapply(unique(segments$cell_id),
+                                                   function(x){
+                                                     segments %>% dplyr::filter(cell_id == x) %>%
+                                                       getCNstatefunc(., bins = bins)
+                                                   }, mc.cores = ncores)) %>%
+      dplyr::group_by(chr, start, end, cell_id) %>% 
+      dplyr::filter(dplyr::row_number() == 1) %>% 
+      as.data.frame() %>%
+      dplyr::filter(!is.na(cell_id))
+  }
+  
+  return(df)
 }
