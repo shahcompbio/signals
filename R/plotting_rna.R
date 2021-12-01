@@ -110,12 +110,12 @@ per_chr_baf_plot <- function(haps, filtern = 9, perarm = FALSE, labelclones = FA
 }
 
 #' @export
-per_segment_baf_plot <- function(hscnrna, filtern = 9, labelclones = FALSE) {
+per_segment_baf_plot <- function(hscn, filtern = 9, labelclones = FALSE) {
   
-  if (is.hscnrna(cn)) {
-    cndat <- cn$hscn
+  if (is.hscnrna(hscn)) {
+    cndat <- hscn$hscn
   } else {
-    cndat <- cn
+    cndat <- hscn
   }
   
   mixedrank = function(x) order(gtools::mixedorder(x))

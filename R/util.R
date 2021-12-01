@@ -697,9 +697,11 @@ per_arm_baf_mat <- function(haps,
   return(list(bafperchr = baf, bafperchrmat = baf_mat))
 }
 
+mixedrank = function(x) order(gtools::mixedorder(x))
+
 #' export
 filter_segments <- function(segs, binwidth = 5e6){
-  mixedrank = function(x) order(gtools::mixedorder(x))
+  data("hg19chrom_coordinates", envir = environment())
   chrin <- unique(segs$chr)
   segs <- segs %>% 
     dplyr::mutate(w = end-start) %>% 
@@ -711,11 +713,25 @@ filter_segments <- function(segs, binwidth = 5e6){
     dplyr::select(chr, start, end) %>% 
     dplyr::arrange(mixedrank(chr), start)
   
+  #make sure whole chromosome is covered
+  segs <- dplyr::left_join(segs, hg19chrom_coordinates %>% dplyr::filter(arm == "") %>% dplyr::mutate(start = start + 1), by = "chr") %>% 
+    dplyr::group_by(chr) %>%  
+    dplyr::mutate(start = ifelse(dplyr::row_number() == 1, start.y, start.x), 
+                  end = ifelse(dplyr::row_number() == dplyr::n(), end.y, end.x)) %>% 
+    dplyr::select(chr, start, end)
+  
   if (all(chrin %in% unique(segs$chr)) == FALSE){
-    warning("Not all chromosomes present in output")
+    warning("Not all chromosomes present in output adding whole chromosomes")
+    chroms <- chrin[which(!chrin %in% unique(segs$chr))]
+    to_add <- hg19chrom_coordinates %>% 
+      dplyr::filter(chr %in% chroms & arm == "") %>% 
+      dplyr::mutate(start = start + 1) %>% 
+      dplyr::select(chr, start, end)
+    segs <- dplyr::bind_rows(segs, to_add) %>% 
+      dplyr::arrange(mixedrank(chr), start)
   }
     
-  return(segs)
+  return(segs %>% as.data.frame())
 }
 
 #' @export
@@ -725,7 +741,9 @@ per_segment_baf_mat <- function(haps,
                             mincounts = 10,
                             arms = NULL) {
   
-  if (is.null(segs)){
+  options(scipen=999)
+  
+  if (is.null(segments)){
     message("No segments provided, using chromosome arms as segments")
     segments <- hg19chrom_coordinates %>% 
       dplyr::filter(arm != "") %>% 
@@ -929,7 +947,7 @@ add_states <- function(df) {
 }
 
 #' @export
-createBAFassay <- function(seur, rna_ascn, haplotypes_rna, ref = "hg19") {
+createBAFassay <- function(seur, rna_ascn, ref = "hg19") {
   if (!requireNamespace("Seurat", quietly = TRUE)) {
     stop("Package \"Seurat\" is needed for this function. Please install it.",
       call. = FALSE
@@ -979,47 +997,49 @@ createBAFassay <- function(seur, rna_ascn, haplotypes_rna, ref = "hg19") {
     col.name = "DP_cloneid"
   )
   
-  message("Add gene allelic imbalance")
-  snps_to_genes <- map_to_segments(haplotypes_rna$snp_counts, 
-                                   gene_locations[[ref]] %>% dplyr::filter(!str_detect(chr, "_")))
-  gene_baf <- snps_to_genes %>% 
-    .[, list(BAF = mean(BAF)), by = c("cell_id", "ensembl_gene_symbol")] %>% 
-    .[, cell_id := as.factor(cell_id)] %>% 
-    .[, ensembl_gene_symbol := as.factor(paste0("BAF-",ensembl_gene_symbol))]
-  x <- tidyr::pivot_wider(gene_baf %>%
-                            dplyr::select(cell_id, ensembl_gene_symbol, BAF),
-                          names_from = "ensembl_gene_symbol",
-                          values_from = c("BAF")
-  ) %>%
-    as.data.frame()
-  row.names(x) <- x$cell_id
-  x <- as.matrix(subset(x, select = -cell_id))
-  seur[["gBAF"]] <- Seurat::CreateAssayObject(data = t(x))
-  meta <- gene_locations[[ref]] %>% 
-    dplyr::filter(!str_detect(chr, "_")) %>% 
-    dplyr::group_by(ensembl_gene_symbol) %>% 
-    dplyr::filter(dplyr::row_number() == 1) %>%  #hack, take first chr if there are > 1
-    as.data.frame() %>% 
-    dplyr::mutate(arm = paste0(chr, coord_to_arm(chr, start, assembly = ref)))
-  row.names(meta) <- meta$ensembl_gene_symbol
-  meta <- meta[str_remove(rownames(seur[["gBAF"]]), "BAF-"), ]
-  meta <- merge(meta, snps_to_genes[, list(totalsnpcounts = sum(totalcounts)), by = "ensembl_gene_symbol"])
-  row.names(meta) <- meta$ensembl_gene_symbol
-  seur[["gBAF"]]@meta.features <- meta
-  
-  gene_counts <- snps_to_genes %>% 
-    .[, list(totalcounts = sum(totalcounts)), by = c("cell_id", "ensembl_gene_symbol")] %>% 
-    .[, cell_id := as.factor(cell_id)] %>% 
-    .[, ensembl_gene_symbol := as.factor(paste0("counts-",ensembl_gene_symbol))]
-  x <- tidyr::pivot_wider(gene_counts %>%
-                            dplyr::select(cell_id, ensembl_gene_symbol, totalcounts),
-                          names_from = "ensembl_gene_symbol",
-                          values_from = c("totalcounts")
-  ) %>%
-    as.data.frame()
-  row.names(x) <- x$cell_id
-  x <- as.matrix(subset(x, select = -cell_id))
-  seur[["gCounts"]] <- Seurat::CreateAssayObject(data = t(x))
+  if (!is.null(rna_ascn$haplotypecounts)){
+    message("Add gene allelic imbalance")
+    snps_to_genes <- map_to_segments(rna_ascn$haplotypecounts, 
+                                     gene_locations[[ref]] %>% dplyr::filter(!str_detect(chr, "_")))
+    gene_baf <- snps_to_genes %>% 
+      .[, list(BAF = mean(BAF)), by = c("cell_id", "ensembl_gene_symbol")] %>% 
+      .[, cell_id := as.factor(cell_id)] %>% 
+      .[, ensembl_gene_symbol := as.factor(paste0("BAF-",ensembl_gene_symbol))]
+    x <- tidyr::pivot_wider(gene_baf %>%
+                              dplyr::select(cell_id, ensembl_gene_symbol, BAF),
+                            names_from = "ensembl_gene_symbol",
+                            values_from = c("BAF")
+    ) %>%
+      as.data.frame()
+    row.names(x) <- x$cell_id
+    x <- as.matrix(subset(x, select = -cell_id))
+    seur[["gBAF"]] <- Seurat::CreateAssayObject(data = t(x))
+    meta <- gene_locations[[ref]] %>% 
+      dplyr::filter(!str_detect(chr, "_")) %>% 
+      dplyr::group_by(ensembl_gene_symbol) %>% 
+      dplyr::filter(dplyr::row_number() == 1) %>%  #hack, take first chr if there are > 1
+      as.data.frame() %>% 
+      dplyr::mutate(arm = paste0(chr, coord_to_arm(chr, start, assembly = ref)))
+    row.names(meta) <- meta$ensembl_gene_symbol
+    meta <- meta[str_remove(rownames(seur[["gBAF"]]), "BAF-"), ]
+    meta <- merge(meta, snps_to_genes[, list(totalsnpcounts = sum(totalcounts)), by = "ensembl_gene_symbol"])
+    row.names(meta) <- meta$ensembl_gene_symbol
+    seur[["gBAF"]]@meta.features <- meta
+    
+    gene_counts <- snps_to_genes %>% 
+      .[, list(totalcounts = sum(totalcounts)), by = c("cell_id", "ensembl_gene_symbol")] %>% 
+      .[, cell_id := as.factor(cell_id)] %>% 
+      .[, ensembl_gene_symbol := as.factor(paste0("counts-",ensembl_gene_symbol))]
+    x <- tidyr::pivot_wider(gene_counts %>%
+                              dplyr::select(cell_id, ensembl_gene_symbol, totalcounts),
+                            names_from = "ensembl_gene_symbol",
+                            values_from = c("totalcounts")
+    ) %>%
+      as.data.frame()
+    row.names(x) <- x$cell_id
+    x <- as.matrix(subset(x, select = -cell_id))
+    seur[["gCounts"]] <- Seurat::CreateAssayObject(data = t(x))
+  }
   
   # x <- with(gene_baf, Matrix::sparseMatrix(i=as.numeric(ensembl_gene_symbol),
   #                                          j=as.numeric(cell_id), 
@@ -1059,11 +1079,11 @@ consensuscopynumber <- function(hscn, cl = NULL) {
       .[, .(
         state = as.double(round(median(state, na.rm = TRUE))),
         copy = as.double(median(copy, na.rm = TRUE)),
-        Maj = as.double(floor(median(Maj))),
-        alleleA = sum(alleleA),
-        alleleB = sum(alleleB),
-        totalcounts = sum(totalcounts),
-        BAF = median(BAF)
+        Maj = as.double(floor(median(Maj, na.rm = TRUE))),
+        alleleA = sum(alleleA, na.rm = TRUE),
+        alleleB = sum(alleleB, na.rm = TRUE),
+        totalcounts = sum(totalcounts, na.rm = TRUE),
+        BAF = median(BAF, na.rm = TRUE)
       ), by = .(chr, start, end, clone_id)] %>%
       .[, Min := state - Maj] %>%
       add_states() %>%

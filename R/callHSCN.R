@@ -811,8 +811,11 @@ callHaplotypeSpecificCN <- function(CNbins,
   
   if (fillmissing){
     out[["data"]] <- dplyr::left_join(CNbins, out[["data"]], by = c("chr", "start", "end", "copy", "state", "cell_id"))
-    out[["data"]] <- tidyr::fill(out[["data"]], c("state_min", "Maj", "Min", "state_phase", "state_AS", 
-                                          "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup")
+    out[["data"]] <- out[["data"]] %>% 
+      dplyr::group_by(chr, cell_id) %>% 
+      tidyr::fill( c("state_min", "Maj", "Min", "state_phase", "state_AS", 
+                    "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup") %>% 
+      dplyr::ungroup()
     out[["data"]] <- as.data.frame(out[["data"]])
   }
   
@@ -1156,7 +1159,7 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9, ncells = 1) {
       by = "cell_id"
       ] %>%
       .[order(LOH, decreasing = TRUE)] %>%
-      .[LOH > 0.9 & abs(mBAF) < 0.05] %>%
+      .[LOH > cutoff & abs(mBAF) < 0.05] %>%
       .$cell_id
     
     if (length(cells) >= ncells) {

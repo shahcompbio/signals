@@ -93,7 +93,7 @@ Our inference scheme is based on using dirichilet process clustering using [Vibe
 ```{r}
 haplotypes_per_segment <- per_segment_baf_mat(haplotypes_rna$block_counts, segments = segments)
 
-ascn_rna_dp <- assign_states_dp(haplotypes_per_segment$bafpersegment)
+ascn_rna_dp <- assign_states_dp(haplotypes_per_segment$bafpersegment, haplotypes_rna)
 ascn_rna_dp
 ```
 

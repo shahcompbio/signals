@@ -154,6 +154,7 @@ assign_states_noprior <- function(haps,
 
 #' @export
 assign_states_dp <- function(bafpersegment,
+                             haplotypes_rna = NULL,
                              samples = 10,
                              alpha_0 = 1,
                              K = 20,
@@ -302,6 +303,8 @@ assign_states_dp <- function(bafpersegment,
   out[["clusters"]] <- x
   out[["hscn"]] <- bafpersegment_new %>% as.data.frame()
   out[["segments_fits"]] <- keepsegs
+  out[["haplotypecounts"]] <- haplotypes_rna$snp_counts
+  out[["segments"]] <- dplyr::distinct(bafpersegment_new, chr, start, end) %>% as.data.frame()
 
   return(out)
 }
