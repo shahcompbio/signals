@@ -1,3 +1,59 @@
+linearize_coords <- function(cn, chr_sizes, gap, chrfilt = NULL) {
+  
+  offset <- 0
+  cn$start <- as.double(cn$start)
+  cn$end <- as.double(cn$end)
+  
+  if (!is.null(chrfilt)){
+    chrfilt <- gtools::mixedsort(chrfilt)
+    chr_sizes <- chr_sizes[chrfilt]
+  } else{
+    chrs <- names(hg19_chrlength)
+    chrs <- chrs[!chrs %in% c("M", "Y")]
+    chr_sizes <- chr_sizes[chrs]
+  }
+  
+  for (c in names(chr_sizes)) {
+    mask <- cn$chr == c
+    cn[mask, "start"] <- cn[mask, "start"] + offset + gap
+    cn[mask, "end"] <- cn[mask, "end"] + offset + gap
+    offset <- offset + chr_sizes[c] + gap
+  }
+  
+  return(cn)
+}
+
+linearize_coords_sv <- function(sv, chr_sizes, gap, chrfilt = NULL) {
+  
+  offset <- 0
+  sv$position_1 <- as.double(sv$position_2)
+  sv$position_2 <- as.double(sv$position_2)
+  
+  if (!is.null(chrfilt)){
+    chrfilt <- gtools::mixedsort(chrfilt)
+    chr_sizes <- chr_sizes[chrfilt]
+  } else{
+    chrs <- names(hg19_chrlength)
+    chrs <- chrs[!chrs %in% c("M", "Y")]
+    chr_sizes <- chr_sizes[chrs]
+  }
+  
+  for (c in names(chr_sizes)) {
+    mask <- sv$chromosome_1 == c
+    sv[mask, "position_1"] <- sv[mask, "position_1"] + offset + gap
+    offset <- offset + chr_sizes[c] + gap
+  }
+  
+  for (c in names(chr_sizes)) {
+    mask <- sv$chromosome_2 == c
+    sv[mask, "position_2"] <- sv[mask, "position_2"] + offset + gap
+    offset <- offset + chr_sizes[c] + gap
+  }
+  
+  return(sv)
+}
+
+
 plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20) {
   # arrange segments in order, generate segment index and reorder CN state factor
 
@@ -45,14 +101,16 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20) {
     minidx <- min(CNbins$idx)
     maxidx <- max(CNbins$idx)
   } else {
-    binsize <- CNbins$end[1] - CNbins$start[1] + 1
+    # binsize <- CNbins$end[1] - CNbins$start[1] + 1
+    # 
+    # bins <- getBins(binsize = binsize) %>%
+    #   dplyr::filter(chr %in% unique(CNbins$chr)) %>%
+    #   dplyr::mutate(idx = 1:dplyr::n())
 
-    bins <- getBins(binsize = binsize) %>%
-      dplyr::filter(chr %in% unique(CNbins$chr)) %>%
-      dplyr::mutate(idx = 1:dplyr::n())
 
-
-    CNbins <- dplyr::full_join(bins, CNbins) %>%
+    CNbins <- linearize_coords(CNbins, chrfilt = unique(CNbins$chr), gap = 0, 
+                               chr_sizes = hg19_chrlength) %>%
+      dplyr::mutate(idx = (start + end) / 2) %>% 
       dplyr::filter(!is.na(copy)) %>%
       dplyr::filter(!is.na(state)) %>%
       dplyr::mutate(copy = ifelse(copy > maxCN, maxCN, copy)) %>%
@@ -60,25 +118,27 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20) {
       dplyr::mutate(idxs = forcats::fct_reorder(factor(idx), idx)) %>%
       dplyr::mutate(CNs = forcats::fct_reorder(ifelse(is.na(state), NA,
         paste0("CN", state)
-      ), state))
-
+      ), state)) %>% 
+      dplyr::arrange(mixedrank(chr), start)
+    
+    chrfilt <- unique(CNbins$chr)
+    
+    mychrs <- hg19_chrlength[chrfilt]
+    bins <- data.frame(chr = names(mychrs), start = 1, end = as.vector(hg19_chrlength[chrfilt])) %>% 
+      linearize_coords(., hg19_chrlength, 0, chrfilt)
+    
     # get breaks - first index of each chromosome
     chrbreaks <- bins %>%
-      dplyr::filter(chr %in% unique(CNbins$chr)) %>%
-      dplyr::group_by(chr) %>%
-      dplyr::filter(dplyr::row_number() == 1) %>%
-      dplyr::pull(idx)
-
+      dplyr::pull(start)
+    
     # get ticks - median bin of each chromosome
     chrticks <- bins %>%
-      dplyr::filter(chr %in% unique(CNbins$chr)) %>%
-      dplyr::group_by(chr) %>%
-      dplyr::summarise(idx = round(median(idx))) %>%
+      dplyr::mutate(idx = (end - start) / 2) %>% 
       dplyr::pull(idx)
-
-    chrlabels <- gtools::mixedsort(unique(CNbins$chr))
-    minidx <- min(bins$idx)
-    maxidx <- max(bins$idx)
+    
+    chrlabels <- gtools::mixedsort(unique(bins$chr))
+    minidx <- min(bins$start)
+    maxidx <- max(bins$end)
   }
 
   return(list(CNbins = CNbins, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
@@ -87,58 +147,36 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20) {
 plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL) {
   breakpoints$chromosome_1 <- as.character(breakpoints$chromosome_1)
   breakpoints$chromosome_2 <- as.character(breakpoints$chromosome_2)
-
-  if (is.null(chrfilt)) {
-    bins <- getBins(binsize = binsize) %>%
-      dplyr::filter(chr != "Y") %>%
-      dplyr::mutate(idx = 1:dplyr::n()) %>%
-      dplyr::select(chr, start, idx) %>%
-      dplyr::group_by(chr) %>%
-      dplyr::mutate(maxidx = max(idx), minidx = min(idx)) %>%
-      dplyr::ungroup()
-  } else {
-    bins <- getBins(binsize = binsize) %>%
-      dplyr::filter(chr %in% chrfilt) %>%
-      dplyr::filter(chr != "Y") %>%
-      dplyr::mutate(idx = 1:dplyr::n()) %>%
-      dplyr::select(chr, start, idx) %>%
-      dplyr::group_by(chr) %>%
-      dplyr::mutate(maxidx = max(idx), minidx = min(idx)) %>%
-      dplyr::ungroup()
-    breakpoints <- breakpoints %>%
-      dplyr::filter((chromosome_1 %in% chrfilt) | (chromosome_2 %in% chrfilt))
-  }
-
-  breakpoints <- breakpoints %>%
-    dplyr::mutate(
-      position_1 = 0.5e6 * floor(position_1 / 0.5e6) + 1,
-      position_2 = 0.5e6 * floor(position_2 / 0.5e6) + 1
-    ) %>%
-    dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx, maxidx_1 = maxidx, minidx_1 = minidx), by = c("chromosome_1", "position_1")) %>%
-    dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx, maxidx_2 = maxidx, minidx_2 = minidx), by = c("chromosome_2", "position_2"))
-
+  breakpoints <- linearize_coords_sv(breakpoints, hg19_chrlength, 0, chrfilt = chrfilt) %>% 
+    dplyr::mutate(idx_1 = position_1, idx_2 = position_2) %>% 
+    dplyr::group_by(chromosome_1) %>%
+    dplyr::mutate(maxidx_1 = max(idx_1), minidx_1 = min(idx_1)) %>% 
+    dplyr::group_by(chromosome_2) %>%
+    dplyr::mutate(maxidx_2 = max(idx_2), minidx_2 = min(idx_2)) %>%
+    dplyr::ungroup()
+  
   breakpoints <- breakpoints %>%
     dplyr::group_by(chromosome_1, position_1, chromosome_2, position_2, type, rearrangement_type, idx_1, idx_2, maxidx_1, minidx_1, maxidx_2, minidx_2) %>%
     dplyr::summarise(read_count = sum(read_count)) %>%
     dplyr::ungroup()
 
+  mychrs <- hg19_chrlength[chrfilt]
+  bins <- data.frame(chr = names(mychrs), start = 1, end = as.vector(hg19_chrlength[chrfilt])) %>% 
+    linearize_coords(., hg19_chrlength, 0, chrfilt)
+  
   # get breaks - first index of each chromosome
   chrbreaks <- bins %>%
-    dplyr::filter(chr %in% unique(CNbins$chr)) %>%
-    dplyr::group_by(chr) %>%
-    dplyr::filter(dplyr::row_number() == 1) %>%
-    dplyr::pull(idx)
+    dplyr::pull(start)
 
   # get ticks - median bin of each chromosome
   chrticks <- bins %>%
-    dplyr::filter(chr %in% unique(CNbins$chr)) %>%
-    dplyr::group_by(chr) %>%
-    dplyr::summarise(idx = round(median(idx))) %>%
+    dplyr::mutate(idx = (end - start) / 2) %>% 
     dplyr::pull(idx)
 
   chrlabels <- gtools::mixedsort(unique(bins$chr))
-  minidx <- min(bins$idx)
-  maxidx <- max(bins$idx)
+  minidx <- min(bins$start)
+  maxidx <- max(bins$end)
+  
   return(list(breakpoints = breakpoints, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
@@ -291,14 +329,10 @@ plotSV2 <- function(breakpoints,
 
 get_gene_idx <- function(mygenes, chr = NULL) {
   gene_df <- gene_locations %>%
-    dplyr::filter(ensembl_gene_symbol %in% mygenes) %>%
-    dplyr::mutate(
-      start = 0.5e6 * floor(start / 0.5e6) + 1,
-      end = 0.5e6 * ceiling(start / 0.5e6)
-    )
-  bins <- getBins(binsize = 0.5e6, chromosomes = chr) %>% dplyr::mutate(idx = 1:dplyr::n())
-  gene_bin <- dplyr::left_join(gene_df, bins)
-  return(gene_bin)
+    dplyr::filter(ensembl_gene_symbol %in% mygenes)
+  gene_coord <- linearize_coords(gene_df, hg19_chrlength, 0, chrfilt = chr) %>% 
+    dplyr::mutate(idx = (start + end) / 2)
+  return(gene_coord)
 }
 
 #' @export
@@ -543,7 +577,7 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = 16) +
       ggplot2::scale_color_manual(
         name = "Copy number",
         breaks = names(statecolpal),
@@ -573,7 +607,7 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = 16) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -608,7 +642,8 @@ plotCNprofile <- function(CNbins,
   }
 
   if (!is.null(annotateregions)) {
-    datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
+    datidx <- linearize_coords(annotateregions, hg19_chrlength,0,chrfilt = chrfilt) %>% 
+      dplyr::mutate(idx = (start + end) / 2)
     gCN <- gCN +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
   }
@@ -728,7 +763,7 @@ plotCNprofileBAFhomolog <- function(cn,
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx)) +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        ggrastr::geom_point_rast(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval) +
+        ggrastr::geom_point_rast(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = 16) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -758,7 +793,7 @@ plotCNprofileBAFhomolog <- function(cn,
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx)) +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        ggplot2::geom_point(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval) +
+        ggplot2::geom_point(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = 16) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -792,11 +827,16 @@ plotCNprofileBAFhomolog <- function(cn,
     
     if (is.null(offset)) {
       offset <- maxCN * 1.1 * 0.03
-      print(offset)
     }
     
-    pl$CNbins <- pl$CNbins %>%
-      dplyr::mutate(value = ifelse(name == "Maj", value + offset, value - offset))
+    if (y_axis_trans == "squashy"){
+      pl$CNbins <- pl$CNbins %>%
+        dplyr::mutate(value = ifelse(name == "Maj", value + squashy_trans()$transform(value * offset), 
+                                     value - + squashy_trans()$transform(value * offset)))
+    } else{
+      pl$CNbins <- pl$CNbins %>%
+        dplyr::mutate(value = ifelse(name == "Maj", value + offset, value - offset))
+    }
     
     if (shuffle){
       pl$CNbins <- dplyr::sample_frac(pl$CNbins, 1L)
@@ -895,7 +935,8 @@ plotCNprofileBAFhomolog <- function(cn,
   }
 
   if (!is.null(annotateregions)) {
-    datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
+    datidx <- linearize_coords(annotateregions, hg19_chrlength,0,chrfilt = chrfilt) %>% 
+      dplyr::mutate(idx = (start + end) / 2)
     gCN <- gCN +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
   }
@@ -1058,12 +1099,13 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = 16) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
         labels = names(BAFcolpal),
-        values = BAFcolpal
+        values = BAFcolpal,
+        drop = FALSE
       ) +
       ggplot2::theme(
         axis.title.y = ggplot2::element_blank(),
@@ -1092,7 +1134,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = 16) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1121,12 +1163,13 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval) +
+      ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = 16) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
         labels = names(BAFcolpal),
-        values = BAFcolpal
+        values = BAFcolpal,
+        drop = FALSE
       ) +
       ggplot2::theme(
         axis.title.y = ggplot2::element_blank(),
@@ -1155,7 +1198,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = 16) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1212,7 +1255,8 @@ plotCNprofileBAF <- function(cn,
   }
 
   if (!is.null(annotateregions)) {
-    datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
+    datidx <- linearize_coords(annotateregions, hg19_chrlength,0,chrfilt = chrfilt) %>% 
+      dplyr::mutate(idx = (start + end) / 2)
     gBAF <- gBAF +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
     gCN <- gCN +
