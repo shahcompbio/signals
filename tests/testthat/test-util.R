@@ -42,7 +42,7 @@ test_that("Test create segments", {
   expect_equal(dim(segs)[1], 24 * sum(clones_dist))
 })
 
-segs_cn <- create_segments(CNbins)
+segs_cn <- create_segments(consensuscopynumber(CNbins))
 segs_filt <- filter_segments(segs_cn, binwidth = 10e6)
 test_that("Test filtering segments", {
   expect_lt(dim(segs_filt)[1], dim(segs_cn)[1])
