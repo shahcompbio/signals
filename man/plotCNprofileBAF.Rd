@@ -29,6 +29,7 @@ plotCNprofileBAF(
   plotdata = TRUE,
   offset = NULL,
   my_title = NULL,
+  tickwidth = 50,
   ...
 )
 }

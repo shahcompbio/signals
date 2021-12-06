@@ -172,7 +172,7 @@ make_discrete_palette <- function(pal_name, levels) {
 format_copynumber_values <- function(copynumber, plotcol = "state") {
   # copynumber[copynumber > 11] <- 11
 
-  if (plotcol %in% c("BAF", "copy")) {
+  if (plotcol %in% c("BAF", "copy", "other")) {
     for (col in colnames(copynumber)) {
       values <- copynumber[, col]
       copynumber[, col] <- values
@@ -804,6 +804,7 @@ getSVlegend <- function(include = NULL) {
 #' @param linkheight height of x-axis ticks
 #' @param newlegendname overwrite default legend name
 #' @param str_to_remove string to remove from cell_id's when plotting labels
+#' @param maxCNcol max value for color scale when plotting raw data
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #'
@@ -851,6 +852,7 @@ plotHeatmap <- function(cn,
                         linkheight = 5,
                         newlegendname = NULL,
                         str_to_remove = NULL,
+                        maxCNcol = 11,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -882,7 +884,7 @@ plotHeatmap <- function(cn,
       orderdf(.)
   }
 
-  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj")) {
+  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj", "other")) {
     stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS, Min or Maj"))
   }
 
@@ -917,6 +919,11 @@ plotHeatmap <- function(cn,
 
   if (plotcol == "copy") {
     colvals <- circlize::colorRamp2(seq(0, 11, 1), scCN_colors)
+    legendname <- "Copy"
+  }
+  
+  if (plotcol == "other") {
+    colvals <- circlize::colorRamp2(c(0, maxCNcol / 2, maxCNcol), c(scCN_colors["CN0"], scCN_colors["CN3"], scCN_colors["CN11"]))
     legendname <- "Copy"
   }
 

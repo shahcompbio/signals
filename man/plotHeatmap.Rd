@@ -40,6 +40,7 @@ plotHeatmap(
   linkheight = 5,
   newlegendname = NULL,
   str_to_remove = NULL,
+  maxCNcol = 11,
   ...
 )
 }
@@ -100,7 +101,9 @@ plotHeatmap(
 
 \item{newlegendname}{overwrite default legend name}
 
-\item{str_to_remove}{string to remove from cell_id's when plotting labels
+\item{str_to_remove}{string to remove from cell_id's when plotting labels}
+
+\item{maxCNcol}{max value for color scale when plotting raw data
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 

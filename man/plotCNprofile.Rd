@@ -24,6 +24,7 @@ plotCNprofile(
   svwidth = 1,
   adj = 0.03,
   genes = NULL,
+  tickwidth = 50,
   ...
 )
 }
@@ -61,6 +62,8 @@ plotCNprofile(
 \item{svalpha}{the alpha scaling of the SV lines, default = 0.5}
 
 \item{genes}{vector of genes to annotate, will add a dashed vertical line and label}
+
+\item{tickwidth}{Spacing of ticks (in Mb) when only 1 chromosome is plotted}
 }
 \value{
 ggplot2 plot

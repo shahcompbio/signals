@@ -4,7 +4,7 @@
 \alias{filter_segments}
 \title{export}
 \usage{
-filter_segments(segs, binwidth = 5000000)
+filter_segments(segs, binwidth = 5e+06)
 }
 \description{
 export

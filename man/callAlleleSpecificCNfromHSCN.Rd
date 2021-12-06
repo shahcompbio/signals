@@ -6,7 +6,7 @@
 \usage{
 callAlleleSpecificCNfromHSCN(
   hscn,
-  eps = 0.000000000001,
+  eps = 1e-12,
   maxCN = NULL,
   selftransitionprob = 0.95,
   progressbar = TRUE,
