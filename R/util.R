@@ -703,15 +703,22 @@ mixedrank = function(x) order(gtools::mixedorder(x))
 filter_segments <- function(segs, binwidth = 5e6){
   data("hg19chrom_coordinates", envir = environment())
   chrin <- unique(segs$chr)
-  segs <- segs %>% 
-    dplyr::mutate(w = end-start) %>% 
-    dplyr::filter(w > binwidth) %>% 
-    dplyr::group_by(chr, cell_id) %>% 
-    dplyr::mutate(end2 = lead(start) - 1) %>% 
-    dplyr::mutate(end = ifelse(is.na(end2), end, end2)) %>% 
-    dplyr::ungroup() %>% 
-    dplyr::select(chr, start, end) %>% 
-    dplyr::arrange(mixedrank(chr), start)
+  
+  w <- 0
+  while (w < 5e6){
+    segs <- segs %>% 
+      dplyr::mutate(w = end-start) %>% 
+      dplyr::filter(w > binwidth) %>% 
+      dplyr::group_by(chr, cell_id) %>% 
+      dplyr::mutate(end2 = lead(start) - 1) %>% 
+      dplyr::mutate(end = ifelse(is.na(end2), end, end2)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(chr, start, end, w) %>% 
+      dplyr::arrange(mixedrank(chr), start)
+    w <- min(segs$w)
+  }
+  
+  segs <- dplyr::select(segs, -w)
   
   #make sure whole chromosome is covered
   segs <- dplyr::left_join(segs, hg19chrom_coordinates %>% dplyr::filter(arm == "") %>% dplyr::mutate(start = start + 1), by = "chr") %>% 
@@ -719,6 +726,22 @@ filter_segments <- function(segs, binwidth = 5e6){
     dplyr::mutate(start = ifelse(dplyr::row_number() == 1, start.y, start.x), 
                   end = ifelse(dplyr::row_number() == dplyr::n(), end.y, end.x)) %>% 
     dplyr::select(chr, start, end)
+  
+  w <- 0
+  while (w < 5e6){
+    segs <- segs %>% 
+      dplyr::mutate(w = end-start) %>% 
+      dplyr::filter(w > binwidth) %>% 
+      dplyr::group_by(chr) %>% 
+      dplyr::mutate(end2 = lead(start) - 1) %>% 
+      dplyr::mutate(end = ifelse(is.na(end2), end, end2)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(chr, start, end, w) %>% 
+      dplyr::arrange(mixedrank(chr), start)
+    w <- min(segs$w)
+  }
+  
+  segs <- dplyr::select(segs, -w)
   
   if (all(chrin %in% unique(segs$chr)) == FALSE){
     warning("Not all chromosomes present in output adding whole chromosomes")
