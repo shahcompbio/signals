@@ -41,6 +41,7 @@ plotHeatmap(
   newlegendname = NULL,
   str_to_remove = NULL,
   maxCNcol = 11,
+  anno_width = 0.4,
   ...
 )
 }
@@ -103,7 +104,9 @@ plotHeatmap(
 
 \item{str_to_remove}{string to remove from cell_id's when plotting labels}
 
-\item{maxCNcol}{max value for color scale when plotting raw data
+\item{maxCNcol}{max value for color scale when plotting raw data}
+
+\item{anno_width}{width of left annotations
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 

@@ -1,4 +1,4 @@
-plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20, tickwidth = 50) {
+plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20, tickwidth = 50, chrstart = NULL, chrend = NULL) {
   # arrange segments in order, generate segment index and reorder CN state factor
 
   if (!xaxis_order %in% c("bin", "genome_position")) {
@@ -51,7 +51,6 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20, ti
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
       dplyr::mutate(idx = 1:dplyr::n())
 
-
     CNbins <- dplyr::full_join(bins, CNbins) %>%
       dplyr::filter(!is.na(copy)) %>%
       dplyr::filter(!is.na(state)) %>%
@@ -82,15 +81,27 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20, ti
         dplyr::pull(idx)
       chrlabels <- gtools::mixedsort(unique(CNbins$chr))
     }
+    
+    if (length(unique(CNbins$chr)) == 1 & (!is.null(chrstart) | !is.null(chrstart))){
+      idxstart <- ifelse(is.null(chrstart), min(CNbins$idx), (chrstart * 1e6) / binsize)
+      idxend <- ifelse(is.null(chrend), max(CNbins$idx), (chrend * 1e6) / binsize)
+      CNbins <- CNbins %>% dplyr::filter(idx >= idxstart)
+      CNbins <- CNbins %>% dplyr::filter(idx <= idxend)
+      chrticks <- seq(idxstart, idxend, tickwidth)
+      chrlabels <- paste0((chrticks * binsize) / 1e6, " Mb")
+      minidx <- ifelse(is.null(chrstart), min(bins$idx), idxstart)
+      maxidx <- ifelse(is.null(chrend), max(bins$idx), idxend)
+    } else{
+      minidx <- min(bins$idx)
+      maxidx <- max(bins$idx)
+    }
 
-    minidx <- min(bins$idx)
-    maxidx <- max(bins$idx)
   }
 
   return(list(CNbins = CNbins, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
-plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL) {
+plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL, chrstart = NULL, chrend = NULL) {
   breakpoints$chromosome_1 <- as.character(breakpoints$chromosome_1)
   breakpoints$chromosome_2 <- as.character(breakpoints$chromosome_2)
 
@@ -143,8 +154,13 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL) {
     dplyr::pull(idx)
 
   chrlabels <- gtools::mixedsort(unique(bins$chr))
-  minidx <- min(bins$idx)
-  maxidx <- max(bins$idx)
+  if (length(chrfilt) == 1 & (!is.null(chrstart) | !is.null(chrstart))){
+    minidx <- ifelse(is.null(chrstart), min(bins$idx), (chrstart * 1e6) / binsize)
+    maxidx <- ifelse(is.null(chrend), max(bins$idx), (chrend * 1e6) / binsize)
+  } else{
+    minidx <- min(bins$idx)
+    maxidx <- max(bins$idx)
+  }
   return(list(breakpoints = breakpoints, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
@@ -229,8 +245,10 @@ plotSV2 <- function(breakpoints,
                     ylims = c(0, 2),
                     legend.position = "bottom",
                     svwidth = 1.0,
+                    chrstart = NULL,
+                    chrend = NULL,
                     ...) {
-  pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
+  pl <- plottinglistSV(breakpoints, chrfilt = chrfilt, chrstart = chrstart, chrend = chrend)
 
   pl$breakpoints <- pl$breakpoints %>%
     dplyr::mutate(curve = ifelse((abs(idx_1 - idx_2) < 2) & (chromosome_1 == chromosome_2), FALSE, TRUE))
@@ -523,6 +541,8 @@ plotCNprofile <- function(CNbins,
                           adj = 0.03,
                           genes = NULL, 
                           tickwidth = 50,
+                          chrstart = NULL,
+                          chrend = NULL,
                           ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -555,7 +575,7 @@ plotCNprofile <- function(CNbins,
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
-    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth)
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
 
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
@@ -690,6 +710,8 @@ plotCNprofileBAFhomolog <- function(cn,
                                     offset = NULL,
                                     linewidth = 0.6,
                                     tickwidth = 50,
+                                    chrstart = NULL,
+                                    chrend = NULL,
                                     ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -737,7 +759,7 @@ plotCNprofileBAFhomolog <- function(cn,
     dplyr::filter(cell_id == cellid) %>%
     dplyr::mutate(Acopy = ifelse(Acopy > maxCN, maxCN - 0.001, Acopy)) %>%
     dplyr::mutate(Bcopy = ifelse(Bcopy > maxCN, maxCN - 0.001, Bcopy)) %>%
-    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth)
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
   pl_for_sv <- pl 
 
   if (plotdata == TRUE){
@@ -1004,7 +1026,9 @@ plotCNprofileBAF <- function(cn,
                              plotdata = TRUE,
                              offset = NULL,
                              my_title = NULL,
-                             tickwidth = 50,
+                             tickwidth = 50,                          
+                             chrstart = NULL,
+                             chrend = NULL,
                              ...) {
   if (homolog == TRUE) {
     ghomolog <- plotCNprofileBAFhomolog(cn,
@@ -1028,6 +1052,8 @@ plotCNprofileBAF <- function(cn,
       plotdata = plotdata,
       offset = offset,
       tickwidth = tickwidth,
+      chrstart = chrstart,
+      chrend = chrend,
       ...
     )
     return(ghomolog)
@@ -1090,7 +1116,7 @@ plotCNprofileBAF <- function(cn,
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
-    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth)
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
 
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {

@@ -30,6 +30,8 @@ plotCNprofileBAF(
   offset = NULL,
   my_title = NULL,
   tickwidth = 50,
+  chrstart = NULL,
+  chrend = NULL,
   ...
 )
 }

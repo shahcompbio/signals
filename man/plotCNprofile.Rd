@@ -25,6 +25,8 @@ plotCNprofile(
   adj = 0.03,
   genes = NULL,
   tickwidth = 50,
+  chrstart = NULL,
+  chrend = NULL,
   ...
 )
 }

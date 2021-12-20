@@ -24,7 +24,7 @@ library(ggplot2)
 ```
 
 ## Background
-This vignette illustrates how to perform allele specific copy number inference in scRNAseq data. scRNAseq data is much more sparse than scDNAseq, so we perform inference on a chromosome arm basis by merging counts across arms.
+This vignette illustrates how to perform allele specific copy number inference in scRNAseq data. scRNAseq data is much more sparse than scDNAseq, so we perform inference on a chromosome arm basis by merging counts across segments or chromosome arms.
 
 ## Data
 
@@ -158,7 +158,7 @@ x <- RunUMAP(object = x,  dims = 1:20, reduction = "pca")
 Then we can use `createBAFassay` to add a `BAF` assay and add `clone_id` to the metadata.
 
 ```{r}
-x <- createBAFassay(x, ascn_rna_dp, haplotypes_rna)
+x <- createBAFassay(x, ascn_rna_dp, "hg19")
 ```
 
 This means all the Seurat functionality is available to analyse the allele specific copy number. For example we can plot low dimensional embeddings of BAF values per cell per chromosome or coloured by clone as shown below.
@@ -168,12 +168,12 @@ DimPlot(x, group.by = "DP_cloneid")
 ```
 
 ```{r}
-rownames(x@assays$BAF)
-FeaturePlot(x, "BAF-3-75500001-178500000") + scale_color_gradientn(colors = scBAFstate_cols())
+rownames(x@assays$segBAF)
+FeaturePlot(x, "BAF-3-75500001-192300000") + scale_color_gradientn(colors = scBAFstate_cols())
 ```
 
 ```{r}
-FeaturePlot(x, "BAF-10-500001-97000000") + scale_color_gradientn(colors = scBAFstate_cols())
+FeaturePlot(x, "BAF-10-1-97000000") + scale_color_gradientn(colors = scBAFstate_cols())
 ```
 
 ```{r}
