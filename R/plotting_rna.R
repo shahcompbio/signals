@@ -129,7 +129,7 @@ per_segment_baf_plot <- function(hscn, filtern = 9, labelclones = FALSE) {
       hst <- cndat %>%
         dplyr::filter(total > filtern) %>%
         dplyr::left_join(chridx) %>% 
-        dplyr::mutate(segidf = str_replace_all(segid, "_", "\n")) %>% 
+        dplyr::mutate(segidf = stringr::str_replace_all(segid, "_", "\n")) %>% 
         dplyr::mutate(segidf = forcats::fct_reorder(as.factor(segidf), idx)) %>%
         ggplot2::ggplot(ggplot2::aes(x = BAF, fill = clone_id)) +
         ggplot2::geom_histogram(bins = 30, alpha = 0.5) +
@@ -147,7 +147,7 @@ per_segment_baf_plot <- function(hscn, filtern = 9, labelclones = FALSE) {
     hst <- cndat %>%
       dplyr::filter(total > filtern) %>%
       dplyr::left_join(chridx) %>% 
-      dplyr::mutate(segidf = str_replace_all(segid, "_", "\n")) %>% 
+      dplyr::mutate(segidf = stringr::str_replace_all(segid, "_", "\n")) %>% 
       dplyr::mutate(segidf = forcats::fct_reorder(as.factor(segidf), idx)) %>%
       ggplot2::ggplot(ggplot2::aes(x = BAF)) +
       ggplot2::geom_histogram(bins = 30, alpha = 0.5) +
