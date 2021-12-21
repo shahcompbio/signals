@@ -1044,7 +1044,7 @@ createBAFassay <- function(seur, rna_ascn, ref = "hg19") {
       as.data.frame() %>% 
       dplyr::mutate(arm = paste0(chr, coord_to_arm(chr, start, assembly = ref)))
     row.names(meta) <- meta$ensembl_gene_symbol
-    meta <- meta[str_remove(rownames(seur[["gBAF"]]), "BAF-"), ]
+    meta <- meta[stringr::str_remove(rownames(seur[["gBAF"]]), "BAF-"), ]
     meta <- merge(meta, snps_to_genes[, list(totalsnpcounts = sum(totalcounts)), by = "ensembl_gene_symbol"])
     row.names(meta) <- meta$ensembl_gene_symbol
     seur[["gBAF"]]@meta.features <- meta
