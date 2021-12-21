@@ -53,7 +53,6 @@ Suggests:
     Seurat,
     plyranges
 Remotes:
-  VPetukhov/ggrastr,
   caravagn/VIBER,
   caravagn/pio,
   caravagn/easypar,
