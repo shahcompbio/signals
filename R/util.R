@@ -1023,7 +1023,7 @@ createBAFassay <- function(seur, rna_ascn, ref = "hg19") {
   if (!is.null(rna_ascn$haplotypecounts)){
     message("Add gene allelic imbalance")
     snps_to_genes <- map_to_segments(rna_ascn$haplotypecounts, 
-                                     gene_locations[[ref]] %>% dplyr::filter(!str_detect(chr, "_")))
+                                     gene_locations[[ref]] %>% dplyr::filter(!stringr::str_detect(chr, "_")))
     gene_baf <- snps_to_genes %>% 
       .[, list(BAF = mean(BAF)), by = c("cell_id", "ensembl_gene_symbol")] %>% 
       .[, cell_id := as.factor(cell_id)] %>% 
@@ -1038,7 +1038,7 @@ createBAFassay <- function(seur, rna_ascn, ref = "hg19") {
     x <- as.matrix(subset(x, select = -cell_id))
     seur[["gBAF"]] <- Seurat::CreateAssayObject(data = t(x))
     meta <- gene_locations[[ref]] %>% 
-      dplyr::filter(!str_detect(chr, "_")) %>% 
+      dplyr::filter(!stringr::str_detect(chr, "_")) %>% 
       dplyr::group_by(ensembl_gene_symbol) %>% 
       dplyr::filter(dplyr::row_number() == 1) %>%  #hack, take first chr if there are > 1
       as.data.frame() %>% 
@@ -1076,7 +1076,7 @@ createBAFassay <- function(seur, rna_ascn, ref = "hg19") {
 #' export
 add_gene_locations_to_seurat <- function(obj, ref = "hg19"){
   meta <- gene_locations[[ref]] %>% 
-    dplyr::filter(!str_detect(chr, "_")) %>% 
+    dplyr::filter(!stringr::str_detect(chr, "_")) %>% 
     dplyr::group_by(ensembl_gene_symbol) %>% 
     dplyr::filter(dplyr::row_number() == 1) %>%  #hack, take first chr if there are > 1
     as.data.frame() %>% 
