@@ -699,7 +699,7 @@ per_arm_baf_mat <- function(haps,
 
 mixedrank = function(x) order(gtools::mixedorder(x))
 
-#' export
+#' @export
 filter_segments <- function(segs, binwidth = 5e6){
   data("hg19chrom_coordinates", envir = environment())
   chrin <- unique(segs$chr)
