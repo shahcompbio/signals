@@ -13,9 +13,9 @@ cn_colours_phase <- scCNphase_colors
 cn_colours_bafstate <- scBAFstate_colors
 
 #' @export
-make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainloss = FALSE, ...) {
+make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainloss = FALSE, cnonly = FALSE, cntitle = "Copy\nNumber", hscntitle = "HSCN State", ...) {
   cn_lgd <- ComplexHeatmap::Legend(
-    title = "Copy\nNumber",
+    title = cntitle,
     labels = stringr::str_remove(names(scCN_colors), "CN"),
     legend_gp = grid::gpar(fill = as.vector(scCN_colors)),
     labels_gp = grid::gpar(fontsize = font_size),
@@ -26,7 +26,7 @@ make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainl
   )
   
   hscn_lgd <- ComplexHeatmap::Legend(
-    title = "HSCN State",
+    title = hscntitle,
     labels = names(scCNphase_colors),
     legend_gp = grid::gpar(fill = as.vector(scCNphase_colors)),
     labels_gp = grid::gpar(fontsize = font_size),
@@ -62,6 +62,11 @@ make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainl
       ...
     )
   }
+  
+  if (cnonly){
+    lgd <- cn_lgd
+  }
+  
   grid::grid.grabExpr(ComplexHeatmap::draw(lgd))
 }
 
@@ -790,6 +795,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     linkheight = 5,
                                     str_to_remove = NULL,
                                     anno_width = 0.4,
+                                    rasterquality = 15,
                                     ...) {
   
   if (class(colvals) == "function"){
@@ -824,7 +830,7 @@ make_copynumber_heatmap <- function(copynumber,
       plotfrequency = plotfrequency, plotcol = plotcol, SV = SV
     ),
     use_raster = TRUE,
-    raster_quality = 10,
+    raster_quality = rasterquality,
     ...
   )
   return(copynumber_hm)
@@ -878,6 +884,7 @@ getSVlegend <- function(include = NULL) {
 #' @param str_to_remove string to remove from cell_id's when plotting labels
 #' @param maxCNcol max value for color scale when plotting raw data
 #' @param anno_width width of left annotations
+#' @param rasterquality default = 15
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #'
@@ -927,6 +934,7 @@ plotHeatmap <- function(cn,
                         str_to_remove = NULL,
                         maxCNcol = 11,
                         anno_width = 0.4,
+                        rasterquality = 15,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1146,6 +1154,7 @@ plotHeatmap <- function(cn,
     linkheight = linkheight,
     str_to_remove = str_to_remove,
     anno_width = anno_width,
+    rasterquality = rasterquality,
     ...
   )
   if (plottree == TRUE) {

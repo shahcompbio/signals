@@ -513,6 +513,9 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param svalpha the alpha scaling of the SV lines, default = 0.5
 #' @param genes vector of genes to annotate, will add a dashed vertical line and label
 #' @param tickwidth Spacing of ticks (in Mb) when only 1 chromosome is plotted
+#' @chrstart Start of region (in Mb) when plotting a single chromosome
+#' @chrend End of region (in Mb) when plotting a single chromosome
+#' @shape shape for plotting
 #'
 #' @return ggplot2 plot
 #'
@@ -543,6 +546,7 @@ plotCNprofile <- function(CNbins,
                           tickwidth = 50,
                           chrstart = NULL,
                           chrend = NULL,
+                          shape = 16,
                           ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -588,7 +592,7 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = 16) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "Copy number",
         breaks = names(statecolpal),
@@ -712,6 +716,7 @@ plotCNprofileBAFhomolog <- function(cn,
                                     tickwidth = 50,
                                     chrstart = NULL,
                                     chrend = NULL,
+                                    shape = 16,
                                     ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -782,7 +787,7 @@ plotCNprofileBAFhomolog <- function(cn,
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx)) +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        ggrastr::geom_point_rast(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = 16) +
+        ggrastr::geom_point_rast(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = shape) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -812,7 +817,7 @@ plotCNprofileBAFhomolog <- function(cn,
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx)) +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        ggplot2::geom_point(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = 16) +
+        ggplot2::geom_point(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = shape) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -1029,6 +1034,7 @@ plotCNprofileBAF <- function(cn,
                              tickwidth = 50,                          
                              chrstart = NULL,
                              chrend = NULL,
+                             shape = 16,
                              ...) {
   if (homolog == TRUE) {
     ghomolog <- plotCNprofileBAFhomolog(cn,
@@ -1054,6 +1060,7 @@ plotCNprofileBAF <- function(cn,
       tickwidth = tickwidth,
       chrstart = chrstart,
       chrend = chrend,
+      shape = shape,
       ...
     )
     return(ghomolog)
@@ -1128,7 +1135,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = 16) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
@@ -1163,7 +1170,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = 16) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1192,7 +1199,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = 16) +
+      ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
@@ -1227,7 +1234,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = 16) +
+      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1331,7 +1338,7 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, ...)
 
   g <- CNbins %>%
     ggplot2::ggplot(ggplot2::aes(y = BAF, x = copy, col = paste0("CN", state))) +
-    ggplot2::geom_point(size = pointsize, alpha = 0.2, shape = 16) +
+    ggplot2::geom_point(size = pointsize, alpha = 0.2, shape = shape) +
     ggplot2::xlab("Corrected read counts") +
     cowplot::theme_cowplot(...) +
     ggplot2::ggtitle(plottitle) +
