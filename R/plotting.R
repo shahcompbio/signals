@@ -1311,7 +1311,7 @@ plotCNprofileBAF <- function(cn,
 
 
 #' @export
-plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, ...) {
+plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, shape = 16, ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
   } else {
