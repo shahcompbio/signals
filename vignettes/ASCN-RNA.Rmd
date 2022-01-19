@@ -189,17 +189,16 @@ We can also pull out the allelic imbalance in individual genes. Let's look at so
 
 
 ```{r}
-chr4pgenes <- x[["gBAF"]]@meta.features %>% filter(arm == "4p") %>% 
-  arrange(desc(totalsnpcounts))
-
-mygene <- chr4pgenes$ensembl_gene_symbol[2]
-
-cowplot::plot_grid(
-  FeaturePlot(x, paste0("BAF-", mygene)) + 
-    scale_color_gradientn(colors = scBAFstate_cols()),
-  FeaturePlot(x, mygene),
-  DimPlot(x, group.by = "DP_cloneid"),
-  VlnPlot(x, paste0("BAF-", mygene), group.by = "DP_cloneid") + ylab("BAF"))
+# chr4pgenes <- x[["gBAF"]]@meta.features %>% filter(arm == "4p") %>% 
+#   arrange(desc(totalsnpcounts))
+# 
+# mygene <- chr4pgenes$ensembl_gene_symbol[2]
+# 
+# cowplot::plot_grid(
+#   FeaturePlot(x, paste0("BAF-", mygene)) + scale_color_gradientn(colors = scBAFstate_cols()),
+#   FeaturePlot(x, mygene),
+#   DimPlot(x, group.by = "DP_cloneid"),
+#   VlnPlot(x, paste0("BAF-", mygene), group.by = "DP_cloneid") + ylab("BAF"))
   
 ```
 
