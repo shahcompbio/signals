@@ -1,4 +1,4 @@
 library(testthat)
-library(schnapps)
+library(signals)
 
-test_check("schnapps")
+test_check("signals")

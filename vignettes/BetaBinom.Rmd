@@ -1,8 +1,8 @@
 ---
-title: "Beta-Binomial model for schnapps"
+title: "Beta-Binomial model for signals"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Beta-Binomial model for schnapps}
+  %\VignetteIndexEntry{Beta-Binomial model for signals}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(schnapps)
+library(signals)
 ```
 
 ## Background

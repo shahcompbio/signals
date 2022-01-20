@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(schnapps)
+library(signals)
 library(tidyr)
 library(dplyr)
 library(cowplot)
@@ -28,7 +28,7 @@ This vignette illustrates how to perform allele specific copy number inference i
 
 ## Data
 
-The data needed to perform the allele specific copy number inference are SNP calls of heterozygous positions in individual single cells. Ideally haplotype block calling should also be performed, so that each allele in each cell can be assigned to a haplotype block. To get this data you will ideally need a whole genome sequenced bulk sample of normal tissue to identify heterozygous SNPs and then you can use a tool such as cellSNP or vartrix to get per cell counts. An example dataset from ~814 cells is included here. For this dataset we also have paired scDNAseq, where we have called HSCN using `schnapps`.
+The data needed to perform the allele specific copy number inference are SNP calls of heterozygous positions in individual single cells. Ideally haplotype block calling should also be performed, so that each allele in each cell can be assigned to a haplotype block. To get this data you will ideally need a whole genome sequenced bulk sample of normal tissue to identify heterozygous SNPs and then you can use a tool such as cellSNP or vartrix to get per cell counts. An example dataset from ~814 cells is included here. For this dataset we also have paired scDNAseq, where we have called HSCN using `signals`.
 
 
 ```{r}

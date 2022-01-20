@@ -1,5 +1,5 @@
 ## usethis namespace: start
-#' @useDynLib schnapps
+#' @useDynLib signals
 #' @importFrom Rcpp sourceCpp
 ## usethis namespace: end
 NULL

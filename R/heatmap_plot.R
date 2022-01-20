@@ -1301,7 +1301,7 @@ plotHeatmapQC <- function(cn,
     CNbins <- dplyr::left_join(CNbins, p$cl$clustering, by = "cell_id")
     CNbins <- dplyr::left_join(CNbins, p$prop)
   } else {
-    CNbins$chrarm <- paste0(CNbins$chr, schnapps:::coord_to_arm(CNbins$chr, CNbins$start))
+    CNbins$chrarm <- paste0(CNbins$chr, signals:::coord_to_arm(CNbins$chr, CNbins$start))
     CNbins <- dplyr::left_join(CNbins, p$cl$clustering, by = "cell_id")
     CNbins <- dplyr::left_join(CNbins, p$prop)
   }
@@ -1310,7 +1310,7 @@ plotHeatmapQC <- function(cn,
     dplyr::mutate(state_BAF = ifelse(is.na(propA), "-1", state_BAF))
 
   plotcol <- "state_BAF"
-  colvals <- schnapps:::cn_colours_bafstate
+  colvals <- signals:::cn_colours_bafstate
   colvals[["-1"]] <- "gray90"
   legendname <- "Allelic Imbalance"
 

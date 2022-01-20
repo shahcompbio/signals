@@ -1,27 +1,27 @@
 
-# schnapps
+# signals
 
 <!-- badges: start -->
-[![R build status](https://github.com/shahcompbio/schnapps/workflows/R-CMD-check/badge.svg)](https://github.com/shahcompbio/schnapps/actions)
-[![Codecov test coverage](https://codecov.io/gh/shahcompbio/schnapps/branch/master/graph/badge.svg)](https://codecov.io/gh/shahcompbio/schnapps?branch=master)
-[![Docker](https://img.shields.io/docker/cloud/build/marcjwilliams1/schnapps)](https://hub.docker.com/repository/docker/marcjwilliams1/schnapps)
+[![R build status](https://github.com/shahcompbio/signals/workflows/R-CMD-check/badge.svg)](https://github.com/shahcompbio/signals/actions)
+[![Codecov test coverage](https://codecov.io/gh/shahcompbio/signals/branch/master/graph/badge.svg)](https://codecov.io/gh/shahcompbio/signals?branch=master)
+[![Docker](https://img.shields.io/docker/cloud/build/marcjwilliams1/signals)](https://hub.docker.com/repository/docker/marcjwilliams1/signals)
 <!-- badges: end -->
 
-schnapps (Single Cell Haplotype copy Number Analysis through Phased Probabilistic States) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (0.01-0.1X). schnapps phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model.  Documentation is available [here](https://shahcompbio.github.io/schnapps/).
+signals (single cell genomes with allele specificity) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (0.01-0.1X). signals phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model.  Documentation is available [here](https://shahcompbio.github.io/signals/).
 
-You can read more about schnapps in our [preprint](https://www.biorxiv.org/content/10.1101/2021.06.04.447031v1).
+You can read more about signals in our [preprint](https://www.biorxiv.org/content/10.1101/2021.06.04.447031v1).
 
 ## Installation
 
-You can install schnapps with the following command 
+You can install signals with the following command 
 
 ``` r
-devtools::install_github("shahcompbio/schnapps")
+devtools::install_github("shahcompbio/signals")
 ```
 
 ## Input data
 
-`schnapps` was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in [Laks et al.](https://www.sciencedirect.com/science/article/pii/S0092867419311766). As such it works using the output of the the pipeline developed to process this type of data, available [here](https://github.com/shahcompbio/single_cell_pipeline). Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it succesfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP counts may also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running schnapps please open an issue. We describe in more detail the necessary input below.
+`signals` was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in [Laks et al.](https://www.sciencedirect.com/science/article/pii/S0092867419311766). As such it works using the output of the the pipeline developed to process this type of data, available [here](https://github.com/shahcompbio/single_cell_pipeline). Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it succesfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP counts may also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running signals please open an issue. We describe in more detail the necessary input below.
 
 ### DLP+ data
 
@@ -29,7 +29,7 @@ You will need the HMM copy results table (`CNbins`) with the following columns: 
 
 ### Other technologies
 
-Other technologies and software should also be compatible with schnapps. For example, we have used 10X data successfully. If you have single cell bam files or fastq files see the detailed documentation for running our single cell pipeline [here](https://github.com/shahcompbio/single_cell_pipeline/blob/master/docs/source/install.md). Alternatively, we provide a lightweight snakemake pipeline with the key steps [here](https://github.com/marcjwilliams1/hscn_pipeline). Also included there are some scripts to demultiplex 10X CNV bams.
+Other technologies and software should also be compatible with signals. For example, we have used 10X data successfully. If you have single cell bam files or fastq files see the detailed documentation for running our single cell pipeline [here](https://github.com/shahcompbio/single_cell_pipeline/blob/master/docs/source/install.md). Alternatively, we provide a lightweight snakemake pipeline with the key steps [here](https://github.com/marcjwilliams1/hscn_pipeline). Also included there are some scripts to demultiplex 10X CNV bams.
 
 If you total copy number calls from other software such as 10X cellranger or [scope](https://github.com/rujinwang/SCOPE), these may also work but not something we have tried. Feel free to open an issue if you need some advice.
 
@@ -51,10 +51,10 @@ It is imortant to have 4 string's seperated by "-", but the unique cell identifi
 
 ## Example
 
-Here we'll show an example of running schnapps with a small dataset of 250 cells from the DLP platform. First we need to do some data wrangling to convert the `allele_data` table from long to wide format.
+Here we'll show an example of running signals with a small dataset of 250 cells from the DLP platform. First we need to do some data wrangling to convert the `allele_data` table from long to wide format.
 
 ``` r
-library(schnapps)
+library(signals)
 haplotypes<- format_haplotypes_dlp(haplotypes, CNbins)
 ```
 
@@ -81,7 +81,7 @@ plotHeatmap(ascn, plotcol = "state_BAF")
 ```
 This will cluster the cell using umap and hdbscan.
 
-`schnapps` includes a number of other utilities for analysing single cell (haplotype-specific) copy number including the following:
+`signals` includes a number of other utilities for analysing single cell (haplotype-specific) copy number including the following:
 
 * integration with scRNAseq using [seurat](https://satijalab.org/seurat/index.html)
 * extensive plotting functions
