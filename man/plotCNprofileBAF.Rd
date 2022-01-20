@@ -26,6 +26,12 @@ plotCNprofileBAF(
   adj = 0.03,
   svalpha = 0.5,
   svwidth = 1,
+  plotdata = TRUE,
+  offset = NULL,
+  my_title = NULL,
+  tickwidth = 50,
+  chrstart = NULL,
+  chrend = NULL,
   ...
 )
 }
@@ -67,6 +73,10 @@ plotCNprofileBAF(
 \item{svalpha}{the alpha scaling of the SV lines, default = 0.5}
 
 \item{svwidth}{width of rearrangement connections}
+
+\item{plotdata}{Binary value whether to plot raw data or inferred states in homolog plot}
+
+\item{offest}{to use when plotting inferred states in homolog plot}
 }
 \value{
 ggplot2 plot

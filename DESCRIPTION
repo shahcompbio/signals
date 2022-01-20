@@ -50,9 +50,9 @@ Suggests:
     covr,
     ggrastr,
     VIBER,
-    Seurat
+    Seurat,
+    plyranges
 Remotes:
-  VPetukhov/ggrastr,
   caravagn/VIBER,
   caravagn/pio,
   caravagn/easypar,

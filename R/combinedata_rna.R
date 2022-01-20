@@ -21,9 +21,6 @@ format_haplotypes_rna <- function(haplotypes,
       message("Phasing based on distribution across all cells")
       phased_haplotypes <- phase_haplotypes_rna(haplotypes)
     }
-    # } else {
-    #   phased_haplotypes <- computehaplotypecounts(haplotypes, ...)
-    # }
     message("Join phased haplotypes...")
     haplotypes <- as.data.table(haplotypes)[phased_haplotypes,
       on = .(chr, hap_label)
@@ -45,22 +42,38 @@ format_haplotypes_rna <- function(haplotypes,
     .[, totalcounts := alleleA + alleleB] %>%
     .[totalcounts > filtern, BAF := alleleB / totalcounts] %>%
     .[, c("allele1", "allele0", "phase") := NULL]
+  
+  haplotype_snp_counts <-  haplotypes %>%
+    .[, list(
+      alleleA = sum(alleleA),
+      alleleB = sum(alleleB)
+    ), by = c("cell_id", "chr", "position", "hap_label")] %>%
+    .[, totalcounts := alleleA + alleleB] %>%
+    .[totalcounts > filtern, BAF := alleleB / totalcounts] %>%
+    dplyr::rename(start = position) %>% 
+    dplyr::select(cell_id, chr, start, hap_label, alleleA, alleleB, totalcounts, BAF)
 
   haplotypes <- haplotypes %>%
     .[, list(
       alleleA = sum(alleleA),
       alleleB = sum(alleleB),
       start = min(position), end = max(position)
-    ), by = c("cell_id", "chr", "sample", "patient", "hap_label")] %>%
+    ), by = c("cell_id", "chr", "hap_label")] %>%
     .[, totalcounts := alleleA + alleleB] %>%
     .[totalcounts > filtern, BAF := alleleB / totalcounts] %>%
-    dplyr::select(cell_id, chr, start, end, hap_label, alleleA, alleleB, totalcounts, BAF, sample, patient)
+    dplyr::select(cell_id, chr, start, end, hap_label, alleleA, alleleB, totalcounts, BAF)
 
   if (create_cell_id) {
-    haplotypes <- dplyr::mutate(cell_id = paste(patient, sample, cell_id, sep = "-")) %>%
+    haplotypes <- haplotypes %>% 
+      dplyr::mutate(cell_id = paste(patient, sample, cell_id, sep = "-")) %>%
+      as.data.frame() %>%
+      orderdf()
+    
+    haplotype_snp_counts <- haplotype_snp_counts %>% 
+      dplyr::mutate(cell_id = paste(patient, sample, cell_id, sep = "-")) %>%
       as.data.frame() %>%
       orderdf()
   }
 
-  return(haplotypes)
+  return(list(block_counts = haplotypes, snp_counts = haplotype_snp_counts))
 }
