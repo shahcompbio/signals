@@ -141,7 +141,7 @@ umap_clustering_breakpoints <- function(CNbins,
   minPts <- max(minPts, 2)
 
   message("Creating breakpoint matrix...")
-  segs <- schnapps::create_segments(CNbins, field = field)
+  segs <- signals::create_segments(CNbins, field = field)
   segs_matrix <- createbreakpointmatrix(segs,
     transpose = TRUE,
     internalonly = internalonly,

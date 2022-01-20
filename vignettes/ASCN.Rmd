@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(schnapps)
+library(signals)
 ```
 
 ## Background
@@ -44,7 +44,7 @@ head(haplotypes)
 
 ## Inference
 
-The output of `schnapps` is allele specific states per bin. `schnapps` has 2 options to perform this inference, the first, `callAlleleSpecificCN`, infers allele specific states using mirrored B allele frequencies as is typically done in bulk whole genome sequencing. This infers states of the form `A|B` where `B < A`. The second option, `callHaplotypeSpecificCN` takes into account the possibility that different alleles may be lost or gained in different cells. In order to identify these events, `schnapps` clusters cells and infers the haplotype phase based on regions within clusters that have large allelic imbalance. The output for this method therefore allows for `B>A`.
+The output of `signals` is allele specific states per bin. `signals` has 2 options to perform this inference, the first, `callAlleleSpecificCN`, infers allele specific states using mirrored B allele frequencies as is typically done in bulk whole genome sequencing. This infers states of the form `A|B` where `B < A`. The second option, `callHaplotypeSpecificCN` takes into account the possibility that different alleles may be lost or gained in different cells. In order to identify these events, `signals` clusters cells and infers the haplotype phase based on regions within clusters that have large allelic imbalance. The output for this method therefore allows for `B>A`.
 
 ### `callAlleleSpecificCN`
 

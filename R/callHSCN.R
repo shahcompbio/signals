@@ -580,7 +580,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param likelihood Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.
 #' @param minbins Minimum number of bins containing both haplotype counts and copy number data for a cell to be included
 #' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
-#' @param phased_haplotypes Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by schnapps does not return a good fit.
+#' @param phased_haplotypes Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by signals does not return a good fit.
 #' @param clustering_method Method to use to cluster cells for haplotype phasing, default is `copy`, other option is `breakpoints`
 #' @param maxloherror Maximum value for LOH error rate
 #' @param mincells Minimum cluster size used for phasing

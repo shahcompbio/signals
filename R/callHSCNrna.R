@@ -333,7 +333,7 @@ segments_to_bins <- function(segments, binsize = 0.5e6, ncores = 1){
     )
   }
   
-  bins <- schnapps::getBins(binsize = binsize)
+  bins <- signals::getBins(binsize = binsize)
   
   if (ncores == 1) {
     df <- data.table::rbindlist(lapply(unique(segments$cell_id),

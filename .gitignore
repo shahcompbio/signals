@@ -7,9 +7,12 @@ inst/doc
 doc
 Meta
 .DS_Store
-schnapps.Rproj
+signals.Rproj
 vignettes/ASCN-phasing.Rmd
 test_data/
 .Rbuildignore
 profiling.R
 SA530.R
+debug.Rmd
+docs/*
+docs
