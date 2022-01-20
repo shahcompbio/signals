@@ -33,7 +33,7 @@ RUN Rscript -e "library(devtools); install_github('caravagn/easypar')"
 RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
 RUN Rscript -e "library(devtools); install_github('caravagnalab/VIBER')"
 RUN Rscript -e "library(devtools); install_github('VPetukhov/ggrastr')"
-RUN Rscript -e "library(devtools); install_github('shahcompbio/schnapps')"
+RUN Rscript -e "library(devtools); install_github('shahcompbio/signals')"
 
 WORKDIR /usr/src
 
