@@ -12,6 +12,64 @@ cn_colours_minorallele <- scCNminorallele_colors
 cn_colours_phase <- scCNphase_colors
 cn_colours_bafstate <- scBAFstate_colors
 
+#' @export
+make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainloss = FALSE, cnonly = FALSE, cntitle = "Copy\nNumber", hscntitle = "HSCN State", ...) {
+  cn_lgd <- ComplexHeatmap::Legend(
+    title = cntitle,
+    labels = stringr::str_remove(names(scCN_colors), "CN"),
+    legend_gp = grid::gpar(fill = as.vector(scCN_colors)),
+    labels_gp = grid::gpar(fontsize = font_size),
+    title_gp = grid::gpar(fontsize = font_size),
+    title_gap = grid::unit(1, "mm"),
+    grid_height = grid::unit(3, "mm"), grid_width = grid::unit(2.5, "mm"),
+    ncol = ncolcn
+  )
+  
+  hscn_lgd <- ComplexHeatmap::Legend(
+    title = hscntitle,
+    labels = names(scCNphase_colors),
+    legend_gp = grid::gpar(fill = as.vector(scCNphase_colors)),
+    labels_gp = grid::gpar(fontsize = font_size),
+    title_gp = grid::gpar(fontsize = font_size),
+    title_gap = grid::unit(1, "mm"),
+    grid_height = grid::unit(3, "mm"), grid_width = grid::unit(2.5, "mm"),
+    ncol = ncolas
+  )
+  
+  gain_loss_lgd <- ComplexHeatmap::Legend(
+    title = "Δ",
+    labels = c("Gain", "Loss"),
+    legend_gp = grid::gpar(fill = c("#E34A33", "#3182BD")),
+    labels_gp = grid::gpar(fontsize = font_size),
+    title_gp = grid::gpar(fontsize = font_size),
+    title_gap = grid::unit(1, "mm"),
+    grid_height = grid::unit(3, "mm"), grid_width = grid::unit(2.5, "mm"),
+    ncol = 1
+  )
+  
+  if (gainloss){
+    lgd <- ComplexHeatmap::packLegend(
+      gain_loss_lgd, cn_lgd, hscn_lgd,
+      row_gap = grid::unit(4, "mm"),
+      column_gap = grid::unit(4, "mm"),
+      ...
+    )
+  } else {
+    lgd <- ComplexHeatmap::packLegend(
+      cn_lgd, hscn_lgd,
+      row_gap = grid::unit(4, "mm"),
+      column_gap = grid::unit(4, "mm"),
+      ...
+    )
+  }
+  
+  if (cnonly){
+    lgd <- cn_lgd
+  }
+  
+  grid::grid.grabExpr(ComplexHeatmap::draw(lgd))
+}
+
 snv_colours <- structure(
   names = c(0, 1),
   c("#7EA5EA", "#9A2E1C")
@@ -172,7 +230,7 @@ make_discrete_palette <- function(pal_name, levels) {
 format_copynumber_values <- function(copynumber, plotcol = "state") {
   # copynumber[copynumber > 11] <- 11
 
-  if (plotcol %in% c("BAF", "copy")) {
+  if (plotcol %in% c("BAF", "copy", "other")) {
     for (col in colnames(copynumber)) {
       values <- copynumber[, col]
       copynumber[, col] <- values
@@ -344,6 +402,8 @@ make_left_annot <- function(copynumber,
                             clone_pal = NULL,
                             idx = 1,
                             show_legend = TRUE,
+                            annofontsize = 14,
+                            anno_width = 0.4,
                             str_to_remove = NULL) {
   annot_colours <- list()
 
@@ -383,6 +443,7 @@ make_left_annot <- function(copynumber,
       y_pos <- 1 - unlist(clone_label_pos) / nrow(clones)
       grid::grid.text(
         names(clone_label_pos), 0.5, y_pos,
+        gp = grid::gpar(fontsize = annofontsize - 1),
         just = c("centre", "centre")
       )
     }
@@ -398,10 +459,12 @@ make_left_annot <- function(copynumber,
         clone_label = clone_label_generator,
         Sample = library_labels,
         col = annot_colours, show_annotation_name = c(TRUE, FALSE, TRUE),
-        which = "row", annotation_width = grid::unit(rep(0.4, 3), "cm"),
+        which = "row", annotation_width = grid::unit(rep(anno_width, 3), "cm"),
+        annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
         annotation_legend_param = list(
           Cluster = list(nrow = clone_legend_rows, direction = "horizontal"),
-          Sample = list(nrow = library_legend_rows, direction = "horizontal")
+          Sample = list(nrow = library_legend_rows, direction = "horizontal"),
+          labels_gp = grid::gpar(fontsize = annofontsize)
         ),
         show_legend = show_legend
       )
@@ -410,9 +473,11 @@ make_left_annot <- function(copynumber,
         Cluster = clones$clone_label, 
         clone_label = clone_label_generator,
         col = annot_colours, show_annotation_name = c(TRUE, FALSE),
-        which = "row", annotation_width = grid::unit(rep(0.4, 2), "cm"),
+        which = "row", annotation_width = grid::unit(rep(anno_width, 2), "cm"),
+        annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
         annotation_legend_param = list(
-          Cluster = list(nrow = clone_legend_rows)
+          Cluster = list(nrow = clone_legend_rows),
+          labels_gp = grid::gpar(fontsize = annofontsize)
         ),
         show_legend = show_legend
       ) 
@@ -421,19 +486,23 @@ make_left_annot <- function(copynumber,
           Cluster = clones$clone_label, 
           Sample = library_labels,
           col = annot_colours, show_annotation_name = c(TRUE, FALSE, TRUE),
-          which = "row", annotation_width = grid::unit(rep(0.4, 3), "cm"),
+          which = "row", annotation_width = grid::unit(rep(anno_width, 3), "cm"),
+          annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
           annotation_legend_param = list(
             Cluster = list(nrow = clone_legend_rows, direction = "horizontal"),
-            Sample = list(nrow = library_legend_rows, direction = "horizontal")
+            Sample = list(nrow = library_legend_rows, direction = "horizontal"),
+            labels_gp = grid::gpar(fontsize = annofontsize)
           ),
           show_legend = show_legend
         )
       } else if (show_library_label == TRUE & show_clone_label == FALSE) {
         left_annot <- ComplexHeatmap::HeatmapAnnotation(
           Sample = library_labels, col = annot_colours,
-          which = "row", simple_anno_size = grid::unit(0.4, "cm"),
+          which = "row", simple_anno_size = grid::unit(anno_width, "cm"),
+          annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
           annotation_legend_param = list(
-            Sample = list(nrow = library_legend_rows)
+            Sample = list(nrow = library_legend_rows),
+            labels_gp = grid::gpar(fontsize = annofontsize)
           ),
           show_legend = show_legend
         )
@@ -441,9 +510,12 @@ make_left_annot <- function(copynumber,
         left_annot <- ComplexHeatmap::HeatmapAnnotation(
           Cluster = clones$clone_label, 
           col = annot_colours, show_annotation_name = c(TRUE, FALSE),
-          which = "row", annotation_width = grid::unit(rep(0.4, 2), "cm"),
+          which = "row", annotation_width = grid::unit(rep(anno_width, 2), "cm"),
+          simple_anno_size = grid::unit(anno_width * 2, "cm"),
+          annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
           annotation_legend_param = list(
-            Cluster = list(nrow = clone_legend_rows)
+            Cluster = list(nrow = clone_legend_rows),
+            labels_gp = grid::gpar(fontsize = annofontsize)
           ),
           show_legend = show_legend
         ) 
@@ -452,6 +524,7 @@ make_left_annot <- function(copynumber,
     left_annot <- ComplexHeatmap::HeatmapAnnotation(
       Sample = library_labels, col = annot_colours,
       which = "row", simple_anno_size = grid::unit(0.4, "cm"),
+      annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
       annotation_legend_param = list(
         Sample = list(nrow = library_legend_rows)
       ),
@@ -536,6 +609,7 @@ make_bottom_annot <- function(copynumber,
     bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = ComplexHeatmap::anno_mark(
       at = as.vector(unlist(chrom_label_pos)),
       labels = names(chrom_label_pos),
+      link_height = grid::unit(linkheight, "mm"),
       side = "bottom",
       labels_gp = grid::gpar(fontsize = annofontsize),
       padding = grid::unit(1.25, "mm"), extend = 0.01, labels_rot = 0
@@ -720,15 +794,19 @@ make_copynumber_heatmap <- function(copynumber,
                                     na_col = "white",
                                     linkheight = 5,
                                     str_to_remove = NULL,
+                                    anno_width = 0.4,
+                                    rasterquality = 15,
                                     ...) {
   
   if (class(colvals) == "function"){
     leg_params <- list(nrow = 3,
-                       direction = "vertical")
+                       direction = "vertical",
+                       legend_gp = grid::gpar(fontsize = annofontsize))
   } else {
     leg_params <- list(nrow = 3,
                        direction = "vertical",
-                       at = names(colvals))
+                       at = names(colvals),
+                       legend_gp = grid::gpar(fontsize = annofontsize))
   }
   
   copynumber_hm <- ComplexHeatmap::Heatmap(
@@ -741,9 +819,9 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_columns = FALSE,
     show_column_names = FALSE,
     bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, nticks = nticks, annotation_height = annotation_height, annofontsize = annofontsize, linkheight = linkheight),
-    left_annotation = make_left_annot(copynumber, clones,
+    left_annotation = make_left_annot(copynumber, clones, anno_width = anno_width,
       library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label, show_clone_text = show_clone_text,
-      idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,
+      idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,annofontsize = annofontsize, 
       str_to_remove = str_to_remove
     ),
     heatmap_legend_param = leg_params,
@@ -752,7 +830,7 @@ make_copynumber_heatmap <- function(copynumber,
       plotfrequency = plotfrequency, plotcol = plotcol, SV = SV
     ),
     use_raster = TRUE,
-    raster_quality = 10,
+    raster_quality = rasterquality,
     ...
   )
   return(copynumber_hm)
@@ -804,6 +882,9 @@ getSVlegend <- function(include = NULL) {
 #' @param linkheight height of x-axis ticks
 #' @param newlegendname overwrite default legend name
 #' @param str_to_remove string to remove from cell_id's when plotting labels
+#' @param maxCNcol max value for color scale when plotting raw data
+#' @param anno_width width of left annotations
+#' @param rasterquality default = 15
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #'
@@ -851,6 +932,9 @@ plotHeatmap <- function(cn,
                         linkheight = 5,
                         newlegendname = NULL,
                         str_to_remove = NULL,
+                        maxCNcol = 11,
+                        anno_width = 0.4,
+                        rasterquality = 15,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -882,7 +966,7 @@ plotHeatmap <- function(cn,
       orderdf(.)
   }
 
-  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj")) {
+  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj", "other")) {
     stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS, Min or Maj"))
   }
 
@@ -917,6 +1001,11 @@ plotHeatmap <- function(cn,
 
   if (plotcol == "copy") {
     colvals <- circlize::colorRamp2(seq(0, 11, 1), scCN_colors)
+    legendname <- "Copy"
+  }
+  
+  if (plotcol == "other") {
+    colvals <- circlize::colorRamp2(c(0, maxCNcol / 2, maxCNcol), c(scCN_colors["CN0"], scCN_colors["CN3"], scCN_colors["CN11"]))
     legendname <- "Copy"
   }
 
@@ -1064,6 +1153,8 @@ plotHeatmap <- function(cn,
     na_col = na_col,
     linkheight = linkheight,
     str_to_remove = str_to_remove,
+    anno_width = anno_width,
+    rasterquality = rasterquality,
     ...
   )
   if (plottree == TRUE) {

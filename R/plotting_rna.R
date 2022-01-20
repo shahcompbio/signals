@@ -1,5 +1,5 @@
 #' @export
-per_chr_baf <- function(haps, filtern = 9, perarm = FALSE, labelclones = FALSE) {
+per_chr_baf_plot <- function(haps, filtern = 9, perarm = FALSE, labelclones = FALSE) {
   if (labelclones) {
     if (perarm) {
       chridx <- data.frame(chrarm = paste0(rep(c(paste0(seq(1:22)), "X", "Y"), each = 2), rep(c("p", "q"), 24))) %>%
@@ -108,6 +108,64 @@ per_chr_baf <- function(haps, filtern = 9, perarm = FALSE, labelclones = FALSE) 
 
   return(hst)
 }
+
+#' @export
+per_segment_baf_plot <- function(hscn, filtern = 9, labelclones = FALSE) {
+  
+  if (is.hscnrna(hscn)) {
+    cndat <- hscn$hscn
+  } else {
+    cndat <- hscn
+  }
+  
+  mixedrank = function(x) order(gtools::mixedorder(x))
+  
+  if (labelclones) {
+      
+      chridx <- dplyr::distinct(cndat, chr, segid) %>%
+        dplyr::arrange(mixedrank(segid)) %>% 
+        dplyr::mutate(idx = 1:n())
+      
+      hst <- cndat %>%
+        dplyr::filter(total > filtern) %>%
+        dplyr::left_join(chridx) %>% 
+        dplyr::mutate(segidf = stringr::str_replace_all(segid, "_", "\n")) %>% 
+        dplyr::mutate(segidf = forcats::fct_reorder(as.factor(segidf), idx)) %>%
+        ggplot2::ggplot(ggplot2::aes(x = BAF, fill = clone_id)) +
+        ggplot2::geom_histogram(bins = 30, alpha = 0.5) +
+        ggplot2::facet_wrap(~segidf, scales = "free_y") +
+        cowplot::theme_cowplot(font_size = 8) +
+        ggplot2::scale_x_continuous(breaks = c(0.0, 0.5, 1.0), limits = c(-0.05, 1.05)) +
+        cowplot::panel_border() +
+        ggplot2::geom_vline(xintercept = 0.5, lty = 2, size = 0.5, col = "firebrick4") +
+        ggplot2::theme(
+          axis.title.y = ggplot2::element_blank(),
+          axis.text.y = ggplot2::element_blank(),
+          axis.ticks.y = ggplot2::element_blank()
+        )
+  } else {
+    hst <- cndat %>%
+      dplyr::filter(total > filtern) %>%
+      dplyr::left_join(chridx) %>% 
+      dplyr::mutate(segidf = stringr::str_replace_all(segid, "_", "\n")) %>% 
+      dplyr::mutate(segidf = forcats::fct_reorder(as.factor(segidf), idx)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = BAF)) +
+      ggplot2::geom_histogram(bins = 30, alpha = 0.5) +
+      ggplot2::facet_wrap(~segidf, scales = "free_y") +
+      cowplot::theme_cowplot(font_size = 8) +
+      ggplot2::scale_x_continuous(breaks = c(0.0, 0.5, 1.0), limits = c(-0.05, 1.05)) +
+      cowplot::panel_border() +
+      ggplot2::geom_vline(xintercept = 0.5, lty = 2, size = 0.5, col = "firebrick4") +
+      ggplot2::theme(
+        axis.title.y = ggplot2::element_blank(),
+        axis.text.y = ggplot2::element_blank(),
+        axis.ticks.y = ggplot2::element_blank()
+      )
+  }
+  
+  return(hst)
+}
+
 
 #' @export
 plot_proportions <- function(hscn_dna_arm, hscn_rna_arm, perarm = FALSE) {

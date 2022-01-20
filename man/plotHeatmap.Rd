@@ -26,6 +26,7 @@ plotHeatmap(
   show_legend = TRUE,
   show_library_label = TRUE,
   show_clone_label = TRUE,
+  show_clone_text = TRUE,
   widenarm = FALSE,
   umapmetric = "euclidean",
   chrlabels = TRUE,
@@ -39,6 +40,8 @@ plotHeatmap(
   linkheight = 5,
   newlegendname = NULL,
   str_to_remove = NULL,
+  maxCNcol = 11,
+  anno_width = 0.4,
   ...
 )
 }
@@ -99,7 +102,11 @@ plotHeatmap(
 
 \item{newlegendname}{overwrite default legend name}
 
-\item{str_to_remove}{string to remove from cell_id's when plotting labels
+\item{str_to_remove}{string to remove from cell_id's when plotting labels}
+
+\item{maxCNcol}{max value for color scale when plotting raw data}
+
+\item{anno_width}{width of left annotations
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 

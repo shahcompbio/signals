@@ -1,4 +1,4 @@
-plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20) {
+plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20, tickwidth = 50, chrstart = NULL, chrend = NULL) {
   # arrange segments in order, generate segment index and reorder CN state factor
 
   if (!xaxis_order %in% c("bin", "genome_position")) {
@@ -51,7 +51,6 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20) {
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
       dplyr::mutate(idx = 1:dplyr::n())
 
-
     CNbins <- dplyr::full_join(bins, CNbins) %>%
       dplyr::filter(!is.na(copy)) %>%
       dplyr::filter(!is.na(state)) %>%
@@ -70,21 +69,39 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20) {
       dplyr::pull(idx)
 
     # get ticks - median bin of each chromosome
-    chrticks <- bins %>%
-      dplyr::filter(chr %in% unique(CNbins$chr)) %>%
-      dplyr::group_by(chr) %>%
-      dplyr::summarise(idx = round(median(idx))) %>%
-      dplyr::pull(idx)
+    if (length(unique(CNbins$chr)) == 1){
+      tickwidth <- (tickwidth * 1e6) / binsize
+      chrticks <- seq(tickwidth, dim(bins)[1], tickwidth)
+      chrlabels <- paste0((chrticks * binsize) / 1e6, " Mb")
+    } else {
+      chrticks <- bins %>%
+        dplyr::filter(chr %in% unique(CNbins$chr)) %>%
+        dplyr::group_by(chr) %>%
+        dplyr::summarise(idx = round(median(idx))) %>%
+        dplyr::pull(idx)
+      chrlabels <- gtools::mixedsort(unique(CNbins$chr))
+    }
+    
+    if (length(unique(CNbins$chr)) == 1 & (!is.null(chrstart) | !is.null(chrstart))){
+      idxstart <- ifelse(is.null(chrstart), min(CNbins$idx), (chrstart * 1e6) / binsize)
+      idxend <- ifelse(is.null(chrend), max(CNbins$idx), (chrend * 1e6) / binsize)
+      CNbins <- CNbins %>% dplyr::filter(idx >= idxstart)
+      CNbins <- CNbins %>% dplyr::filter(idx <= idxend)
+      chrticks <- seq(idxstart, idxend, tickwidth)
+      chrlabels <- paste0((chrticks * binsize) / 1e6, " Mb")
+      minidx <- ifelse(is.null(chrstart), min(bins$idx), idxstart)
+      maxidx <- ifelse(is.null(chrend), max(bins$idx), idxend)
+    } else{
+      minidx <- min(bins$idx)
+      maxidx <- max(bins$idx)
+    }
 
-    chrlabels <- gtools::mixedsort(unique(CNbins$chr))
-    minidx <- min(bins$idx)
-    maxidx <- max(bins$idx)
   }
 
   return(list(CNbins = CNbins, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
-plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL) {
+plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL, chrstart = NULL, chrend = NULL) {
   breakpoints$chromosome_1 <- as.character(breakpoints$chromosome_1)
   breakpoints$chromosome_2 <- as.character(breakpoints$chromosome_2)
 
@@ -137,8 +154,13 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL) {
     dplyr::pull(idx)
 
   chrlabels <- gtools::mixedsort(unique(bins$chr))
-  minidx <- min(bins$idx)
-  maxidx <- max(bins$idx)
+  if (length(chrfilt) == 1 & (!is.null(chrstart) | !is.null(chrstart))){
+    minidx <- ifelse(is.null(chrstart), min(bins$idx), (chrstart * 1e6) / binsize)
+    maxidx <- ifelse(is.null(chrend), max(bins$idx), (chrend * 1e6) / binsize)
+  } else{
+    minidx <- min(bins$idx)
+    maxidx <- max(bins$idx)
+  }
   return(list(breakpoints = breakpoints, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
 }
 
@@ -223,8 +245,10 @@ plotSV2 <- function(breakpoints,
                     ylims = c(0, 2),
                     legend.position = "bottom",
                     svwidth = 1.0,
+                    chrstart = NULL,
+                    chrend = NULL,
                     ...) {
-  pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
+  pl <- plottinglistSV(breakpoints, chrfilt = chrfilt, chrstart = chrstart, chrend = chrend)
 
   pl$breakpoints <- pl$breakpoints %>%
     dplyr::mutate(curve = ifelse((abs(idx_1 - idx_2) < 2) & (chromosome_1 == chromosome_2), FALSE, TRUE))
@@ -331,9 +355,20 @@ squashy_trans <- function() {
   scales::trans_new(
     "squashy",
     function(x) tanh(0.075 * x),
-    function(x) atanh(x) / 0.075
+    function(x) {
+      nnan <- 1
+      while (nnan > 0){
+        suppressWarnings(y <- atanh(x) / 0.075)
+        nnan <- sum(is.nan(y))
+        x[is.nan(y)] <- x[is.nan(y)] - 0.000001
+      }
+      return(y)
+      }
+    
   )
 }
+
+#create_squashy_trans
 
 get_bezier_df_2 <- function(sv) {
   set.seed(123)
@@ -477,6 +512,10 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param SV Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.
 #' @param svalpha the alpha scaling of the SV lines, default = 0.5
 #' @param genes vector of genes to annotate, will add a dashed vertical line and label
+#' @param tickwidth Spacing of ticks (in Mb) when only 1 chromosome is plotted
+#' @chrstart Start of region (in Mb) when plotting a single chromosome
+#' @chrend End of region (in Mb) when plotting a single chromosome
+#' @shape shape for plotting
 #'
 #' @return ggplot2 plot
 #'
@@ -503,7 +542,12 @@ plotCNprofile <- function(CNbins,
                           svalpha = 0.5,
                           svwidth = 1.0,
                           adj = 0.03,
-                          genes = NULL, ...) {
+                          genes = NULL, 
+                          tickwidth = 50,
+                          chrstart = NULL,
+                          chrend = NULL,
+                          shape = 16,
+                          ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
   }
@@ -513,10 +557,15 @@ plotCNprofile <- function(CNbins,
   }
 
   if (y_axis_trans == "squashy") {
-    maxCN <- min(c(24, maxCN))
-    ybreaks <- c(0, 2, 5, 10, 20)
+    ybreaks <- c(0, 2, 5, 10, maxCN)
   } else {
     ybreaks <- seq(0, maxCN, 2)
+  }
+  
+  if (length(chrfilt) == 1){
+    xlab <- paste0('Chromosome ', chrfilt)
+  } else{
+    xlab <- 'Chromosome'
   }
 
   statecolpal <- scCNstate_cols()
@@ -530,7 +579,7 @@ plotCNprofile <- function(CNbins,
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
-    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN)
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
 
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
@@ -543,7 +592,7 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "Copy number",
         breaks = names(statecolpal),
@@ -559,7 +608,7 @@ plotCNprofile <- function(CNbins,
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
-      ggplot2::xlab("Chromosome") +
+      ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(
@@ -573,7 +622,7 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = 16) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -589,7 +638,7 @@ plotCNprofile <- function(CNbins,
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
-      ggplot2::xlab("Chromosome") +
+      ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(
@@ -664,6 +713,10 @@ plotCNprofileBAFhomolog <- function(cn,
                                     plotdata = TRUE,
                                     offset = NULL,
                                     linewidth = 0.6,
+                                    tickwidth = 50,
+                                    chrstart = NULL,
+                                    chrend = NULL,
+                                    shape = 16,
                                     ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -674,13 +727,18 @@ plotCNprofileBAFhomolog <- function(cn,
   } else {
     CNbins <- cn
   }
+  
+  if (length(chrfilt) == 1){
+    xlab <- paste0('Chromosome ', chrfilt)
+  } else{
+    xlab <- 'Chromosome'
+  }
 
   CNbins <- CNbins %>%
     dplyr::mutate(Bcopy = BAF * copy, Acopy = (1 - BAF) * copy)
 
   if (y_axis_trans == "squashy") {
-    maxCN <- min(c(24, maxCN))
-    ybreaks <- c(0, 2, 5, 10, 20)
+    ybreaks <- c(0, 2, 5, 10, maxCN)
   } else {
     ybreaks <- seq(0, maxCN, 2)
   }
@@ -706,7 +764,8 @@ plotCNprofileBAFhomolog <- function(cn,
     dplyr::filter(cell_id == cellid) %>%
     dplyr::mutate(Acopy = ifelse(Acopy > maxCN, maxCN - 0.001, Acopy)) %>%
     dplyr::mutate(Bcopy = ifelse(Bcopy > maxCN, maxCN - 0.001, Bcopy)) %>%
-    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN)
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
+  pl_for_sv <- pl 
 
   if (plotdata == TRUE){
     pl$CNbins <- pl$CNbins %>% 
@@ -728,7 +787,7 @@ plotCNprofileBAFhomolog <- function(cn,
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx)) +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        ggrastr::geom_point_rast(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval) +
+        ggrastr::geom_point_rast(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = shape) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -743,7 +802,7 @@ plotCNprofileBAFhomolog <- function(cn,
         ) +
         ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
         ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
-        ggplot2::xlab("Chromosome") +
+        ggplot2::xlab(xlab) +
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot(...) +
         ggplot2::guides(colour = ggplot2::guide_legend(
@@ -758,7 +817,7 @@ plotCNprofileBAFhomolog <- function(cn,
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx)) +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        ggplot2::geom_point(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval) +
+        ggplot2::geom_point(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = shape) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -773,7 +832,7 @@ plotCNprofileBAFhomolog <- function(cn,
         ) +
         ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
         ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
-        ggplot2::xlab("Chromosome") +
+        ggplot2::xlab(xlab) +
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot(...) +
         ggplot2::guides(colour = ggplot2::guide_legend(
@@ -785,18 +844,25 @@ plotCNprofileBAFhomolog <- function(cn,
   } else{
     
     pl$CNbins <- pl$CNbins %>% 
-      dplyr::mutate(idx_start = idx, idx_end = lead(idx_start))
+      dplyr::mutate(rl = data.table::rleid(state_AS_phased)) %>% 
+      dplyr::group_by(chr, rl, Min, Maj) %>% 
+      dplyr::summarize(idx_start = dplyr::first(idx), idx_end = dplyr::last(idx))
     
     pl$CNbins <- pl$CNbins %>% 
       tidyr::pivot_longer(cols = c("Maj", "Min"))
     
     if (is.null(offset)) {
       offset <- maxCN * 1.1 * 0.03
-      print(offset)
     }
     
-    pl$CNbins <- pl$CNbins %>%
-      dplyr::mutate(value = ifelse(name == "Maj", value + offset, value - offset))
+    if (y_axis_trans == "squashy"){
+      pl$CNbins <- pl$CNbins %>%
+        dplyr::mutate(value = ifelse(name == "Maj", value + squashy_trans()$transform(2 * value * offset), 
+                                     value - squashy_trans()$transform(2 * value * offset)))
+    } else{
+      pl$CNbins <- pl$CNbins %>%
+        dplyr::mutate(value = ifelse(name == "Maj", value + offset, value - offset))
+    }
     
     if (shuffle){
       pl$CNbins <- dplyr::sample_frac(pl$CNbins, 1L)
@@ -810,9 +876,9 @@ plotCNprofileBAFhomolog <- function(cn,
       }
       
       gCN <- pl$CNbins %>%
-        ggplot2::ggplot(ggplot2::aes(x = idx)) +
+        ggplot2::ggplot() +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        geom_linerange(aes(xmin = idx_start, xmax = idx_end, y = value, colour = name), size = linewidth) +
+        ggplot2::geom_linerange(aes(xmin = idx_start, xmax = idx_end, y = value, colour = name), size = linewidth) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -827,7 +893,7 @@ plotCNprofileBAFhomolog <- function(cn,
         ) +
         ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
         ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0 - offset, maxCN + offset), trans = y_axis_trans) +
-        ggplot2::xlab("Chromosome") +
+        ggplot2::xlab(xlab) +
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot(...) +
         ggplot2::guides(colour = ggplot2::guide_legend(
@@ -837,9 +903,9 @@ plotCNprofileBAFhomolog <- function(cn,
         ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
     } else {
       gCN <- pl$CNbins %>%
-        ggplot2::ggplot(ggplot2::aes(x = idx)) +
+        ggplot2::ggplot() +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        geom_linerange(aes(xmin = idx_start, xmax = idx_end, y = value, colour = name), size = linewidth) +
+        ggplot2::geom_linerange(aes(xmin = idx_start, xmax = idx_end, y = value, colour = name), size = linewidth) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -854,7 +920,7 @@ plotCNprofileBAFhomolog <- function(cn,
         ) +
         ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
         ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0 - offset, maxCN + offset), trans = y_axis_trans) +
-        ggplot2::xlab("Chromosome") +
+        ggplot2::xlab(xlab) +
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot(...) +
         ggplot2::guides(colour = ggplot2::guide_legend(
@@ -868,7 +934,7 @@ plotCNprofileBAFhomolog <- function(cn,
 
   if (!is.null(SV)) {
     svpl <- plottinglistSV(SV, chrfilt = chrfilt)
-    bezdf <- get_bezier_df(svpl, pl, maxCN, homolog = TRUE)
+    bezdf <- get_bezier_df(svpl, pl_for_sv, maxCN, homolog = TRUE)
     bezdf <- bezdf %>%
       dplyr::filter((position_1 != position_2) | rearrangement_type == "foldback")
     gCN <- gCN +
@@ -965,6 +1031,10 @@ plotCNprofileBAF <- function(cn,
                              plotdata = TRUE,
                              offset = NULL,
                              my_title = NULL,
+                             tickwidth = 50,                          
+                             chrstart = NULL,
+                             chrend = NULL,
+                             shape = 16,
                              ...) {
   if (homolog == TRUE) {
     ghomolog <- plotCNprofileBAFhomolog(cn,
@@ -987,6 +1057,10 @@ plotCNprofileBAF <- function(cn,
       svwidth = svwidth,
       plotdata = plotdata,
       offset = offset,
+      tickwidth = tickwidth,
+      chrstart = chrstart,
+      chrend = chrend,
+      shape = shape,
       ...
     )
     return(ghomolog)
@@ -1003,8 +1077,7 @@ plotCNprofileBAF <- function(cn,
   }
 
   if (y_axis_trans == "squashy") {
-    maxCN <- min(c(24, maxCN))
-    ybreaks <- c(0, 2, 5, 10, 20)
+    ybreaks <- c(0, 2, 5, 10, maxCN)
   } else {
     ybreaks <- seq(0, maxCN, 2)
   }
@@ -1012,8 +1085,12 @@ plotCNprofileBAF <- function(cn,
   if (is.null(my_title)){
     my_title <- cellid
   }
-
-
+  
+  if (length(chrfilt) == 1){
+    xlab <- paste0('Chromosome ', chrfilt)
+  } else{
+    xlab <- 'Chromosome'
+  }
 
   if (is.null(cellid)) {
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
@@ -1046,7 +1123,7 @@ plotCNprofileBAF <- function(cn,
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
-    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN)
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
 
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
@@ -1058,12 +1135,13 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
         labels = names(BAFcolpal),
-        values = BAFcolpal
+        values = BAFcolpal,
+        drop = FALSE
       ) +
       ggplot2::theme(
         axis.title.y = ggplot2::element_blank(),
@@ -1073,7 +1151,7 @@ plotCNprofileBAF <- function(cn,
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = c(0.0, 0.25, 0.5, 0.75, 1.0), limits = c(0, 1.0)) +
-      ggplot2::xlab("Chromosome") +
+      ggplot2::xlab(xlab) +
       ggplot2::ylab("BAF") +
       ggplot2::ggtitle(my_title) +
       cowplot::theme_cowplot(...) +
@@ -1092,7 +1170,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1108,7 +1186,7 @@ plotCNprofileBAF <- function(cn,
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
-      ggplot2::xlab("Chromosome") +
+      ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(
@@ -1121,12 +1199,13 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval) +
+      ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
         labels = names(BAFcolpal),
-        values = BAFcolpal
+        values = BAFcolpal,
+        drop = FALSE
       ) +
       ggplot2::theme(
         axis.title.y = ggplot2::element_blank(),
@@ -1155,7 +1234,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval) +
+      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1171,7 +1250,7 @@ plotCNprofileBAF <- function(cn,
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
-      ggplot2::xlab("Chromosome") +
+      ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
       ggplot2::guides(colour = ggplot2::guide_legend(
@@ -1232,7 +1311,7 @@ plotCNprofileBAF <- function(cn,
 
 
 #' @export
-plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, ...) {
+plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, shape = 16, ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
   } else {
@@ -1259,7 +1338,7 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, ...)
 
   g <- CNbins %>%
     ggplot2::ggplot(ggplot2::aes(y = BAF, x = copy, col = paste0("CN", state))) +
-    ggplot2::geom_point(size = pointsize, alpha = 0.2) +
+    ggplot2::geom_point(size = pointsize, alpha = 0.2, shape = shape) +
     ggplot2::xlab("Corrected read counts") +
     cowplot::theme_cowplot(...) +
     ggplot2::ggtitle(plottitle) +
