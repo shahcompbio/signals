@@ -19,6 +19,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -31,18 +33,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">schnapps</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.6.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.2</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="../index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="../reference/index.html">Reference</a>
 </li>
@@ -92,22 +88,22 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">schnapps</span><span class="op">)</span></code></pre></div>
-<div id="background" class="section level2">
-<h2 class="hasAnchor">
-<a href="#background" class="anchor"></a>Background</h2>
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">schnapps</span><span class="op">)</span></code></pre></div>
+<div class="section level2">
+<h2 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
+</h2>
 <p>This vignette illustrates how to perform allele specific copy number inference with DLP+ data. However the method should be generally applicable to any single cell copy number method. The input requirements are discussed below.</p>
 </div>
-<div id="data" class="section level2">
-<h2 class="hasAnchor">
-<a href="#data" class="anchor"></a>Data</h2>
+<div class="section level2">
+<h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a>
+</h2>
 <p>The data needed to perform the allele specific copy number inference are binned copy number data and cell specific haplotype calls. The copy number data and the haplotype data should use the same bins.</p>
 <p>A small test data set of 250 cells is provided with the package, we’ll load this data and inspect these 2 dataframe.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span>
 <span class="co">#&gt;   chr   start     end reads     copy state               cell_id</span>
 <span class="co">#&gt; 1   1 2000001 2500000   536 2.960868     2 SA921-A90554A-R03-C44</span>
 <span class="co">#&gt; 2   1 3000001 3500000   499 2.603584     2 SA921-A90554A-R03-C44</span>
@@ -118,7 +114,7 @@
 <p>The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function <code>format_haplotypes_dlp</code> to convert the data to the correct format, this function will also remove any bins present in the haplotypes data frame that is not present in the CNbins data frame.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span>
 <span class="co">#&gt;                  cell_id chr   start     end hap_label allele1 allele0</span>
 <span class="co">#&gt; 1 SA1090-A96213A-R20-C13   1 2000001 2500000       101       0       3</span>
 <span class="co">#&gt; 2 SA1090-A96213A-R20-C13   1 2000001 2500000       104       0       1</span>
@@ -134,13 +130,13 @@
 <span class="co">#&gt; 5          15</span>
 <span class="co">#&gt; 6           1</span></code></pre></div>
 </div>
-<div id="inference" class="section level2">
-<h2 class="hasAnchor">
-<a href="#inference" class="anchor"></a>Inference</h2>
+<div class="section level2">
+<h2 id="inference">Inference<a class="anchor" aria-label="anchor" href="#inference"></a>
+</h2>
 <p>The output of <code>schnapps</code> is allele specific states per bin. <code>schnapps</code> has 2 options to perform this inference, the first, <code>callAlleleSpecificCN</code>, infers allele specific states using mirrored B allele frequencies as is typically done in bulk whole genome sequencing. This infers states of the form <code>A|B</code> where <code>B &lt; A</code>. The second option, <code>callHaplotypeSpecificCN</code> takes into account the possibility that different alleles may be lost or gained in different cells. In order to identify these events, <code>schnapps</code> clusters cells and infers the haplotype phase based on regions within clusters that have large allelic imbalance. The output for this method therefore allows for <code>B&gt;A</code>.</p>
-<div id="callallelespecificcn" class="section level3">
-<h3 class="hasAnchor">
-<a href="#callallelespecificcn" class="anchor"></a><code>callAlleleSpecificCN</code>
+<div class="section level3">
+<h3 id="callallelespecificcn">
+<code>callAlleleSpecificCN</code><a class="anchor" aria-label="anchor" href="#callallelespecificcn"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">ascn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></code></pre></div>
@@ -189,9 +185,9 @@
 <p><img src="ASCN_files/figure-html/unnamed-chunk-12-1.png" width="960"></p>
 <p>The object returned by the inference function is of type <code>ascn</code>, if you want to pull out the data to use in your own scripts you can just do <code>ascn$data</code>. This will return a <code>data.frame</code> similar to the input data frames but with additional columns specifying the allele specific states.</p>
 </div>
-<div id="callhaplotypespecificcn" class="section level3">
-<h3 class="hasAnchor">
-<a href="#callhaplotypespecificcn" class="anchor"></a><code>callHaplotypeSpecificCN</code>
+<div class="section level3">
+<h3 id="callhaplotypespecificcn">
+<code>callHaplotypeSpecificCN</code><a class="anchor" aria-label="anchor" href="#callhaplotypespecificcn"></a>
 </h3>
 <p>Now we’ll do the analysis that phases haplotypes across cells.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -243,11 +239,13 @@
 
 
       <footer><div class="copyright">
-  <p>Developed by Marc J Williams.</p>
+  <p></p>
+<p>Developed by Marc J Williams.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
 </div>
 
       </footer>
@@ -255,6 +253,8 @@
 
   
 
+
+  
 
   </body>
 </html>
