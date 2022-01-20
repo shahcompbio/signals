@@ -1,3 +1,9 @@
+# signals 0.7.0
+
+* change name to signals
+* multiple updates to plotting
+* rewrite of scRNAseq
+
 # signals 0.6.2
 
 * fix missing argument
