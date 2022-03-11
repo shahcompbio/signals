@@ -1108,6 +1108,7 @@ consensuscopynumber <- function(hscn, cl = NULL) {
         totalcounts = sum(totalcounts, na.rm = TRUE),
         BAF = median(BAF, na.rm = TRUE)
       ), by = .(chr, start, end, clone_id)] %>%
+      .[, Maj := ifelse(Maj > state, state, Maj)] %>% 
       .[, Min := state - Maj] %>%
       add_states() %>%
       dplyr::select(clone_id, chr, start, end, state, copy, Min, Maj, dplyr::everything()) %>%

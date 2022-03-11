@@ -539,7 +539,7 @@ make_top_annotsnv <- function(mutgroups) {
 
 }
 
-get_genomecoords_label_pos <- function(copynumber, nticks = 3) {
+get_genomecoords_label_pos <- function(copynumber, Mb = TRUE, nticks = 3) {
   chrom_label_pos <- c()
   chroms <- sapply(strsplit(colnames(copynumber), ":"), function(x) x[[1]])
   binwidth <- as.numeric(strsplit(colnames(copynumber)[1], ":")[[1]][3]) -
@@ -556,7 +556,11 @@ get_genomecoords_label_pos <- function(copynumber, nticks = 3) {
       if (mypos > max_idx){
         next
       }
-      lab <- paste0(mypos * binwidth / 1e6, "Mb")
+      if (Mb){
+        lab <- paste0(mypos * binwidth / 1e6, "Mb")
+      } else {
+        lab <- paste0(mypos * binwidth / 1e6)
+      }
       chrom_label_pos[[lab]] <- mypos
       mypos <- mypos + nwidth
     }
@@ -564,7 +568,7 @@ get_genomecoords_label_pos <- function(copynumber, nticks = 3) {
   return(chrom_label_pos)
 }
 
-get_chrom_label_pos <- function(copynumber, nticks = 3) {
+get_chrom_label_pos <- function(copynumber, Mb = TRUE, nticks = 3) {
   chrom_label_pos <- c()
   chroms <- sapply(strsplit(colnames(copynumber), ":"), function(x) x[[1]])
   chromfreq <- table(chroms)
@@ -572,7 +576,7 @@ get_chrom_label_pos <- function(copynumber, nticks = 3) {
   uniq_chroms <- uniq_chroms[stringr::str_detect(uniq_chroms, "V", negate = TRUE)]
 
   if (length(uniq_chroms) == 1){
-   chrom_label_pos <- get_genomecoords_label_pos(copynumber, nticks = nticks)
+   chrom_label_pos <- get_genomecoords_label_pos(copynumber, Mb = Mb, nticks = nticks)
    return(chrom_label_pos)
   }
 
@@ -587,13 +591,14 @@ make_bottom_annot <- function(copynumber,
                               chrlabels = TRUE,
                               filterlabels = NULL,
                               nticks = 3,
+                              Mb = TRUE,
                               annotation_height = NULL, 
                               annofontsize = 14,
                               linkheight = 1) {
   if (chrlabels[1] == FALSE) {
     return(NULL)
   } else if (chrlabels[1] == TRUE) {
-    chrom_label_pos <- get_chrom_label_pos(copynumber, nticks = nticks)
+    chrom_label_pos <- get_chrom_label_pos(copynumber, Mb = Mb, nticks = nticks)
     bottom_annot <- ComplexHeatmap::HeatmapAnnotation(chrom_labels = ComplexHeatmap::anno_mark(
       at = as.vector(unlist(chrom_label_pos)),
       labels = names(chrom_label_pos),
@@ -789,6 +794,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     chrlabels = TRUE,
                                     SV = NULL,
                                     nticks = 4,
+                                    Mb = TRUE,
                                     annotation_height = NULL, 
                                     annofontsize = 14,
                                     na_col = "white",
@@ -818,7 +824,7 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_rows = FALSE,
     cluster_columns = FALSE,
     show_column_names = FALSE,
-    bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, nticks = nticks, annotation_height = annotation_height, annofontsize = annofontsize, linkheight = linkheight),
+    bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, Mb = Mb, nticks = nticks, annotation_height = annotation_height, annofontsize = annofontsize, linkheight = linkheight),
     left_annotation = make_left_annot(copynumber, clones, anno_width = anno_width,
       library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label, show_clone_text = show_clone_text,
       idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,annofontsize = annofontsize, 
@@ -925,6 +931,7 @@ plotHeatmap <- function(cn,
                         SV = NULL,
                         seed = NULL,
                         nticks = 4,
+                        Mb = TRUE,
                         fillgenome = FALSE,
                         annotation_height = NULL, 
                         annofontsize = 14,
@@ -1147,6 +1154,7 @@ plotHeatmap <- function(cn,
     show_clone_text = show_clone_text,
     chrlabels = chrlabels,
     SV = SV,
+    Mb = Mb, 
     nticks = nticks,
     annotation_height = annotation_height, 
     annofontsize = annofontsize,
