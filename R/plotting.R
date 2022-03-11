@@ -1,12 +1,20 @@
-plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20, tickwidth = 50, chrstart = NULL, chrend = NULL) {
+plottinglist <- function(CNbins, 
+                         xaxis_order = "genome_position", 
+                         maxCN = 20, 
+                         tickwidth = 50, 
+                         chrstart = NULL, 
+                         positionticks = FALSE,
+                         chrend = NULL) {
   # arrange segments in order, generate segment index and reorder CN state factor
 
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
   }
+  
+  binsize <- CNbins$end[1] - CNbins$start[1] + 1
+  tickwidth <- (tickwidth * 1e6) / binsize
 
   if (xaxis_order == "bin") {
-    binsize <- CNbins$end[1] - CNbins$start[1] + 1
 
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
@@ -45,7 +53,6 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20, ti
     minidx <- min(CNbins$idx)
     maxidx <- max(CNbins$idx)
   } else {
-    binsize <- CNbins$end[1] - CNbins$start[1] + 1
 
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
@@ -70,9 +77,8 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20, ti
 
     # get ticks - median bin of each chromosome
     if (length(unique(CNbins$chr)) == 1){
-      tickwidth <- (tickwidth * 1e6) / binsize
       chrticks <- seq(tickwidth, dim(bins)[1], tickwidth)
-      chrlabels <- paste0((chrticks * binsize) / 1e6, " Mb")
+      chrlabels <- paste0((chrticks * binsize) / 1e6)
     } else {
       chrticks <- bins %>%
         dplyr::filter(chr %in% unique(CNbins$chr)) %>%
@@ -88,12 +94,34 @@ plottinglist <- function(CNbins, xaxis_order = "genome_position", maxCN = 20, ti
       CNbins <- CNbins %>% dplyr::filter(idx >= idxstart)
       CNbins <- CNbins %>% dplyr::filter(idx <= idxend)
       chrticks <- seq(idxstart, idxend, tickwidth)
-      chrlabels <- paste0((chrticks * binsize) / 1e6, " Mb")
+      chrlabels <- paste0((chrticks * binsize) / 1e6)
       minidx <- ifelse(is.null(chrstart), min(bins$idx), idxstart)
       maxidx <- ifelse(is.null(chrend), max(bins$idx), idxend)
     } else{
       minidx <- min(bins$idx)
       maxidx <- max(bins$idx)
+    }
+    
+    getticks <- function(mychr){
+      CNbins_filt <- dplyr::filter(CNbins, chr == mychr)
+      bins_filt <- dplyr::filter(bins, chr == mychr)
+      idxstart <- min(CNbins_filt$idx)
+      idxend <- max(CNbins_filt$idx)
+      chrticks <- seq(tickwidth + bins_filt$idx[1], tail(bins_filt$idx,1), tickwidth)
+      chrlabels <- paste0(((chrticks - bins_filt$idx[1]) * binsize) / 1e6)
+      return(list(chrlabels = chrlabels, chrticks = chrticks))
+    }
+    
+    if (positionticks){
+      idxstart <- ifelse(is.null(chrstart), min(CNbins$idx), (chrstart * 1e6) / binsize)
+      idxend <- ifelse(is.null(chrend), max(CNbins$idx), (chrend * 1e6) / binsize)
+      CNbins <- CNbins %>% dplyr::filter(idx >= idxstart)
+      CNbins <- CNbins %>% dplyr::filter(idx <= idxend)
+      dat <- lapply(unique(CNbins$chr), getticks)
+      chrticks <- unlist(lapply(dat, function(x) x["chrticks"][[1]]))
+      chrlabels <- unlist(lapply(dat, function(x) x["chrlabels"][[1]]))
+      minidx <- ifelse(is.null(chrstart), min(bins$idx), idxstart)
+      maxidx <- ifelse(is.null(chrend), max(bins$idx), idxend)
     }
 
   }
@@ -516,6 +544,7 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @chrstart Start of region (in Mb) when plotting a single chromosome
 #' @chrend End of region (in Mb) when plotting a single chromosome
 #' @shape shape for plotting
+#' @positionticks set to TRUE to use position ticks rather than chromosome ticks
 #'
 #' @return ggplot2 plot
 #'
@@ -547,6 +576,7 @@ plotCNprofile <- function(CNbins,
                           chrstart = NULL,
                           chrend = NULL,
                           shape = 16,
+                          positionticks = FALSE,
                           ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -563,7 +593,7 @@ plotCNprofile <- function(CNbins,
   }
   
   if (length(chrfilt) == 1){
-    xlab <- paste0('Chromosome ', chrfilt)
+    xlab <- paste0('Chr. ', chrfilt, " (Mb)")
   } else{
     xlab <- 'Chromosome'
   }
@@ -579,7 +609,8 @@ plotCNprofile <- function(CNbins,
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
-    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, positionticks = positionticks,
+                 tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
 
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
@@ -717,6 +748,7 @@ plotCNprofileBAFhomolog <- function(cn,
                                     chrstart = NULL,
                                     chrend = NULL,
                                     shape = 16,
+                                    positionticks = FALSE,
                                     ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -729,7 +761,7 @@ plotCNprofileBAFhomolog <- function(cn,
   }
   
   if (length(chrfilt) == 1){
-    xlab <- paste0('Chromosome ', chrfilt)
+    xlab <- paste0('Chr. ', chrfilt, " (Mb)")
   } else{
     xlab <- 'Chromosome'
   }
@@ -764,7 +796,8 @@ plotCNprofileBAFhomolog <- function(cn,
     dplyr::filter(cell_id == cellid) %>%
     dplyr::mutate(Acopy = ifelse(Acopy > maxCN, maxCN - 0.001, Acopy)) %>%
     dplyr::mutate(Bcopy = ifelse(Bcopy > maxCN, maxCN - 0.001, Bcopy)) %>%
-    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, positionticks = positionticks,
+                 tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
   pl_for_sv <- pl 
 
   if (plotdata == TRUE){
@@ -1035,6 +1068,7 @@ plotCNprofileBAF <- function(cn,
                              chrstart = NULL,
                              chrend = NULL,
                              shape = 16,
+                             positionticks = FALSE,
                              ...) {
   if (homolog == TRUE) {
     ghomolog <- plotCNprofileBAFhomolog(cn,
@@ -1061,6 +1095,7 @@ plotCNprofileBAF <- function(cn,
       chrstart = chrstart,
       chrend = chrend,
       shape = shape,
+      positionticks = positionticks,
       ...
     )
     return(ghomolog)
@@ -1087,7 +1122,7 @@ plotCNprofileBAF <- function(cn,
   }
   
   if (length(chrfilt) == 1){
-    xlab <- paste0('Chromosome ', chrfilt)
+    xlab <- paste0('Chr. ', chrfilt, " (Mb)")
   } else{
     xlab <- 'Chromosome'
   }
@@ -1123,7 +1158,8 @@ plotCNprofileBAF <- function(cn,
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
-    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
+    plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, positionticks = positionticks,
+                 tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
 
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
@@ -1592,7 +1628,7 @@ plot_clusters_used_for_phasing <- function(hscn){
       dplyr::filter(cell_id %in% cells) %>% 
       consensuscopynumber(.) %>% 
       dplyr::mutate(cell_id = paste0("chr ", mychr)) %>% 
-      plotCNprofileBAF(, chrfilt = mychr, legend.position = "none")
+      plotCNprofileBAF(., chrfilt = mychr, legend.position = "none")
   }
   
   g <- cowplot::plot_grid(plotlist = myplots, ncol = 6)
