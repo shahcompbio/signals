@@ -48,6 +48,7 @@ format_haplotypes_dlp <- function(haplotypes, CNbins, hmmcopybinsize = 0.5e6) {
 
 #' @export
 format_haplotypes <- function(haplotypes,
+                              CNbins,
                               filtern = 0,
                               hmmcopybinsize = 0.5e6,
                               phased_haplotypes = NULL,
@@ -161,9 +162,10 @@ combineBAFCN <- function(haplotypes,
 
   message("Joining bins and haplotypes...")
   haplotypes <- format_haplotypes(haplotypes,
-    phased_haplotypes = phased_haplotypes,
-    phasing_method = phasing_method, ...
-  )
+                                  CNbins,
+                                  phased_haplotypes = phased_haplotypes,
+                                  phasing_method = phasing_method, ...
+                                )
   haplotypes <- data.table::as.data.table(haplotypes)
 
   CNbins <- CNbins[haplotypes, on = c("chr", "start", "end", "cell_id"), nomatch = 0]
