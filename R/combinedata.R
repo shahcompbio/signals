@@ -58,6 +58,8 @@ format_haplotypes <- function(haplotypes,
     if (phasing_method == "distribution") {
       message("Phasing based on distribution across all cells")
       phased_haplotypes <- phase_haplotypes(haplotypes)
+    } else if (phasing_method == "spectral"){
+      phased_haplotypes <- phase_haplotypes_spectral_clustering(haplotypes, CNbins)
     } else {
       phased_haplotypes <- computehaplotypecounts(haplotypes, ...)
     }

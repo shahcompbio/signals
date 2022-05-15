@@ -39,7 +39,8 @@ Imports:
     ggrepel,
     grid,
     ggforce,
-    ggtree
+    ggtree,
+    RSpectra
 RoxygenNote: 7.1.1
 Suggests: 
     knitr,

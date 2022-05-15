@@ -18,6 +18,17 @@ sim_data_bb <- simulate_data_cohort(
   nchr = 0
 )
 
+phased_haplotypes2 <- phase_haplotypes_spectral_clustering(sim_data_bb$haplotypes, sim_data_bb$CNbins) %>% 
+  dplyr::mutate(switch = ifelse(phase == "allele1", TRUE, FALSE))
+true_phase <- sim_data_bb$haplotypes %>% 
+  dplyr::distinct(chr, start, hap_label, switch)
+
+dplyr::inner_join(true_phase, phased_haplotypes2, by = c("chr", "start", "hap_label")) %>% 
+  dplyr::group_by(chr) %>% 
+  dplyr::summarize(same = sum(switch.x == switch.y) / dplyr::n()) %>% 
+  dplyr::filter(chr %in% c("1", "5", "3", "17", "9"))
+
+
 x1 <- sim_data_bb$haplotypes %>% 
   dplyr::filter(chr == "9") %>% 
   dplyr::distinct(chr, start, hap_label, switch) %>% 
@@ -36,4 +47,14 @@ sw <- create_adj_matrix(dat$bafA, dat$bafB) %>% get_fiedler_vec(.)
 all.equal(x1, sw)
 
 sum(x1 != sw) / length(sw)
+
+
+haplotypes <- format_haplotypes_dlp(haplotypes, CNbins) %>% 
+  filter_haplotypes(., 0.1)
+phased_haplotypes <- phase_haplotypes_spectral_clustering(haplotypes, CNbins)
+hscn <- callHaplotypeSpecificCN(CNbins, 
+                                haplotypes, 
+                                likelihood = "auto",
+                                phased_haplotypes = phased_haplotypes)
+plotHeatmap(hscn, plotcol = "state_phase")
 
