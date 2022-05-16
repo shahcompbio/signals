@@ -4,8 +4,9 @@ create_adj_matrix <- function(A, B){
   
   for (i in 1:length(v)){
     for (j in 1:length(v)){
-         #m[i,j] <- 1 - abs(v[i] - v[j])
-          m[i,j] <- 1 / sqrt((v[i] - v[j])^2)
+      decay <- sqrt((i - j)^2)  
+      decay <- abs(i - j) ^ (1/10)
+      m[i,j] <- 1 / ((1 / decay) * (sqrt((v[i] - v[j])^2) + 0.0001))
     }
   }
   
@@ -23,12 +24,12 @@ create_adj_matrix <- function(A, B){
 get_fiedler_vec <- function(x){
   L = diag(colSums(x)) - x #calculate Laplacian
   #spec <- RSpectra::eigs_sym(L, 2, which = "SM", opts = list(ncv = 100))
-  spec <- RSpectra::eigs_sym(L, 2, sigma = -1e-5)
+  spec <- RSpectra::eigs_sym(L, 2, sigma = -1e-7)
   fiedler <- spec$vectors[,1]
   sign <- fiedler > 0
   
-  chks2 <- split(sign, ceiling(seq_along(1:length(sign)) / 2))
-  myswitch <- unlist(lapply(chks2, function(x) which(x))) == 1
+  chks <- split(sign, ceiling(seq_along(1:length(sign)) / 2))
+  myswitch <- unlist(lapply(chks, function(x) which(x)[1])) == 1
   
   as.vector(myswitch)
 }
@@ -46,7 +47,7 @@ phase_haplotypes_spectral_clustering <- function(haplotypes, CNbins){
     dattemp  <- dat %>%
       .[chr == mychr] %>% 
       .[, unb := state %% 2 != 0] %>% 
-      .[, w := fifelse(unb, 10, 1)] %>% 
+      .[, w := fifelse(unb, 100, 1)] %>% 
       .[, list(bafA = mean(w * allele0 / totalcounts), bafB = mean(w * allele1 / totalcounts)),
         by = .(chr, start, end, hap_label)] %>% 
       .[order(chr, start, hap_label)]
@@ -55,7 +56,8 @@ phase_haplotypes_spectral_clustering <- function(haplotypes, CNbins){
     dattemp$sw <- sw
     dattemp <- dattemp %>% 
       dplyr::mutate(phase = fifelse(sw == TRUE, "allele1", "allele0")) %>% 
-      dplyr::select(chr, start, end, hap_label, phase)
+      dplyr::select(chr, start, end, hap_label, phase) %>% 
+      dplyr::filter(!is.na(phase))
     phased_haplotypes <- dplyr::bind_rows(phased_haplotypes, dattemp)
   }
   return(phased_haplotypes)

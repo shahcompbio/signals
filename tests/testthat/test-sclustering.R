@@ -23,38 +23,33 @@ phased_haplotypes2 <- phase_haplotypes_spectral_clustering(sim_data_bb$haplotype
 true_phase <- sim_data_bb$haplotypes %>% 
   dplyr::distinct(chr, start, hap_label, switch)
 
-dplyr::inner_join(true_phase, phased_haplotypes2, by = c("chr", "start", "hap_label")) %>% 
+test_chr <- dplyr::inner_join(true_phase, phased_haplotypes2, by = c("chr", "start", "hap_label")) %>% 
   dplyr::group_by(chr) %>% 
-  dplyr::summarize(same = sum(switch.x == switch.y) / dplyr::n()) %>% 
-  dplyr::filter(chr %in% c("1", "5", "3", "17", "9"))
+  dplyr::summarize(same = abs(cor(switch.x,switch.y))) %>% #correlation should be ~-1 or 1
+  dplyr::filter(chr %in% c("1", "5", "3", "17", "9")) #chromosomes with imbalances
+test_chr
 
-
-x1 <- sim_data_bb$haplotypes %>% 
-  dplyr::filter(chr == "9") %>% 
-  dplyr::distinct(chr, start, hap_label, switch) %>% 
-  dplyr::pull(switch)
-
-dat <- dplyr::inner_join(sim_data_bb$haplotypes, sim_data_bb$CNbins)
-
-dat  <- dat %>%
-  dplyr::mutate(unb = state %% 2 != 0) %>% 
-  dplyr::mutate(w = ifelse(unb, 10, 1)) %>% 
-  dplyr::filter(chr == "9") %>% 
-  dplyr::group_by(chr, start, end, hap_label) %>% 
-  dplyr::summarize(bafA = mean(w * allele0 / totalcounts), bafB = mean(w * allele1 / totalcounts))
-
-sw <- create_adj_matrix(dat$bafA, dat$bafB) %>% get_fiedler_vec(.)
-all.equal(x1, sw)
-
-sum(x1 != sw) / length(sw)
-
+test_that("Test that phasing using spectral clustering is accurate", {
+  expect_true(all(test_chr$same > 0.9))
+})
 
 haplotypes <- format_haplotypes_dlp(haplotypes, CNbins) %>% 
   filter_haplotypes(., 0.1)
-phased_haplotypes <- phase_haplotypes_spectral_clustering(haplotypes, CNbins)
+phased_haplotypes <- phase_haplotypes_spectral_clustering(haplotypes %>% dplyr::filter(chr == 9), CNbins)
 hscn <- callHaplotypeSpecificCN(CNbins, 
                                 haplotypes, 
-                                likelihood = "auto",
+                                likelihood = "binomial",
                                 phased_haplotypes = phased_haplotypes)
 plotHeatmap(hscn, plotcol = "state_phase")
 
+v <- seq(1,100,1)
+m <- c()
+i<-50
+for (j in 1:length(v)){
+  decay <- log10(abs(i - j)^1 + 1)  
+  decay <- sqrt((i - j)^2)
+  decay <- abs(i - j) ^ (1/10)
+  m[j]<- (1 / (decay + 1))
+}
+m
+plot(m)
