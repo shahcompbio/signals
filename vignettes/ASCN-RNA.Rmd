@@ -116,11 +116,12 @@ plotHeatmap(bins,
             spacer_cols = 15, 
             plotcol = "BAF", 
             plottree = FALSE,
+            show_library_label = FALSE,
             show_legend = FALSE)
 ```
 
 
-We can also do this for the scDNAseq data. For more straightforward comparison we'll perform the dirichilet process arm level inference as we do for the scRNAseq. We can see that the scRNAseq has much lower resolution that scDNAseq, but we are still able to recover the events shared across all cells and clones that are at a reasonably high frequency.
+We can also do this for the scDNAseq data. For more straightforward comparison we'll perform the dirichlet process arm level inference as we do for the scRNAseq. We can see that the scRNAseq has much lower resolution that scDNAseq, but we are still able to recover the events shared across all cells and clones that are at a reasonably high frequency.
 
 ```{r, fig.width=8.5}
 hscn_dna_segment <- per_segment_baf_mat(hscn$data, segments)
@@ -134,6 +135,7 @@ plotHeatmap(bins_dna,
             spacer_cols = 15, 
             plotcol = "BAF", 
             plottree = FALSE,
+            show_library_label = FALSE,
             show_legend = FALSE)
 ```
 

@@ -4,7 +4,8 @@
 <!-- badges: start -->
 [![R build status](https://github.com/shahcompbio/signals/workflows/R-CMD-check/badge.svg)](https://github.com/shahcompbio/signals/actions)
 [![Codecov test coverage](https://codecov.io/gh/shahcompbio/signals/branch/master/graph/badge.svg)](https://codecov.io/gh/shahcompbio/signals?branch=master)
-[![Docker](https://img.shields.io/docker/cloud/build/marcjwilliams1/signals)](https://hub.docker.com/repository/docker/marcjwilliams1/signals)
+[![Docker](https://img.shields.io/docker/automated/marcjwilliams1/signals)](https://hub.docker.com/repository/docker/marcjwilliams1/signals)
+[![DOI](https://zenodo.org/badge/227641994.svg)](https://zenodo.org/badge/latestdoi/227641994)
 <!-- badges: end -->
 
 signals (single cell genomes with allele specificity) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (0.01-0.1X). signals phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model.  Documentation is available [here](https://shahcompbio.github.io/signals/).
@@ -18,6 +19,8 @@ You can install signals with the following command
 ``` r
 devtools::install_github("shahcompbio/signals")
 ```
+
+A docker image is available [here](https://hub.docker.com/repository/docker/marcjwilliams1/signals).
 
 ## Input data
 
