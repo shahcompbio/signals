@@ -1,3 +1,9 @@
+# signals 0.7.2
+
+* release for zenodo
+
+# signals 0.7.1
+
 # signals 0.7.0
 
 * change name to signals
