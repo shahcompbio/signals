@@ -33,6 +33,7 @@ plotHeatmap(
   SV = NULL,
   seed = NULL,
   nticks = 4,
+  Mb = TRUE,
   fillgenome = FALSE,
   annotation_height = NULL,
   annofontsize = 14,
@@ -42,6 +43,7 @@ plotHeatmap(
   str_to_remove = NULL,
   maxCNcol = 11,
   anno_width = 0.4,
+  rasterquality = 15,
   ...
 )
 }
@@ -106,7 +108,9 @@ plotHeatmap(
 
 \item{maxCNcol}{max value for color scale when plotting raw data}
 
-\item{anno_width}{width of left annotations
+\item{anno_width}{width of left annotations}
+
+\item{rasterquality}{default = 15
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 
