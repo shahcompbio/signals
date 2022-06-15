@@ -27,6 +27,8 @@ plotCNprofile(
   tickwidth = 50,
   chrstart = NULL,
   chrend = NULL,
+  shape = 16,
+  positionticks = FALSE,
   ...
 )
 }

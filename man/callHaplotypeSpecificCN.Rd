@@ -56,7 +56,7 @@ callHaplotypeSpecificCN(
 
 \item{minbinschr}{Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included}
 
-\item{phased_haplotypes}{Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by schnapps does not return a good fit.}
+\item{phased_haplotypes}{Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by signals does not return a good fit.}
 
 \item{clustering_method}{Method to use to cluster cells for haplotype phasing, default is \code{copy}, other option is \code{breakpoints}}
 
