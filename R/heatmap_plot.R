@@ -547,21 +547,25 @@ get_genomecoords_label_pos <- function(copynumber, Mb = TRUE, nticks = 3) {
   chromfreq <- table(chroms)
   uniq_chroms <- names(chromfreq)[chromfreq > 1]
   uniq_chroms <- uniq_chroms[stringr::str_detect(uniq_chroms, "V", negate = TRUE)]
+  chromvec <- lapply(colnames(copynumber), function(x) strsplit(x, ":")[[1]][1])
+  binvec <- lapply(colnames(copynumber), function(x) (as.numeric(strsplit(x, ":")[[1]][2]) - 1) / 1e6)
+  binvec <- split(unlist(binvec), unlist(chromvec))
   for (chrom in uniq_chroms) {
     chrom_idx <- which(chroms == chrom)
-    max_idx <- round(0.9 * max(chrom_idx))
-    nwidth <- 10 * round((max(chrom_idx) / nticks) / 10)
+    binvec_ <- binvec[[chrom]]
+    max_idx <- round(0.9 * max(binvec_))
+    nwidth <- 10 * round((max(binvec_) / nticks) / 10)
     mypos <- nwidth
     for (ticks in 1:nticks){
       if (mypos > max_idx){
         next
       }
       if (Mb){
-        lab <- paste0(mypos * binwidth / 1e6, "Mb")
+        lab <- paste0(mypos, "Mb")
       } else {
-        lab <- paste0(mypos * binwidth / 1e6)
+        lab <- paste0(mypos)
       }
-      chrom_label_pos[[lab]] <- mypos
+      chrom_label_pos[[lab]] <- which.min(abs(binvec_ - mypos))
       mypos <- mypos + nwidth
     }
   }
