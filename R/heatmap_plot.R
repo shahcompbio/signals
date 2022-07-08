@@ -13,7 +13,7 @@ cn_colours_phase <- scCNphase_colors
 cn_colours_bafstate <- scBAFstate_colors
 
 #' @export
-make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainloss = FALSE, cnonly = FALSE, cntitle = "Copy\nNumber", hscntitle = "HSCN State", ...) {
+make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainloss = FALSE, cnonly = FALSE, cntitle = "Copy\nNumber", hscntitle = "HSCN State", gainlosstitle = "Δ", ...) {
   cn_lgd <- ComplexHeatmap::Legend(
     title = cntitle,
     labels = stringr::str_remove(names(scCN_colors), "CN"),
@@ -37,7 +37,7 @@ make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainl
   )
   
   gain_loss_lgd <- ComplexHeatmap::Legend(
-    title = "Δ",
+    title = gainlosstitle,
     labels = c("Gain", "Loss"),
     legend_gp = grid::gpar(fill = c("#E34A33", "#3182BD")),
     labels_gp = grid::gpar(fontsize = font_size),
@@ -49,7 +49,7 @@ make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainl
   
   if (gainloss){
     lgd <- ComplexHeatmap::packLegend(
-      gain_loss_lgd, cn_lgd, hscn_lgd,
+      cn_lgd, hscn_lgd, gain_loss_lgd,
       row_gap = grid::unit(4, "mm"),
       column_gap = grid::unit(4, "mm"),
       ...
