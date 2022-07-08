@@ -353,6 +353,7 @@ find_largest_contiguous_group <- function(x) {
   return(x[starts[largest]:ends[largest]])
 }
 
+#' @export
 get_clone_label_pos <- function(clones) {
   clone_label_pos <- list()
   for (clone in unique(clones$clone_id)) {
