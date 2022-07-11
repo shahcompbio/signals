@@ -9,12 +9,15 @@ on:
   release:
     types: [published]
 
+env:
+  GITHUB_PAT: ${{ secrets.PAT }}
+
 jobs:
   push_to_registry:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_PAT: ${{ secrets.PAT }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
@@ -38,4 +41,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
