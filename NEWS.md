@@ -1,3 +1,11 @@
+# signals 0.7.5
+
+* Fixed r cmd check
+
+# signals 0.7.4
+
+# signals 0.7.3
+
 # signals 0.7.2
 
 * release for zenodo
