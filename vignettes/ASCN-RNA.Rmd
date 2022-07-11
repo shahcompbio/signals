@@ -112,15 +112,15 @@ bins <- segments_to_bins(ascn_rna_dp$hscn)
 ```
 
 ```{r, fig.width=8.5}
-# plotHeatmap(bins, 
-#             clusters = ascn_rna_dp$clusters,
-#             reorderclusters = TRUE,
-#             spacer_cols = 15, 
-#             plotcol = "BAF", 
-#             plottree = FALSE,
-#             show_library_label = FALSE,
-#             show_clone_label = FALSE,
-#             show_legend = FALSE)
+plotHeatmap(bins,
+            clusters = ascn_rna_dp$clusters,
+            reorderclusters = TRUE,
+            spacer_cols = 15,
+            plotcol = "BAF",
+            plottree = FALSE,
+            show_library_label = FALSE,
+            show_clone_label = FALSE,
+            show_legend = FALSE)
 ```
 
 
@@ -132,14 +132,14 @@ ascn_dna_dp <- assign_states_dp(hscn_dna_segment$bafpersegment)
 
 bins_dna <- segments_to_bins(ascn_dna_dp$hscn)
 
-# plotHeatmap(bins_dna,
-#             clusters = ascn_dna_dp$clusters,
-#             reorderclusters = TRUE,
-#             spacer_cols = 15, 
-#             plotcol = "BAF", 
-#             plottree = FALSE,
-#             show_library_label = FALSE,
-#             show_legend = FALSE)
+plotHeatmap(bins_dna,
+            clusters = ascn_dna_dp$clusters,
+            reorderclusters = TRUE,
+            spacer_cols = 15,
+            plotcol = "BAF",
+            plottree = FALSE,
+            show_library_label = FALSE,
+            show_legend = FALSE)
 ```
 
 ## Integration with Seurat
