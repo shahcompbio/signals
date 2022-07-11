@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.2</span>
       </span>
     </div>
 
@@ -66,84 +66,129 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">callHaplotypeSpecificCN</span><span class="op">(</span>
-  <span class="va">CNbins</span>,
-  <span class="va">haplotypes</span>,
-  eps <span class="op">=</span> <span class="fl">0.000000000001</span>,
-  loherror <span class="op">=</span> <span class="fl">0.02</span>,
-  maxCN <span class="op">=</span> <span class="cn">NULL</span>,
-  selftransitionprob <span class="op">=</span> <span class="fl">0.95</span>,
-  progressbar <span class="op">=</span> <span class="cn">TRUE</span>,
-  ncores <span class="op">=</span> <span class="fl">1</span>,
-  phasebyarm <span class="op">=</span> <span class="cn">FALSE</span>,
-  minfrac <span class="op">=</span> <span class="fl">0.7</span>,
-  likelihood <span class="op">=</span> <span class="st">"binomial"</span>,
-  minbins <span class="op">=</span> <span class="fl">100</span>,
-  minbinschr <span class="op">=</span> <span class="fl">10</span>,
-  phased_haplotypes <span class="op">=</span> <span class="cn">NULL</span>,
-  clustering_method <span class="op">=</span> <span class="st">"copy"</span>,
-  maxloherror <span class="op">=</span> <span class="fl">0.035</span>,
-  mincells <span class="op">=</span> <span class="fl">10</span>,
-  overwritemincells <span class="op">=</span> <span class="cn">NULL</span>,
-  cluster_per_chr <span class="op">=</span> <span class="cn">TRUE</span>,
-  viterbiver <span class="op">=</span> <span class="st">"cpp"</span>,
-  filterhaplotypes <span class="op">=</span> <span class="fl">0.1</span>,
-  firstpassfiltering <span class="op">=</span> <span class="cn">TRUE</span>,
-  smoothsingletons <span class="op">=</span> <span class="cn">TRUE</span>,
-  fillmissing <span class="op">=</span> <span class="cn">TRUE</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">callHaplotypeSpecificCN</span><span class="op">(</span></span>
+<span>  <span class="va">CNbins</span>,</span>
+<span>  <span class="va">haplotypes</span>,</span>
+<span>  eps <span class="op">=</span> <span class="fl">0.000000000001</span>,</span>
+<span>  loherror <span class="op">=</span> <span class="fl">0.02</span>,</span>
+<span>  maxCN <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  selftransitionprob <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  progressbar <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  ncores <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  phasebyarm <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  minfrac <span class="op">=</span> <span class="fl">0.7</span>,</span>
+<span>  likelihood <span class="op">=</span> <span class="st">"binomial"</span>,</span>
+<span>  minbins <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  minbinschr <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  phased_haplotypes <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  clustering_method <span class="op">=</span> <span class="st">"copy"</span>,</span>
+<span>  maxloherror <span class="op">=</span> <span class="fl">0.035</span>,</span>
+<span>  mincells <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  overwritemincells <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cluster_per_chr <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  viterbiver <span class="op">=</span> <span class="st">"cpp"</span>,</span>
+<span>  filterhaplotypes <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  firstpassfiltering <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  smoothsingletons <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  fillmissing <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>CNbins</dt>
 <dd><p>single cell copy number dataframe with the following columns: <code>cell_id</code>, <code>chr</code>, <code>start</code>, <code>end</code>, <code>state</code>, <code>copy</code></p></dd>
+
+
 <dt>haplotypes</dt>
 <dd><p>single cell haplotypes dataframe with the following columns: <code>cell_id</code>, <code>chr</code>, <code>start</code>, <code>end</code>, <code>hap_label</code>, <code>allele1</code>, <code>allele0</code>, <code>totalcounts</code></p></dd>
+
+
 <dt>eps</dt>
 <dd><p>default 1e-12</p></dd>
+
+
 <dt>loherror</dt>
 <dd><p>LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02</p></dd>
+
+
 <dt>maxCN</dt>
 <dd><p>maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins</p></dd>
+
+
 <dt>selftransitionprob</dt>
 <dd><p>probability to stay in the same state in the HMM, default = 0.95, set to 0.0 for an IID model</p></dd>
+
+
 <dt>progressbar</dt>
 <dd><p>Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1</p></dd>
+
+
 <dt>ncores</dt>
 <dd><p>Number of cores to use, default = 1</p></dd>
+
+
 <dt>minfrac</dt>
 <dd><p>Minimum proportion of haplotypes to retain when clustering + phasing, default = 0.8</p></dd>
+
+
 <dt>likelihood</dt>
 <dd><p>Likelihood model for HMM, default is <code>binomial</code>, other option is <code>betabinomial</code> or use <code>auto</code> and the algorithm will choose the likelihood that best fits the data.</p></dd>
+
+
 <dt>minbins</dt>
 <dd><p>Minimum number of bins containing both haplotype counts and copy number data for a cell to be included</p></dd>
+
+
 <dt>minbinschr</dt>
 <dd><p>Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included</p></dd>
+
+
 <dt>phased_haplotypes</dt>
-<dd><p>Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by schnapps does not return a good fit.</p></dd>
+<dd><p>Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by signals does not return a good fit.</p></dd>
+
+
 <dt>clustering_method</dt>
 <dd><p>Method to use to cluster cells for haplotype phasing, default is <code>copy</code>, other option is <code>breakpoints</code></p></dd>
+
+
 <dt>maxloherror</dt>
 <dd><p>Maximum value for LOH error rate</p></dd>
+
+
 <dt>mincells</dt>
 <dd><p>Minimum cluster size used for phasing</p></dd>
+
+
 <dt>overwritemincells</dt>
 <dd><p>Overwrite the the number of cells to use for clustering/phasing</p></dd>
+
+
 <dt>cluster_per_chr</dt>
 <dd><p>Whether to cluster per chromosome to rephase alleles or not</p></dd>
+
+
 <dt>filterhaplotypes</dt>
 <dd><p>filter out haplotypes present in less than X fraction, default is 0.1</p></dd>
+
+
 <dt>firstpassfiltering</dt>
 <dd><p>Filter out cells with large discrepancy after first pass state assignment</p></dd>
+
+
 <dt>smoothsingletons</dt>
 <dd><p>Remove singleton bins by smoothing over based on states in adjacent bins</p></dd>
+
+
 <dt>fillmissing</dt>
 <dd><p>For bins with missing counts fill in values based on neighbouring bins</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p><ul><li><p><code>Maj</code> (Major allele copy number)</p></li>
+    
+
+<p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p><ul><li><p><code>Maj</code> (Major allele copy number)</p></li>
 <li><p><code>Min</code> (Minor allele copy number)</p></li>
 <li><p><code>state_AS_phased</code> (phased state of the form Maj|Min )</p></li>
 <li><p><code>state_AS</code> (mirrored state of the form Maj|Min)</p></li>
@@ -154,18 +199,18 @@
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="va">sim_data</span> <span class="op">&lt;-</span> <span class="fu">simulate_data_cohort</span><span class="op">(</span></span>
-<span class="r-in">  clone_num <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">20</span><span class="op">)</span>,</span>
-<span class="r-in">  clonal_events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"1"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">0</span><span class="op">)</span>, <span class="st">"5"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"2"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"3"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-in">  <span class="op">)</span>,</span>
-<span class="r-in">  loherror <span class="op">=</span> <span class="fl">0.02</span>,</span>
-<span class="r-in">  coverage <span class="op">=</span> <span class="fl">100</span></span>
-<span class="r-in"><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">sim_data</span> <span class="op">&lt;-</span> <span class="fu">simulate_data_cohort</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  clone_num <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">20</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  clonal_events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"1"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">0</span><span class="op">)</span>, <span class="st">"5"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"2"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"3"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  loherror <span class="op">=</span> <span class="fl">0.02</span>,</span></span>
+<span class="r-in"><span>  coverage <span class="op">=</span> <span class="fl">100</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Joining, by = c("chr", "start", "end", "hap_label")</span>
-<span class="r-in"></span>
-<span class="r-in"><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">callHaplotypeSpecificCN</span><span class="op">(</span><span class="va">sim_data</span><span class="op">$</span><span class="va">CNbins</span>, <span class="va">sim_data</span><span class="op">$</span><span class="va">haplotypes</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">callHaplotypeSpecificCN</span><span class="op">(</span><span class="va">sim_data</span><span class="op">$</span><span class="va">CNbins</span>, <span class="va">sim_data</span><span class="op">$</span><span class="va">haplotypes</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Filtering out haplotypes present &lt; 10% of cells...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Fraction of haplotypes retained after filtering = 1</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Finding overlapping cell IDs between CN data and haplotype data...</span>
@@ -360,9 +405,9 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Join phased haplotypes...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Reorder haplotypes based on phase...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Total number of cells after removing cells with &lt; 100 bins: 40</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Total fraction of haplotype counts retained: 1 (Total counts (Millions): 0.9455157, after filtering: 0.9455157, after phasing:0.9455157)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0052</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0052</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Total fraction of haplotype counts retained: 1 (Total counts (Millions): 0.945586275, after filtering: 0.945586275, after phasing:0.945586275)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0055</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0055</span>
 </code></pre></div>
     </div>
   </div>
@@ -377,7 +422,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

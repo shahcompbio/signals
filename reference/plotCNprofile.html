@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.2</span>
       </span>
     </div>
 
@@ -66,81 +66,120 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">plotCNprofile</span><span class="op">(</span>
-  <span class="va">CNbins</span>,
-  cellid <span class="op">=</span> <span class="cn">NULL</span>,
-  chrfilt <span class="op">=</span> <span class="cn">NULL</span>,
-  pointsize <span class="op">=</span> <span class="fl">1</span>,
-  alphaval <span class="op">=</span> <span class="fl">0.6</span>,
-  maxCN <span class="op">=</span> <span class="fl">10</span>,
-  cellidx <span class="op">=</span> <span class="fl">1</span>,
-  statecol <span class="op">=</span> <span class="st">"state"</span>,
-  returnlist <span class="op">=</span> <span class="cn">FALSE</span>,
-  raster <span class="op">=</span> <span class="cn">FALSE</span>,
-  y_axis_trans <span class="op">=</span> <span class="st">"identity"</span>,
-  xaxis_order <span class="op">=</span> <span class="st">"genome_position"</span>,
-  legend.position <span class="op">=</span> <span class="st">"bottom"</span>,
-  annotateregions <span class="op">=</span> <span class="cn">NULL</span>,
-  SV <span class="op">=</span> <span class="cn">NULL</span>,
-  svalpha <span class="op">=</span> <span class="fl">0.5</span>,
-  svwidth <span class="op">=</span> <span class="fl">1</span>,
-  adj <span class="op">=</span> <span class="fl">0.03</span>,
-  genes <span class="op">=</span> <span class="cn">NULL</span>,
-  tickwidth <span class="op">=</span> <span class="fl">50</span>,
-  chrstart <span class="op">=</span> <span class="cn">NULL</span>,
-  chrend <span class="op">=</span> <span class="cn">NULL</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plotCNprofile</span><span class="op">(</span></span>
+<span>  <span class="va">CNbins</span>,</span>
+<span>  cellid <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  chrfilt <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  pointsize <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  alphaval <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span>  maxCN <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  cellidx <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  statecol <span class="op">=</span> <span class="st">"state"</span>,</span>
+<span>  returnlist <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  raster <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  y_axis_trans <span class="op">=</span> <span class="st">"identity"</span>,</span>
+<span>  xaxis_order <span class="op">=</span> <span class="st">"genome_position"</span>,</span>
+<span>  legend.position <span class="op">=</span> <span class="st">"bottom"</span>,</span>
+<span>  annotateregions <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  SV <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  svalpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  svwidth <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  adj <span class="op">=</span> <span class="fl">0.03</span>,</span>
+<span>  genes <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  tickwidth <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>  chrstart <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  chrend <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  shape <span class="op">=</span> <span class="fl">16</span>,</span>
+<span>  positionticks <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>CNbins</dt>
 <dd><p>Single cell copy number dataframe with the following columns: <code>cell_id</code>, <code>chr</code>, <code>start</code>, <code>end</code>, <code>state</code>, <code>copy</code></p></dd>
+
+
 <dt>cellid</dt>
 <dd><p>Which cell to plot, if no cell is specific will plot the first cell in the dataframe</p></dd>
+
+
 <dt>chrfilt</dt>
 <dd><p>Vector of chromosomes to plot, if NULL (default) will plot all chromosomes</p></dd>
+
+
 <dt>pointsize</dt>
 <dd><p>The point size in the plot</p></dd>
+
+
 <dt>alphaval</dt>
 <dd><p>Alpha value of points</p></dd>
+
+
 <dt>maxCN</dt>
 <dd><p>The maximum on the y axis, if any points are above this value they will be winsorized rather than removed</p></dd>
+
+
 <dt>cellidx</dt>
 <dd><p>idx of cell to plot if cellid = NULL</p></dd>
+
+
 <dt>statecol</dt>
 <dd><p>The colour mapping, default is to map colours to the <code>state</code> column</p></dd>
+
+
 <dt>returnlist</dt>
 <dd><p>Return a list rather than the ggplot object</p></dd>
+
+
 <dt>raster</dt>
 <dd><p>use ggrastr or not, default = FALSE</p></dd>
+
+
 <dt>y_axis_trans</dt>
 <dd><p>What transformation to use on the y-axis, default is identity, the other option is "squashy" which uses a tanh transformation</p></dd>
+
+
 <dt>xaxis_order</dt>
 <dd><p>Default is "genome_position"</p></dd>
+
+
 <dt>legend.position</dt>
 <dd><p>Where to place the legend, default is "bottom"</p></dd>
+
+
 <dt>annotateregions</dt>
 <dd><p>Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position</p></dd>
+
+
 <dt>SV</dt>
 <dd><p>Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.</p></dd>
+
+
 <dt>svalpha</dt>
 <dd><p>the alpha scaling of the SV lines, default = 0.5</p></dd>
+
+
 <dt>genes</dt>
 <dd><p>vector of genes to annotate, will add a dashed vertical line and label</p></dd>
+
+
 <dt>tickwidth</dt>
 <dd><p>Spacing of ticks (in Mb) when only 1 chromosome is plotted</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>ggplot2 plot</p>
+    
+
+<p>ggplot2 plot</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"></span>
-<span class="r-in"><span class="fu">plotCNprofile</span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">plotCNprofile</span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Making CN profile and BAF plot for cell - SA921-A90554A-R03-C44</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Making fixed-width bins for bin size 5e+05 ...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Joining, by = c("chr", "start", "end")</span>
@@ -159,7 +198,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

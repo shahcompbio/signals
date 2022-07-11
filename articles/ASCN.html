@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.2</span>
       </span>
     </div>
 
@@ -77,7 +77,7 @@
 
       
 
-      </header><script src="ASCN_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Allele Specific Copy Number Inference</h1>
@@ -91,7 +91,7 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">signals</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">signals</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
 </h2>
@@ -103,35 +103,35 @@
 <p>The data needed to perform the allele specific copy number inference are binned copy number data and cell specific haplotype calls. The copy number data and the haplotype data should use the same bins.</p>
 <p>A small test data set of 250 cells is provided with the package, we’ll load this data and inspect these 2 dataframe.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span>
-<span class="co">#&gt;   chr   start     end reads     copy state               cell_id</span>
-<span class="co">#&gt; 1   1 2000001 2500000   536 2.960868     2 SA921-A90554A-R03-C44</span>
-<span class="co">#&gt; 2   1 3000001 3500000   499 2.603584     2 SA921-A90554A-R03-C44</span>
-<span class="co">#&gt; 3   1 4000001 4500000   569 2.216388     2 SA921-A90554A-R03-C44</span>
-<span class="co">#&gt; 4   1 4500001 5000000   524 2.039672     2 SA921-A90554A-R03-C44</span>
-<span class="co">#&gt; 5   1 5000001 5500000   576 2.210792     2 SA921-A90554A-R03-C44</span>
-<span class="co">#&gt; 6   1 5500001 6000000   516 2.028686     2 SA921-A90554A-R03-C44</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   chr   start     end reads     copy state               cell_id</span></span>
+<span><span class="co">#&gt; 1   1 2000001 2500000   536 2.960868     2 SA921-A90554A-R03-C44</span></span>
+<span><span class="co">#&gt; 2   1 3000001 3500000   499 2.603584     2 SA921-A90554A-R03-C44</span></span>
+<span><span class="co">#&gt; 3   1 4000001 4500000   569 2.216388     2 SA921-A90554A-R03-C44</span></span>
+<span><span class="co">#&gt; 4   1 4500001 5000000   524 2.039672     2 SA921-A90554A-R03-C44</span></span>
+<span><span class="co">#&gt; 5   1 5000001 5500000   576 2.210792     2 SA921-A90554A-R03-C44</span></span>
+<span><span class="co">#&gt; 6   1 5500001 6000000   516 2.028686     2 SA921-A90554A-R03-C44</span></span></code></pre></div>
 <p>The haplotype data comes in long format, but the package requires data in wide format so we will use the helper function <code>format_haplotypes_dlp</code> to convert the data to the correct format, this function will also remove any bins present in the haplotypes data frame that is not present in the CNbins data frame.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span>
-<span class="co">#&gt;                  cell_id chr   start     end hap_label allele1 allele0</span>
-<span class="co">#&gt; 1 SA1090-A96213A-R20-C13   1 2000001 2500000       101       0       3</span>
-<span class="co">#&gt; 2 SA1090-A96213A-R20-C13   1 2000001 2500000       104       0       1</span>
-<span class="co">#&gt; 3 SA1090-A96213A-R20-C13   1 2000001 2500000       106       0       3</span>
-<span class="co">#&gt; 4 SA1090-A96213A-R20-C13   1 2000001 2500000       108       0       4</span>
-<span class="co">#&gt; 5 SA1090-A96213A-R20-C13   1 2000001 2500000       112       0      15</span>
-<span class="co">#&gt; 6 SA1090-A96213A-R20-C13   1 2000001 2500000       113       0       1</span>
-<span class="co">#&gt;   totalcounts</span>
-<span class="co">#&gt; 1           3</span>
-<span class="co">#&gt; 2           1</span>
-<span class="co">#&gt; 3           3</span>
-<span class="co">#&gt; 4           4</span>
-<span class="co">#&gt; 5          15</span>
-<span class="co">#&gt; 6           1</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                  cell_id chr   start     end hap_label allele1 allele0</span></span>
+<span><span class="co">#&gt; 1 SA1090-A96213A-R20-C13   1 2000001 2500000       101       0       3</span></span>
+<span><span class="co">#&gt; 2 SA1090-A96213A-R20-C13   1 2000001 2500000       104       0       1</span></span>
+<span><span class="co">#&gt; 3 SA1090-A96213A-R20-C13   1 2000001 2500000       106       0       3</span></span>
+<span><span class="co">#&gt; 4 SA1090-A96213A-R20-C13   1 2000001 2500000       108       0       4</span></span>
+<span><span class="co">#&gt; 5 SA1090-A96213A-R20-C13   1 2000001 2500000       112       0      15</span></span>
+<span><span class="co">#&gt; 6 SA1090-A96213A-R20-C13   1 2000001 2500000       113       0       1</span></span>
+<span><span class="co">#&gt;   totalcounts</span></span>
+<span><span class="co">#&gt; 1           3</span></span>
+<span><span class="co">#&gt; 2           1</span></span>
+<span><span class="co">#&gt; 3           3</span></span>
+<span><span class="co">#&gt; 4           4</span></span>
+<span><span class="co">#&gt; 5          15</span></span>
+<span><span class="co">#&gt; 6           1</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="inference">Inference<a class="anchor" aria-label="anchor" href="#inference"></a>
@@ -142,49 +142,49 @@
 <code>callAlleleSpecificCN</code><a class="anchor" aria-label="anchor" href="#callallelespecificcn"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">ascn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">ascn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span></code></pre></div>
 <p>As a sanity check we can plot the B allele frequency (BAF) as a function of inferred state. We would expect to see a distribution around the expected value which is exactly what we see below.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">ascn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">ascn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-6-1.png" width="960"></p>
 <p>Now we can plot the copy number heatmaps. First we’ll plot the heatmap based on copy number states. We can provide the <code>plotHeatmap</code> function with a tree in newick format to plot an ordered heatmap and/or a dataframe with cluster assignments. By default the <code>plotHeatmap</code> function does some clustering using hdbscan if neither of these is provided.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">umap_clustering</span><span class="op">(</span><span class="va">ascn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">umap_clustering</span><span class="op">(</span><span class="va">ascn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, 
-            plotcol <span class="op">=</span> <span class="st">"state"</span>, 
-            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
-            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
-            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
-            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, </span>
+<span>            plotcol <span class="op">=</span> <span class="st">"state"</span>, </span>
+<span>            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,</span>
+<span>            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, </span>
+<span>            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span></span>
+<span>            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-8-1.png" width="960"></p>
 <p>Now we can plot some heatmaps to visualize the allele specific state. This heatmap plots the minor copy number state.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"Min"</span>,
-            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
-            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
-            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
-            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"Min"</span>,</span>
+<span>            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,</span>
+<span>            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, </span>
+<span>            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span></span>
+<span>            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-9-1.png" width="960"></p>
 <p>Discrete representation of allelic imbalance:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, 
-            plotcol <span class="op">=</span> <span class="st">"state_phase"</span>, 
-            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
-            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
-            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
-            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, </span>
+<span>            plotcol <span class="op">=</span> <span class="st">"state_phase"</span>, </span>
+<span>            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,</span>
+<span>            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, </span>
+<span>            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span></span>
+<span>            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-10-1.png" width="960"></p>
 <p>There are also some function to plot per cell BAF and state plots. You can specify a cell, or the default will take the first cell in the data frame.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">ascn</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">ascn</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-11-1.png" width="960"></p>
 <p>Here we’ll plot an equivalent plot merging data across cell clusters using the utility function <code>consensyscopynumber</code>. Here, the <code>cell_id</code> column becomes the</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R">
-<span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">ascn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span>
-
-<span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"A"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span></span>
+<span><span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">ascn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"A"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-12-1.png" width="960"></p>
 <p>The object returned by the inference function is of type <code>ascn</code>, if you want to pull out the data to use in your own scripts you can just do <code>ascn$data</code>. This will return a <code>data.frame</code> similar to the input data frames but with additional columns specifying the allele specific states.</p>
 </div>
@@ -194,38 +194,38 @@
 </h3>
 <p>Now we’ll do the analysis that phases haplotypes across cells.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span></code></pre></div>
 <p>We’ll now generate the same plots as before. We can see in the BAF per state plot that we now observe states with BAF &gt; 0.5 meaning that we see different alleles gained or lost in different cells.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">hscn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">hscn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-14-1.png" width="960"></p>
 <p>In the allelic imbalance heatmap we can see that some cells have gained the “B” allele and others the “A” allele resulting in imbalance spanning from 0 to 1.</p>
 <p>In the discrete version of this plot we see similar patterns.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"state_phase"</span>,
-            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
-            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
-            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
-            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering </span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"state_phase"</span>,</span>
+<span>            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,</span>
+<span>            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, </span>
+<span>            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span></span>
+<span>            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering </span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-15-1.png" width="960"></p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"Min"</span>,
-            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,
-            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, 
-            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span>
-            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering </span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"Min"</span>,</span>
+<span>            clusters <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span>,</span>
+<span>            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, </span>
+<span>            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span></span>
+<span>            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering </span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-16-1.png" width="960"></p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">hscn</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">hscn</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-17-1.png" width="960"></p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span>
-
-<span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"B"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"B"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-18-1.png" width="960"></p>
 <p>An alternative plotting style is to plot the copy number of the individual copy number.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"C"</span>, homolog <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"C"</span>, homolog <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-19-1.png" width="960"></p>
 </div>
 </div>
@@ -248,7 +248,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer>

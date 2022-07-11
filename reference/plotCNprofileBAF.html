@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.2</span>
       </span>
     </div>
 
@@ -66,100 +66,145 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">plotCNprofileBAF</span><span class="op">(</span>
-  <span class="va">cn</span>,
-  cellid <span class="op">=</span> <span class="cn">NULL</span>,
-  chrfilt <span class="op">=</span> <span class="cn">NULL</span>,
-  pointsize <span class="op">=</span> <span class="fl">1</span>,
-  alphaval <span class="op">=</span> <span class="fl">0.6</span>,
-  maxCN <span class="op">=</span> <span class="fl">10</span>,
-  cellidx <span class="op">=</span> <span class="fl">1</span>,
-  BAFcol <span class="op">=</span> <span class="st">"state_phase"</span>,
-  statecol <span class="op">=</span> <span class="st">"state"</span>,
-  returnlist <span class="op">=</span> <span class="cn">FALSE</span>,
-  raster <span class="op">=</span> <span class="cn">FALSE</span>,
-  y_axis_trans <span class="op">=</span> <span class="st">"identity"</span>,
-  xaxis_order <span class="op">=</span> <span class="st">"genome_position"</span>,
-  legend.position <span class="op">=</span> <span class="st">"bottom"</span>,
-  genes <span class="op">=</span> <span class="cn">NULL</span>,
-  annotateregions <span class="op">=</span> <span class="cn">NULL</span>,
-  homolog <span class="op">=</span> <span class="cn">FALSE</span>,
-  SV <span class="op">=</span> <span class="cn">NULL</span>,
-  adj <span class="op">=</span> <span class="fl">0.03</span>,
-  svalpha <span class="op">=</span> <span class="fl">0.5</span>,
-  svwidth <span class="op">=</span> <span class="fl">1</span>,
-  plotdata <span class="op">=</span> <span class="cn">TRUE</span>,
-  offset <span class="op">=</span> <span class="cn">NULL</span>,
-  my_title <span class="op">=</span> <span class="cn">NULL</span>,
-  tickwidth <span class="op">=</span> <span class="fl">50</span>,
-  chrstart <span class="op">=</span> <span class="cn">NULL</span>,
-  chrend <span class="op">=</span> <span class="cn">NULL</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plotCNprofileBAF</span><span class="op">(</span></span>
+<span>  <span class="va">cn</span>,</span>
+<span>  cellid <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  chrfilt <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  pointsize <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  alphaval <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span>  maxCN <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  cellidx <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  BAFcol <span class="op">=</span> <span class="st">"state_phase"</span>,</span>
+<span>  statecol <span class="op">=</span> <span class="st">"state"</span>,</span>
+<span>  returnlist <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  raster <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  y_axis_trans <span class="op">=</span> <span class="st">"identity"</span>,</span>
+<span>  xaxis_order <span class="op">=</span> <span class="st">"genome_position"</span>,</span>
+<span>  legend.position <span class="op">=</span> <span class="st">"bottom"</span>,</span>
+<span>  genes <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotateregions <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  homolog <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  SV <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  adj <span class="op">=</span> <span class="fl">0.03</span>,</span>
+<span>  svalpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  svwidth <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  plotdata <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  offset <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  my_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  tickwidth <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>  chrstart <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  chrend <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  shape <span class="op">=</span> <span class="fl">16</span>,</span>
+<span>  positionticks <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>cn</dt>
 <dd><p>Single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy` or a hscn object.</p></dd>
+
+
 <dt>cellid</dt>
 <dd><p>Which cell to plot, if no cell is specific will plot the first cell in the dataframe</p></dd>
+
+
 <dt>chrfilt</dt>
 <dd><p>Vector of chromosomes to plot, if NULL (default) will plot all chromosomes</p></dd>
+
+
 <dt>pointsize</dt>
 <dd><p>The point size in the plot</p></dd>
+
+
 <dt>alphaval</dt>
 <dd><p>Alpha value of points</p></dd>
+
+
 <dt>maxCN</dt>
 <dd><p>The maximum on the y axis, if any points are above this value they will be winsorized rather than removed</p></dd>
+
+
 <dt>cellidx</dt>
 <dd><p>idx of cell to plot if cellid = NULL</p></dd>
+
+
 <dt>statecol</dt>
 <dd><p>The colour mapping, default is to map colours to the `state` column</p></dd>
+
+
 <dt>returnlist</dt>
 <dd><p>Return a list rather than the ggplot object</p></dd>
+
+
 <dt>raster</dt>
 <dd><p>use ggrastr or not, default = FALSE</p></dd>
+
+
 <dt>y_axis_trans</dt>
 <dd><p>What transformation to use on the y-axis, default is identity, the other option is "squashy" which uses a tanh transformation</p></dd>
+
+
 <dt>xaxis_order</dt>
 <dd><p>Default is "genome_position"</p></dd>
+
+
 <dt>legend.position</dt>
 <dd><p>Where to place the legend, default is "bottom"</p></dd>
+
+
 <dt>genes</dt>
 <dd><p>vector of genes to annotate, will add a dashed vertical line and label</p></dd>
+
+
 <dt>annotateregions</dt>
 <dd><p>Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position</p></dd>
+
+
 <dt>homolog</dt>
 <dd><p>Rather than plot the BAF and CN seperately this will plot the 2 homologs on the same track</p></dd>
+
+
 <dt>SV</dt>
 <dd><p>Default is NULL. If a dataframe with structural variant position is passed it will add a track on the top showin rearrangement links</p></dd>
+
+
 <dt>svalpha</dt>
 <dd><p>the alpha scaling of the SV lines, default = 0.5</p></dd>
+
+
 <dt>svwidth</dt>
 <dd><p>width of rearrangement connections</p></dd>
+
+
 <dt>plotdata</dt>
 <dd><p>Binary value whether to plot raw data or inferred states in homolog plot</p></dd>
+
+
 <dt>offest</dt>
 <dd><p>to use when plotting inferred states in homolog plot</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>ggplot2 plot</p>
+    
+
+<p>ggplot2 plot</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"></span>
-<span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, likelihood <span class="op">=</span> <span class="st">"binomial"</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu">plotCNprofileBAF</span><span class="op">(</span><span class="va">hscn</span>, genes <span class="op">=</span> <span class="st">"MYC"</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu">plotCNprofileBAF</span><span class="op">(</span><span class="va">hscn</span>, homolog <span class="op">=</span> <span class="cn">TRUE</span>, chrfilt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1"</span>, <span class="st">"8"</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-in"><span class="op">}</span></span>
-<span class="r-in"></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, likelihood <span class="op">=</span> <span class="st">"binomial"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">plotCNprofileBAF</span><span class="op">(</span><span class="va">hscn</span>, genes <span class="op">=</span> <span class="st">"MYC"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">plotCNprofileBAF</span><span class="op">(</span><span class="va">hscn</span>, homolog <span class="op">=</span> <span class="cn">TRUE</span>, chrfilt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1"</span>, <span class="st">"8"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -174,7 +219,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

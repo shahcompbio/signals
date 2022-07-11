@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.2</span>
       </span>
     </div>
 
@@ -66,38 +66,55 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">callAlleleSpecificCNfromHSCN</span><span class="op">(</span>
-  <span class="va">hscn</span>,
-  eps <span class="op">=</span> <span class="fl">0.000000000001</span>,
-  maxCN <span class="op">=</span> <span class="cn">NULL</span>,
-  selftransitionprob <span class="op">=</span> <span class="fl">0.95</span>,
-  progressbar <span class="op">=</span> <span class="cn">TRUE</span>,
-  ncores <span class="op">=</span> <span class="fl">1</span>,
-  fillmissing <span class="op">=</span> <span class="cn">TRUE</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">callAlleleSpecificCNfromHSCN</span><span class="op">(</span></span>
+<span>  <span class="va">hscn</span>,</span>
+<span>  eps <span class="op">=</span> <span class="fl">0.000000000001</span>,</span>
+<span>  maxCN <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  selftransitionprob <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  progressbar <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  ncores <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  fillmissing <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>hscn</dt>
 <dd><p>hscn object from callHaplotypeSpecificCN</p></dd>
+
+
 <dt>eps</dt>
 <dd><p>default 1e-12</p></dd>
+
+
 <dt>maxCN</dt>
 <dd><p>maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins</p></dd>
+
+
 <dt>selftransitionprob</dt>
 <dd><p>probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model</p></dd>
+
+
 <dt>progressbar</dt>
 <dd><p>Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1</p></dd>
+
+
 <dt>ncores</dt>
 <dd><p>Number of cores to use, default = 1</p></dd>
+
+
 <dt>fillmissing</dt>
 <dd><p>For bins with missing counts fill in values based on neighbouring bins</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>allele specific copy number object which includes dataframe similar to input with additional columns which include
-* `Maj` (Major allele copy number)
+    
+
+<p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p>
+
+
+<p>* `Maj` (Major allele copy number)
 * `Min` (Minor allele copy number)
 * `state_AS_phased` (phased state of the form Maj|Min )
 * `state_AS` (mirrored state of the form Maj|Min)
@@ -122,7 +139,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

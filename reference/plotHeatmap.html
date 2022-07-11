@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.2</span>
       </span>
     </div>
 
@@ -66,118 +66,189 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">plotHeatmap</span><span class="op">(</span>
-  <span class="va">cn</span>,
-  tree <span class="op">=</span> <span class="cn">NULL</span>,
-  clusters <span class="op">=</span> <span class="cn">NULL</span>,
-  normalize_ploidy <span class="op">=</span> <span class="cn">FALSE</span>,
-  normalize_tree <span class="op">=</span> <span class="cn">FALSE</span>,
-  branch_length <span class="op">=</span> <span class="fl">1</span>,
-  spacer_cols <span class="op">=</span> <span class="fl">20</span>,
-  plottree <span class="op">=</span> <span class="cn">TRUE</span>,
-  plotcol <span class="op">=</span> <span class="st">"state"</span>,
-  reorderclusters <span class="op">=</span> <span class="cn">FALSE</span>,
-  pctcells <span class="op">=</span> <span class="fl">0.05</span>,
-  library_mapping <span class="op">=</span> <span class="cn">NULL</span>,
-  clone_pal <span class="op">=</span> <span class="cn">NULL</span>,
-  sample_label_idx <span class="op">=</span> <span class="fl">1</span>,
-  fillna <span class="op">=</span> <span class="cn">TRUE</span>,
-  frequencycutoff <span class="op">=</span> <span class="fl">2</span>,
-  maxf <span class="op">=</span> <span class="cn">NULL</span>,
-  plotfrequency <span class="op">=</span> <span class="cn">FALSE</span>,
-  show_legend <span class="op">=</span> <span class="cn">TRUE</span>,
-  show_library_label <span class="op">=</span> <span class="cn">TRUE</span>,
-  show_clone_label <span class="op">=</span> <span class="cn">TRUE</span>,
-  show_clone_text <span class="op">=</span> <span class="cn">TRUE</span>,
-  widenarm <span class="op">=</span> <span class="cn">FALSE</span>,
-  umapmetric <span class="op">=</span> <span class="st">"euclidean"</span>,
-  chrlabels <span class="op">=</span> <span class="cn">TRUE</span>,
-  SV <span class="op">=</span> <span class="cn">NULL</span>,
-  seed <span class="op">=</span> <span class="cn">NULL</span>,
-  nticks <span class="op">=</span> <span class="fl">4</span>,
-  fillgenome <span class="op">=</span> <span class="cn">FALSE</span>,
-  annotation_height <span class="op">=</span> <span class="cn">NULL</span>,
-  annofontsize <span class="op">=</span> <span class="fl">14</span>,
-  na_col <span class="op">=</span> <span class="st">"white"</span>,
-  linkheight <span class="op">=</span> <span class="fl">5</span>,
-  newlegendname <span class="op">=</span> <span class="cn">NULL</span>,
-  str_to_remove <span class="op">=</span> <span class="cn">NULL</span>,
-  maxCNcol <span class="op">=</span> <span class="fl">11</span>,
-  anno_width <span class="op">=</span> <span class="fl">0.4</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plotHeatmap</span><span class="op">(</span></span>
+<span>  <span class="va">cn</span>,</span>
+<span>  tree <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  clusters <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  normalize_ploidy <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  normalize_tree <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  branch_length <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  spacer_cols <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>  plottree <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  plotcol <span class="op">=</span> <span class="st">"state"</span>,</span>
+<span>  reorderclusters <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  pctcells <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  library_mapping <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  clone_pal <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  sample_label_idx <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  fillna <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  frequencycutoff <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  maxf <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  plotfrequency <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  show_legend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  show_library_label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  show_clone_label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  show_clone_text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  widenarm <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  umapmetric <span class="op">=</span> <span class="st">"euclidean"</span>,</span>
+<span>  chrlabels <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  SV <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nticks <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  Mb <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  fillgenome <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  annotation_height <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annofontsize <span class="op">=</span> <span class="fl">14</span>,</span>
+<span>  na_col <span class="op">=</span> <span class="st">"white"</span>,</span>
+<span>  linkheight <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  newlegendname <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  str_to_remove <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  maxCNcol <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>  anno_width <span class="op">=</span> <span class="fl">0.4</span>,</span>
+<span>  rasterquality <span class="op">=</span> <span class="fl">15</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>cn</dt>
 <dd><p>Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`</p></dd>
+
+
 <dt>tree</dt>
 <dd><p>Tree in newick format to plot alongside the heatmap, default = NULL</p></dd>
+
+
 <dt>normalize_ploidy</dt>
 <dd><p>Normalize ploidy of all cells to 2</p></dd>
+
+
 <dt>normalize_tree</dt>
 <dd><p>default = FALSE</p></dd>
+
+
 <dt>branch_length</dt>
 <dd><p>scales branch lengths to this size, default = 2</p></dd>
+
+
 <dt>spacer_cols</dt>
 <dd><p>number of empty columns between chromosomes, default = 20</p></dd>
+
+
 <dt>plottree</dt>
 <dd><p>Binary value of whether to plot tree or not, default = TRUE</p></dd>
+
+
 <dt>plotcol</dt>
 <dd><p>Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj"</p></dd>
+
+
 <dt>pctcells</dt>
 <dd><p>Minimum size of cluster in terms of perecentage of cells in umap clustering</p></dd>
+
+
 <dt>library_mapping</dt>
 <dd><p>Named vector mapping library names to labels for legend</p></dd>
+
+
 <dt>clone_pal</dt>
 <dd><p>pallette to colour clusters by</p></dd>
+
+
 <dt>sample_label_idx</dt>
 <dd><p>default = 1</p></dd>
+
+
 <dt>fillna</dt>
 <dd><p>Smooth over NA values, default = TRUE</p></dd>
+
+
 <dt>frequencycutoff</dt>
 <dd><p>default = 2</p></dd>
+
+
 <dt>maxf</dt>
 <dd><p>Max frequency when plotting the frequency track, default = NULL infers this from the data</p></dd>
+
+
 <dt>plotfrequency</dt>
 <dd><p>Plot the frequency track of gains and losses across the genome</p></dd>
+
+
 <dt>show_legend</dt>
 <dd><p>plot legend or not, boolean</p></dd>
+
+
 <dt>show_library_label</dt>
 <dd><p>show library label or not, boolean</p></dd>
+
+
 <dt>show_clone_label</dt>
 <dd><p>show clone label or not, boolean</p></dd>
+
+
 <dt>umapmetric</dt>
 <dd><p>metric to use in umap dimensionality reduction if no clusters are specified</p></dd>
+
+
 <dt>chrlabels</dt>
 <dd><p>include chromosome labels or not, boolean</p></dd>
+
+
 <dt>SV</dt>
 <dd><p>sv data frame</p></dd>
+
+
 <dt>seed</dt>
 <dd><p>seed for UMAP</p></dd>
+
+
 <dt>nticks</dt>
 <dd><p>number of ticks in x-axis label when plotting a single chromosome</p></dd>
+
+
 <dt>fillgenome</dt>
 <dd><p>fill in any missing bins and add NA to centromeric regions</p></dd>
+
+
 <dt>na_col</dt>
 <dd><p>colour of NA values</p></dd>
+
+
 <dt>linkheight</dt>
 <dd><p>height of x-axis ticks</p></dd>
+
+
 <dt>newlegendname</dt>
 <dd><p>overwrite default legend name</p></dd>
+
+
 <dt>str_to_remove</dt>
 <dd><p>string to remove from cell_id's when plotting labels</p></dd>
+
+
 <dt>maxCNcol</dt>
 <dd><p>max value for color scale when plotting raw data</p></dd>
+
+
 <dt>anno_width</dt>
-<dd><p>width of left annotations</p>
+<dd><p>width of left annotations</p></dd>
+
+
+<dt>rasterquality</dt>
+<dd><p>default = 15</p>
 <p>If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.</p>
 <p>#'</p></dd>
+
+
 <dt>cluster</dt>
 <dd><p>data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL</p></dd>
+
+
 <dt>reordercluster</dt>
 <dd><p>Reorder the cells according to cluster if no tree is specified</p></dd>
+
 </dl></div>
 
   </div>
@@ -192,7 +263,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

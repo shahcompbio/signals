@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.2</span>
       </span>
     </div>
 
@@ -66,31 +66,42 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">plotBAFperstate</span><span class="op">(</span>
-  <span class="va">cn</span>,
-  minpts <span class="op">=</span> <span class="fl">250</span>,
-  minfrac <span class="op">=</span> <span class="fl">0.01</span>,
-  maxstate <span class="op">=</span> <span class="fl">10</span>,
-  dens_adjust <span class="op">=</span> <span class="fl">2</span>,
-  mincounts <span class="op">=</span> <span class="fl">6</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plotBAFperstate</span><span class="op">(</span></span>
+<span>  <span class="va">cn</span>,</span>
+<span>  minpts <span class="op">=</span> <span class="fl">250</span>,</span>
+<span>  minfrac <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  maxstate <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  dens_adjust <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  mincounts <span class="op">=</span> <span class="fl">6</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>cn</dt>
 <dd><p>Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`, `BAF`</p></dd>
+
+
 <dt>minpts</dt>
 <dd><p>minimum number of points to include default = 250</p></dd>
+
+
 <dt>minfrac</dt>
 <dd><p>states that are present below this fraction will be removed, default = 0.01</p></dd>
+
+
 <dt>maxstate</dt>
 <dd><p>States with total copy number &gt; maxstate will be removed, default = 10</p></dd>
+
+
 <dt>dens_adjust</dt>
 <dd><p>density adjustment factor in the violin plots</p></dd>
+
+
 <dt>mincounts</dt>
 <dd><p>filter out bins &lt; mincounts from plotting, default = 6</p>
 <p></p></dd>
+
 </dl></div>
 
   </div>
@@ -105,7 +116,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

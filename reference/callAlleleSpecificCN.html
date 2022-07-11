@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.2</span>
       </span>
     </div>
 
@@ -66,59 +66,90 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">callAlleleSpecificCN</span><span class="op">(</span>
-  <span class="va">CNbins</span>,
-  <span class="va">haplotypes</span>,
-  eps <span class="op">=</span> <span class="fl">0.000000000001</span>,
-  loherror <span class="op">=</span> <span class="fl">0.02</span>,
-  maxCN <span class="op">=</span> <span class="cn">NULL</span>,
-  selftransitionprob <span class="op">=</span> <span class="fl">0.95</span>,
-  progressbar <span class="op">=</span> <span class="cn">TRUE</span>,
-  ncores <span class="op">=</span> <span class="fl">1</span>,
-  likelihood <span class="op">=</span> <span class="st">"binomial"</span>,
-  minbins <span class="op">=</span> <span class="fl">100</span>,
-  minbinschr <span class="op">=</span> <span class="fl">10</span>,
-  maxloherror <span class="op">=</span> <span class="fl">0.03</span>,
-  filterhaplotypes <span class="op">=</span> <span class="fl">0.1</span>,
-  fillmissing <span class="op">=</span> <span class="cn">TRUE</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">callAlleleSpecificCN</span><span class="op">(</span></span>
+<span>  <span class="va">CNbins</span>,</span>
+<span>  <span class="va">haplotypes</span>,</span>
+<span>  eps <span class="op">=</span> <span class="fl">0.000000000001</span>,</span>
+<span>  loherror <span class="op">=</span> <span class="fl">0.02</span>,</span>
+<span>  maxCN <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  selftransitionprob <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  progressbar <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  ncores <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  likelihood <span class="op">=</span> <span class="st">"binomial"</span>,</span>
+<span>  minbins <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  minbinschr <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  maxloherror <span class="op">=</span> <span class="fl">0.03</span>,</span>
+<span>  filterhaplotypes <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  fillmissing <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>CNbins</dt>
 <dd><p>single cell copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`</p></dd>
+
+
 <dt>haplotypes</dt>
 <dd><p>single cell haplotypes dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `hap_label`, `allele1`, `allele0`, `totalcounts`</p></dd>
+
+
 <dt>eps</dt>
 <dd><p>default 1e-12</p></dd>
+
+
 <dt>loherror</dt>
 <dd><p>LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02</p></dd>
+
+
 <dt>maxCN</dt>
 <dd><p>maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins</p></dd>
+
+
 <dt>selftransitionprob</dt>
 <dd><p>probability to stay in the same state in the HMM, default = 0.999, set to 0.0 for an IID model</p></dd>
+
+
 <dt>progressbar</dt>
 <dd><p>Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1</p></dd>
+
+
 <dt>ncores</dt>
 <dd><p>Number of cores to use, default = 1</p></dd>
+
+
 <dt>likelihood</dt>
 <dd><p>Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.</p></dd>
+
+
 <dt>minbins</dt>
 <dd><p>Minimum number of bins containing both haplotype counts and copy number data for a cell to be included</p></dd>
+
+
 <dt>minbinschr</dt>
 <dd><p>Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included</p></dd>
+
+
 <dt>maxloherror</dt>
 <dd><p>Maximum value for LOH error rate</p></dd>
+
+
 <dt>filterhaplotypes</dt>
 <dd><p>filter out haplotypes present in less than X fraction, default is 0.1</p></dd>
+
+
 <dt>fillmissing</dt>
 <dd><p>For bins with missing counts fill in values based on neighbouring bins</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>allele specific copy number object which includes dataframe similar to input with additional columns which include
-* `Maj` (Major allele copy number)
+    
+
+<p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p>
+
+
+<p>* `Maj` (Major allele copy number)
 * `Min` (Minor allele copy number)
 * `state_AS_phased` (phased state of the form Maj|Min )
 * `state_AS` (mirrored state of the form Maj|Min)
@@ -143,7 +174,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>
