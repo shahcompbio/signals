@@ -53,13 +53,13 @@ clustering <- umap_clustering(CNbins, field = "copy")
 
 Then we can use this output in the `plotHeatmap` function. If you leave the `tree` and `clustering` options empty then `plotHeatmap` will fall back to use `umap_clustering`.
 
-```{r}
+```{r, fig.height=4 , fig.width=12}
 plotHeatmap(CNbins, tree = clustering$tree, clusters = clustering$clustering)
 ```
 
-The default is to plot the `state` column, we can change this to plot the `copy` raw data column and do a bunch of other things if we want.
+The default is to plot the `state` column, we can change this to plot the `copy` raw data column.
 
-```{r}
+```{r, fig.height=4 , fig.width=12}
 plotHeatmap(CNbins, tree = clustering$tree, clusters = clustering$clustering, show_clone_label = F, plotcol = "copy")
 ```
 
