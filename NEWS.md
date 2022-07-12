@@ -1,3 +1,7 @@
+# signals 0.7.6
+
+* Fix bug in plot_clusters_used_for_phasing
+
 # signals 0.7.5
 
 * Fixed r cmd check
