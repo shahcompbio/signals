@@ -118,13 +118,13 @@
 <span><span class="co">#&gt; Average number of segments = 79</span></span>
 <span></span>
 <span><span class="va">hscn_bb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, likelihood <span class="op">=</span> <span class="st">"betabinomial"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -313097.5422</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -309132.4926</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -308588.341</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -308563.8097</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -308563.4732</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -308563.4704</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -308563.4704</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -312965.0944</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -309019.4316</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -308469.6395</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -308443.6588</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -308443.2653</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -308443.2617</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -308443.2616</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Haplotype specific copy number object </span></span>
@@ -134,8 +134,8 @@
 <span><span class="co">#&gt; Inferred LOH error rate: 0.018 </span></span>
 <span><span class="co">#&gt; Emission model for HMM: betabinomial </span></span>
 <span><span class="co">#&gt;   Inferred over dispersion: 0.0096</span></span>
-<span><span class="co">#&gt;   Tarones Z score: 182.025</span></span>
-<span><span class="co">#&gt; Average distance from median to expected BAF = 0.0029 </span></span>
+<span><span class="co">#&gt;   Tarones Z score: 180.162</span></span>
+<span><span class="co">#&gt; Average distance from median to expected BAF = 0.0026 </span></span>
 <span><span class="co">#&gt; Average ploidy = 4 </span></span>
 <span><span class="co">#&gt; Average number of segments = 79</span></span></code></pre></div>
 <p>We see that the model inferred a modest degree of overdispersion in the data, but that this was siginificantly different from 0 dispersion (Tarones Z-score is high).</p>
@@ -168,19 +168,19 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1093750      20</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu">orderdf</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span>, <span class="fu">orderdf</span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] "Component \"alleleA\": 'is.NA' value mismatch: 17627 in current 17497 in target"    </span></span>
-<span><span class="co">#&gt;  [2] "Component \"alleleB\": 'is.NA' value mismatch: 17627 in current 17497 in target"    </span></span>
-<span><span class="co">#&gt;  [3] "Component \"totalcounts\": 'is.NA' value mismatch: 17627 in current 17497 in target"</span></span>
-<span><span class="co">#&gt;  [4] "Component \"BAF\": 'is.NA' value mismatch: 17627 in current 17497 in target"        </span></span>
-<span><span class="co">#&gt;  [5] "Component \"state_min\": Mean relative difference: 0.7254432"                       </span></span>
-<span><span class="co">#&gt;  [6] "Component \"Maj\": Mean relative difference: 0.4333216"                             </span></span>
-<span><span class="co">#&gt;  [7] "Component \"Min\": Mean relative difference: 0.5559769"                             </span></span>
-<span><span class="co">#&gt;  [8] "Component \"state_AS_phased\": 15126 string mismatches"                             </span></span>
-<span><span class="co">#&gt;  [9] "Component \"state_AS\": 5022 string mismatches"                                     </span></span>
-<span><span class="co">#&gt; [10] "Component \"LOH\": 3991 string mismatches"                                          </span></span>
-<span><span class="co">#&gt; [11] "Component \"phase\": 10826 string mismatches"                                       </span></span>
-<span><span class="co">#&gt; [12] "Component \"state_phase\": 12370 string mismatches"                                 </span></span>
-<span><span class="co">#&gt; [13] "Component \"state_BAF\": Mean relative difference: 0.7924613"</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] "Component \"alleleA\": 'is.NA' value mismatch: 17493 in current 17497 in target"    </span></span>
+<span><span class="co">#&gt;  [2] "Component \"alleleB\": 'is.NA' value mismatch: 17493 in current 17497 in target"    </span></span>
+<span><span class="co">#&gt;  [3] "Component \"totalcounts\": 'is.NA' value mismatch: 17493 in current 17497 in target"</span></span>
+<span><span class="co">#&gt;  [4] "Component \"BAF\": 'is.NA' value mismatch: 17493 in current 17497 in target"        </span></span>
+<span><span class="co">#&gt;  [5] "Component \"state_min\": Mean relative difference: 0.6041821"                       </span></span>
+<span><span class="co">#&gt;  [6] "Component \"Maj\": Mean relative difference: 0.3667391"                             </span></span>
+<span><span class="co">#&gt;  [7] "Component \"Min\": Mean relative difference: 0.502768"                              </span></span>
+<span><span class="co">#&gt;  [8] "Component \"state_AS_phased\": 8876 string mismatches"                              </span></span>
+<span><span class="co">#&gt;  [9] "Component \"state_AS\": 2610 string mismatches"                                     </span></span>
+<span><span class="co">#&gt; [10] "Component \"LOH\": 1743 string mismatches"                                          </span></span>
+<span><span class="co">#&gt; [11] "Component \"phase\": 5865 string mismatches"                                        </span></span>
+<span><span class="co">#&gt; [12] "Component \"state_phase\": 6853 string mismatches"                                  </span></span>
+<span><span class="co">#&gt; [13] "Component \"state_BAF\": Mean relative difference: 0.7051548"</span></span></code></pre></div>
 <p>Another thing we can check is the total number of segments identified by the HMM. Using the beta-binomial model should reduce the influence of any noisy regions and thus we might expect fewer segments. We do observe fewer segments in the beta-binomial model.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">segs</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, field <span class="op">=</span> <span class="st">"state_AS_phased"</span><span class="op">)</span></span>
@@ -188,9 +188,9 @@
 <span><span class="va">segs_bb</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span><span class="op">(</span><span class="va">hscn_bb</span><span class="op">$</span><span class="va">data</span>, field <span class="op">=</span> <span class="st">"state_AS_phased"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">segs</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 39249     5</span></span>
+<span><span class="co">#&gt; [1] 39160     5</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">segs_bb</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 35829     5</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 35348     5</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
