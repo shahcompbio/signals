@@ -28,15 +28,6 @@ RUN Rscript -e "BiocManager::install('ComplexHeatmap')"
 RUN Rscript -e "BiocManager::install('IRanges')"
 RUN Rscript -e "BiocManager::install('GenomicRanges')"
 
-RUN Rscript -e "library(devtools); install_github('caravagn/pio')"
-RUN Rscript -e "library(devtools); install_github('caravagn/easypar')"
-RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
-RUN Rscript -e "library(devtools); install_github('caravagnalab/VIBER')"
-RUN Rscript -e "library(devtools); install_github('VPetukhov/ggrastr')"
-RUN Rscript -e "library(devtools); install_github('shahcompbio/signals')"
-
-WORKDIR /usr/src
-
 #Samtools
 RUN wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2 && \
         tar jxf samtools-1.9.tar.bz2 && \
@@ -46,3 +37,12 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9
         make
 
 ENV PATH=${PATH}:/usr/src/samtools-1.9
+
+RUN Rscript -e "library(devtools); install_github('caravagn/pio')"
+RUN Rscript -e "library(devtools); install_github('caravagn/easypar')"
+RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
+RUN Rscript -e "library(devtools); install_github('caravagnalab/VIBER')"
+RUN Rscript -e "library(devtools); install_github('VPetukhov/ggrastr')"
+RUN Rscript -e "library(devtools); install_github('shahcompbio/signals')"
+
+WORKDIR /usr/src

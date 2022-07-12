@@ -13,7 +13,7 @@ plottinglist <- function(CNbins,
   
   binsize <- CNbins$end[1] - CNbins$start[1] + 1
   tickwidth <- (tickwidth * 1e6) / binsize
-
+  
   if (xaxis_order == "bin") {
 
     bins <- getBins(binsize = binsize) %>%
@@ -57,6 +57,11 @@ plottinglist <- function(CNbins,
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
       dplyr::mutate(idx = 1:dplyr::n())
+    
+    if(dim(bins)[1] < tickwidth){
+      #ensure width of ticks is larget than number of bins
+      tickwidth <- tickwidth / 2
+    }
 
     CNbins <- dplyr::full_join(bins, CNbins) %>%
       dplyr::filter(!is.na(copy)) %>%
