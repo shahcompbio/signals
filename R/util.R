@@ -1091,6 +1091,7 @@ add_gene_locations_to_seurat <- function(obj, ref = "hg19"){
 #' @export
 consensuscopynumber <- function(hscn, cl = NULL) {
   if (!is.null(cl)) {
+    hscn <- hscn %>% dplyr::filter(cell_id %in% cl$cell_id)
     hscn <- dplyr::left_join(hscn, cl,  by = "cell_id")
   } else {
     hscn$clone_id <- "Merged Cells"

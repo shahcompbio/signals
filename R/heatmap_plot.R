@@ -1,4 +1,5 @@
 
+
 cn_colours <- structure(
   c(
     "#3182BD", "#9ECAE1", "#CCCCCC", "#FDCC8A", "#FC8D59", "#E34A33",
@@ -638,8 +639,11 @@ make_top_annotation_gain <- function(copynumber,
   ncells <- nrow(copynumber)
 
   if ((plotcol == "state" | plotcol == "copy") & plotfrequency == TRUE) {
-    f1 <- colSums(copynumber > cutoff, na.rm = TRUE) / ncells
-    f2 <- -colSums(copynumber < cutoff, na.rm = TRUE) / ncells
+    copynumbermat <- copynumber
+    copynumbermat[copynumbermat == "11+"] <- "11"
+    copynumbermat <- sapply(copynumbermat, as.numeric)
+    f1 <- colSums(copynumbermat > cutoff, na.rm = TRUE) / ncells
+    f2 <- -colSums(copynumbermat < cutoff, na.rm = TRUE) / ncells
     if (is.null(maxf)) {
       maxf <- ceiling(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
       if (maxf < 0.01) {
@@ -1042,8 +1046,9 @@ plotHeatmap <- function(cn,
 
   ncells <- length(unique(CNbins$cell_id))
 
-  if (is.null(clusters)) {
+  if (is.null(clusters) & !is.null(tree)) {
     ordered_cell_ids <- paste0(unique(CNbins$cell_id))
+    clusters <- data.frame(cell_id = unique(CNbins$cell_id), clone_id = "0")
   } else {
     ordered_cell_ids <- paste0(clusters$cell_id)
   }

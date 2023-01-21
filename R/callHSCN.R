@@ -672,20 +672,38 @@ callHaplotypeSpecificCN <- function(CNbins,
     dplyr::summarize(totalcounts = sum(totalcounts), ncells = length(unique(cell_id))) %>% 
     dplyr::ungroup()
   
-  haplotypes <- filter_haplotypes(haplotypes, filterhaplotypes)
-  
-  nhaplotypes_filt <- haplotypes %>% 
-    dplyr::group_by(cell_id) %>% 
-    dplyr::summarize(n = sum(totalcounts)) %>% 
-    dplyr::pull(n) %>% 
-    mean(.)
-  
-  cnbaf <- combineBAFCN(
-    haplotypes = haplotypes,
-    CNbins = CNbins,
-    minbinschr = minbinschr,
-    minbins = minbins
-  )
+  if (is.null(phased_haplotypes)){
+    haplotypes <- filter_haplotypes(haplotypes, filterhaplotypes)
+    
+    nhaplotypes_filt <- haplotypes %>% 
+      dplyr::group_by(cell_id) %>% 
+      dplyr::summarize(n = sum(totalcounts)) %>% 
+      dplyr::pull(n) %>% 
+      mean(.)
+    
+    cnbaf <- combineBAFCN(
+      haplotypes = haplotypes,
+      CNbins = CNbins,
+      minbinschr = minbinschr,
+      minbins = minbins
+    )
+  } else{
+    
+    cnbaf <- combineBAFCN(
+      haplotypes = haplotypes,
+      CNbins = CNbins,
+      phased_haplotypes = phased_haplotypes,
+      minbinschr = minbinschr,
+      minbins = minbins
+    )
+    
+    nhaplotypes_filt <- cnbaf %>% 
+      dplyr::group_by(cell_id) %>% 
+      dplyr::summarize(n = sum(totalcounts)) %>% 
+      dplyr::pull(n) %>% 
+      mean(.)
+    
+  }
   
   ascn <- .callHaplotypeSpecificCN_(cnbaf,
                                     eps = eps,
@@ -697,7 +715,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     viterbiver = viterbiver
   )
   
-  if (firstpassfiltering){
+  if (firstpassfiltering & is.null(phased_haplotypes)){
     #calculate average distances between expectation and data
     ave_dist <- qc_per_cell(ascn)
     cells_to_keep <- ave_dist %>% 
@@ -773,7 +791,7 @@ callHaplotypeSpecificCN <- function(CNbins,
     dplyr::pull(n) %>% 
     mean(.)
   
-  message(paste0("Total fraction of haplotype counts retained: ", round(nhaplotypes_final / nhaplotypes, 4), " (Total counts (Millions): ", round(nhaplotypes, 3) / 1e6, ", after filtering: ", round(nhaplotypes_filt, 3) / 1e6, ", after phasing:", round(nhaplotypes_final, 3) / 1e6, ")"))
+  #message(paste0("Total fraction of haplotype counts retained: ", round(nhaplotypes_final / nhaplotypes, 4), " (Total counts (Millions): ", round(nhaplotypes, 3) / 1e6, ", after filtering: ", round(nhaplotypes_filt, 3) / 1e6, ", after phasing:", round(nhaplotypes_final, 3) / 1e6, ")"))
   
   hscn_data <- .callHaplotypeSpecificCN_(cnbaf,
                                          eps = eps,

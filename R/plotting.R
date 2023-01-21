@@ -469,7 +469,7 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
     dplyr::rename(chromosome_2 = chr, position_2 = start, copy_2 = copy) %>%
     dplyr::select(chromosome_2, position_2, copy_2)) %>%
     dplyr::mutate(copy_1 = ifelse(is.na(copy_1), 2, copy_1)) %>%
-    dplyr::mutate(copy_2 = ifelse(is.na(copy_1), 2, copy_2)) %>%
+    dplyr::mutate(copy_2 = ifelse(is.na(copy_2), 2, copy_2)) %>%
     dplyr::distinct(.) %>%
     na.omit(.) %>%
     dplyr::rename(idx_3 = idx_2, copy_3 = copy_2) %>%
@@ -698,23 +698,26 @@ plotCNprofile <- function(CNbins,
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
   }
 
-  if (!is.null(SV)) {
+  if (!is.null(SV) && nrow(SV) > 0) {
     svpl <- plottinglistSV(SV, chrfilt = chrfilt)
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    pl$CNbins <- dplyr::left_join(getBins(binsize = binsize), pl$CNbins)
     bezdf <- get_bezier_df(svpl, pl, maxCN)
     bezdf <- bezdf %>%
-      dplyr::filter((position_1 != position_2) | rearrangement_type == "foldback")
+      dplyr::mutate(samebin = (position_1 == position_2) | rearrangement_type == "foldback") %>% 
+      dplyr::mutate(rearrangement_type = CapStr(rearrangement_type))
     gCN <- gCN +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = 0.8,
         size = svwidth,
-        col = as.vector(SV_colors["Foldback"]),
-        data = bezdf %>% dplyr::filter(rearrangement_type == "foldback")
+        col = as.vector(SV_colors[bezdf$rearrangement_type[1]]),
+        data = bezdf %>% dplyr::filter(samebin == TRUE)
       ) +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = svalpha,
         size = svwidth,
         col = "grey30",
-        data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")
+        data = bezdf %>% dplyr::filter(samebin == FALSE)
       )
   }
 
