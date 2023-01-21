@@ -134,7 +134,7 @@ switch_alleles <- function(cn) {
   phase_cn <- cn %>%
     as.data.table() %>%
     .[, switch := data.table::fifelse(
-      Min > Maj,
+      B > A,
       "switch",
       "stick"
     )] %>%
@@ -182,17 +182,17 @@ switch_alleles <- function(cn) {
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
-#' * `Maj` (Major allele copy number)
-#' * `Min` (Minor allele copy number)
-#' * `state_AS_phased` (phased state of the form Maj|Min )
-#' * `state_AS` (mirrored state of the form Maj|Min)
+#' * `A` (Major allele copy number)
+#' * `B` (Minor allele copy number)
+#' * `state_AS_phased` (phased state of the form A|B )
+#' * `state_AS` (mirrored state of the form A|B)
 #' * `LOH` (is bin LOH or not)
 #' * `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
-#' * `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))
+#' * `state_BAF` (binned discretized BAF value calculated as B / (A + B))
 #' 
 #'
 #' @details
-#' In the allele specific copy number inference Maj is always > Min and state_AS_phased == state_AS
+#' In the allele specific copy number inference A is always > B and state_AS_phased == state_AS
 #'
 #' @export
 callAlleleSpecificCN <- function(CNbins,
@@ -335,45 +335,45 @@ callAlleleSpecificCN <- function(CNbins,
   alleleCN <- alleleCN %>%
     .[, Maj1 := state - state_min] %>%
     .[, Min1 := state_min] %>%
-    # catch edge cases where Min > Maj:
-    .[, Min := fifelse(Min1 > Maj1, Maj1, Min1)] %>%
-    .[, Maj := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
+    # catch edge cases where B > A:
+    .[, B := fifelse(Min1 > Maj1, Maj1, Min1)] %>%
+    .[, A := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
     .[, Maj1 := NULL] %>%
     .[, Min1 := NULL] %>%
     # catch edge cases of 0|1 and 1|0 states:
     .[, state_min := fifelse(state_min < 0, 0, state_min)] %>%
-    .[, Maj := state - state_min] %>%
-    .[, Min := state_min] %>%
-    .[, Min := fifelse(Min < 0, 0, Min)] %>%
-    .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
-    .[, Min := fifelse(Min > state, state, Min)] %>%
-    .[, Maj := fifelse(Maj > state, state, Maj)] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
+    .[, A := state - state_min] %>%
+    .[, B := state_min] %>%
+    .[, B := fifelse(B < 0, 0, B)] %>%
+    .[, A := fifelse(A < 0, 0, A)] %>%
+    .[, B := fifelse(B > state, state, B)] %>%
+    .[, A := fifelse(A > state, state, A)] %>%
+    .[, state_AS_phased := paste0(A, "|", B)] %>%
+    .[, state_AS := paste0(pmax(state - B, B), "|", pmin(state - B, B))] %>%
+    .[, state_min := pmin(A, B)] %>%
     .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
     .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
     .[, phase := c("Balanced", "A", "B")[1 +
-      1 * ((Min < Maj)) +
-      2 * ((Min > Maj))]] %>%
+      1 * ((B < A)) +
+      2 * ((B > A))]] %>%
     .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
-      1 * ((Min < Maj) & (Min != 0)) +
-      2 * ((Min > Maj) & (Maj != 0)) +
-      3 * ((Min < Maj) & (Min == 0)) +
-      4 * ((Min > Maj) & (Maj == 0))]] %>%
+      1 * ((B < A) & (B != 0)) +
+      2 * ((B > A) & (A != 0)) +
+      3 * ((B < A) & (B == 0)) +
+      4 * ((B > A) & (A == 0))]] %>%
     .[order(cell_id, chr, start)] %>%
-    .[, state_BAF := round((Min / state) / 0.1) * 0.1] %>%
+    .[, state_BAF := round((B / state) / 0.1) * 0.1] %>%
     .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
 
   # mirror BAF
   alleleCN <- alleleCN[, switch := data.table::fifelse(
-    Min > Maj,
+    B > A,
     "switch",
     "stick"
   )] %>%
     .[, alleleB := totalcounts - alleleA] %>%
-    .[, distA := abs(BAF - (Min / state))] %>%
-    .[, distB := abs(BAF - (Maj / state))] %>%
+    .[, distA := abs(BAF - (B / state))] %>%
+    .[, distB := abs(BAF - (A / state))] %>%
     .[, switch := fifelse((distB < distA) & (BAF != 0.5), "switch", "stick")] %>%
     .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
     .[, alleleB := totalcounts - alleleA] %>%
@@ -385,7 +385,7 @@ callAlleleSpecificCN <- function(CNbins,
   
   if (fillmissing){
     alleleCN <- dplyr::left_join(CNbins, alleleCN)
-    alleleCN <- tidyr::fill(alleleCN, c("state_min", "Maj", "Min", "state_phase", "state_AS", 
+    alleleCN <- tidyr::fill(alleleCN, c("state_min", "A", "B", "state_phase", "state_AS", 
                                         "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup")
   }
 
@@ -416,16 +416,16 @@ callAlleleSpecificCN <- function(CNbins,
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
-#' * `Maj` (Major allele copy number)
-#' * `Min` (Minor allele copy number)
-#' * `state_AS_phased` (phased state of the form Maj|Min )
-#' * `state_AS` (mirrored state of the form Maj|Min)
+#' * `A` (Major allele copy number)
+#' * `B` (Minor allele copy number)
+#' * `state_AS_phased` (phased state of the form A|B )
+#' * `state_AS` (mirrored state of the form A|B)
 #' * `LOH` (is bin LOH or not)
 #' * `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
-#' * `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))
+#' * `state_BAF` (binned discretized BAF value calculated as B / (A + B))
 #'
 #' @details
-#' In the allele specific copy number inference Maj is always > Min and state_AS_phased == state_AS
+#' In the allele specific copy number inference A is always > B and state_AS_phased == state_AS
 #'
 #' @export
 callAlleleSpecificCNfromHSCN <- function(hscn,
@@ -504,47 +504,47 @@ callAlleleSpecificCNfromHSCN <- function(hscn,
   alleleCN <- alleleCN %>%
     .[, Maj1 := state - state_min] %>%
     .[, Min1 := state_min] %>%
-    # catch edge cases where Min > Maj:
-    .[, Min := fifelse(Min1 > Maj1, Maj1, Min1)] %>%
-    .[, Maj := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
+    # catch edge cases where B > A:
+    .[, B := fifelse(Min1 > Maj1, Maj1, Min1)] %>%
+    .[, A := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
     .[, Maj1 := NULL] %>%
     .[, Min1 := NULL] %>%
     # catch edge cases of 0|1 and 1|0 states:
-    .[, state_min := Min] %>% 
+    .[, state_min := B] %>% 
     .[, state_min := fifelse(state_min < 0, 0, state_min)] %>%
-    .[, Maj := state - state_min] %>%
-    .[, Min := state_min] %>%
-    .[, Min := fifelse(Min < 0, 0, Min)] %>%
-    .[, Maj := fifelse(Maj < 0, 0, Maj)] %>%
-    .[, Min := fifelse(Min > state, state, Min)] %>%
-    .[, Maj := fifelse(Maj > state, state, Maj)] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
+    .[, A := state - state_min] %>%
+    .[, B := state_min] %>%
+    .[, B := fifelse(B < 0, 0, B)] %>%
+    .[, A := fifelse(A < 0, 0, A)] %>%
+    .[, B := fifelse(B > state, state, B)] %>%
+    .[, A := fifelse(A > state, state, A)] %>%
+    .[, state_AS_phased := paste0(A, "|", B)] %>%
+    .[, state_AS := paste0(pmax(state - B, B), "|", pmin(state - B, B))] %>%
+    .[, state_min := pmin(A, B)] %>%
     .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
     .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
     .[, phase := c("Balanced", "A", "B")[1 +
-                                           1 * ((Min < Maj)) +
-                                           2 * ((Min > Maj))]] %>%
+                                           1 * ((B < A)) +
+                                           2 * ((B > A))]] %>%
     .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
-                                                                                 1 * ((Min < Maj) & (Min != 0)) +
-                                                                                 2 * ((Min > Maj) & (Maj != 0)) +
-                                                                                 3 * ((Min < Maj) & (Min == 0)) +
-                                                                                 4 * ((Min > Maj) & (Maj == 0))]] %>%
+                                                                                 1 * ((B < A) & (B != 0)) +
+                                                                                 2 * ((B > A) & (A != 0)) +
+                                                                                 3 * ((B < A) & (B == 0)) +
+                                                                                 4 * ((B > A) & (A == 0))]] %>%
     .[order(cell_id, chr, start)] %>%
-    .[, state_BAF := round((Min / state) / 0.1) * 0.1] %>%
+    .[, state_BAF := round((B / state) / 0.1) * 0.1] %>%
     .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
   
   # mirror BAF
   alleleCN <- alleleCN[, switch := data.table::fifelse(
-    Min > Maj,
+    B > A,
     "switch",
     "stick"
   )] %>%
     .[, alleleB := totalcounts - alleleA] %>%
     .[, origBAF := BAF] %>% 
-    .[, distA := abs(BAF - (Min / state))] %>%
-    .[, distB := abs(BAF - (Maj / state))] %>%
+    .[, distA := abs(BAF - (B / state))] %>%
+    .[, distB := abs(BAF - (A / state))] %>%
     .[, switch := fifelse((distB < distA) & (BAF != 0.5), "switch", "stick")] %>%
     .[, alleleA := data.table::fifelse(switch == "switch", alleleB, alleleA)] %>%
     .[, alleleB := totalcounts - alleleA] %>%
@@ -555,7 +555,7 @@ callAlleleSpecificCNfromHSCN <- function(hscn,
   
   if (fillmissing){
     alleleCN <- dplyr::left_join(CNbins, alleleCN)
-    alleleCN <- tidyr::fill(alleleCN, c("state_min", "Maj", "Min", "state_phase", "state_AS", 
+    alleleCN <- tidyr::fill(alleleCN, c("state_min", "A", "B", "state_phase", "state_AS", 
                                           "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup")
   }
   

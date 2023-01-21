@@ -315,14 +315,14 @@ widen_bins <- function(CNbins,
       .[, .(
         state = as.double(round(median(state, na.rm = TRUE))),
         copy = as.double(median(copy, na.rm = TRUE)),
-        Maj = as.double(floor(median(Maj))),
+        A = as.double(floor(median(A))),
         alleleA = sum(alleleA),
         alleleB = sum(alleleB),
         totalcounts = sum(totalcounts)
       ), by = .(chr, start, end, cell_id)] %>%
       .[, BAF := alleleB / totalcounts] %>%
-      .[, Min := state - Maj] %>%
-      dplyr::select(cell_id, chr, start, end, state, copy, Min, Maj, dplyr::everything()) %>%
+      .[, B := state - A] %>%
+      dplyr::select(cell_id, chr, start, end, state, copy, B, A, dplyr::everything()) %>%
       add_states()
   } else {
     widerCNbins <- data.table::as.data.table(CNbinstemp_g[S4Vectors::queryHits(overlaps)]) %>%
@@ -514,12 +514,12 @@ qc_summary <- function(cn) {
 
   distance_df <- cn %>%
     dplyr::filter(state_AS_phased != "0|0") %>%
-    dplyr::group_by(state_AS_phased, Min, Maj) %>%
+    dplyr::group_by(state_AS_phased, B, A) %>%
     dplyr::mutate(n = dplyr::n()) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(frac = n / dplyr::n()) %>%
     dplyr::filter(n > 10) %>%
-    dplyr::group_by(state_AS_phased, Min, Maj, n, frac) %>%
+    dplyr::group_by(state_AS_phased, B, A, n, frac) %>%
     dplyr::summarise(
       medianBAF = median(BAF, na.rm = TRUE),
       meanBAF = mean(BAF, na.rm = TRUE),
@@ -528,7 +528,7 @@ qc_summary <- function(cn) {
       low95 = quantile(BAF, 0.025, na.rm = TRUE)
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::mutate(expBAF = Min / (Min + Maj)) %>%
+    dplyr::mutate(expBAF = B / (B + A)) %>%
     dplyr::mutate(distance = sqrt((expBAF - medianBAF)^2)) %>%
     as.data.frame()
 
@@ -550,12 +550,12 @@ qc_per_cell <- function(cn){
   
   qc <- cn %>%
     dplyr::filter(state_AS_phased != "0|0") %>%
-    dplyr::group_by(state_AS_phased, Min, Maj, cell_id) %>%
+    dplyr::group_by(state_AS_phased, B, A, cell_id) %>%
     dplyr::mutate(n = dplyr::n()) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(frac = n / dplyr::n()) %>%
     dplyr::filter(n > 10) %>%
-    dplyr::group_by(state_AS_phased, Min, Maj, n, frac, cell_id) %>%
+    dplyr::group_by(state_AS_phased, B, A, n, frac, cell_id) %>%
     dplyr::summarise(
       medianBAF = median(BAF, na.rm = TRUE),
       meanBAF = mean(BAF, na.rm = TRUE),
@@ -564,7 +564,7 @@ qc_per_cell <- function(cn){
       low95 = quantile(BAF, 0.025, na.rm = TRUE)
     ) %>%
     dplyr::ungroup() %>%
-    dplyr::mutate(expBAF = Min / (Min + Maj)) %>%
+    dplyr::mutate(expBAF = B / (B + A)) %>%
     dplyr::mutate(distance = sqrt((expBAF - medianBAF)^2)) %>%
     dplyr::group_by(cell_id) %>% 
     dplyr::summarize(average_distance = weighted.mean(distance, frac)) %>% 
@@ -834,7 +834,7 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
         .[, list(
           state = as.double(round(median(state, na.rm = TRUE))),
           copy = as.double(median(copy, na.rm = TRUE)),
-          Maj = as.double(floor(median(Maj))),
+          A = as.double(floor(median(A))),
           alleleA = sum(alleleA),
           alleleB = sum(alleleB),
           totalcounts = sum(totalcounts),
@@ -842,7 +842,7 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
           proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N
         ), by = c("chr", "arm", "chrarm", "cell_id")] %>%
         .[, BAF := alleleB / totalcounts] %>%
-        .[, Min := state - Maj]
+        .[, B := state - A]
     } else {
       hscn_arm <- hscn %>%
         dplyr::filter(chr != "Y") %>%
@@ -854,7 +854,7 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
         .[, list(
           state = as.double(round(median(state, na.rm = TRUE))),
           copy = as.double(median(copy, na.rm = TRUE)),
-          Maj = as.double(floor(median(Maj))),
+          A = as.double(floor(median(A))),
           alleleA = sum(alleleA),
           alleleB = sum(alleleB),
           totalcounts = sum(totalcounts),
@@ -862,7 +862,7 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
           proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N
         ), by = c("chr", "arm", "chrarm", "cell_id")] %>%
         .[, BAF := alleleB / totalcounts] %>%
-        .[, Min := state - Maj]
+        .[, B := state - A]
     }
   
     hscn_arm <- hscn_arm %>%
@@ -919,7 +919,7 @@ per_chr_cn <- function(hscn, arms = NULL) {
       .[, list(
         state = as.double(round(median(state, na.rm = TRUE))),
         copy = as.double(median(copy, na.rm = TRUE)),
-        Maj = as.double(floor(median(Maj))),
+        A = as.double(floor(median(A))),
         alleleA = sum(alleleA),
         alleleB = sum(alleleB),
         totalcounts = sum(totalcounts),
@@ -927,7 +927,7 @@ per_chr_cn <- function(hscn, arms = NULL) {
         proportion = sum(state_AS_phased == Mode(state_AS_phased)) / .N
       ), by = c("chr", "cell_id")] %>%
       .[, BAF := alleleB / totalcounts] %>%
-      .[, Min := state - Maj] %>%
+      .[, B := state - A] %>%
       add_states() %>%
       dplyr::left_join(hg19chrom_coordinates %>% dplyr::filter(arm == "")) %>%
       dplyr::mutate(state = ifelse(state > 11, 11, state))
@@ -951,20 +951,20 @@ per_chr_cn <- function(hscn, arms = NULL) {
 #' @export
 add_states <- function(df) {
   df <- df %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
+    .[, state_AS_phased := paste0(A, "|", B)] %>%
+    .[, state_AS := paste0(pmax(state - B, B), "|", pmin(state - B, B))] %>%
+    .[, state_min := pmin(A, B)] %>%
     .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
     .[, LOH := ifelse(state_min == 0, "LOH", "NO")] %>%
     .[, phase := c("Balanced", "A", "B")[1 +
-      1 * ((Min < Maj)) +
-      2 * ((Min > Maj))]] %>%
+      1 * ((B < A)) +
+      2 * ((B > A))]] %>%
     .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
-      1 * ((Min < Maj) & (Min != 0)) +
-      2 * ((Min > Maj) & (Maj != 0)) +
-      3 * ((Min < Maj) & (Min == 0)) +
-      4 * ((Min > Maj) & (Maj == 0))]] %>%
-    .[, state_BAF := round((Min / state) / 0.1) * 0.1] %>%
+      1 * ((B < A) & (B != 0)) +
+      2 * ((B > A) & (A != 0)) +
+      3 * ((B < A) & (B == 0)) +
+      4 * ((B > A) & (A == 0))]] %>%
+    .[, state_BAF := round((B / state) / 0.1) * 0.1] %>%
     .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)]
   return(df)
 }
@@ -1103,16 +1103,16 @@ consensuscopynumber <- function(hscn, cl = NULL) {
       .[, .(
         state = as.double(round(median(state, na.rm = TRUE))),
         copy = as.double(median(copy, na.rm = TRUE)),
-        Maj = as.double(floor(median(Maj, na.rm = TRUE))),
+        A = as.double(floor(median(A, na.rm = TRUE))),
         alleleA = sum(alleleA, na.rm = TRUE),
         alleleB = sum(alleleB, na.rm = TRUE),
         totalcounts = sum(totalcounts, na.rm = TRUE),
         BAF = median(BAF, na.rm = TRUE)
       ), by = .(chr, start, end, clone_id)] %>%
-      .[, Maj := ifelse(Maj > state, state, Maj)] %>% 
-      .[, Min := state - Maj] %>%
+      .[, A := ifelse(A > state, state, A)] %>% 
+      .[, B := state - A] %>%
       add_states() %>%
-      dplyr::select(clone_id, chr, start, end, state, copy, Min, Maj, dplyr::everything()) %>%
+      dplyr::select(clone_id, chr, start, end, state, copy, B, A, dplyr::everything()) %>%
       dplyr::rename(cell_id = clone_id) %>%
       as.data.frame(.)
   } else {
@@ -1159,8 +1159,8 @@ BAFdistance <- function(cn) {
 
   celldist <- cn %>%
     as.data.table() %>%
-    .[, dist := sqrt((BAF - (Min / state))^2)] %>%
-    .[, dist := BAF - (Min / state)] %>%
+    .[, dist := sqrt((BAF - (B / state))^2)] %>%
+    .[, dist := BAF - (B / state)] %>%
     .[, list(BAF_distance = mean(dist, na.rm = T)), by = c("cell_id", "chr")]
 
   return(celldist)
