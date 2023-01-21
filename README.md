@@ -10,7 +10,7 @@
 
 signals (single cell genomes with allele specificity) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (0.01-0.1X). signals phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model.  Documentation is available [here](https://shahcompbio.github.io/signals/).
 
-You can read more about signals in our [preprint](https://www.biorxiv.org/content/10.1101/2021.06.04.447031v1).
+You can read more about signals in our [paper](https://www.nature.com/articles/s41586-022-05249-0).
 
 ## Installation
 
