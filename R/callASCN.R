@@ -182,14 +182,17 @@ switch_alleles <- function(cn) {
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
-#' * `A` (Major allele copy number)
-#' * `B` (Minor allele copy number)
-#' * `state_AS_phased` (phased state of the form A|B )
-#' * `state_AS` (mirrored state of the form A|B)
-#' * `LOH` (is bin LOH or not)
-#' * `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
-#' * `state_BAF` (binned discretized BAF value calculated as B / (A + B))
-#' 
+#' * `A` A allele copy number
+#' * `B` B allele copy number
+#' * `state_AS_phased` A|B
+#' * `state_min` Minor allele copy number
+#' * `LOH` =LOH if bin is LOH, NO otherwise
+#' * `state_phase` Discretized haplotype specific states 
+#' * `phase` Whether the A allele or B allele is dominant
+#' * `alleleA` Counts for the A allele
+#' * `alleleB` Counts for the B allele
+#' * `totalcounts` Total number of counts
+#' * `BAF` B-allele frequency (alleleB / totalcounts)
 #'
 #' @details
 #' In the allele specific copy number inference A is always > B and state_AS_phased == state_AS
@@ -333,13 +336,13 @@ callAlleleSpecificCN <- function(CNbins,
   }
 
   alleleCN <- alleleCN %>%
-    .[, Maj1 := state - state_min] %>%
-    .[, Min1 := state_min] %>%
+    .[, A1 := state - state_min] %>%
+    .[, B1 := state_min] %>%
     # catch edge cases where B > A:
-    .[, B := fifelse(Min1 > Maj1, Maj1, Min1)] %>%
-    .[, A := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
-    .[, Maj1 := NULL] %>%
-    .[, Min1 := NULL] %>%
+    .[, B := fifelse(B1 > A1, A1, B1)] %>%
+    .[, A := fifelse(B1 > A1, B1, A1)] %>%
+    .[, A1 := NULL] %>%
+    .[, B1 := NULL] %>%
     # catch edge cases of 0|1 and 1|0 states:
     .[, state_min := fifelse(state_min < 0, 0, state_min)] %>%
     .[, A := state - state_min] %>%
@@ -502,13 +505,13 @@ callAlleleSpecificCNfromHSCN <- function(hscn,
   }
   
   alleleCN <- alleleCN %>%
-    .[, Maj1 := state - state_min] %>%
-    .[, Min1 := state_min] %>%
+    .[, A1 := state - state_min] %>%
+    .[, B1 := state_min] %>%
     # catch edge cases where B > A:
-    .[, B := fifelse(Min1 > Maj1, Maj1, Min1)] %>%
-    .[, A := fifelse(Min1 > Maj1, Min1, Maj1)] %>%
-    .[, Maj1 := NULL] %>%
-    .[, Min1 := NULL] %>%
+    .[, B := fifelse(B1 > A1, A1, B1)] %>%
+    .[, A := fifelse(B1 > A1, B1, A1)] %>%
+    .[, A1 := NULL] %>%
+    .[, B1 := NULL] %>%
     # catch edge cases of 0|1 and 1|0 states:
     .[, state_min := B] %>% 
     .[, state_min := fifelse(state_min < 0, 0, state_min)] %>%

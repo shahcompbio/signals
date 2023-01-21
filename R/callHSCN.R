@@ -593,14 +593,18 @@ filter_haplotypes <- function(haplotypes, fraction){
 #'
 #' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
 #'
-#' * `A` (Aor allele copy number)
-#' * `B` (Bor allele copy number)
-#' * `state_AS_phased` (phased state of the form A|B )
-#' * `state_AS` (mirrored state of the form A|B)
-#' * `LOH` (is bin LOH or not)
-#' * `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
-#' * `state_BAF` (binned discretized BAF value calculated as B / (A + B))
-#'
+#' * `A` A allele copy number
+#' * `B` B allele copy number
+#' * `state_AS_phased` A|B
+#' * `state_min` Minor allele copy number
+#' * `LOH` =LOH if bin is LOH, NO otherwise
+#' * `state_phase` Discretized haplotype specific states 
+#' * `phase` Whether the A allele or B allele is dominant
+#' * `alleleA` Counts for the A allele
+#' * `alleleB` Counts for the B allele
+#' * `totalcounts` Total number of counts
+#' * `BAF` B-allele frequency (alleleB / totalcounts)
+#' 
 #' @examples
 #' sim_data <- simulate_data_cohort(
 #'   clone_num = c(20, 20),
