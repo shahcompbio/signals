@@ -80,7 +80,8 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Allele Specific Copy Number Inference in scRNAseq</h1>
+      <h1 data-toc-skip>Allele Specific Copy Number Inference in
+scRNAseq</h1>
             
       
       
@@ -99,20 +100,34 @@
 <div class="section level2">
 <h2 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
 </h2>
-<p>This vignette illustrates how to perform allele specific copy number inference in scRNAseq data. scRNAseq data is much more sparse than scDNAseq, so we perform inference on a chromosome arm basis by merging counts across segments or chromosome arms.</p>
+<p>This vignette illustrates how to perform allele specific copy number
+inference in scRNAseq data. scRNAseq data is much more sparse than
+scDNAseq, so we perform inference on a chromosome arm basis by merging
+counts across segments or chromosome arms.</p>
 </div>
 <div class="section level2">
 <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a>
 </h2>
-<p>The data needed to perform the allele specific copy number inference are SNP calls of heterozygous positions in individual single cells. Ideally haplotype block calling should also be performed, so that each allele in each cell can be assigned to a haplotype block. To get this data you will ideally need a whole genome sequenced bulk sample of normal tissue to identify heterozygous SNPs and then you can use a tool such as cellSNP or vartrix to get per cell counts. An example dataset from ~814 cells is included here. For this dataset we also have paired scDNAseq, where we have called HSCN using <code>signals</code>.</p>
+<p>The data needed to perform the allele specific copy number inference
+are SNP calls of heterozygous positions in individual single cells.
+Ideally haplotype block calling should also be performed, so that each
+allele in each cell can be assigned to a haplotype block. To get this
+data you will ideally need a whole genome sequenced bulk sample of
+normal tissue to identify heterozygous SNPs and then you can use a tool
+such as cellSNP or vartrix to get per cell counts. An example dataset
+from ~814 cells is included here. For this dataset we also have paired
+scDNAseq, where we have called HSCN using <code>signals</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes_rna"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="scdna">scDNA<a class="anchor" aria-label="anchor" href="#scdna"></a>
 </h2>
-<p>We can use information from scDNAseq to phase the SNPs in scRNAseq. To do this we’ll first compute haplotype specific copy number in scDNAseq and use this phasing information in the scRNAseq.</p>
-<p>It’s also possible to perform this phasing just based on scRNAseq, but in general it will be less accurate.</p>
+<p>We can use information from scDNAseq to phase the SNPs in scRNAseq.
+To do this we’ll first compute haplotype specific copy number in
+scDNAseq and use this phasing information in the scRNAseq.</p>
+<p>It’s also possible to perform this phasing just based on scRNAseq,
+but in general it will be less accurate.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span>
@@ -122,33 +137,64 @@
 <div class="section level2">
 <h2 id="ascn-inference">ASCN inference<a class="anchor" aria-label="anchor" href="#ascn-inference"></a>
 </h2>
-<p>The first step is to format this dataframe. This will phase the haplotypes across all the cells and add additional columns such as the B-Allele Frequency. Our scDNAseq includes information on the phasing of haplotype blocks which we’ll use as input.</p>
+<p>The first step is to format this dataframe. This will phase the
+haplotypes across all the cells and add additional columns such as the
+B-Allele Frequency. Our scDNAseq includes information on the phasing of
+haplotype blocks which we’ll use as input.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes_rna"</span><span class="op">)</span></span>
 <span><span class="va">haplotypes_rna</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_rna</span><span class="op">(</span><span class="va">haplotypes_rna</span>, </span>
 <span>                                    phased_haplotypes <span class="op">=</span> <span class="va">hscn</span><span class="op">$</span><span class="va">haplotype_phasing</span><span class="op">)</span></span></code></pre></div>
-<p>As a first look at the data we can calculate the BAF per arm in each cell and plot these distributions using <code>per_chr_baf_plot</code>. Notice on this dataset that the BAFs in chromosomes <code>3p</code>, <code>2p</code>, and <code>17</code> in almost all cells are very left skewed towards 0 suggesting clonal LOH events in these chromosomes. We can also see other chromosome arms such as 4p and 2q that have multimodal distributions, suggesting different clusters of cells.</p>
+<p>As a first look at the data we can calculate the BAF per arm in each
+cell and plot these distributions using <code>per_chr_baf_plot</code>.
+Notice on this dataset that the BAFs in chromosomes <code>3p</code>,
+<code>2p</code>, and <code>17</code> in almost all cells are very left
+skewed towards 0 suggesting clonal LOH events in these chromosomes. We
+can also see other chromosome arms such as 4p and 2q that have
+multimodal distributions, suggesting different clusters of cells.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">per_chr_baf_plot</span><span class="op">(</span><span class="va">haplotypes_rna</span><span class="op">$</span><span class="va">block_counts</span>, perarm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-5-1.png" width="576"></p>
-<p>For comparison we can plot a similar distribution from our scDNAseq dataset. Here we notice similar trends but note that data from the scRNAseq is much more dispersed due to the lower number of counts per cell. scRNAseq will have 1-2 orders of magnitude lower reads so our ability to identify SNPs is reduced.</p>
+<p>For comparison we can plot a similar distribution from our scDNAseq
+dataset. Here we notice similar trends but note that data from the
+scRNAseq is much more dispersed due to the lower number of counts per
+cell. scRNAseq will have 1-2 orders of magnitude lower reads so our
+ability to identify SNPs is reduced.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">per_chr_baf_plot</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, perarm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-6-1.png" width="576"></p>
-<p>We can also plot heatmaps of the 2 modalities as shown below, rows are clustered by hierarchical clustering.</p>
+<p>We can also plot heatmaps of the 2 modalities as shown below, rows
+are clustered by hierarchical clustering.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plotHeatmapBAF</span><span class="op">(</span><span class="va">haplotypes_rna</span><span class="op">$</span><span class="va">block_counts</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-7-1.png" width="672"></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plotHeatmapBAF</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-8-1.png" width="672"></p>
-<p>We’ll now move on to inferring the allele specific copy number in the scRNAseq. Rather than use chromosome arms, we first use the single cell DNA sequencing data to identify segments that have different allele specific copy number. We compute consensus copy number across all cells, identify segments where the allele specific copy number phased state is consistent and then finally merge any segments that are smaller than 10Mb.</p>
+<p>We’ll now move on to inferring the allele specific copy number in the
+scRNAseq. Rather than use chromosome arms, we first use the single cell
+DNA sequencing data to identify segments that have different allele
+specific copy number. We compute consensus copy number across all cells,
+identify segments where the allele specific copy number phased state is
+consistent and then finally merge any segments that are smaller than
+10Mb.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">consensus</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="va">segments</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span><span class="op">(</span><span class="va">consensus</span>, field <span class="op">=</span> <span class="st">"state_phase"</span><span class="op">)</span></span>
 <span><span class="va">segments</span> <span class="op">&lt;-</span> <span class="fu">filter_segments</span><span class="op">(</span><span class="va">segments</span>, binwidth <span class="op">=</span> <span class="fl">10e6</span><span class="op">)</span></span></code></pre></div>
-<p>Note, that if you have some other ways to obtain segments such as bulk whole genome sequencing then that would also work. The <code>segments</code> data frame needs to have the columns <code>chr</code>, <code>start</code> and <code>end</code>. Alternatively, if you don’t have any data that can be used to identify segments a priori you can just use chromosome arms as the segmentation. To do this just leave the segments option in any of the following function empty and the functions will revert to the default of using chromosome arms.</p>
-<p>Our inference scheme is based on using dirichilet process clustering using <a href="https://github.com/caravagn/VIBER" class="external-link">Viber</a> to cluster cells that share similar BAF distributions across segments. We first compute BAF frequencies across each segment in each cell.</p>
+<p>Note, that if you have some other ways to obtain segments such as
+bulk whole genome sequencing then that would also work. The
+<code>segments</code> data frame needs to have the columns
+<code>chr</code>, <code>start</code> and <code>end</code>.
+Alternatively, if you don’t have any data that can be used to identify
+segments a priori you can just use chromosome arms as the segmentation.
+To do this just leave the segments option in any of the following
+function empty and the functions will revert to the default of using
+chromosome arms.</p>
+<p>Our inference scheme is based on using dirichilet process clustering
+using <a href="https://github.com/caravagn/VIBER" class="external-link">Viber</a> to cluster
+cells that share similar BAF distributions across segments. We first
+compute BAF frequencies across each segment in each cell.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">haplotypes_per_segment</span> <span class="op">&lt;-</span> <span class="fu">per_segment_baf_mat</span><span class="op">(</span><span class="va">haplotypes_rna</span><span class="op">$</span><span class="va">block_counts</span>, segments <span class="op">=</span> <span class="va">segments</span><span class="op">)</span></span>
 <span></span>
@@ -162,14 +208,18 @@
 <span><span class="co">#&gt; Number of cells: 814</span></span>
 <span><span class="co">#&gt; Number of clusters: 2</span></span>
 <span><span class="co">#&gt; Chromosomes used for clustering:</span></span></code></pre></div>
-<p>Here, we found 2 clusters. We can visualize the separation of clusters using a similar plot to before. Setting <code>lableclones = TRUE</code> will colour each cell by their clone assignment.</p>
+<p>Here, we found 2 clusters. We can visualize the separation of
+clusters using a similar plot to before. Setting
+<code>lableclones = TRUE</code> will colour each cell by their clone
+assignment.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">per_segment_baf_plot</span><span class="op">(</span><span class="va">ascn_rna_dp</span><span class="op">$</span><span class="va">hscn</span>, labelclones <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-11-1.png" width="576"></p>
 <div class="section level3">
 <h3 id="heatmap">Heatmap<a class="anchor" aria-label="anchor" href="#heatmap"></a>
 </h3>
-<p>Finally we can plot heatmaps of the resulting outputs. Firstly using the scRNA.</p>
+<p>Finally we can plot heatmaps of the resulting outputs. Firstly using
+the scRNA.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bins</span> <span class="op">&lt;-</span> <span class="fu">segments_to_bins</span><span class="op">(</span><span class="va">ascn_rna_dp</span><span class="op">$</span><span class="va">hscn</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -183,7 +233,12 @@
 <span>            show_clone_label <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>            show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-13-1.png" width="816"></p>
-<p>We can also do this for the scDNAseq data. For more straightforward comparison we’ll perform the dirichlet process arm level inference as we do for the scRNAseq. We can see that the scRNAseq has much lower resolution that scDNAseq, but we are still able to recover the events shared across all cells and clones that are at a reasonably high frequency.</p>
+<p>We can also do this for the scDNAseq data. For more straightforward
+comparison we’ll perform the dirichlet process arm level inference as we
+do for the scRNAseq. We can see that the scRNAseq has much lower
+resolution that scDNAseq, but we are still able to recover the events
+shared across all cells and clones that are at a reasonably high
+frequency.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hscn_dna_segment</span> <span class="op">&lt;-</span> <span class="fu">per_segment_baf_mat</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, <span class="va">segments</span><span class="op">)</span></span>
 <span><span class="va">ascn_dna_dp</span> <span class="op">&lt;-</span> <span class="fu">assign_states_dp</span><span class="op">(</span><span class="va">hscn_dna_segment</span><span class="op">$</span><span class="va">bafpersegment</span><span class="op">)</span></span>
@@ -207,7 +262,9 @@
 <div class="section level2">
 <h2 id="integration-with-seurat">Integration with Seurat<a class="anchor" aria-label="anchor" href="#integration-with-seurat"></a>
 </h2>
-<p>We can also integrate this inference with Seurat. We’ll first load a gene expression counts matrix and then run the standard Seurat pipeline,</p>
+<p>We can also integrate this inference with Seurat. We’ll first load a
+gene expression counts matrix and then run the standard Seurat
+pipeline,</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"countsmatrix"</span><span class="op">)</span></span>
 <span></span>
@@ -229,10 +286,14 @@
 <span><span class="co">#&gt; Number of communities: 7</span></span>
 <span><span class="co">#&gt; Elapsed time: 0 seconds</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunUMAP.html" class="external-link">RunUMAP</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">x</span>,  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>, reduction <span class="op">=</span> <span class="st">"pca"</span><span class="op">)</span></span></code></pre></div>
-<p>Then we can use <code>createBAFassay</code> to add a <code>BAF</code> assay and add <code>clone_id</code> to the metadata.</p>
+<p>Then we can use <code>createBAFassay</code> to add a <code>BAF</code>
+assay and add <code>clone_id</code> to the metadata.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">createBAFassay</span><span class="op">(</span><span class="va">x</span>, <span class="va">ascn_rna_dp</span>, <span class="st">"hg19"</span><span class="op">)</span></span></code></pre></div>
-<p>This means all the Seurat functionality is available to analyse the allele specific copy number. For example we can plot low dimensional embeddings of BAF values per cell per chromosome or coloured by clone as shown below.</p>
+<p>This means all the Seurat functionality is available to analyse the
+allele specific copy number. For example we can plot low dimensional
+embeddings of BAF values per cell per chromosome or coloured by clone as
+shown below.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">x</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-17-1.png" width="700"></p>
@@ -275,7 +336,10 @@
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/VlnPlot.html" class="external-link">VlnPlot</a></span><span class="op">(</span><span class="va">x</span>,<span class="st">"BAF-2-99000001-225500000"</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ylab</a></span><span class="op">(</span><span class="st">"BAF"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-21-1.png" width="700"></p>
-<p>We can also pull out the allelic imbalance in individual genes. Let’s look at some genes on 4p, where one group of cells is homozygous. Most genes have very few counts, so we’ll pull out genes with a large number of genotyped SNPs to take a look at.</p>
+<p>We can also pull out the allelic imbalance in individual genes. Let’s
+look at some genes on 4p, where one group of cells is homozygous. Most
+genes have very few counts, so we’ll pull out genes with a large number
+of genotyped SNPs to take a look at.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># chr4pgenes &lt;- x[["gBAF"]]@meta.features %&gt;% filter(arm == "4p") %&gt;% </span></span>
 <span><span class="co">#   arrange(desc(totalsnpcounts))</span></span>
@@ -288,7 +352,17 @@
 <span><span class="co">#   DimPlot(x, group.by = "DP_cloneid"),</span></span>
 <span><span class="co">#   VlnPlot(x, paste0("BAF-", mygene), group.by = "DP_cloneid") + ylab("BAF"))</span></span>
 <span>  </span></code></pre></div>
-<p>Note that even in this example where we have been able to identify lots of SNP counts in this gene, most individual cells will still have very few counts. This explains why in cluster C2, the violin plot shows that there are lots of cells with BAF of 0.0 or 1.0, suggesting these cells are homozygous. This however is likely just because the number of counts is very small, even for a heterozygous SNP we’re very likely to see cells where we have only sampled the reference or the alternate allele. The key here, is that in cluster C1 we <em>only</em> see cells with BAF = 0.0 which is unlikely to be down to sampling alone. In contrast in C2 we see cells across a range of BAF, consistent with expression of of both alleles + random sampling.</p>
+<p>Note that even in this example where we have been able to identify
+lots of SNP counts in this gene, most individual cells will still have
+very few counts. This explains why in cluster C2, the violin plot shows
+that there are lots of cells with BAF of 0.0 or 1.0, suggesting these
+cells are homozygous. This however is likely just because the number of
+counts is very small, even for a heterozygous SNP we’re very likely to
+see cells where we have only sampled the reference or the alternate
+allele. The key here, is that in cluster C1 we <em>only</em> see cells
+with BAF = 0.0 which is unlikely to be down to sampling alone. In
+contrast in C2 we see cells across a range of BAF, consistent with
+expression of of both alleles + random sampling.</p>
 </div>
   </div>
 
@@ -309,7 +383,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

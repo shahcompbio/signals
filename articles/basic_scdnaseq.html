@@ -95,12 +95,25 @@
 <div class="section level2">
 <h2 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
 </h2>
-<p>Although this package was put together to infer allele or haplotype specific copy number in scDNAseq data, it has a lot of methods for visualization and analysis that should be useful for any type of scDNAseq data, including when you only have total copy number calls. Here we’ll go through the available plotting functions and various utilities to summarize the data.</p>
+<p>Although this package was put together to infer allele or haplotype
+specific copy number in scDNAseq data, it has a lot of methods for
+visualization and analysis that should be useful for any type of
+scDNAseq data, including when you only have total copy number calls.
+Here we’ll go through the available plotting functions and various
+utilities to summarize the data.</p>
 </div>
 <div class="section level2">
 <h2 id="data-input">Data input<a class="anchor" aria-label="anchor" href="#data-input"></a>
 </h2>
-<p>The main requirement is a dataframe with the following columns: <code>chr</code>, <code>start</code>, <code>end</code>, <code>cell_id</code>, <code>state</code>, <code>copy</code>. state is the inferred total copy number state. copy values are GC-correceted, ploidy corrected normalized read counts that would be used to infer the states. This may difer depending on the tool you use. We provide some example data (<code>CNbins</code>) with this package. Most functions will work with either this kind of dataframe or a <code>signals</code> object, here we’ll just use the <code>CNbins</code> dataframe.</p>
+<p>The main requirement is a dataframe with the following columns:
+<code>chr</code>, <code>start</code>, <code>end</code>,
+<code>cell_id</code>, <code>state</code>, <code>copy</code>. state is
+the inferred total copy number state. copy values are GC-correceted,
+ploidy corrected normalized read counts that would be used to infer the
+states. This may difer depending on the tool you use. We provide some
+example data (<code>CNbins</code>) with this package. Most functions
+will work with either this kind of dataframe or a <code>signals</code>
+object, here we’ll just use the <code>CNbins</code> dataframe.</p>
 </div>
 <div class="section level2">
 <h2 id="plotting">Plotting<a class="anchor" aria-label="anchor" href="#plotting"></a>
@@ -108,26 +121,36 @@
 <div class="section level3">
 <h3 id="single-cell-profiles">Single cell profiles<a class="anchor" aria-label="anchor" href="#single-cell-profiles"></a>
 </h3>
-<p>The first thing we can do is plot single cell copy number profiles.</p>
+<p>The first thing we can do is plot single cell copy number
+profiles.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCNprofile.html">plotCNprofile</a></span><span class="op">(</span><span class="va">CNbins</span>, cellid <span class="op">=</span> <span class="st">"SA921-A90554A-R03-C44"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
-<p>These can tweaked in various ways, including modifying the y-axis, only plotting certain chromosomes or changing the point size etc:</p>
+<p>These can tweaked in various ways, including modifying the y-axis,
+only plotting certain chromosomes or changing the point size etc:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCNprofile.html">plotCNprofile</a></span><span class="op">(</span><span class="va">CNbins</span>, cellid <span class="op">=</span> <span class="st">"SA921-A90554A-R03-C44"</span>, y_axis_trans <span class="op">=</span> <span class="st">"squashy"</span>, maxCN <span class="op">=</span> <span class="fl">25</span>, chrfilt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"6"</span>, <span class="st">"7"</span>, <span class="st">"8"</span><span class="op">)</span>, pointsize <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
-<p>We can also plot all the cells using the <code>plotHeatmap</code> function. This can optionally take in a phylogenetic/clustering tree in newick format. If you don’t have this you can use the <code>umap_clustering</code> function to cluster your data using umap and hdbscan.</p>
+<p>We can also plot all the cells using the <code>plotHeatmap</code>
+function. This can optionally take in a phylogenetic/clustering tree in
+newick format. If you don’t have this you can use the
+<code>umap_clustering</code> function to cluster your data using umap
+and hdbscan.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">clustering</span> <span class="op">&lt;-</span> <span class="fu">umap_clustering</span><span class="op">(</span><span class="va">CNbins</span>, field <span class="op">=</span> <span class="st">"copy"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="heatmaps">Heatmaps<a class="anchor" aria-label="anchor" href="#heatmaps"></a>
 </h3>
-<p>Then we can use this output in the <code>plotHeatmap</code> function. If you leave the <code>tree</code> and <code>clustering</code> options empty then <code>plotHeatmap</code> will fall back to use <code>umap_clustering</code>.</p>
+<p>Then we can use this output in the <code>plotHeatmap</code> function.
+If you leave the <code>tree</code> and <code>clustering</code> options
+empty then <code>plotHeatmap</code> will fall back to use
+<code>umap_clustering</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">CNbins</span>, tree <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">tree</span>, clusters <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span></span></code></pre></div>
 <p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-5-1.png" width="1152"></p>
-<p>The default is to plot the <code>state</code> column, we can change this to plot the <code>copy</code> raw data column.</p>
+<p>The default is to plot the <code>state</code> column, we can change
+this to plot the <code>copy</code> raw data column.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">CNbins</span>, tree <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">tree</span>, clusters <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">clustering</span>, show_clone_label <span class="op">=</span> <span class="cn">F</span>, plotcol <span class="op">=</span> <span class="st">"copy"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-6-1.png" width="1152"></p>
@@ -170,7 +193,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

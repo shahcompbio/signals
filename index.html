@@ -86,8 +86,9 @@
 <div class="page-header"><h1 id="signals">signals<a class="anchor" aria-label="anchor" href="#signals"></a>
 </h1></div>
 <!-- badges: start -->
+
 <p>signals (single cell genomes with allele specificity) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (0.01-0.1X). signals phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model. Documentation is available <a href="https://shahcompbio.github.io/signals/" class="external-link">here</a>.</p>
-<p>You can read more about signals in our <a href="https://www.biorxiv.org/content/10.1101/2021.06.04.447031v1" class="external-link">preprint</a>.</p>
+<p>You can read more about signals in our <a href="https://www.nature.com/articles/s41586-022-05249-0" class="external-link">paper</a>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -99,7 +100,7 @@
 <div class="section level2">
 <h2 id="input-data">Input data<a class="anchor" aria-label="anchor" href="#input-data"></a>
 </h2>
-<p><code>signals</code> was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in <a href="https://www.sciencedirect.com/science/article/pii/S0092867419311766" class="external-link">Laks et al.</a>. As such it works using the output of the the pipeline developed to process this type of data, available <a href="https://github.com/shahcompbio/single_cell_pipeline" class="external-link">here</a>. Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it succesfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP counts may also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running signals please open an issue. We describe in more detail the necessary input below.</p>
+<p><code>signals</code> was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in <a href="https://www.sciencedirect.com/science/article/pii/S0092867419311766" class="external-link">Laks et al.</a>. As such it works using the output of the the pipeline developed to process this type of data, available <a href="https://github.com/shahcompbio/single_cell_pipeline" class="external-link">here</a>. Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it successfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP can also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running signals please open an issue. We describe in more detail the necessary input below.</p>
 <div class="section level3">
 <h3 id="dlp-data">DLP+ data<a class="anchor" aria-label="anchor" href="#dlp-data"></a>
 </h3>
@@ -141,7 +142,7 @@
 <p>After having ensured the results make sense, you can plot a heatmap of the states across all cells with the following.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span><span class="op">)</span></span></code></pre></div>
-<p>This will cluster the cell using umap and hdbscan.</p>
+<p>This will cluster the cells using umap and hdbscan.</p>
 <p><code>signals</code> includes a number of other utilities for analysing single cell (haplotype-specific) copy number including the following:</p>
 <ul>
 <li>integration with scRNAseq using <a href="https://satijalab.org/seurat/index.html" class="external-link">seurat</a>
@@ -152,6 +153,12 @@
 <li>utilities such as consensus copy number in cell clusters and arm level changes etc</li>
 </ul>
 <p>Please see the vignettes for more information.</p>
+</div>
+<div class="section level2">
+<h2 id="outputs">Outputs<a class="anchor" aria-label="anchor" href="#outputs"></a>
+</h2>
+<p>The main output is a dataframe with that is similar to the CNbins input file with the following additional columns: * <code>A</code> A allele copy number * <code>B</code> B allele copy number * <code>state_AS_phased</code> A|B * <code>state_min</code> Minor allele copy number * <code>LOH</code> =LOH if bin is LOH, NO otherwise * <code>state_phase</code> Discretized haplotype specific states (see below) * <code>phase</code> Whether the A allele or B allele is dominant * <code>alleleA</code> Counts for the A allele * <code>alleleB</code> Counts for the B allele * <code>totalcounts</code> Total number of counts * <code>BAF</code> B-allele frequency (alleleB / totalcounts)</p>
+<p><code>state_phase</code> has the following states: * <code>A-Hom</code> A allele is homozygous, ie LOH of B-Allele * <code>B-Hom</code> B allele is homozygous, ie LOH of A-Allele * <code>A-Gained</code> A allele is gained but B not lost (A &gt; B) * <code>B-Gained</code> B allele is gained but A not lost (B &gt; A) * <code>Balanced</code> A == B</p>
 </div>
 </div>
   </div>
@@ -201,7 +208,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
