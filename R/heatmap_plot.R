@@ -1,4 +1,5 @@
 
+
 cn_colours <- structure(
   c(
     "#3182BD", "#9ECAE1", "#CCCCCC", "#FDCC8A", "#FC8D59", "#E34A33",
@@ -597,6 +598,7 @@ make_bottom_annot <- function(copynumber,
                               filterlabels = NULL,
                               nticks = 3,
                               Mb = TRUE,
+                              labeladjust = -1,
                               annotation_height = NULL, 
                               annofontsize = 14,
                               linkheight = 1) {
@@ -610,7 +612,9 @@ make_bottom_annot <- function(copynumber,
       link_height = grid::unit(linkheight, "mm"),
       labels_gp = grid::gpar(fontsize = annofontsize),
       side = "bottom",
-      padding = grid::unit(1.25, "mm"), extend = 0.01, labels_rot = 0
+      padding = grid::unit(labeladjust, "mm"), 
+      extend = 0.01, 
+      labels_rot = 0
     ), show_annotation_name = FALSE,
     annotation_height = annotation_height)
   } else {
@@ -622,7 +626,7 @@ make_bottom_annot <- function(copynumber,
       link_height = grid::unit(linkheight, "mm"),
       side = "bottom",
       labels_gp = grid::gpar(fontsize = annofontsize),
-      padding = grid::unit(1.25, "mm"), extend = 0.01, labels_rot = 0
+      padding = grid::unit(labeladjust, "mm"), extend = 0.01, labels_rot = 0
     ), show_annotation_name = FALSE,
     annotation_height = annotation_height)
   }
@@ -638,8 +642,11 @@ make_top_annotation_gain <- function(copynumber,
   ncells <- nrow(copynumber)
 
   if ((plotcol == "state" | plotcol == "copy") & plotfrequency == TRUE) {
-    f1 <- colSums(copynumber > cutoff, na.rm = TRUE) / ncells
-    f2 <- -colSums(copynumber < cutoff, na.rm = TRUE) / ncells
+    copynumbermat <- copynumber
+    copynumbermat[copynumbermat == "11+"] <- "11"
+    copynumbermat <- sapply(copynumbermat, as.numeric)
+    f1 <- colSums(copynumbermat > cutoff, na.rm = TRUE) / ncells
+    f2 <- -colSums(copynumbermat < cutoff, na.rm = TRUE) / ncells
     if (is.null(maxf)) {
       maxf <- ceiling(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
       if (maxf < 0.01) {
@@ -798,6 +805,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     show_clone_text = TRUE,
                                     chrlabels = TRUE,
                                     SV = NULL,
+                                    labeladjust = -1,
                                     nticks = 4,
                                     Mb = TRUE,
                                     annotation_height = NULL, 
@@ -812,12 +820,16 @@ make_copynumber_heatmap <- function(copynumber,
   if (class(colvals) == "function"){
     leg_params <- list(nrow = 3,
                        direction = "vertical",
-                       legend_gp = grid::gpar(fontsize = annofontsize))
+                       labels_gp = grid::gpar(fontsize = annofontsize-1),
+                       title_gp = grid::gpar(fontsize = annofontsize, fontface = "bold"),
+                       legend_gp = grid::gpar(fontsize = annofontsize-1))
   } else {
     leg_params <- list(nrow = 3,
                        direction = "vertical",
                        at = names(colvals),
-                       legend_gp = grid::gpar(fontsize = annofontsize))
+                       labels_gp = grid::gpar(fontsize = annofontsize-1),
+                       title_gp = grid::gpar(fontsize = annofontsize, fontface = "bold"),
+                       legend_gp = grid::gpar(fontsize = annofontsize-1))
   }
   
   copynumber_hm <- ComplexHeatmap::Heatmap(
@@ -829,7 +841,12 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_rows = FALSE,
     cluster_columns = FALSE,
     show_column_names = FALSE,
-    bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, Mb = Mb, nticks = nticks, annotation_height = annotation_height, annofontsize = annofontsize, linkheight = linkheight),
+    bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, 
+                                          Mb = Mb, nticks = nticks, 
+                                          annotation_height = annotation_height, 
+                                          labeladjust = labeladjust,
+                                          annofontsize = annofontsize, 
+                                          linkheight = linkheight),
     left_annotation = make_left_annot(copynumber, clones, anno_width = anno_width,
       library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label, show_clone_text = show_clone_text,
       idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,annofontsize = annofontsize, 
@@ -870,7 +887,7 @@ getSVlegend <- function(include = NULL) {
 #' @param branch_length scales branch lengths to this size, default = 2
 #' @param spacer_cols number of empty columns between chromosomes, default = 20
 #' @param plottree Binary value of whether to plot tree or not, default = TRUE
-#' @param plotcol Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj"
+#' @param plotcol Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "A", "B"
 #' @param reordercluster Reorder the cells according to cluster if no tree is specified
 #' @param pctcells Minimum size of cluster in terms of perecentage of cells in umap clustering
 #' @param library_mapping Named vector mapping library names to labels for legend
@@ -885,6 +902,7 @@ getSVlegend <- function(include = NULL) {
 #' @param show_clone_label show clone label or not, boolean
 #' @param umapmetric metric to use in umap dimensionality reduction if no clusters are specified
 #' @param chrlabels include chromosome labels or not, boolean
+#' @param labeladjust 
 #' @param SV sv data frame
 #' @param seed seed for UMAP
 #' @param nticks number of ticks in x-axis label when plotting a single chromosome
@@ -933,13 +951,14 @@ plotHeatmap <- function(cn,
                         widenarm = FALSE,
                         umapmetric = "euclidean",
                         chrlabels = TRUE,
+                        labeladjust = -5,
                         SV = NULL,
                         seed = NULL,
                         nticks = 4,
                         Mb = TRUE,
                         fillgenome = FALSE,
                         annotation_height = NULL, 
-                        annofontsize = 14,
+                        annofontsize = 10,
                         na_col = "white",
                         linkheight = 5,
                         newlegendname = NULL,
@@ -978,8 +997,8 @@ plotHeatmap <- function(cn,
       orderdf(.)
   }
 
-  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj", "other")) {
-    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS, Min or Maj"))
+  if (!plotcol %in% c("state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "B", "A", "other")) {
+    stop(paste0("Column name - ", plotcol, " not available for plotting, please use one of state, copy, BAF, state_BAF, state_phase, state_AS, B or A"))
   }
 
   if (!plotcol %in% names(CNbins)) {
@@ -991,12 +1010,12 @@ plotHeatmap <- function(cn,
     legendname <- "Copy Number"
   }
 
-  if (plotcol == "Min") {
+  if (plotcol == "B") {
     colvals <- cn_colours
     legendname <- "Copy Number\nAllele B"
   }
 
-  if (plotcol == "Maj") {
+  if (plotcol == "A") {
     colvals <- cn_colours
     legendname <- "Copy Number\nAllele A"
   }
@@ -1042,8 +1061,9 @@ plotHeatmap <- function(cn,
 
   ncells <- length(unique(CNbins$cell_id))
 
-  if (is.null(clusters)) {
+  if (is.null(clusters) & !is.null(tree)) {
     ordered_cell_ids <- paste0(unique(CNbins$cell_id))
+    clusters <- data.frame(cell_id = unique(CNbins$cell_id), clone_id = "0")
   } else {
     ordered_cell_ids <- paste0(clusters$cell_id)
   }
@@ -1165,6 +1185,7 @@ plotHeatmap <- function(cn,
     annofontsize = annofontsize,
     na_col = na_col,
     linkheight = linkheight,
+    labeladjust = labeladjust,
     str_to_remove = str_to_remove,
     anno_width = anno_width,
     rasterquality = rasterquality,
