@@ -7,10 +7,10 @@ get_states_dna <- function(hscn, minf = 0.1, arms = NULL) {
       dplyr::group_by(chr, arm, chrarm, cell_id) %>%
       dplyr::summarise(
         state_AS_phased = Mode(state_AS_phased),
-        Maj = Mode(Maj),
-        Min = Mode(Min)
+        A = Mode(A),
+        B = Mode(B)
       ) %>%
-      dplyr::group_by(chr, arm, chrarm, state_AS_phased, Min, Maj) %>%
+      dplyr::group_by(chr, arm, chrarm, state_AS_phased, B, A) %>%
       dplyr::summarise(n = n(), f = sum(n)) %>%
       dplyr::ungroup() %>%
       dplyr::group_by(chr, arm, chrarm) %>%
@@ -27,10 +27,10 @@ get_states_dna <- function(hscn, minf = 0.1, arms = NULL) {
       dplyr::group_by(chr, arm, chrarm, cell_id) %>%
       dplyr::summarise(
         state_AS_phased = Mode(state_AS_phased),
-        Maj = Mode(Maj),
-        Min = Mode(Min)
+        A = Mode(A),
+        B = Mode(B)
       ) %>%
-      dplyr::group_by(chr, arm, chrarm, state_AS_phased, Min, Maj) %>%
+      dplyr::group_by(chr, arm, chrarm, state_AS_phased, B, A) %>%
       dplyr::summarise(n = n(), f = sum(n)) %>%
       dplyr::ungroup() %>%
       dplyr::group_by(chr, arm, chrarm) %>%
@@ -47,9 +47,9 @@ possible_states_df <- function(bafperchr, step = 0.25) {
     chrarm = unique(bafperchr$chrarm),
     prob = seq(0.0, 1.0, step)
   ) %>%
-    dplyr::mutate(state = 1 / step, Min = prob * state) %>%
-    dplyr::mutate(Maj = state - Min) %>%
-    dplyr::mutate(state_AS_phased = paste0(Maj, "|", Min))
+    dplyr::mutate(state = 1 / step, B = prob * state) %>%
+    dplyr::mutate(A = state - B) %>%
+    dplyr::mutate(state_AS_phased = paste0(A, "|", B))
 
   return(possible_states)
 }
@@ -71,11 +71,11 @@ assign_states_noprior <- function(haps,
     perchr <- dplyr::left_join(bafperchr, possible_states) %>%
       dplyr::arrange(cell_id, chrarm, state_AS_phased) %>%
       as.data.table() %>%
-      .[, prob := Min / (Min + Maj)] %>%
+      .[, prob := B / (B + A)] %>%
       .[, prob := fifelse(prob == 0.0, prob + loherror, prob)] %>%
       .[, prob := fifelse(prob == 1.0, prob - loherror, prob)] %>%
       .[, L := dbinom(size = total, x = alleleB, prob = prob)] %>%
-      .[, state := Min + Maj]
+      .[, state := B + A]
 
     perchr <- perchr[perchr[, .I[which.max(L)], by = .(chrarm, cell_id)]$V1] %>%
       add_states() %>%
@@ -128,7 +128,7 @@ assign_states_noprior <- function(haps,
     perchr <- dplyr::left_join(bafperchr, possible_states) %>%
       dplyr::arrange(cell_id, chrarm, state_AS_phased) %>%
       as.data.table() %>%
-      .[, prob := Min / (Min + Maj)] %>%
+      .[, prob := B / (B + A)] %>%
       .[, prob := fifelse(prob == 0.0, prob + loherror, prob)] %>%
       .[, prob := fifelse(prob == 1.0, prob - loherror, prob)] %>%
       .[, L := dbinom(
@@ -136,7 +136,7 @@ assign_states_noprior <- function(haps,
         x = round(alleleB + alpha),
         prob = prob
       )] %>%
-      .[, state := Min + Maj]
+      .[, state := B + A]
     perchr <- perchr[perchr[, .I[which.max(L)], by = .(chrarm, cell_id)]$V1] %>%
       add_states() %>%
       .[, state_BAF := fifelse(is.nan(state_BAF), 0.5, state_BAF)] %>%

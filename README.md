@@ -10,7 +10,7 @@
 
 signals (single cell genomes with allele specificity) is a tool to estimate allele and haplotype specific copy number states in single cells with low coverage (0.01-0.1X). signals phases alleles based on losses and gains across all cells and then assigns allele specific states for each bin in each cell using a hidden markov model.  Documentation is available [here](https://shahcompbio.github.io/signals/).
 
-You can read more about signals in our [preprint](https://www.biorxiv.org/content/10.1101/2021.06.04.447031v1).
+You can read more about signals in our [paper](https://www.nature.com/articles/s41586-022-05249-0).
 
 ## Installation
 
@@ -24,7 +24,7 @@ A docker image is available [here](https://hub.docker.com/repository/docker/marc
 
 ## Input data
 
-`signals` was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in [Laks et al.](https://www.sciencedirect.com/science/article/pii/S0092867419311766). As such it works using the output of the the pipeline developed to process this type of data, available [here](https://github.com/shahcompbio/single_cell_pipeline). Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it succesfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP counts may also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running signals please open an issue. We describe in more detail the necessary input below.
+`signals` was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in [Laks et al.](https://www.sciencedirect.com/science/article/pii/S0092867419311766). As such it works using the output of the the pipeline developed to process this type of data, available [here](https://github.com/shahcompbio/single_cell_pipeline). Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it successfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP can also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running signals please open an issue. We describe in more detail the necessary input below.
 
 ### DLP+ data
 
@@ -82,7 +82,7 @@ After having ensured the results make sense, you can plot a heatmap of the state
 ```r
 plotHeatmap(ascn, plotcol = "state_BAF")
 ```
-This will cluster the cell using umap and hdbscan.
+This will cluster the cells using umap and hdbscan.
 
 `signals` includes a number of other utilities for analysing single cell (haplotype-specific) copy number including the following:
 
@@ -94,7 +94,27 @@ This will cluster the cell using umap and hdbscan.
 
 Please see the vignettes for more information.
 
+## Outputs
 
+The main output is a dataframe with that is similar to the CNbins input file with the following additional columns:
+* `A` A allele copy number
+* `B` B allele copy number
+* `state_AS_phased` A|B
+* `state_min` Minor allele copy number
+* `LOH` =LOH if bin is LOH, NO otherwise
+* `state_phase` Discretized haplotype specific states (see below)
+* `phase` Whether the A allele or B allele is dominant
+* `alleleA` Counts for the A allele
+* `alleleB` Counts for the B allele
+* `totalcounts` Total number of counts
+* `BAF` B-allele frequency (alleleB / totalcounts)
+
+`state_phase` has the following states:
+* `A-Hom` A allele is homozygous, ie LOH of B-Allele
+* `B-Hom` B allele is homozygous, ie LOH of A-Allele
+* `A-Gained` A allele is gained but B not lost (A > B)
+* `B-Gained` B allele is gained but A not lost (B > A)
+* `Balanced` A == B
 
 
 

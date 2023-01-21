@@ -469,7 +469,7 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
     dplyr::rename(chromosome_2 = chr, position_2 = start, copy_2 = copy) %>%
     dplyr::select(chromosome_2, position_2, copy_2)) %>%
     dplyr::mutate(copy_1 = ifelse(is.na(copy_1), 2, copy_1)) %>%
-    dplyr::mutate(copy_2 = ifelse(is.na(copy_1), 2, copy_2)) %>%
+    dplyr::mutate(copy_2 = ifelse(is.na(copy_2), 2, copy_2)) %>%
     dplyr::distinct(.) %>%
     na.omit(.) %>%
     dplyr::rename(idx_3 = idx_2, copy_3 = copy_2) %>%
@@ -698,23 +698,26 @@ plotCNprofile <- function(CNbins,
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
   }
 
-  if (!is.null(SV)) {
+  if (!is.null(SV) && nrow(SV) > 0) {
     svpl <- plottinglistSV(SV, chrfilt = chrfilt)
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    pl$CNbins <- dplyr::left_join(getBins(binsize = binsize), pl$CNbins)
     bezdf <- get_bezier_df(svpl, pl, maxCN)
     bezdf <- bezdf %>%
-      dplyr::filter((position_1 != position_2) | rearrangement_type == "foldback")
+      dplyr::mutate(samebin = (position_1 == position_2) | rearrangement_type == "foldback") %>% 
+      dplyr::mutate(rearrangement_type = CapStr(rearrangement_type))
     gCN <- gCN +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = 0.8,
         size = svwidth,
-        col = as.vector(SV_colors["Foldback"]),
-        data = bezdf %>% dplyr::filter(rearrangement_type == "foldback")
+        col = as.vector(SV_colors[bezdf$rearrangement_type[1]]),
+        data = bezdf %>% dplyr::filter(samebin == TRUE)
       ) +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = svalpha,
         size = svwidth,
         col = "grey30",
-        data = bezdf %>% dplyr::filter(rearrangement_type != "foldback")
+        data = bezdf %>% dplyr::filter(samebin == FALSE)
       )
   }
 
@@ -883,11 +886,11 @@ plotCNprofileBAFhomolog <- function(cn,
     
     pl$CNbins <- pl$CNbins %>% 
       dplyr::mutate(rl = data.table::rleid(state_AS_phased)) %>% 
-      dplyr::group_by(chr, rl, Min, Maj) %>% 
+      dplyr::group_by(chr, rl, B, A) %>% 
       dplyr::summarize(idx_start = dplyr::first(idx), idx_end = dplyr::last(idx))
     
     pl$CNbins <- pl$CNbins %>% 
-      tidyr::pivot_longer(cols = c("Maj", "Min"))
+      tidyr::pivot_longer(cols = c("A", "B"))
     
     if (is.null(offset)) {
       offset <- maxCN * 1.1 * 0.03
@@ -895,11 +898,11 @@ plotCNprofileBAFhomolog <- function(cn,
     
     if (y_axis_trans == "squashy"){
       pl$CNbins <- pl$CNbins %>%
-        dplyr::mutate(value = ifelse(name == "Maj", value + squashy_trans()$transform(2 * value * offset), 
+        dplyr::mutate(value = ifelse(name == "A", value + squashy_trans()$transform(2 * value * offset), 
                                      value - squashy_trans()$transform(2 * value * offset)))
     } else{
       pl$CNbins <- pl$CNbins %>%
-        dplyr::mutate(value = ifelse(name == "Maj", value + offset, value - offset))
+        dplyr::mutate(value = ifelse(name == "A", value + offset, value - offset))
     }
     
     if (shuffle){
@@ -1363,9 +1366,9 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, shap
   ASstates <- expand.grid(state = maj, min = min) %>%
     dplyr::mutate(cBAF = min / state) %>%
     dplyr::mutate(state_AS = paste0(state - min, "|", min)) %>%
-    dplyr::mutate(Maj = state - min, Min = min) %>%
+    dplyr::mutate(A = state - min, B = min) %>%
     dplyr::select(-min) %>%
-    dplyr::filter(Maj >= 0, Min >= 0)
+    dplyr::filter(A >= 0, B >= 0)
 
   CNbins <- CNbins %>%
     dplyr::filter(state < 10, copy < 10)
@@ -1426,9 +1429,9 @@ plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, den
   allASstates <- expand.grid(state = maj, min = min) %>%
     dplyr::mutate(cBAF = min / state) %>%
     dplyr::mutate(state_AS_phased = paste0(state - min, "|", min)) %>%
-    dplyr::mutate(Maj = state - min, Min = min) %>%
+    dplyr::mutate(A = state - min, B = min) %>%
     dplyr::select(-min) %>%
-    dplyr::filter(Maj >= 0, Min >= 0) %>%
+    dplyr::filter(A >= 0, B >= 0) %>%
     dplyr::filter(state <= maxstate)
   allASstates$cBAF[is.nan(allASstates$cBAF)] <- 0.0
 
@@ -1533,7 +1536,7 @@ plotBBfit <- function(hscn, nbins = 30, minfrac = 0.01) {
   x <- x / sum(x)
   x <- x[which(x > minfrac)]
 
-  mydat <- dplyr::filter(hscn$data, Maj != 0, Min != 0, totalcounts > 9)
+  mydat <- dplyr::filter(hscn$data, A != 0, B != 0, totalcounts > 9)
 
   x <- x[names(x) %in% unique(mydat$state_AS_phased)]
 
@@ -1572,7 +1575,7 @@ plot_variance_state <- function(hscn, by_allele_specific_state = FALSE) {
   if (by_allele_specific_state == TRUE) {
     plot_var <- dat %>%
       dplyr::group_by(state, state_AS_phased) %>%
-      dplyr::filter(Min > 0 & Maj > 0) %>%
+      dplyr::filter(B > 0 & A > 0) %>%
       dplyr::summarize(mBAF = median(BAF), varBAF = var(BAF)) %>%
       ggplot2::ggplot(ggplot2::aes(x = state, y = varBAF, col = factor(paste0("CN", state), levels = paste0("CN", seq(0, 11, 1))))) +
       ggplot2::geom_text(ggplot2::aes(label = state_AS_phased)) +
@@ -1593,7 +1596,7 @@ plot_variance_state <- function(hscn, by_allele_specific_state = FALSE) {
       )
   } else {
     plot_var <- dat %>%
-      dplyr::filter(Min > 0 & Maj > 0) %>%
+      dplyr::filter(B > 0 & A > 0) %>%
       dplyr::group_by(state, state_AS_phased) %>%
       dplyr::summarize(mBAF = median(BAF), varBAF = var(BAF)) %>%
       dplyr::group_by(state) %>%

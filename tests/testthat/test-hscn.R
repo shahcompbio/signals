@@ -67,6 +67,15 @@ trueB <- data.frame(x = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1))
 A <- data.frame(x = c(1, 1, 1, 1, 4, 4, 2, 1, 2, 1, 2, 1))
 B <- data.frame(x = c(1, 1, 2, 2, 1, 1, 1, 2, 1, 2, 1, 2))
 
+
+# test rephasing by minimizing number of events
+trueA <- data.frame(x = c(1, 1, 2, 2, 4, 4, 2, 2, 2, 2, 2, 2))
+trueB <- data.frame(x = c(1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3))
+
+# scramble the CNAs
+A <- data.frame(x = c(1, 1, 1, 1, 4, 3, 3, 3, 2, 2, 2, 2))
+B <- data.frame(x = c(1, 1, 2, 2, 1, 4, 2, 2, 3, 3, 3, 3))
+
 x <- getphase(A, B)
 
 mymat <- cbind(as.vector(A$x), as.vector(B$x))
@@ -76,5 +85,5 @@ for (i in 1:dim(mymat)[1]) {
 }
 
 test_that("Test rephasing by minimizing number of events", {
-  expect_equal(trueA$x, newA)
+  expect_true(isTRUE(all.equal(trueA$x, newA)) | isTRUE(all.equal(trueB$x, newA)))
 })

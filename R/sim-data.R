@@ -61,23 +61,23 @@ simulate_cell <- function(nchr = 2,
 
   ascn <- bins %>%
     data.table::as.data.table() %>%
-    .[, Maj := state - state_min] %>%
-    .[, Min := state_min] %>%
-    .[, state_AS_phased := paste0(Maj, "|", Min)] %>%
-    .[, state_AS := paste0(pmax(state - Min, Min), "|", pmin(state - Min, Min))] %>%
-    .[, state_min := pmin(Maj, Min)] %>%
+    .[, A := state - state_min] %>%
+    .[, B := state_min] %>%
+    .[, state_AS_phased := paste0(A, "|", B)] %>%
+    .[, state_AS := paste0(pmax(state - B, B), "|", pmin(state - B, B))] %>%
+    .[, state_min := pmin(A, B)] %>%
     .[, state_AS := ifelse(state > 4, state, state_AS)] %>%
     .[, LOH := data.table::fifelse(state_min == 0, "LOH", "NO")] %>%
     .[, phase := c("Balanced", "A", "B")[1 +
-      1 * ((Min < Maj)) +
-      2 * ((Min > Maj))]] %>%
+      1 * ((B < A)) +
+      2 * ((B > A))]] %>%
     .[, state_phase := c("Balanced", "A-Gained", "B-Gained", "A-Hom", "B-Hom")[1 +
-      1 * ((Min < Maj) & (Min != 0)) +
-      2 * ((Min > Maj) & (Maj != 0)) +
-      3 * ((Min < Maj) & (Min == 0)) +
-      4 * ((Min > Maj) & (Maj == 0))]] %>%
+      1 * ((B < A) & (B != 0)) +
+      2 * ((B > A) & (A != 0)) +
+      3 * ((B < A) & (B == 0)) +
+      4 * ((B > A) & (A == 0))]] %>%
     .[order(cell_id, chr, start)] %>%
-    .[, state_BAF := round((Min / state) / 0.1) * 0.1] %>%
+    .[, state_BAF := round((B / state) / 0.1) * 0.1] %>%
     .[, state_BAF := data.table::fifelse(is.nan(state_BAF), 0.5, state_BAF)]
 
   CNbins <- dplyr::select(ascn, cell_id, chr, start, end, state, copy)
@@ -92,7 +92,7 @@ simulate_cell <- function(nchr = 2,
 
   if (likelihood == "binomial") {
     haps <- haps %>%
-      .[, prob := fifelse(Min == 0, (Min / state) + loherror, Min / state)] %>%
+      .[, prob := fifelse(B == 0, (B / state) + loherror, B / state)] %>%
       .[, alleleB := rbinom(n = 1, size = totalcounts, p = prob),
         by = .(chr, start, end)
       ] %>%
@@ -100,7 +100,7 @@ simulate_cell <- function(nchr = 2,
       .[, hap_label := 1:.N]
   } else {
     haps <- haps %>%
-      .[, prob := fifelse(Min == 0, (Min / state) + loherror, Min / state)] %>%
+      .[, prob := fifelse(B == 0, (B / state) + loherror, B / state)] %>%
       .[, alleleB := VGAM::rbetabinom(n = 1, size = totalcounts, p = prob, rho = rho), by = .(chr, start, end)] %>%
       .[, alleleA := totalcounts - alleleB] %>%
       .[, hap_label := 1:.N]
