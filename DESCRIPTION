@@ -53,9 +53,8 @@ Suggests:
     Seurat,
     plyranges
 Remotes:
-  caravagn/VIBER,
-  caravagn/pio,
-  caravagn/easypar,
+  caravagnlab/VIBER,
+  caravagnalab/easypar,
   YuLab-SMU/ggtree
 VignetteBuilder: knitr
 LinkingTo: 
