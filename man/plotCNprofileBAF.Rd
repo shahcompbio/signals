@@ -52,6 +52,8 @@ plotCNprofileBAF(
 
 \item{cellidx}{idx of cell to plot if cellid = NULL}
 
+\item{BAFcol}{state to use to colour BAF track, default = `state_phase`}
+
 \item{statecol}{The colour mapping, default is to map colours to the `state` column}
 
 \item{returnlist}{Return a list rather than the ggplot object}
@@ -77,6 +79,16 @@ plotCNprofileBAF(
 \item{svwidth}{width of rearrangement connections}
 
 \item{plotdata}{Binary value whether to plot raw data or inferred states in homolog plot}
+
+\item{my_title}{string to use for title, if NULL cell_id is shown}
+
+\item{chrstart}{Start of region (in Mb) when plotting a single chromosome}
+
+\item{chrend}{End of region (in Mb) when plotting a single chromosome}
+
+\item{shape}{shape for plotting, default = 16}
+
+\item{positionticks}{set to TRUE to use position ticks rather than chromosome ticks}
 
 \item{offest}{to use when plotting inferred states in homolog plot}
 }

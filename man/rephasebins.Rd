@@ -22,6 +22,10 @@ rephasebins(
 \item{method}{either \code{mindist} or \code{LOH}}
 
 \item{ncells}{default 1}
+
+\item{clusterfirst}{Whether to cluster cells and perform rephasing on clusters rather than cells}
+
+\item{cl}{Precomputed clustering object from \code{umap_clustering}}
 }
 \value{
 Either a new \code{hscn} object or a dataframe with rephased bins depdending on the input

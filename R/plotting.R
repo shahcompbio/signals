@@ -546,10 +546,12 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param svalpha the alpha scaling of the SV lines, default = 0.5
 #' @param genes vector of genes to annotate, will add a dashed vertical line and label
 #' @param tickwidth Spacing of ticks (in Mb) when only 1 chromosome is plotted
-#' @chrstart Start of region (in Mb) when plotting a single chromosome
-#' @chrend End of region (in Mb) when plotting a single chromosome
-#' @shape shape for plotting
-#' @positionticks set to TRUE to use position ticks rather than chromosome ticks
+#' @param svwidth Width of SV width curves, default = 1.0
+#' @param adj adjustment for gene labels
+#' @param chrstart Start of region (in Mb) when plotting a single chromosome
+#' @param chrend End of region (in Mb) when plotting a single chromosome
+#' @param shape shape for plotting, default = 16
+#' @param positionticks set to TRUE to use position ticks rather than chromosome ticks
 #'
 #' @return ggplot2 plot
 #'
@@ -1033,6 +1035,13 @@ plotCNprofileBAFhomolog <- function(cn,
 #' @param homolog Rather than plot the BAF and CN seperately this will plot the 2 homologs on the same track
 #' @param plotdata Binary value whether to plot raw data or inferred states in homolog plot
 #' @param offest to use when plotting inferred states in homolog plot
+#' @param chrstart Start of region (in Mb) when plotting a single chromosome
+#' @param chrend End of region (in Mb) when plotting a single chromosome
+#' @param shape shape for plotting, default = 16
+#' @param positionticks set to TRUE to use position ticks rather than chromosome ticks
+#' @param BAFcol state to use to colour BAF track, default = `state_phase`
+#' @param my_title string to use for title, if NULL cell_id is shown
+#'
 #'
 #' @return ggplot2 plot
 #'
@@ -1407,6 +1416,7 @@ plotCNBAF <- function(cn, nfilt = 10^5, plottitle = "5Mb", pointsize = 0.1, shap
 #' @param dens_adjust density adjustment factor in the violin plots
 #' @param mincounts filter out bins < mincounts from plotting, default = 6
 #'
+#' @examples
 #' \dontrun{
 #' data("haplotypes")
 #' data("CNbins")

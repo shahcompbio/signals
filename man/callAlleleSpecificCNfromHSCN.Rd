@@ -6,7 +6,7 @@
 \usage{
 callAlleleSpecificCNfromHSCN(
   hscn,
-  eps = 0.000000000001,
+  eps = 1e-12,
   maxCN = NULL,
   selftransitionprob = 0.95,
   progressbar = TRUE,
@@ -32,17 +32,17 @@ callAlleleSpecificCNfromHSCN(
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include
 
-* `Maj` (Major allele copy number)
-* `Min` (Minor allele copy number)
-* `state_AS_phased` (phased state of the form Maj|Min )
-* `state_AS` (mirrored state of the form Maj|Min)
+* `A` (Major allele copy number)
+* `B` (Minor allele copy number)
+* `state_AS_phased` (phased state of the form A|B )
+* `state_AS` (mirrored state of the form A|B)
 * `LOH` (is bin LOH or not)
 * `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
-* `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))
+* `state_BAF` (binned discretized BAF value calculated as B / (A + B))
 }
 \description{
 Call allele specific copy number in single cell datasets
 }
 \details{
-In the allele specific copy number inference Maj is always > Min and state_AS_phased == state_AS
+In the allele specific copy number inference A is always > B and state_AS_phased == state_AS
 }

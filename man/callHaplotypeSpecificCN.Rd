@@ -7,21 +7,21 @@
 callHaplotypeSpecificCN(
   CNbins,
   haplotypes,
-  eps = 0.000000000001,
+  eps = 1e-12,
   loherror = 0.02,
   maxCN = NULL,
   selftransitionprob = 0.95,
   progressbar = TRUE,
   ncores = 1,
   phasebyarm = FALSE,
-  minfrac = 0.7,
-  likelihood = "binomial",
+  minfrachaplotypes = 0.7,
+  likelihood = "auto",
   minbins = 100,
   minbinschr = 10,
   phased_haplotypes = NULL,
   clustering_method = "copy",
   maxloherror = 0.035,
-  mincells = 10,
+  mincells = 7,
   overwritemincells = NULL,
   cluster_per_chr = TRUE,
   viterbiver = "cpp",
@@ -48,9 +48,11 @@ callHaplotypeSpecificCN(
 
 \item{ncores}{Number of cores to use, default = 1}
 
-\item{minfrac}{Minimum proportion of haplotypes to retain when clustering + phasing, default = 0.8}
+\item{phasebyarm}{Phasing by chromosome arm, default = FALSE}
 
-\item{likelihood}{Likelihood model for HMM, default is \code{binomial}, other option is \code{betabinomial} or use \code{auto} and the algorithm will choose the likelihood that best fits the data.}
+\item{minfrachaplotypes}{Minimum proportion of haplotypes to retain when clustering + phasing, default = 0.7}
+
+\item{likelihood}{Likelihood model for HMM, default is \code{binomial}, other option is \code{betabinomial} or use \code{auto} and the algorithm will choose the likelihood that best fits the data. Default \code{auto}}
 
 \item{minbins}{Minimum number of bins containing both haplotype counts and copy number data for a cell to be included}
 
@@ -58,13 +60,13 @@ callHaplotypeSpecificCN(
 
 \item{phased_haplotypes}{Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by signals does not return a good fit.}
 
-\item{clustering_method}{Method to use to cluster cells for haplotype phasing, default is \code{copy}, other option is \code{breakpoints}}
+\item{clustering_method}{Method to use to cluster cells for haplotype phasing, default is \code{copy} (using copy column), other option is \code{breakpoints} (using breakpoint for clustering)}
 
 \item{maxloherror}{Maximum value for LOH error rate}
 
-\item{mincells}{Minimum cluster size used for phasing}
+\item{mincells}{Minimum cluster size used for phasing, default = 7}
 
-\item{overwritemincells}{Overwrite the the number of cells to use for clustering/phasing}
+\item{overwritemincells}{Force the number of cells to use for clustering/phasing rather than use the output of the clustering}
 
 \item{cluster_per_chr}{Whether to cluster per chromosome to rephase alleles or not}
 
@@ -75,21 +77,30 @@ callHaplotypeSpecificCN(
 \item{smoothsingletons}{Remove singleton bins by smoothing over based on states in adjacent bins}
 
 \item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
+
+\item{viterbver}{Version of viterbi algorithm to use (cpp or R)}
 }
 \value{
-allele specific copy number object which includes dataframe similar to input with additional columns which include
-\itemize{
-\item \code{Maj} (Major allele copy number)
-\item \code{Min} (Minor allele copy number)
-\item \code{state_AS_phased} (phased state of the form Maj|Min )
-\item \code{state_AS} (mirrored state of the form Maj|Min)
-\item \code{LOH} (is bin LOH or not)
-\item \code{state_phase} (state describing which is the dominant allele and whether it is LOH or not)
-\item \code{state_BAF} (binned discretized BAF value calculated as Min / (Maj + Min))
-}
+Haplotype specific copy number object
 }
 \description{
 Call haplotype specific copy number in single cell datasets
+}
+\details{
+The haplotype specific copy number object include the following additional columns
+\itemize{
+\item \code{A} A allele copy number
+\item \code{B} B allele copy number
+\item \code{state_AS_phased} A|B
+\item \code{state_min} Minor allele copy number
+\item \code{LOH} =LOH if bin is LOH, NO otherwise
+\item \code{state_phase} Discretized haplotype specific states
+\item \code{phase} Whether the A allele or B allele is dominant
+\item \code{alleleA} Counts for the A allele
+\item \code{alleleB} Counts for the B allele
+\item \code{totalcounts} Total number of counts
+\item \code{BAF} B-allele frequency (alleleB / totalcounts)
+}
 }
 \examples{
 sim_data <- simulate_data_cohort(

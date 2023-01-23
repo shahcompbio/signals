@@ -30,13 +30,14 @@ plotHeatmap(
   widenarm = FALSE,
   umapmetric = "euclidean",
   chrlabels = TRUE,
+  labeladjust = -5,
   SV = NULL,
   seed = NULL,
   nticks = 4,
   Mb = TRUE,
   fillgenome = FALSE,
   annotation_height = NULL,
-  annofontsize = 14,
+  annofontsize = 10,
   na_col = "white",
   linkheight = 5,
   newlegendname = NULL,
@@ -52,6 +53,8 @@ plotHeatmap(
 
 \item{tree}{Tree in newick format to plot alongside the heatmap, default = NULL}
 
+\item{clusters}{data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL}
+
 \item{normalize_ploidy}{Normalize ploidy of all cells to 2}
 
 \item{normalize_tree}{default = FALSE}
@@ -62,7 +65,9 @@ plotHeatmap(
 
 \item{plottree}{Binary value of whether to plot tree or not, default = TRUE}
 
-\item{plotcol}{Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj"}
+\item{plotcol}{Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "A", "B"}
+
+\item{reorderclusters}{Reorder the cells according to cluster if no tree is specified}
 
 \item{pctcells}{Minimum size of cluster in terms of perecentage of cells in umap clustering}
 
@@ -86,9 +91,15 @@ plotHeatmap(
 
 \item{show_clone_label}{show clone label or not, boolean}
 
+\item{show_clone_text}{Show small inset labels next to clone/cluster annotation}
+
+\item{widenarm}{Widen the copy number data table to include all bins}
+
 \item{umapmetric}{metric to use in umap dimensionality reduction if no clusters are specified}
 
 \item{chrlabels}{include chromosome labels or not, boolean}
+
+\item{labeladjust}{}
 
 \item{SV}{sv data frame}
 
@@ -96,7 +107,15 @@ plotHeatmap(
 
 \item{nticks}{number of ticks in x-axis label when plotting a single chromosome}
 
+\item{Mb}{Use Mb ticks when plotting single chromosome}
+
 \item{fillgenome}{fill in any missing bins and add NA to centromeric regions}
+
+\item{annotation_height}{Height of the annotations
+
+If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.}
+
+\item{annofontsize}{Font size to use for annotations, default = 10}
 
 \item{na_col}{colour of NA values}
 
@@ -110,22 +129,18 @@ plotHeatmap(
 
 \item{anno_width}{width of left annotations}
 
-\item{rasterquality}{default = 15
-
-If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
-
-#' \dontrun{
+\item{rasterquality}{default = 15}
+}
+\description{
+Plot a heatmap where rows are cells, columns are genome coordinates and colours map to (allele-specific) copy-number states
+}
+\examples{
+\dontrun{
 data("haplotypes")
 data("CNbins")
 haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
 hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "binomial")
 plotHeatmap(hscn)
-}}
-
-\item{cluster}{data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL}
-
-\item{reordercluster}{Reorder the cells according to cluster if no tree is specified}
 }
-\description{
-Plot a heatmap where rows are cells, columns are genome coordinates and colours map to (allele-specific) copy-number states
+
 }

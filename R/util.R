@@ -385,10 +385,16 @@ map_to_segments <- function(regions, segments){
 #'   to determine chromosome arms. Allowed options are "hg38", hg19", "hg18", "hg17"
 #'   and "hg16" (corresponding to the five latest human genome annotations in the
 #'   UCSC genome browser).
+#' @param full 
+#' @param mergesmallarms for very small acrocentric arms just use chromosome
 #' @return Character vector, with choromosome arm of given genomic coordinates
 #'
 #' @export
-coord_to_arm <- function(chromosome, position, assembly = "hg19", full = FALSE, mergesmallarms = FALSE) {
+coord_to_arm <- function(chromosome, 
+                         position, 
+                         assembly = "hg19", 
+                         full = FALSE, 
+                         mergesmallarms = FALSE) {
   if (length(chromosome) != length(position)) {
     stop("chromosome and position must have equal length")
   }
@@ -1073,6 +1079,11 @@ createBAFassay <- function(seur, rna_ascn, ref = "hg19") {
   return(seur)
 }
 
+#' Add gene genomic location to seurat object
+#' 
+#' @param obj Seurat object
+#' @param ref Human genome reference, default `hg19`
+#' 
 #' export
 add_gene_locations_to_seurat <- function(obj, ref = "hg19"){
   meta <- gene_locations[[ref]] %>% 

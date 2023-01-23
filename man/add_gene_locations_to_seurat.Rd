@@ -2,10 +2,17 @@
 % Please edit documentation in R/util.R
 \name{add_gene_locations_to_seurat}
 \alias{add_gene_locations_to_seurat}
-\title{export}
+\title{Add gene genomic location to seurat object}
 \usage{
 add_gene_locations_to_seurat(obj, ref = "hg19")
 }
+\arguments{
+\item{obj}{Seurat object}
+
+\item{ref}{Human genome reference, default `hg19`
+
+export}
+}
 \description{
-export
+Add gene genomic location to seurat object
 }
