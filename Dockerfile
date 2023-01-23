@@ -44,6 +44,7 @@ RUN echo $PKG
 RUN mkdir -p /$PKG
 ADD . /$PKG
 WORKDIR /$PKG
+ADD policy.xml /etc/ImageMagick-6/policy.xml
 # Install dependencies with AnVil (faster)
 RUN Rscript -e 'options(download.file.method="libcurl", crayon.enabled=TRUE, timeout=2000); \
                 if(!require("BiocManager")) install.packages("BiocManager"); \
