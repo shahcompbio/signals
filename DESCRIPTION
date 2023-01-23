@@ -53,10 +53,10 @@ Suggests:
     VIBER,
     Seurat,
     plyranges
-Remotes:
-  caravagnalab/VIBER,
+Remotes:  
+  YuLab-SMU/ggtree,
   caravagnalab/easypar,
-  YuLab-SMU/ggtree
+  caravagnalab/VIBER
 VignetteBuilder: knitr
 LinkingTo: 
     Rcpp
