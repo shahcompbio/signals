@@ -235,18 +235,18 @@ getBins <- function(chrom.lengths = hg19_chrlength, binsize = 1e6, chromosomes =
   ### Making fixed-width bins ###
 
   message("Making fixed-width bins for bin size ", binsize, " ...")
-  chrom.lengths.floor <- floor(chrom.lengths / binsize) * binsize
+  chrom.lengths.floor <- ceiling(chrom.lengths / binsize) * binsize
   clfloor2use <- chrom.lengths.floor[chroms2use]
   clfloor2use <- clfloor2use[clfloor2use >= binsize]
   if (length(clfloor2use) == 0) {
     stop("All selected chromosomes are smaller than binsize ", binsize)
   }
-  bins <- unlist(GenomicRanges::tileGenome(clfloor2use, tilewidth = binsize), use.names = FALSE)
+  bins <- unlist(suppressWarnings(GenomicRanges::tileGenome(clfloor2use, tilewidth = binsize)), use.names = FALSE) #this is a hack for when SVs are at the very end of the chromosome, TODO: change SV location
 
-  GenomeInfoDb::seqlevels(bins) <- chroms2use
-  GenomeInfoDb::seqlengths(bins) <- chrom.lengths[GenomeInfoDb::seqlevels(bins)]
+  suppressWarnings(GenomeInfoDb::seqlevels(bins) <- chroms2use)
+  suppressWarnings(GenomeInfoDb::seqlengths(bins) <- chrom.lengths[GenomeInfoDb::seqlevels(bins)])
   skipped.chroms <- setdiff(chromosomes, as.character(unique(GenomeInfoDb::seqnames(bins))))
-  bins <- GenomeInfoDb::dropSeqlevels(bins, skipped.chroms, pruning.mode = "coarse")
+  suppressWarnings(bins <- GenomeInfoDb::dropSeqlevels(bins, skipped.chroms, pruning.mode = "coarse"))
 
   if (length(skipped.chroms) > 0) {
     warning("The following chromosomes are smaller than binsize ", binsize, ": ", paste0(skipped.chroms, collapse = ", "))
