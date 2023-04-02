@@ -3,7 +3,7 @@ per_chr_baf_plot <- function(haps, filtern = 9, perarm = FALSE, labelclones = FA
   if (labelclones) {
     if (perarm) {
       chridx <- data.frame(chrarm = paste0(rep(c(paste0(seq(1:22)), "X", "Y"), each = 2), rep(c("p", "q"), 24))) %>%
-        dplyr::mutate(idx = 1:n())
+        dplyr::mutate(idx = 1:dplyr::n())
 
       hst <- haps %>%
         dplyr::filter(total > filtern) %>%
@@ -44,7 +44,7 @@ per_chr_baf_plot <- function(haps, filtern = 9, perarm = FALSE, labelclones = FA
   else {
     if (perarm) {
       chridx <- data.frame(chrarm = paste0(rep(c(paste0(seq(1:22)), "X", "Y"), each = 2), rep(c("p", "q"), 24))) %>%
-        dplyr::mutate(idx = 1:n())
+        dplyr::mutate(idx = 1:dplyr::n())
 
       hst <- haps %>%
         dplyr::mutate(arm = coord_to_arm(chr, start)) %>%
@@ -124,7 +124,7 @@ per_segment_baf_plot <- function(hscn, filtern = 9, labelclones = FALSE) {
       
       chridx <- dplyr::distinct(cndat, chr, segid) %>%
         dplyr::arrange(mixedrank(segid)) %>% 
-        dplyr::mutate(idx = 1:n())
+        dplyr::mutate(idx = 1:dplyr::n())
       
       hst <- cndat %>%
         dplyr::filter(total > filtern) %>%
@@ -172,14 +172,14 @@ plot_proportions <- function(hscn_dna_arm, hscn_rna_arm, perarm = FALSE) {
   prop_rna <- hscn_rna_arm %>%
     dplyr::mutate(state_AS_phased = ifelse(state > 5, "Other", state_AS_phased)) %>%
     dplyr::group_by(chr, chrarm, state_AS_phased) %>%
-    dplyr::summarise(n = n()) %>%
+    dplyr::summarise(n = dplyr::n()) %>%
     dplyr::mutate(f = n / sum(n)) %>%
     dplyr::mutate(assay = "RNA")
 
   prop_dna <- hscn_dna_arm %>%
     dplyr::mutate(state_AS_phased = ifelse(state > 5, "Other", state_AS_phased)) %>%
     dplyr::group_by(chr, chrarm, state_AS_phased) %>%
-    dplyr::summarise(n = n()) %>%
+    dplyr::summarise(n = dplyr::n()) %>%
     dplyr::mutate(f = n / sum(n)) %>%
     dplyr::mutate(assay = "DNA")
 

@@ -716,7 +716,7 @@ filter_segments <- function(segs, binwidth = 5e6){
       dplyr::mutate(w = end-start) %>% 
       dplyr::filter(w > binwidth) %>% 
       dplyr::group_by(chr, cell_id) %>% 
-      dplyr::mutate(end2 = lead(start) - 1) %>% 
+      dplyr::mutate(end2 = dplyr::lead(start) - 1) %>% 
       dplyr::mutate(end = ifelse(is.na(end2), end, end2)) %>% 
       dplyr::ungroup() %>% 
       dplyr::select(chr, start, end, w) %>% 
@@ -739,7 +739,7 @@ filter_segments <- function(segs, binwidth = 5e6){
       dplyr::mutate(w = end-start) %>% 
       dplyr::filter(w > binwidth) %>% 
       dplyr::group_by(chr) %>% 
-      dplyr::mutate(end2 = lead(start) - 1) %>% 
+      dplyr::mutate(end2 = dplyr::lead(start) - 1) %>% 
       dplyr::mutate(end = ifelse(is.na(end2), end, end2)) %>% 
       dplyr::ungroup() %>% 
       dplyr::select(chr, start, end, w) %>% 
