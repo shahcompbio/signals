@@ -12,6 +12,7 @@ RUN apt-get update && apt-get -y upgrade && \
 RUN Rscript -e "install.packages('argparse')"
 RUN Rscript -e "install.packages('R.utils')"
 RUN Rscript -e "install.packages('magick')"
+RUN Rscript -e "install.packages('devtools')"
 
 RUN Rscript -e "library(devtools); install_github('caravagnalab/easypar')"
 RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
