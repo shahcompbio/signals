@@ -31,8 +31,6 @@ jobs:
       
       - name: Install xquartz
         run: brew install --cask xquartz
-      - name: Install pandoc
-        run: brew install pandoc
       - name: Install cairo
         run: brew install cairo
 
