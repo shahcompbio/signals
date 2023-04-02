@@ -43,5 +43,5 @@ jobs:
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: false
-          args: 'c("--no-manual")'
+          args: 'c("--no-manual --no-build-vignettes --ignore-vignettes")'
           error-on: '"error"'

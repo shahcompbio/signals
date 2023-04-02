@@ -1,15 +1,6 @@
 FROM bioconductor/bioconductor_docker
 
-RUN Rscript -e "install.packages(pkgs = c('tidyverse', \
-                                          'RColorBrewer', \
-                                          'data.table', \
-                                          'cowplot', \
-                                          'rmarkdown', \
-                                          'uwot', \
-                                          'BiocManager'), \
-                                        repos='https://cran.revolutionanalytics.com/', \
-                                        dependencies=TRUE, \
-                                        clean = TRUE)"
+
 
 RUN apt-get update && apt-get -y upgrade && \
         apt-get install -y build-essential wget \
@@ -17,15 +8,18 @@ RUN apt-get update && apt-get -y upgrade && \
         apt-get clean && apt-get purge && \
         rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+
 RUN Rscript -e "install.packages('argparse')"
 RUN Rscript -e "install.packages('R.utils')"
 RUN Rscript -e "install.packages('magick')"
 
-ADD policy.xml /etc/ImageMagick-6/policy.xml
+RUN Rscript -e "library(devtools); install_github('caravagnalab/easypar')"
+RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
+RUN Rscript -e "library(devtools); install_github('caravagnalab/VIBER')"
+RUN Rscript -e "library(devtools); install_github('VPetukhov/ggrastr')"
+RUN Rscript -e "library(devtools); install_github('shahcompbio/signals')"
 
-RUN Rscript -e "BiocManager::install('ComplexHeatmap')"
-RUN Rscript -e "BiocManager::install('IRanges')"
-RUN Rscript -e "BiocManager::install('GenomicRanges')"
+ADD policy.xml /etc/ImageMagick-6/policy.xml
 
 #Samtools
 RUN wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2 && \
@@ -36,11 +30,5 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9
         make
 
 ENV PATH=${PATH}:/usr/src/samtools-1.9
-
-RUN Rscript -e "library(devtools); install_github('caravagnalab/easypar')"
-RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
-RUN Rscript -e "library(devtools); install_github('caravagnalab/VIBER')"
-RUN Rscript -e "library(devtools); install_github('VPetukhov/ggrastr')"
-RUN Rscript -e "library(devtools); install_github('shahcompbio/signals')"
 
 WORKDIR /usr/src
