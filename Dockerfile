@@ -14,11 +14,8 @@ RUN Rscript -e "install.packages('R.utils')"
 RUN Rscript -e "install.packages('magick')"
 RUN Rscript -e "install.packages('devtools')"
 
-RUN Rscript -e "library(devtools); install_github('caravagnalab/easypar')"
-RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
-RUN Rscript -e "library(devtools); install_github('caravagnalab/VIBER')"
-RUN Rscript -e "library(devtools); install_github('VPetukhov/ggrastr')"
 RUN Rscript -e "library(devtools); install_github('shahcompbio/signals')"
+RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
 
 ADD policy.xml /etc/ImageMagick-6/policy.xml
 
