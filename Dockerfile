@@ -23,7 +23,6 @@ RUN Rscript -e "install.packages('magick')"
 
 ADD policy.xml /etc/ImageMagick-6/policy.xml
 
-RUN Rscript -e "BiocManager::install('ggtree')"
 RUN Rscript -e "BiocManager::install('ComplexHeatmap')"
 RUN Rscript -e "BiocManager::install('IRanges')"
 RUN Rscript -e "BiocManager::install('GenomicRanges')"
@@ -42,6 +41,7 @@ RUN Rscript -e "library(devtools); install_github('caravagnalab/easypar')"
 RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
 RUN Rscript -e "library(devtools); install_github('caravagnalab/VIBER')"
 RUN Rscript -e "library(devtools); install_github('VPetukhov/ggrastr')"
+RUN Rscript -e "BiocManager::install('ggtree')"
 RUN Rscript -e "library(devtools); install_github('shahcompbio/signals')"
 
 WORKDIR /usr/src
