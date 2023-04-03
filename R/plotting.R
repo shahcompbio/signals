@@ -1646,9 +1646,6 @@ plot_variance_state <- function(hscn, by_allele_specific_state = FALSE) {
 #'
 #' @return A \code{ggplot2} object
 #'
-#' @examples
-#' 
-#' plot_clusters_used_for_phasing(hscn)
 #'
 #' @export
 plot_clusters_used_for_phasing <- function(hscn){

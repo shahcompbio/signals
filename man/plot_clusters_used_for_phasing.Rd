@@ -15,8 +15,3 @@ A \code{ggplot2} object
 \description{
 Plots the consensus copy number and BAF profiles of clusters used for phasing
 }
-\examples{
-
-plot_clusters_used_for_phasing(hscn)
-
-}
