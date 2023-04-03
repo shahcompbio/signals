@@ -1,11 +1,7 @@
 FROM bioconductor/bioconductor_docker
 
-RUN echo "$GITHUB_PAT"
-
 RUN --mount=type=secret,id=github_token \
   export GITHUB_PAT=$(cat /run/secrets/github_token) 
-  
-RUN echo "$GITHUB_PAT"
 
 RUN apt-get update && apt-get -y upgrade && \
         apt-get install -y build-essential wget \
@@ -20,7 +16,6 @@ RUN Rscript -e "install.packages('magick')"
 RUN Rscript -e "install.packages('devtools')"
 
 RUN Rscript -e "library(devtools); install_github('shahcompbio/signals')"
-RUN Rscript -e "library(devtools); install_github('caravagnalab/mobster')"
 
 ADD policy.xml /etc/ImageMagick-6/policy.xml
 
