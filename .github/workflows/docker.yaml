@@ -10,7 +10,7 @@ env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: docker.io
   # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: "marcjwilliams1/signals"
   GITHUB_PAT: ${{ secrets.GH_TOKEN }}
   
 jobs:
