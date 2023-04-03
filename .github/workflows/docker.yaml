@@ -36,6 +36,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
+        env: GITHUB_PAT: ${{ secrets.GH_TOKEN }}
         uses: docker/build-push-action@v2
         with:
           context: "{{defaultContext}}"
@@ -45,4 +46,3 @@ jobs:
           github-token: ${{ secrets.GH_TOKEN }}
           secrets: |
             "github_token=${{ secrets.GH_TOKEN }}"
-          env: GITHUB_PAT: ${{ secrets.GH_TOKEN }}
