@@ -1,6 +1,7 @@
 FROM bioconductor/bioconductor_docker
 
-
+RUN --mount=type=secret,id=github_token \
+  export GITHUB_PAT=$(cat /run/secrets/github_token) 
 
 RUN apt-get update && apt-get -y upgrade && \
         apt-get install -y build-essential wget \
