@@ -132,7 +132,14 @@ but in general it will be less accurate.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span>
 <span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
-<span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -312757.0462</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -308817.0422</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -308273.1431</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -308248.1003</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -308247.7397</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -308247.7365</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -308247.7365</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="ascn-inference">ASCN inference<a class="anchor" aria-label="anchor" href="#ascn-inference"></a>
@@ -301,57 +308,56 @@ shown below.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">x</span><span class="op">@</span><span class="va">assays</span><span class="op">$</span><span class="va">segBAF</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "BAF-1-1-47000000"           "BAF-1-225500001-243700000" </span></span>
 <span><span class="co">#&gt;  [3] "BAF-1-47000001-225500000"   "BAF-10-1-97000000"         </span></span>
-<span><span class="co">#&gt;  [5] "BAF-10-97000001-130600000"  "BAF-11-1-20500000"         </span></span>
-<span><span class="co">#&gt;  [7] "BAF-11-119500001-130800000" "BAF-11-20500001-82500000"  </span></span>
+<span><span class="co">#&gt;  [5] "BAF-10-97000001-130600000"  "BAF-11-119500001-130800000"</span></span>
+<span><span class="co">#&gt;  [7] "BAF-11-1-20500000"          "BAF-11-20500001-82500000"  </span></span>
 <span><span class="co">#&gt;  [9] "BAF-11-82500001-119500000"  "BAF-12-1-123000000"        </span></span>
 <span><span class="co">#&gt; [11] "BAF-13-1-110300000"         "BAF-14-1-54000000"         </span></span>
 <span><span class="co">#&gt; [13] "BAF-14-54000001-104000000"  "BAF-15-1-43000000"         </span></span>
 <span><span class="co">#&gt; [15] "BAF-15-43000001-77000000"   "BAF-15-77000001-98500000"  </span></span>
-<span><span class="co">#&gt; [17] "BAF-16-1-64500000"          "BAF-16-64500001-88700000"  </span></span>
-<span><span class="co">#&gt; [19] "BAF-17-1-75300000"          "BAF-18-1-73100000"         </span></span>
-<span><span class="co">#&gt; [21] "BAF-19-1-28000000"          "BAF-19-28000001-56300000"  </span></span>
-<span><span class="co">#&gt; [23] "BAF-2-1-88500000"           "BAF-2-225500001-237300000" </span></span>
-<span><span class="co">#&gt; [25] "BAF-2-88500001-99000000"    "BAF-2-99000001-225500000"  </span></span>
-<span><span class="co">#&gt; [27] "BAF-20-1-13000000"          "BAF-20-13000001-58400000"  </span></span>
-<span><span class="co">#&gt; [29] "BAF-21-1-42600000"          "BAF-22-1-49400000"         </span></span>
-<span><span class="co">#&gt; [31] "BAF-3-1-75500000"           "BAF-3-75500001-192300000"  </span></span>
-<span><span class="co">#&gt; [33] "BAF-4-1-47500000"           "BAF-4-108500001-138500000" </span></span>
-<span><span class="co">#&gt; [35] "BAF-4-138500001-176000000"  "BAF-4-176000001-187100000" </span></span>
-<span><span class="co">#&gt; [37] "BAF-4-47500001-108500000"   "BAF-5-1-51000000"          </span></span>
-<span><span class="co">#&gt; [39] "BAF-5-146000001-176600000"  "BAF-5-51000001-146000000"  </span></span>
-<span><span class="co">#&gt; [41] "BAF-6-1-24000000"           "BAF-6-154000001-164500000" </span></span>
-<span><span class="co">#&gt; [43] "BAF-6-24000001-65000000"    "BAF-6-65000001-154000000"  </span></span>
-<span><span class="co">#&gt; [45] "BAF-7-1-26000000"           "BAF-7-26000001-62000000"   </span></span>
-<span><span class="co">#&gt; [47] "BAF-7-62000001-81500000"    "BAF-7-81500001-155100000"  </span></span>
-<span><span class="co">#&gt; [49] "BAF-8-1-75000000"           "BAF-8-75000001-139900000"  </span></span>
-<span><span class="co">#&gt; [51] "BAF-9-1-137400000"          "BAF-X-1-147100000"</span></span>
+<span><span class="co">#&gt; [17] "BAF-16-1-88700000"          "BAF-17-1-75300000"         </span></span>
+<span><span class="co">#&gt; [19] "BAF-18-1-73100000"          "BAF-19-1-28000000"         </span></span>
+<span><span class="co">#&gt; [21] "BAF-19-28000001-56300000"   "BAF-2-1-88500000"          </span></span>
+<span><span class="co">#&gt; [23] "BAF-2-225000001-237300000"  "BAF-2-88500001-99000000"   </span></span>
+<span><span class="co">#&gt; [25] "BAF-2-99000001-225000000"   "BAF-20-13000001-58400000"  </span></span>
+<span><span class="co">#&gt; [27] "BAF-20-1-13000000"          "BAF-21-1-42600000"         </span></span>
+<span><span class="co">#&gt; [29] "BAF-22-1-49400000"          "BAF-3-1-75500000"          </span></span>
+<span><span class="co">#&gt; [31] "BAF-3-75500001-192300000"   "BAF-4-108500001-138500000" </span></span>
+<span><span class="co">#&gt; [33] "BAF-4-138500001-176000000"  "BAF-4-176000001-187100000" </span></span>
+<span><span class="co">#&gt; [35] "BAF-4-1-47500000"           "BAF-4-47500001-108500000"  </span></span>
+<span><span class="co">#&gt; [37] "BAF-5-1-51000000"           "BAF-5-51000001-176600000"  </span></span>
+<span><span class="co">#&gt; [39] "BAF-6-154000001-164500000"  "BAF-6-1-24000000"          </span></span>
+<span><span class="co">#&gt; [41] "BAF-6-24000001-65500000"    "BAF-6-65500001-154000000"  </span></span>
+<span><span class="co">#&gt; [43] "BAF-7-1-26000000"           "BAF-7-26000001-62000000"   </span></span>
+<span><span class="co">#&gt; [45] "BAF-7-62000001-81500000"    "BAF-7-81500001-155100000"  </span></span>
+<span><span class="co">#&gt; [47] "BAF-8-1-75000000"           "BAF-8-75000001-139900000"  </span></span>
+<span><span class="co">#&gt; [49] "BAF-9-1-137400000"          "BAF-X-1-147100000"</span></span>
 <span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-3-75500001-192300000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-18-1.png" width="700"></p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-10-1-97000000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-19-1.png" width="700"></p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-2-99000001-225500000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-2-99000001-225000000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-20-1.png" width="700"></p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/VlnPlot.html" class="external-link">VlnPlot</a></span><span class="op">(</span><span class="va">x</span>,<span class="st">"BAF-2-99000001-225500000"</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ylab</a></span><span class="op">(</span><span class="st">"BAF"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/VlnPlot.html" class="external-link">VlnPlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-2-99000001-225000000"</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ylab</a></span><span class="op">(</span><span class="st">"BAF"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-21-1.png" width="700"></p>
 <p>We can also pull out the allelic imbalance in individual genes. Let’s
 look at some genes on 4p, where one group of cells is homozygous. Most
 genes have very few counts, so we’ll pull out genes with a large number
 of genotyped SNPs to take a look at.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># chr4pgenes &lt;- x[["gBAF"]]@meta.features %&gt;% filter(arm == "4p") %&gt;% </span></span>
-<span><span class="co">#   arrange(desc(totalsnpcounts))</span></span>
-<span><span class="co"># </span></span>
-<span><span class="co"># mygene &lt;- chr4pgenes$ensembl_gene_symbol[2]</span></span>
-<span><span class="co"># </span></span>
-<span><span class="co"># cowplot::plot_grid(</span></span>
-<span><span class="co">#   FeaturePlot(x, paste0("BAF-", mygene)) + scale_color_gradientn(colors = scBAFstate_cols()),</span></span>
-<span><span class="co">#   FeaturePlot(x, mygene),</span></span>
-<span><span class="co">#   DimPlot(x, group.by = "DP_cloneid"),</span></span>
-<span><span class="co">#   VlnPlot(x, paste0("BAF-", mygene), group.by = "DP_cloneid") + ylab("BAF"))</span></span>
-<span>  </span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">chr4pgenes</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">[[</span><span class="st">"gBAF"</span><span class="op">]</span><span class="op">]</span><span class="op">@</span><span class="va">meta.features</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">arm</span> <span class="op">==</span> <span class="st">"4p"</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/desc.html" class="external-link">desc</a></span><span class="op">(</span><span class="va">totalsnpcounts</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">mygene</span> <span class="op">&lt;-</span> <span class="va">chr4pgenes</span><span class="op">$</span><span class="va">ensembl_gene_symbol</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
+<span></span>
+<span><span class="fu">cowplot</span><span class="fu">::</span><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html" class="external-link">plot_grid</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"BAF-"</span>, <span class="va">mygene</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">mygene</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">x</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/VlnPlot.html" class="external-link">VlnPlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"BAF-"</span>, <span class="va">mygene</span><span class="op">)</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ylab</a></span><span class="op">(</span><span class="st">"BAF"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-22-1.png" width="700"></p>
 <p>Note that even in this example where we have been able to identify
 lots of SNP counts in this gene, most individual cells will still have
 very few counts. This explains why in cluster C2, the violin plot shows

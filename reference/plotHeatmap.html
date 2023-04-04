@@ -92,13 +92,14 @@
 <span>  widenarm <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  umapmetric <span class="op">=</span> <span class="st">"euclidean"</span>,</span>
 <span>  chrlabels <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  labeladjust <span class="op">=</span> <span class="op">-</span><span class="fl">5</span>,</span>
 <span>  SV <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nticks <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  Mb <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  fillgenome <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  annotation_height <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  annofontsize <span class="op">=</span> <span class="fl">14</span>,</span>
+<span>  annofontsize <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  na_col <span class="op">=</span> <span class="st">"white"</span>,</span>
 <span>  linkheight <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  newlegendname <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -118,6 +119,10 @@
 
 <dt>tree</dt>
 <dd><p>Tree in newick format to plot alongside the heatmap, default = NULL</p></dd>
+
+
+<dt>clusters</dt>
+<dd><p>data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL</p></dd>
 
 
 <dt>normalize_ploidy</dt>
@@ -141,7 +146,11 @@
 
 
 <dt>plotcol</dt>
-<dd><p>Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "Min", "Maj"</p></dd>
+<dd><p>Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "A", "B"</p></dd>
+
+
+<dt>reorderclusters</dt>
+<dd><p>Reorder the cells according to cluster if no tree is specified</p></dd>
 
 
 <dt>pctcells</dt>
@@ -188,12 +197,24 @@
 <dd><p>show clone label or not, boolean</p></dd>
 
 
+<dt>show_clone_text</dt>
+<dd><p>Show small inset labels next to clone/cluster annotation</p></dd>
+
+
+<dt>widenarm</dt>
+<dd><p>Widen the copy number data table to include all bins</p></dd>
+
+
 <dt>umapmetric</dt>
 <dd><p>metric to use in umap dimensionality reduction if no clusters are specified</p></dd>
 
 
 <dt>chrlabels</dt>
 <dd><p>include chromosome labels or not, boolean</p></dd>
+
+
+<dt>labeladjust</dt>
+<dd></dd>
 
 
 <dt>SV</dt>
@@ -208,8 +229,21 @@
 <dd><p>number of ticks in x-axis label when plotting a single chromosome</p></dd>
 
 
+<dt>Mb</dt>
+<dd><p>Use Mb ticks when plotting single chromosome</p></dd>
+
+
 <dt>fillgenome</dt>
 <dd><p>fill in any missing bins and add NA to centromeric regions</p></dd>
+
+
+<dt>annotation_height</dt>
+<dd><p>Height of the annotations</p>
+<p>If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.</p></dd>
+
+
+<dt>annofontsize</dt>
+<dd><p>Font size to use for annotations, default = 10</p></dd>
 
 
 <dt>na_col</dt>
@@ -237,20 +271,22 @@
 
 
 <dt>rasterquality</dt>
-<dd><p>default = 15</p>
-<p>If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.</p>
-<p>#'</p></dd>
-
-
-<dt>cluster</dt>
-<dd><p>data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL</p></dd>
-
-
-<dt>reordercluster</dt>
-<dd><p>Reorder the cells according to cluster if no tree is specified</p></dd>
+<dd><p>default = 15</p></dd>
 
 </dl></div>
 
+    <div id="ref-examples">
+    <h2>Examples</h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, likelihood <span class="op">=</span> <span class="st">"binomial"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">plotHeatmap</span><span class="op">(</span><span class="va">hscn</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top"><h2 data-toc-skip>Contents</h2>

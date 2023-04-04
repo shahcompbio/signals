@@ -76,14 +76,14 @@
 <span>  progressbar <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ncores <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  phasebyarm <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  minfrac <span class="op">=</span> <span class="fl">0.7</span>,</span>
-<span>  likelihood <span class="op">=</span> <span class="st">"binomial"</span>,</span>
+<span>  minfrachaplotypes <span class="op">=</span> <span class="fl">0.7</span>,</span>
+<span>  likelihood <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  minbins <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  minbinschr <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  phased_haplotypes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  clustering_method <span class="op">=</span> <span class="st">"copy"</span>,</span>
 <span>  maxloherror <span class="op">=</span> <span class="fl">0.035</span>,</span>
-<span>  mincells <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  mincells <span class="op">=</span> <span class="fl">7</span>,</span>
 <span>  overwritemincells <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cluster_per_chr <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  viterbiver <span class="op">=</span> <span class="st">"cpp"</span>,</span>
@@ -128,12 +128,16 @@
 <dd><p>Number of cores to use, default = 1</p></dd>
 
 
-<dt>minfrac</dt>
-<dd><p>Minimum proportion of haplotypes to retain when clustering + phasing, default = 0.8</p></dd>
+<dt>phasebyarm</dt>
+<dd><p>Phasing by chromosome arm, default = FALSE</p></dd>
+
+
+<dt>minfrachaplotypes</dt>
+<dd><p>Minimum proportion of haplotypes to retain when clustering + phasing, default = 0.7</p></dd>
 
 
 <dt>likelihood</dt>
-<dd><p>Likelihood model for HMM, default is <code>binomial</code>, other option is <code>betabinomial</code> or use <code>auto</code> and the algorithm will choose the likelihood that best fits the data.</p></dd>
+<dd><p>Likelihood model for HMM, default is <code>binomial</code>, other option is <code>betabinomial</code> or use <code>auto</code> and the algorithm will choose the likelihood that best fits the data. Default <code>auto</code></p></dd>
 
 
 <dt>minbins</dt>
@@ -149,7 +153,7 @@
 
 
 <dt>clustering_method</dt>
-<dd><p>Method to use to cluster cells for haplotype phasing, default is <code>copy</code>, other option is <code>breakpoints</code></p></dd>
+<dd><p>Method to use to cluster cells for haplotype phasing, default is <code>copy</code> (using copy column), other option is <code>breakpoints</code> (using breakpoint for clustering)</p></dd>
 
 
 <dt>maxloherror</dt>
@@ -157,11 +161,11 @@
 
 
 <dt>mincells</dt>
-<dd><p>Minimum cluster size used for phasing</p></dd>
+<dd><p>Minimum cluster size used for phasing, default = 7</p></dd>
 
 
 <dt>overwritemincells</dt>
-<dd><p>Overwrite the the number of cells to use for clustering/phasing</p></dd>
+<dd><p>Force the number of cells to use for clustering/phasing rather than use the output of the clustering</p></dd>
 
 
 <dt>cluster_per_chr</dt>
@@ -183,18 +187,30 @@
 <dt>fillmissing</dt>
 <dd><p>For bins with missing counts fill in values based on neighbouring bins</p></dd>
 
+
+<dt>viterbver</dt>
+<dd><p>Version of viterbi algorithm to use (cpp or R)</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
     
 
-<p>allele specific copy number object which includes dataframe similar to input with additional columns which include</p><ul><li><p><code>Maj</code> (Major allele copy number)</p></li>
-<li><p><code>Min</code> (Minor allele copy number)</p></li>
-<li><p><code>state_AS_phased</code> (phased state of the form Maj|Min )</p></li>
-<li><p><code>state_AS</code> (mirrored state of the form Maj|Min)</p></li>
-<li><p><code>LOH</code> (is bin LOH or not)</p></li>
-<li><p><code>state_phase</code> (state describing which is the dominant allele and whether it is LOH or not)</p></li>
-<li><p><code>state_BAF</code> (binned discretized BAF value calculated as Min / (Maj + Min))</p></li>
+<p>Haplotype specific copy number object</p>
+    </div>
+    <div id="details">
+    <h2>Details</h2>
+    <p>The haplotype specific copy number object include the following additional columns</p><ul><li><p><code>A</code> A allele copy number</p></li>
+<li><p><code>B</code> B allele copy number</p></li>
+<li><p><code>state_AS_phased</code> A|B</p></li>
+<li><p><code>state_min</code> Minor allele copy number</p></li>
+<li><p><code>LOH</code> =LOH if bin is LOH, NO otherwise</p></li>
+<li><p><code>state_phase</code> Discretized haplotype specific states</p></li>
+<li><p><code>phase</code> Whether the A allele or B allele is dominant</p></li>
+<li><p><code>alleleA</code> Counts for the A allele</p></li>
+<li><p><code>alleleB</code> Counts for the B allele</p></li>
+<li><p><code>totalcounts</code> Total number of counts</p></li>
+<li><p><code>BAF</code> B-allele frequency (alleleB / totalcounts)</p></li>
 </ul></div>
 
     <div id="ref-examples">
@@ -208,7 +224,7 @@
 <span class="r-in"><span>  loherror <span class="op">=</span> <span class="fl">0.02</span>,</span></span>
 <span class="r-in"><span>  coverage <span class="op">=</span> <span class="fl">100</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Joining, by = c("chr", "start", "end", "hap_label")</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Joining with `by = join_by(chr, start, end, hap_label)`</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">callHaplotypeSpecificCN</span><span class="op">(</span><span class="va">sim_data</span><span class="op">$</span><span class="va">CNbins</span>, <span class="va">sim_data</span><span class="op">$</span><span class="va">haplotypes</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Filtering out haplotypes present &lt; 10% of cells...</span>
@@ -223,8 +239,24 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Join phased haplotypes...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Reorder haplotypes based on phase...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Total number of cells after removing cells with &lt; 100 bins: 40</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`progress_estimated()` was deprecated in dplyr 1.0.0.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The deprecated feature was likely used in the <span style="color: #0000BB;">signals</span> package.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   Please report the issue to the authors.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Removing 0 cells for phasing</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Using 10 cells for clustering...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Fitting beta-binomial model to state: 1|1...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  1 :  loglikelihood = -377120.8698</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  2 :  loglikelihood = -352106.2113</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  3 :  loglikelihood = -340804.2967</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  4 :  loglikelihood = -337553.2202</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  5 :  loglikelihood = -336897.0663</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  6 :  loglikelihood = -336785.9707</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  7 :  loglikelihood = -336767.5802</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  8 :  loglikelihood = -336764.9199</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>14528 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  9 :  loglikelihood = -336764.9199</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Inferred mean: 0.496, Expected mean: 0.5, Inferred overdispersion (rho): 0</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Tarones Z-score: -2.791, using binomial model for inference.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Using 7 cells for clustering...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Clustering chromosome 1</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Creating CN matrix...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Calculating UMAP dimensionality reduction...</span>
