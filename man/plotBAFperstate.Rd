@@ -24,16 +24,18 @@ plotBAFperstate(
 
 \item{dens_adjust}{density adjustment factor in the violin plots}
 
-\item{mincounts}{filter out bins < mincounts from plotting, default = 6
-
+\item{mincounts}{filter out bins < mincounts from plotting, default = 6}
+}
+\description{
+Plot BAF distributions per allele specific state
+}
+\examples{
 \dontrun{
 data("haplotypes")
 data("CNbins")
 haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
 hscn <- callHaplotypeSpecificCN(CNbins, haplotypes, likelihood = "binomial")
 plotBAFperstate(hscn, genes = "MYC")
-}}
 }
-\description{
-Plot BAF distributions per allele specific state
+
 }

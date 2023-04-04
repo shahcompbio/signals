@@ -15,6 +15,7 @@ Description: signals (SIngle cell Genomes with Allele Specificity)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+LazyDataCompression: xz
 Depends:
     R (>= 3.5.0)
 biocViews:
@@ -40,7 +41,7 @@ Imports:
     grid,
     ggforce,
     ggtree
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.0
 Suggests: 
     knitr,
     rmarkdown,
@@ -52,11 +53,9 @@ Suggests:
     VIBER,
     Seurat,
     plyranges
-Remotes:
-  caravagn/VIBER,
-  caravagn/pio,
-  caravagn/easypar,
-  YuLab-SMU/ggtree
+Remotes:  
+  caravagnalab/easypar,
+  caravagnalab/VIBER
 VignetteBuilder: knitr
 LinkingTo: 
     Rcpp
