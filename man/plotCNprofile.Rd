@@ -65,9 +65,21 @@ plotCNprofile(
 
 \item{svalpha}{the alpha scaling of the SV lines, default = 0.5}
 
+\item{svwidth}{Width of SV width curves, default = 1.0}
+
+\item{adj}{adjustment for gene labels}
+
 \item{genes}{vector of genes to annotate, will add a dashed vertical line and label}
 
 \item{tickwidth}{Spacing of ticks (in Mb) when only 1 chromosome is plotted}
+
+\item{chrstart}{Start of region (in Mb) when plotting a single chromosome}
+
+\item{chrend}{End of region (in Mb) when plotting a single chromosome}
+
+\item{shape}{shape for plotting, default = 16}
+
+\item{positionticks}{set to TRUE to use position ticks rather than chromosome ticks}
 }
 \value{
 ggplot2 plot

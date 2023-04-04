@@ -53,17 +53,21 @@ callAlleleSpecificCN(
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include
 
-* `Maj` (Major allele copy number)
-* `Min` (Minor allele copy number)
-* `state_AS_phased` (phased state of the form Maj|Min )
-* `state_AS` (mirrored state of the form Maj|Min)
-* `LOH` (is bin LOH or not)
-* `state_phase` (state describing which is the dominant allele and whether it is LOH or not)
-* `state_BAF` (binned discretized BAF value calculated as Min / (Maj + Min))
+* `A` A allele copy number
+* `B` B allele copy number
+* `state_AS_phased` A|B
+* `state_min` Minor allele copy number
+* `LOH` =LOH if bin is LOH, NO otherwise
+* `state_phase` Discretized haplotype specific states 
+* `phase` Whether the A allele or B allele is dominant
+* `alleleA` Counts for the A allele
+* `alleleB` Counts for the B allele
+* `totalcounts` Total number of counts
+* `BAF` B-allele frequency (alleleB / totalcounts)
 }
 \description{
 Call allele specific copy number in single cell datasets
 }
 \details{
-In the allele specific copy number inference Maj is always > Min and state_AS_phased == state_AS
+In the allele specific copy number inference A is always > B and state_AS_phased == state_AS
 }

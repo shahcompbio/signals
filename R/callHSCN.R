@@ -576,23 +576,26 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param selftransitionprob probability to stay in the same state in the HMM, default = 0.95, set to 0.0 for an IID model
 #' @param progressbar Boolean to display progressbar or not, default = TRUE, will only show if ncores == 1
 #' @param ncores Number of cores to use, default = 1
-#' @param minfrac Bimum proportion of haplotypes to retain when clustering + phasing, default = 0.8
-#' @param likelihood Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data.
-#' @param minbins Bimum number of bins containing both haplotype counts and copy number data for a cell to be included
-#' @param minbinschr Bimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
+#' @param phasebyarm Phasing by chromosome arm, default = FALSE
+#' @param minfrachaplotypes Minimum proportion of haplotypes to retain when clustering + phasing, default = 0.7
+#' @param likelihood Likelihood model for HMM, default is `binomial`, other option is `betabinomial` or use `auto` and the algorithm will choose the likelihood that best fits the data. Default `auto`
+#' @param minbins Minimum number of bins containing both haplotype counts and copy number data for a cell to be included
+#' @param minbinschr Minimum number of bins containing both haplotype counts and copy number data per chromosome for a cell to be included
 #' @param phased_haplotypes Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by signals does not return a good fit.
-#' @param clustering_method Method to use to cluster cells for haplotype phasing, default is `copy`, other option is `breakpoints`
+#' @param clustering_method Method to use to cluster cells for haplotype phasing, default is `copy` (using copy column), other option is `breakpoints` (using breakpoint for clustering)
 #' @param maxloherror Maximum value for LOH error rate
-#' @param mincells Bimum cluster size used for phasing
-#' @param overwritemincells Overwrite the the number of cells to use for clustering/phasing
+#' @param mincells Minimum cluster size used for phasing, default = 7
+#' @param overwritemincells Force the number of cells to use for clustering/phasing rather than use the output of the clustering
+#' @param viterbver Version of viterbi algorithm to use (cpp or R)
 #' @param cluster_per_chr Whether to cluster per chromosome to rephase alleles or not
 #' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
 #' @param firstpassfiltering Filter out cells with large discrepancy after first pass state assignment
 #' @param smoothsingletons Remove singleton bins by smoothing over based on states in adjacent bins
 #' @param fillmissing For bins with missing counts fill in values based on neighbouring bins
 #'
-#' @return allele specific copy number object which includes dataframe similar to input with additional columns which include
-#'
+#' @return Haplotype specific copy number object 
+#' 
+#' @details The haplotype specific copy number object include the following additional columns
 #' * `A` A allele copy number
 #' * `B` B allele copy number
 #' * `state_AS_phased` A|B
@@ -604,6 +607,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' * `alleleB` Counts for the B allele
 #' * `totalcounts` Total number of counts
 #' * `BAF` B-allele frequency (alleleB / totalcounts)
+#' @md
 #' 
 #' @examples
 #' sim_data <- simulate_data_cohort(
@@ -628,14 +632,14 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     progressbar = TRUE,
                                     ncores = 1,
                                     phasebyarm = FALSE,
-                                    minfrac = 0.7,
-                                    likelihood = "binomial",
+                                    minfrachaplotypes = 0.7,
+                                    likelihood = "auto",
                                     minbins = 100,
                                     minbinschr = 10,
                                     phased_haplotypes = NULL,
                                     clustering_method = "copy",
                                     maxloherror = 0.035,
-                                    mincells = 10,
+                                    mincells = 7,
                                     overwritemincells = NULL,
                                     cluster_per_chr = TRUE,
                                     viterbiver = "cpp", 
@@ -763,7 +767,7 @@ callHaplotypeSpecificCN <- function(CNbins,
     chrlist <- proportion_imbalance(ascn,
                                     haplotypes,
                                     phasebyarm = phasebyarm,
-                                    minfrac = minfrac,
+                                    minfrachaplotypes = minfrachaplotypes,
                                     mincells = mincells,
                                     clustering_method = clustering_method,
                                     overwritemincells = overwritemincells,
@@ -1253,6 +1257,8 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9, ncells = 1) {
 #' @param chromosomes vector specifying which chromosomes to phase, default is NULL whereby all chromosomes are phased
 #' @param method either `mindist` or `LOH`
 #' @param ncells default 1
+#' @param clusterfirst Whether to cluster cells and perform rephasing on clusters rather than cells
+#' @param cl Precomputed clustering object from `umap_clustering`
 #'
 #' @return Either a new `hscn` object or a dataframe with rephased bins depdending on the input
 #'

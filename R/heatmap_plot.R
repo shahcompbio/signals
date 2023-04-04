@@ -14,7 +14,7 @@ cn_colours_phase <- scCNphase_colors
 cn_colours_bafstate <- scBAFstate_colors
 
 #' @export
-make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainloss = FALSE, cnonly = FALSE, cntitle = "Copy\nNumber", hscntitle = "HSCN State", gainlosstitle = "Δ", ...) {
+make_copynumber_legend <- function(font_size = 12, ncolcn = 2, ncolas = 1, gainloss = FALSE, cnonly = FALSE, cntitle = "Copy\nNumber", hscntitle = "HSCN State", gainlosstitle = "D", ...) {
   cn_lgd <- ComplexHeatmap::Legend(
     title = cntitle,
     labels = stringr::str_remove(names(scCN_colors), "CN"),
@@ -881,14 +881,14 @@ getSVlegend <- function(include = NULL) {
 #'
 #' @param cn Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`
 #' @param tree Tree in newick format to plot alongside the heatmap, default = NULL
-#' @param cluster data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL
+#' @param clusters data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL
 #' @param normalize_ploidy Normalize ploidy of all cells to 2
 #' @param normalize_tree default = FALSE
 #' @param branch_length scales branch lengths to this size, default = 2
 #' @param spacer_cols number of empty columns between chromosomes, default = 20
 #' @param plottree Binary value of whether to plot tree or not, default = TRUE
 #' @param plotcol Which column to colour the heatmap by, should be one of "state", "state_BAF", "state_phase", "state_AS", "state_min", "copy", "BAF", "A", "B"
-#' @param reordercluster Reorder the cells according to cluster if no tree is specified
+#' @param reorderclusters Reorder the cells according to cluster if no tree is specified
 #' @param pctcells Minimum size of cluster in terms of perecentage of cells in umap clustering
 #' @param library_mapping Named vector mapping library names to labels for legend
 #' @param clone_pal pallette to colour clusters by
@@ -914,10 +914,16 @@ getSVlegend <- function(include = NULL) {
 #' @param maxCNcol max value for color scale when plotting raw data
 #' @param anno_width width of left annotations
 #' @param rasterquality default = 15
+#' @param show_clone_text Show small inset labels next to clone/cluster annotation
+#' @param widenarm Widen the copy number data table to include all bins
+#' @param Mb Use Mb ticks when plotting single chromosome
+#' @param annofontsize Font size to use for annotations, default = 10
+#' @param annotation_height Height of the annotations
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
-#'
-#' #' \dontrun{
+#' 
+#' @examples
+#' \dontrun{
 #' data("haplotypes")
 #' data("CNbins")
 #' haplotypes <- format_haplotypes_dlp(haplotypes, CNbins)
@@ -1335,7 +1341,7 @@ plotHeatmapQC <- function(cn,
     CNbins <- dplyr::left_join(CNbins, p$cl$clustering, by = "cell_id")
     CNbins <- dplyr::left_join(CNbins, p$prop)
   } else {
-    CNbins$chrarm <- paste0(CNbins$chr, signals:::coord_to_arm(CNbins$chr, CNbins$start))
+    CNbins$chrarm <- paste0(CNbins$chr, coord_to_arm(CNbins$chr, CNbins$start))
     CNbins <- dplyr::left_join(CNbins, p$cl$clustering, by = "cell_id")
     CNbins <- dplyr::left_join(CNbins, p$prop)
   }
@@ -1344,7 +1350,7 @@ plotHeatmapQC <- function(cn,
     dplyr::mutate(state_BAF = ifelse(is.na(propA), "-1", state_BAF))
 
   plotcol <- "state_BAF"
-  colvals <- signals:::cn_colours_bafstate
+  colvals <- cn_colours_bafstate
   colvals[["-1"]] <- "gray90"
   legendname <- "Allelic Imbalance"
 
