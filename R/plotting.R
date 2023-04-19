@@ -702,18 +702,18 @@ plotCNprofile <- function(CNbins,
   }
 
   if (!is.null(SV) && nrow(SV) > 0) {
-    svpl <- plottinglistSV(SV, chrfilt = chrfilt)
     binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    svpl <- plottinglistSV(SV, chrfilt = chrfilt, binsize = binsize)
     pl$CNbins <- dplyr::left_join(getBins(binsize = binsize), pl$CNbins)
     bezdf <- get_bezier_df(svpl, pl, maxCN)
     bezdf <- bezdf %>%
-      dplyr::mutate(samebin = (position_1 == position_2) | rearrangement_type == "foldback") %>% 
-      dplyr::mutate(rearrangement_type = CapStr(rearrangement_type))
+      dplyr::mutate(samebin = (position_1 == position_2) | rearrangement_type == "foldback")
+    bezdf$rearrangement_type = unlist(lapply(bezdf$rearrangement_type, CapStr))
     gCN <- gCN +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
         alpha = 0.8,
         size = svwidth,
-        col = as.vector(SV_colors[bezdf$rearrangement_type[1]]),
+        col = as.vector(SV_colors["Inversion"]),
         data = bezdf %>% dplyr::filter(samebin == TRUE)
       ) +
       ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),

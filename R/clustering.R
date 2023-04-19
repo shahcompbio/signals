@@ -4,7 +4,7 @@ umap_clustering <- function(CNbins,
                             min_dist = 0.1,
                             minPts = 30,
                             seed = NULL,
-                            field = "state",
+                            field = "copy",
                             umapmetric = "correlation",
                             hscn = FALSE) {
   if (length(unique(CNbins$cell_id)) < n_neighbors) {
