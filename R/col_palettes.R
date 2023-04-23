@@ -158,20 +158,20 @@ scCNstate_cols <- function(...) {
   scCNstate_colors[cols]
 }
 
-lighten <- function(color, factor = 1.4) {
-  col <- col2rgb(color)
-  col <- col * factor
-  col <- rgb(t(as.matrix(apply(col, 1, function(x) if (x > 255) 255 else x))), maxColorValue = 255)
-  col
-}
+# lighten <- function(color, factor = 1.4) {
+#   col <- col2rgb(color)
+#   col <- col * factor
+#   col <- rgb(t(as.matrix(apply(col, 1, function(x) if (x > 255) 255 else x))), maxColorValue = 255)
+#   col
+# }
 
-scCN_palettes <- list(
-  `main` = scCN_cols("CN0", "CN1", "CN2", "CN3", "CN4", "CN5", "CN6", "CN7", "CN8", "CN9", "CN10"),
-  `withoutCN0` = scCN_cols("CN1", "CN2", "CN3", "CN4", "CN5", "CN6", "CN7", "CN8", "CN9", "CN10"),
-  `lighter1` = sapply(scCN_colors, lighten),
-  `lighter2` = sapply(scCN_colors, function(x) lighten(x, factor = 1.2)),
-  `darker1` = sapply(scCN_colors, function(x) lighten(x, factor = 0.9))
-)
+# scCN_palettes <- list(
+#   `main` = scCN_cols("CN0", "CN1", "CN2", "CN3", "CN4", "CN5", "CN6", "CN7", "CN8", "CN9", "CN10"),
+#   `withoutCN0` = scCN_cols("CN1", "CN2", "CN3", "CN4", "CN5", "CN6", "CN7", "CN8", "CN9", "CN10"),
+#   `lighter1` = sapply(scCN_colors, lighten),
+#   `lighter2` = sapply(scCN_colors, function(x) lighten(x, factor = 1.2)),
+#   `darker1` = sapply(scCN_colors, function(x) lighten(x, factor = 0.9))
+# )
 
 scCN_pal <- function(palette = "main", reverse = FALSE, ...) {
   pal <- scCN_palettes[[palette]]
