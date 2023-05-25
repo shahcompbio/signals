@@ -69,19 +69,19 @@ hscn <- callHaplotypeSpecificCN(CNbins, haplotypes)
 
 Or alternatively allele specific states:
 ```r
-hscn <- callAlleleSpecificCN(CNbins, haplotypes)
+ascn <- callAlleleSpecificCN(CNbins, haplotypes)
 ```
 
 See the vignette for more information on the differences between these two outputs.
 
 After performing this inference, to QC the results it is useful to plot a different representation of the BAF. Here we plot the BAF as a function of the inferred states. The black lines indicate where we should see the mean BAF based on the state.
 ``` r
-plotBAFperstate(ascn, maxstate = 10)
+plotBAFperstate(hscn, maxstate = 10)
 ```
 
 After having ensured the results make sense, you can plot a heatmap of the states across all cells with the following.
 ```r
-plotHeatmap(ascn, plotcol = "state_BAF")
+plotHeatmap(hscn, plotcol = "state_BAF")
 ```
 This will cluster the cells using umap and hdbscan.
 
