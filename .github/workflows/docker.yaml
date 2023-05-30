@@ -5,6 +5,8 @@ on:
     branches: [ "dev", "main", "master" ]
   pull_request:
     branches: [ "dev", "main", "master" ]
+  release:
+    types: [published]
 
 env:
   # Use docker.io for Docker Hub if empty
