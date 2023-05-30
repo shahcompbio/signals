@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.8.0</span>
       </span>
     </div>
 
@@ -162,18 +162,18 @@ large allelic imbalance. The output for this method therefore allows for
 this vignette largely focuses on this option.
 <code>callAlleleSpecificCN</code> works in a similar way.</p>
 <div class="section level3">
-<h3 id="callallelespecificcn">
-<code>callAlleleSpecificCN</code><a class="anchor" aria-label="anchor" href="#callallelespecificcn"></a>
+<h3 id="callhaplotypespecificcn">
+<code>callHaplotypeSpecificCN</code><a class="anchor" aria-label="anchor" href="#callhaplotypespecificcn"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -313040.7718</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -309125.6122</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -308583.6374</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -308558.2157</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -308557.8306</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -308557.827</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -308557.8269</span></span></code></pre></div>
+<span><span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -313059.9177</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -309119.32</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -308570.4179</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -308544.5175</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -308544.1259</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -308544.1223</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -308544.1222</span></span></code></pre></div>
 <p>As a sanity check we can plot the B allele frequency (BAF) as a
 function of inferred state. We would expect to see a distribution around
 the expected value which is exactly what we see below.</p>

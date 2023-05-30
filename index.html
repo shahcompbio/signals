@@ -36,7 +36,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.8.0</span>
       </span>
     </div>
 
@@ -134,14 +134,14 @@
 <code class="sourceCode R"><span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span></code></pre></div>
 <p>Or alternatively allele specific states:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">ascn</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/callAlleleSpecificCN.html">callAlleleSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span></code></pre></div>
 <p>See the vignette for more information on the differences between these two outputs.</p>
 <p>After performing this inference, to QC the results it is useful to plot a different representation of the BAF. Here we plot the BAF as a function of the inferred states. The black lines indicate where we should see the mean BAF based on the state.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">ascn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">hscn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 <p>After having ensured the results make sense, you can plot a heatmap of the states across all cells with the following.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">ascn</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span><span class="op">)</span></span></code></pre></div>
 <p>This will cluster the cells using umap and hdbscan.</p>
 <p><code>signals</code> includes a number of other utilities for analysing single cell (haplotype-specific) copy number including the following:</p>
 <ul>

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.8.0</span>
       </span>
     </div>
 
@@ -70,6 +70,7 @@
 <span>  <span class="va">CNbins</span>,</span>
 <span>  <span class="va">haplotypes</span>,</span>
 <span>  eps <span class="op">=</span> <span class="fl">0.000000000001</span>,</span>
+<span>  maskedbins <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  loherror <span class="op">=</span> <span class="fl">0.02</span>,</span>
 <span>  maxCN <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  selftransitionprob <span class="op">=</span> <span class="fl">0.95</span>,</span>
@@ -106,6 +107,10 @@
 
 <dt>eps</dt>
 <dd><p>default 1e-12</p></dd>
+
+
+<dt>maskedbins</dt>
+<dd><p>data.frame with columns chr, start and end. These bins will be masked from the inference and copy number states assigned to these bins based on the states of neighbouring bins.</p></dd>
 
 
 <dt>loherror</dt>
@@ -244,61 +249,18 @@
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   Please report the issue to the authors.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Removing 0 cells for phasing</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Fitting beta-binomial model to state: 1|1...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  1 :  loglikelihood = -377132.6744</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  2 :  loglikelihood = -352138.4256</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  3 :  loglikelihood = -340853.9067</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  4 :  loglikelihood = -337611.3327</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  5 :  loglikelihood = -336958.2514</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  6 :  loglikelihood = -336848.2172</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  7 :  loglikelihood = -336830.1415</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  8 :  loglikelihood = -336827.3964</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>84415 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  9 :  loglikelihood = -336827.3939</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>36874 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  10 :  loglikelihood = -336827.3937</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>24725 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  11 :  loglikelihood = -336827.3936</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>39540 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  12 :  loglikelihood = -336827.3932</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>59152 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  13 :  loglikelihood = -336827.3928</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>53610 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  14 :  loglikelihood = -336827.3925</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>49918 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  15 :  loglikelihood = -336827.3923</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>79410 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  16 :  loglikelihood = -336827.391</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>48331 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  17 :  loglikelihood = -336827.3907</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>37421 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  18 :  loglikelihood = -336827.3905</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>17338 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  19 :  loglikelihood = -336827.3904</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>59753 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  20 :  loglikelihood = -336827.39</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>77406 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  21 :  loglikelihood = -336827.3892</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>34895 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  22 :  loglikelihood = -336827.3891</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>87245 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  23 :  loglikelihood = -336827.388</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>63691 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  24 :  loglikelihood = -336827.3877</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>44456 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  25 :  loglikelihood = -336827.3875</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>81049 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  26 :  loglikelihood = -336827.3868</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>40340 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  27 :  loglikelihood = -336827.3866</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>55024 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  28 :  loglikelihood = -336827.3864</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>78224 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  29 :  loglikelihood = -336827.3859</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>11550 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  30 :  loglikelihood = -336827.3858</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>convergence not obtained in 30 IRLS iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  1 :  loglikelihood = -377083.5935</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  2 :  loglikelihood = -352061.7306</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  3 :  loglikelihood = -340753.2994</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  4 :  loglikelihood = -337498.7999</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  5 :  loglikelihood = -336841.2889</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  6 :  loglikelihood = -336729.6754</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  7 :  loglikelihood = -336711.1304</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  8 :  loglikelihood = -336708.5403</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>32593 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  9 :  loglikelihood = -336708.5403</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Inferred mean: 0.496, Expected mean: 0.5, Inferred overdispersion (rho): 0</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Tarones Z-score: -2.527, using binomial model for inference.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Tarones Z-score: -2.944, using binomial model for inference.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Using 7 cells for clustering...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Clustering chromosome 1</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Creating CN matrix...</span>
@@ -412,8 +374,8 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Clustering cells using hdbscan...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Identified 2 clusters</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Distribution of clusters:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster A: 23</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster B: 17</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster A: 20</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster B: 20</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Clustering chromosome 4</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Creating CN matrix...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Calculating UMAP dimensionality reduction...</span>
@@ -427,8 +389,8 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Clustering cells using hdbscan...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Identified 2 clusters</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Distribution of clusters:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster A: 23</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster B: 17</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster A: 20</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster B: 20</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Clustering chromosome 6</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Creating CN matrix...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Calculating UMAP dimensionality reduction...</span>
@@ -480,8 +442,8 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Join phased haplotypes...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Reorder haplotypes based on phase...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Total number of cells after removing cells with &lt; 100 bins: 40</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0053</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0053</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0055</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0055</span>
 </code></pre></div>
     </div>
   </div>
