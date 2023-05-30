@@ -1,6 +1,6 @@
 Package: signals
 Title: Single Cell Genomes with Allele Specificity
-Version: 0.7.6
+Version: 0.8.0
 Author@R: c(person("Marc", "Williams", email = "marcjwilliams1@gmail.com",
                   role = c("aut", "cre")),
             person("Tyler", "Funnell",
@@ -53,7 +53,7 @@ Suggests:
     VIBER,
     Seurat,
     plyranges
-Remotes:  
+Remotes: 
   caravagnalab/easypar,
   caravagnalab/VIBER
 VignetteBuilder: knitr

@@ -8,6 +8,7 @@ callHaplotypeSpecificCN(
   CNbins,
   haplotypes,
   eps = 0.000000000001,
+  maskedbins = NULL,
   loherror = 0.02,
   maxCN = NULL,
   selftransitionprob = 0.95,
@@ -37,6 +38,8 @@ callHaplotypeSpecificCN(
 \item{haplotypes}{single cell haplotypes dataframe with the following columns: \code{cell_id}, \code{chr}, \code{start}, \code{end}, \code{hap_label}, \code{allele1}, \code{allele0}, \code{totalcounts}}
 
 \item{eps}{default 1e-12}
+
+\item{maskedbins}{data.frame with columns chr, start and end. These bins will be masked from the inference and copy number states assigned to these bins based on the states of neighbouring bins.}
 
 \item{loherror}{LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02}
 

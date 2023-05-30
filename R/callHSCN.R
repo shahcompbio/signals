@@ -570,6 +570,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 #'
 #' @param CNbins single cell copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`
 #' @param haplotypes single cell haplotypes dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `hap_label`, `allele1`, `allele0`, `totalcounts`
+#' @param maskedbins data.frame with columns chr, start and end. These bins will be masked from the inference and copy number states assigned to these bins based on the states of neighbouring bins.
 #' @param eps default 1e-12
 #' @param loherror LOH error rate for initial assignment, this is inferred directly from the data in the second pass, default = 0.02
 #' @param maxCN maximum copy number to infer allele specific states, default=NULL which will use the maximum state from CNbins
@@ -626,6 +627,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 callHaplotypeSpecificCN <- function(CNbins,
                                     haplotypes,
                                     eps = 1e-12,
+                                    maskedbins = NULL,
                                     loherror = 0.02,
                                     maxCN = NULL,
                                     selftransitionprob = 0.95,
@@ -713,6 +715,18 @@ callHaplotypeSpecificCN <- function(CNbins,
     
   }
   
+  if (!is.null(maskedbins)){
+     bins_to_remove <- maskedbins %>% 
+       as.data.table() %>% 
+       .[, binid := paste(chr, start, end, sep = "_")] %>%
+       .$binid
+     cnbaf <- cnbaf %>% 
+       as.data.table() %>% 
+       .[, binid := paste(chr, start, end, sep = "_")] %>%
+       .[!binid %in% bins_to_remove] %>%
+       .[, binid := NULL]
+  }
+  
   ascn <- .callHaplotypeSpecificCN_(cnbaf,
                                     eps = eps,
                                     loherror = loherror,
@@ -792,6 +806,18 @@ callHaplotypeSpecificCN <- function(CNbins,
     minbinschr = minbinschr,
     minbins = minbins
   )
+  
+  if (!is.null(maskedbins)){
+    bins_to_remove <- maskedbins %>% 
+      as.data.table() %>% 
+      .[, binid := paste(chr, start, end, sep = "_")] %>%
+      .$binid
+    cnbaf <- cnbaf %>% 
+      as.data.table() %>% 
+      .[, binid := paste(chr, start, end, sep = "_")] %>%
+      .[!binid %in% bins_to_remove] %>%
+      .[, binid := NULL]
+  }
   
   nhaplotypes_final <- cnbaf %>% 
     dplyr::group_by(cell_id) %>% 

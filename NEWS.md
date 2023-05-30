@@ -1,3 +1,7 @@
+# signals 0.8.0
+
+* Add option to mask bins during inference
+
 # signals 0.7.6
 
 * Fix bug in plot_clusters_used_for_phasing
