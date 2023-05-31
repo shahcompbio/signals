@@ -30,7 +30,8 @@ callHaplotypeSpecificCN(
   firstpassfiltering = TRUE,
   smoothsingletons = TRUE,
   fillmissing = TRUE,
-  global_phasing_for_balanced = FALSE
+  global_phasing_for_balanced = FALSE,
+  chrs_for_global_phasing = NULL
 )
 }
 \arguments{
@@ -81,6 +82,8 @@ callHaplotypeSpecificCN(
 \item{smoothsingletons}{Remove singleton bins by smoothing over based on states in adjacent bins}
 
 \item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
+
+\item{chrs_for_global_phasing}{Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes}
 
 \item{viterbver}{Version of viterbi algorithm to use (cpp or R)}
 

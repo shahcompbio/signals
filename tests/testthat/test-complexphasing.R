@@ -76,9 +76,9 @@ hapsdata <- hapsdata %>%
   dplyr::bind_rows(sim_data_bb3$haplotypes %>% 
                      dplyr::filter(start > start_switch & start <= end_switch))
 
-#all the above creates a copy number structure where there is a small segment that is LOH that is unique to a clone,
+#all the above is a hack to create a copy number structure where there is a small segment that is LOH that is unique to a clone,
 #this causes phasing issues because phasing is done relative to the clone with the largest amount of LOH per chromosome.
-#to see what this looks like do plotHeatmap
+#to see what this looks like see plotHeatmap
 
 results <- callHaplotypeSpecificCN(cndata %>% dplyr::filter(chr == "1"), 
                                    hapsdata %>% dplyr::filter(chr == "1"), 
@@ -87,6 +87,13 @@ results_fix <- callHaplotypeSpecificCN(cndata %>% dplyr::filter(chr == "1"),
                                    hapsdata %>% dplyr::filter(chr == "1"), 
                                    likelihood = "betabinomial",
                                    global_phasing_for_balanced = TRUE)
+#to check that specifying chromosomes works, here I'm specifying the "wrong" chromosome
+#so results should match results and not results_fix
+results_fix_chr <- callHaplotypeSpecificCN(cndata %>% dplyr::filter(chr == "1"), 
+                                       hapsdata %>% dplyr::filter(chr == "1"), 
+                                       likelihood = "betabinomial",
+                                       global_phasing_for_balanced = TRUE, 
+                                       chrs_for_global_phasing = c("2"))
 
 nsegs_per_cell <- create_segments(results$data, field = "state_phase") %>% 
   dplyr::group_by(cell_id) %>% 
@@ -96,8 +103,13 @@ nsegs_per_cell_fix <- create_segments(results_fix$data, field = "state_phase") %
   dplyr::group_by(cell_id) %>% 
   dplyr::summarize(n = dplyr::n())
 
+nsegs_per_cell_fix_chr <- create_segments(results_fix_chr$data, field = "state_phase") %>% 
+  dplyr::group_by(cell_id) %>% 
+  dplyr::summarize(n = dplyr::n())
+
 test_that("Test that using all cells for phasing regions that are diploid in phasing clusters improves inference", {
   expect_true(all(nsegs_per_cell_fix$n == 3))
   expect_gt(nsegs_per_cell$n %>% mean, nsegs_per_cell_fix$n %>% mean)
+  expect_gt(nsegs_per_cell_fix_chr$n %>% mean, nsegs_per_cell_fix$n %>% mean)
 })
 
