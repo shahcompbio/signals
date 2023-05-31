@@ -1,3 +1,7 @@
+# signals 0.9.1
+
+* Update docker to install suggests packages
+
 # signals 0.9.0
 
 * Fix phasing issue that happens when the cluster identified to phase relative to has a diploid region
