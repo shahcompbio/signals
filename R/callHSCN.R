@@ -483,8 +483,19 @@ prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE) {
 }
 
 #' @export
-phase_haplotypes_bychr <- function(haplotypes, chrlist, phasebyarm = FALSE) {
+phase_haplotypes_bychr <- function(ascn, 
+                                   haplotypes, 
+                                   chrlist, 
+                                   phasebyarm = FALSE, 
+                                   global_phasing_for_balanced = TRUE,
+                                   chrs_for_global_phasing = NULL) {
+  
   haplotypes <- as.data.table(haplotypes)
+  
+  #use all chromosomes if null
+  if (is.null(chrs_for_global_phasing)){
+    chrs_for_global_phasing <- unique(haplotypes$chr) 
+  }
   
   if (phasebyarm) {
     haplotypes$chrarm <- paste0(haplotypes$chr, coord_to_arm(haplotypes$chr, haplotypes$start))
@@ -496,6 +507,34 @@ phase_haplotypes_bychr <- function(haplotypes, chrlist, phasebyarm = FALSE) {
         .[, c("allele1", "allele0") := NULL]
       phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
     }
+  } else if (global_phasing_for_balanced == TRUE) {
+    phased_haplotypes <- data.table()
+    for (i in names(chrlist)) {
+      consensus_cn <- ascn %>% 
+        dplyr::filter(cell_id %in% chrlist[[i]]) %>% 
+        consensuscopynumber(.) %>% 
+        dplyr::filter(state_phase == "Balanced")
+      if (i %in% chrs_for_global_phasing){ 
+        #phase haplotypes in diploid region using cells in cluster
+        phased_haplotypes_temp1 <- haplotypes[cell_id %in% chrlist[[i]] & chr == i & !(start %in% consensus_cn$start)] %>%
+          .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+          .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
+          .[, c("allele1", "allele0") := NULL]
+        #phase haplotypes in diploid region using all cells
+        phased_haplotypes_temp2 <- haplotypes[chr == i & (start %in% consensus_cn$start)] %>%
+          .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+          .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
+          .[, c("allele1", "allele0") := NULL]
+        phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp1)
+        phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp2)
+      } else{
+        phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chr == i] %>%
+          .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
+          .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
+          .[, c("allele1", "allele0") := NULL]
+        phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
+      }
+    } 
   } else {
     phased_haplotypes <- data.table()
     for (i in names(chrlist)) {
@@ -504,7 +543,7 @@ phase_haplotypes_bychr <- function(haplotypes, chrlist, phasebyarm = FALSE) {
         .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
         .[, c("allele1", "allele0") := NULL]
       phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
-    }
+    } 
   }
   
   return(phased_haplotypes)
@@ -593,7 +632,9 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param firstpassfiltering Filter out cells with large discrepancy after first pass state assignment
 #' @param smoothsingletons Remove singleton bins by smoothing over based on states in adjacent bins
 #' @param fillmissing For bins with missing counts fill in values based on neighbouring bins
-#'
+#' @param global_phasing_for_diploid When using cluster_per_chr, use all cells for phasing diploid regions within the cluster
+#' @param chrs_for_global_phasing Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes
+#' 
 #' @return Haplotype specific copy number object 
 #' 
 #' @details The haplotype specific copy number object include the following additional columns
@@ -648,7 +689,9 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     filterhaplotypes = 0.1,
                                     firstpassfiltering = TRUE,
                                     smoothsingletons = TRUE,
-                                    fillmissing = TRUE) {
+                                    fillmissing = TRUE,
+                                    global_phasing_for_balanced = FALSE,
+                                    chrs_for_global_phasing = NULL) {
   if (!clustering_method %in% c("copy", "breakpoints")) {
     stop("Clustering method must be one of copy or breakpoints")
   }
@@ -790,9 +833,12 @@ callHaplotypeSpecificCN <- function(CNbins,
     propdf <- chrlist$propdf
     chrlist <- chrlist$chrlist
     phased_haplotypes <- phase_haplotypes_bychr(
+      ascn = ascn,
       haplotypes = haplotypes,
       chrlist = chrlist,
-      phasebyarm = phasebyarm
+      phasebyarm = phasebyarm,
+      global_phasing_for_balanced = global_phasing_for_balanced,
+      chrs_for_global_phasing = chrs_for_global_phasing
     )
   } else {
     chrlist <- NULL

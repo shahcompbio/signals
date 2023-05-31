@@ -7,7 +7,7 @@
 callHaplotypeSpecificCN(
   CNbins,
   haplotypes,
-  eps = 0.000000000001,
+  eps = 1e-12,
   maskedbins = NULL,
   loherror = 0.02,
   maxCN = NULL,
@@ -29,7 +29,9 @@ callHaplotypeSpecificCN(
   filterhaplotypes = 0.1,
   firstpassfiltering = TRUE,
   smoothsingletons = TRUE,
-  fillmissing = TRUE
+  fillmissing = TRUE,
+  global_phasing_for_balanced = FALSE,
+  chrs_for_global_phasing = NULL
 )
 }
 \arguments{
@@ -81,7 +83,11 @@ callHaplotypeSpecificCN(
 
 \item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
 
+\item{chrs_for_global_phasing}{Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes}
+
 \item{viterbver}{Version of viterbi algorithm to use (cpp or R)}
+
+\item{global_phasing_for_diploid}{When using cluster_per_chr, use all cells for phasing diploid regions within the cluster}
 }
 \value{
 Haplotype specific copy number object
