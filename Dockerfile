@@ -16,9 +16,10 @@ RUN Rscript -e "install.packages('magick')"
 RUN Rscript -e "install.packages('devtools')"
 
 RUN Rscript -e "library(devtools)"
+RUN Rscript -e "install_github('shahcompbio/signals', dependencies = TRUE)"
 
-RUN --mount=type=secret,id=mysecret \
-Rscript install_git_packages.R `cat /run/secrets/mysecret`
+#RUN --mount=type=secret,id=mysecret \
+#Rscript install_git_packages.R `cat /run/secrets/mysecret`
 
 ADD policy.xml /etc/ImageMagick-6/policy.xml
 
