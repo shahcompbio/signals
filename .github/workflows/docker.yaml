@@ -47,4 +47,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           github-token: ${{ secrets.GH_TOKEN }}
           secrets: |
-            "github_token=${{ secrets.GH_TOKEN }}"
+            GIT_AUTH_TOKEN=${{ secrets.GH_TOKEN }}
