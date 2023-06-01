@@ -45,6 +45,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          github-token: ${{ secrets.GH_TOKEN }}
+          github_token: ${{ secrets.GH_TOKEN }}
           secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.GH_TOKEN }}
+            github_token=${{ secrets.GH_TOKEN }}
