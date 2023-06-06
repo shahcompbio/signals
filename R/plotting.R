@@ -345,14 +345,14 @@ plotSV2 <- function(breakpoints,
   return(p)
 }
 
-get_gene_idx <- function(mygenes, chr = NULL) {
+get_gene_idx <- function(mygenes, chr = NULL, binsize = 0.5e6) {
   gene_df <- gene_locations %>%
     dplyr::filter(ensembl_gene_symbol %in% mygenes) %>%
     dplyr::mutate(
-      start = 0.5e6 * floor(start / 0.5e6) + 1,
-      end = 0.5e6 * ceiling(start / 0.5e6)
+      start = binsize * floor(start / binsize) + 1,
+      end = binsize * ceiling(start / binsize)
     )
-  bins <- getBins(binsize = 0.5e6, chromosomes = chr) %>% dplyr::mutate(idx = 1:dplyr::n())
+  bins <- getBins(binsize = binsize, chromosomes = chr) %>% dplyr::mutate(idx = 1:dplyr::n())
   gene_bin <- dplyr::left_join(gene_df, bins)
   return(gene_bin)
 }
@@ -688,7 +688,8 @@ plotCNprofile <- function(CNbins,
   }
 
   if (!is.null(genes)) {
-    gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    gene_idx <- get_gene_idx(genes, chr = chrfilt, binsize = binsize)
     npoints <- dim(pl$CNbins)[1]
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
@@ -1018,7 +1019,8 @@ plotCNprofileBAFhomolog <- function(cn,
   }
   
   if (!is.null(genes)) {
-    gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    gene_idx <- get_gene_idx(genes, chr = chrfilt, binsize = binsize)
     npoints <- dim(pl$CNbins)[1]
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
@@ -1356,7 +1358,8 @@ plotCNprofileBAF <- function(cn,
   }
 
   if (!is.null(genes)) {
-    gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    gene_idx <- get_gene_idx(genes, chr = chrfilt, binsize = binsize)
     npoints <- dim(pl$CNbins)[1]
     gBAF <- gBAF +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
