@@ -169,9 +169,7 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL, chrstar
     dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx, maxidx_2 = maxidx, minidx_2 = minidx), by = c("chromosome_2", "position_2"))
 
   breakpoints <- breakpoints %>%
-    dplyr::group_by(chromosome_1, position_1, chromosome_2, position_2, type, rearrangement_type, idx_1, idx_2, maxidx_1, minidx_1, maxidx_2, minidx_2) %>%
-    dplyr::summarise(read_count = sum(read_count)) %>%
-    dplyr::ungroup()
+    dplyr::distinct(chromosome_1, position_1, chromosome_2, position_2, type, rearrangement_type, idx_1, idx_2, maxidx_1, minidx_1, maxidx_2, minidx_2)
 
   # get breaks - first index of each chromosome
   chrbreaks <- bins %>%
@@ -347,14 +345,14 @@ plotSV2 <- function(breakpoints,
   return(p)
 }
 
-get_gene_idx <- function(mygenes, chr = NULL) {
+get_gene_idx <- function(mygenes, chr = NULL, binsize = 0.5e6) {
   gene_df <- gene_locations %>%
     dplyr::filter(ensembl_gene_symbol %in% mygenes) %>%
     dplyr::mutate(
-      start = 0.5e6 * floor(start / 0.5e6) + 1,
-      end = 0.5e6 * ceiling(start / 0.5e6)
+      start = binsize * floor(start / binsize) + 1,
+      end = binsize * ceiling(start / binsize)
     )
-  bins <- getBins(binsize = 0.5e6, chromosomes = chr) %>% dplyr::mutate(idx = 1:dplyr::n())
+  bins <- getBins(binsize = binsize, chromosomes = chr) %>% dplyr::mutate(idx = 1:dplyr::n())
   gene_bin <- dplyr::left_join(gene_df, bins)
   return(gene_bin)
 }
@@ -544,6 +542,7 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param legend.position Where to place the legend, default is "bottom"
 #' @param annotateregions Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position
 #' @param SV Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.
+#' @param SVcol Default is TRUE. Colour SVs or not
 #' @param svalpha the alpha scaling of the SV lines, default = 0.5
 #' @param genes vector of genes to annotate, will add a dashed vertical line and label
 #' @param tickwidth Spacing of ticks (in Mb) when only 1 chromosome is plotted
@@ -576,6 +575,7 @@ plotCNprofile <- function(CNbins,
                           legend.position = "bottom",
                           annotateregions = NULL,
                           SV = NULL,
+                          SVcol = TRUE,
                           svalpha = 0.5,
                           svwidth = 1.0,
                           adj = 0.03,
@@ -688,7 +688,8 @@ plotCNprofile <- function(CNbins,
   }
 
   if (!is.null(genes)) {
-    gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    gene_idx <- get_gene_idx(genes, chr = chrfilt, binsize = binsize)
     npoints <- dim(pl$CNbins)[1]
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
@@ -709,19 +710,40 @@ plotCNprofile <- function(CNbins,
     bezdf <- bezdf %>%
       dplyr::mutate(samebin = (position_1 == position_2) | rearrangement_type == "foldback")
     bezdf$rearrangement_type = unlist(lapply(bezdf$rearrangement_type, CapStr))
-    gCN <- gCN +
-      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
-        alpha = 0.8,
-        size = svwidth,
-        col = as.vector(SV_colors["Inversion"]),
-        data = bezdf %>% dplyr::filter(samebin == TRUE)
-      ) +
-      ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
-        alpha = svalpha,
-        size = svwidth,
-        col = "grey30",
-        data = bezdf %>% dplyr::filter(samebin == FALSE)
-      )
+    
+    rearrangement_types <- unique(bezdf %>% pull(rearrangement_type))
+    
+    if (SVcol == TRUE){ #different colours for each SV
+      for (r in rearrangement_types){
+        gCN <- gCN +
+          ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
+                               alpha = 0.8,
+                               size = svwidth,
+                               col = as.vector(SV_colors[r]),
+                               data = bezdf %>% dplyr::filter(rearrangement_type == r & samebin == TRUE)
+          ) +
+          ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
+                               alpha = svalpha,
+                               size = svwidth,
+                               col = as.vector(SV_colors[r]),
+                               data = bezdf %>% dplyr::filter(rearrangement_type == r & samebin == FALSE)
+          )
+      }
+    } else { # grey colour for arcs, brown color for lines (SVs with start end in the same bins)
+      gCN <- gCN +
+        ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
+                             alpha = 0.8,
+                             size = svwidth,
+                             col = as.vector(SV_colors["Inversion"]),
+                             data = bezdf %>% dplyr::filter(samebin == TRUE)
+        ) +
+        ggforce::geom_bezier(ggplot2::aes(x = idx, y = copy, group = id),
+                             alpha = svalpha,
+                             size = svwidth,
+                             col = "grey30",
+                             data = bezdf %>% dplyr::filter(samebin == FALSE)
+        )
+    }
   }
 
   if (returnlist == TRUE) {
@@ -997,7 +1019,8 @@ plotCNprofileBAFhomolog <- function(cn,
   }
   
   if (!is.null(genes)) {
-    gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    gene_idx <- get_gene_idx(genes, chr = chrfilt, binsize = binsize)
     npoints <- dim(pl$CNbins)[1]
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
@@ -1335,7 +1358,8 @@ plotCNprofileBAF <- function(cn,
   }
 
   if (!is.null(genes)) {
-    gene_idx <- get_gene_idx(genes, chr = chrfilt)
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    gene_idx <- get_gene_idx(genes, chr = chrfilt, binsize = binsize)
     npoints <- dim(pl$CNbins)[1]
     gBAF <- gBAF +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
