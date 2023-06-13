@@ -162,8 +162,8 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL, chrstar
 
   breakpoints <- breakpoints %>%
     dplyr::mutate(
-      position_1 = 0.5e6 * floor(position_1 / 0.5e6) + 1,
-      position_2 = 0.5e6 * floor(position_2 / 0.5e6) + 1
+      position_1 = binsize * floor(position_1 / binsize) + 1,
+      position_2 = binsize * floor(position_2 / binsize) + 1
     ) %>%
     dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx, maxidx_1 = maxidx, minidx_1 = minidx), by = c("chromosome_1", "position_1")) %>%
     dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx, maxidx_2 = maxidx, minidx_2 = minidx), by = c("chromosome_2", "position_2"))
@@ -700,6 +700,10 @@ plotCNprofile <- function(CNbins,
     datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
     gCN <- gCN +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
+  }
+  
+  if (!is.null(SV)){
+    SV <- dplyr::filter(SV, chromosome_1 %in% chrfilt | chromosome_2 %in% chrfilt)
   }
 
   if (!is.null(SV) && nrow(SV) > 0) {
