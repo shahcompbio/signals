@@ -1,3 +1,12 @@
+removexaxis <- ggplot2::theme(axis.line.x=ggplot2::element_blank(),
+                     axis.title.x=ggplot2::element_blank(),
+                     axis.text.x=ggplot2::element_blank(),
+                     axis.ticks.x=ggplot2::element_blank())
+
+removeyaxis <- ggplot2::theme(axis.line.y=ggplot2::element_blank(),
+                     axis.title.y=ggplot2::element_blank(),
+                     axis.text.y=ggplot2::element_blank(),
+                     axis.ticks.y=ggplot2::element_blank())
 
 plottinglist <- function(CNbins, 
                          xaxis_order = "genome_position", 
@@ -64,7 +73,7 @@ plottinglist <- function(CNbins,
       tickwidth <- tickwidth / 2
     }
 
-    CNbins <- dplyr::full_join(bins, CNbins) %>%
+    CNbins <- dplyr::full_join(bins, CNbins, by = c("chr", "start", "end")) %>%
       dplyr::filter(!is.na(copy)) %>%
       dplyr::filter(!is.na(state)) %>%
       dplyr::mutate(copy = ifelse(copy > maxCN, maxCN, copy)) %>%
@@ -552,6 +561,9 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param chrend End of region (in Mb) when plotting a single chromosome
 #' @param shape shape for plotting, default = 16
 #' @param positionticks set to TRUE to use position ticks rather than chromosome ticks
+#' @param genome genome to use, default = "hg19" (only used for karyogram)
+#' @param karyogram plot karyogram at the top, default = TRUE
+#' @param karyo_heights relative heights of the karyogram a blank plot and the copy number plot, default = c(1, -0.25, 6)
 #'
 #' @return ggplot2 plot
 #'
@@ -570,6 +582,7 @@ plotCNprofile <- function(CNbins,
                           statecol = "state",
                           returnlist = FALSE,
                           raster = FALSE,
+                          genome = "hg19",
                           y_axis_trans = "identity",
                           xaxis_order = "genome_position",
                           legend.position = "bottom",
@@ -585,6 +598,8 @@ plotCNprofile <- function(CNbins,
                           chrend = NULL,
                           shape = 16,
                           positionticks = FALSE,
+                          karyogram = FALSE,
+                          karyo_heights = c(1, -0.25, 6),
                           ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -749,9 +764,59 @@ plotCNprofile <- function(CNbins,
         )
     }
   }
+  
+  if (karyogram == TRUE){
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    karyogram_dat <- cytoband_map[[genome]]
+    names(karyogram_dat) <- c("chr", "start", "end", "band", "colval")
+    karyogram_dat <- karyogram_dat %>% 
+      dplyr::mutate(chr = stringr::str_remove(chr, "chr")) %>% 
+      dplyr::mutate(start = round(start / binsize) * binsize + 1, 
+                    end = round(end / binsize) * binsize + 1)
+    
+    #create a dataframe that has the index of the start and end position
+    cnbin_idx_start <- pl$bins %>% 
+      dplyr::select(chr, start, idx) %>% 
+      dplyr::rename(idx_start = idx)
+    cnbin_idx_end <-  pl$bins %>% 
+      dplyr::select(chr, start, idx) %>% 
+      dplyr::rename(end = start) %>% 
+      dplyr::rename(idx_end = idx)
+    karyogram_dat <- dplyr::inner_join(karyogram_dat,
+                                       cnbin_idx_start, by = c("chr", "start")) %>% 
+      dplyr::inner_join(cnbin_idx_end, by = c("chr", "end"))
+    
+    gkaryo <- ggplot2::ggplot() +
+      ggplot2::geom_rect(data = karyogram_dat,
+                         ggplot2::aes(xmin = idx_start, 
+                                      y = NULL,
+                                      x = NULL,
+                             xmax = idx_end, 
+                             ymin = 0, 
+                             ymax = 1, fill = colval)) +
+      ggplot2::scale_fill_manual(values = cyto_colors) +
+      ggplot2::scale_x_continuous(expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
+      cowplot::theme_cowplot(...) +
+      ggplot2::theme(legend.position = "none") +
+      removexaxis +
+      removeyaxis
+      
+  } else{
+    gkaryo <- NULL
+  }
 
   if (returnlist == TRUE) {
-    gCN <- list(CN = gCN, plist = pl)
+    gCN <- list(CN = gCN, plist = pl, gkaryo = gkaryo)
+  }
+  
+  if (karyogram == TRUE){
+    gCN <- cowplot::plot_grid(gkaryo, 
+                              NULL,
+                              gCN,
+                              rel_heights = karyo_heights,
+                              ncol = 1, 
+                              align = "hv", 
+                              axis = "lr")
   }
 
 

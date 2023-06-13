@@ -15,11 +15,13 @@ plotCNprofile(
   statecol = "state",
   returnlist = FALSE,
   raster = FALSE,
+  genome = "hg19",
   y_axis_trans = "identity",
   xaxis_order = "genome_position",
   legend.position = "bottom",
   annotateregions = NULL,
   SV = NULL,
+  SVcol = TRUE,
   svalpha = 0.5,
   svwidth = 1,
   adj = 0.03,
@@ -29,6 +31,8 @@ plotCNprofile(
   chrend = NULL,
   shape = 16,
   positionticks = FALSE,
+  karyogram = FALSE,
+  karyo_heights = c(1, -0.25, 6),
   ...
 )
 }
@@ -53,6 +57,8 @@ plotCNprofile(
 
 \item{raster}{use ggrastr or not, default = FALSE}
 
+\item{genome}{genome to use, default = "hg19" (only used for karyogram)}
+
 \item{y_axis_trans}{What transformation to use on the y-axis, default is identity, the other option is "squashy" which uses a tanh transformation}
 
 \item{xaxis_order}{Default is "genome_position"}
@@ -62,6 +68,8 @@ plotCNprofile(
 \item{annotateregions}{Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position}
 
 \item{SV}{Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.}
+
+\item{SVcol}{Default is TRUE. Colour SVs or not}
 
 \item{svalpha}{the alpha scaling of the SV lines, default = 0.5}
 
@@ -80,6 +88,10 @@ plotCNprofile(
 \item{shape}{shape for plotting, default = 16}
 
 \item{positionticks}{set to TRUE to use position ticks rather than chromosome ticks}
+
+\item{karyogram}{plot karyogram at the top, default = TRUE}
+
+\item{karyo_heights}{relative heights of the karyogram a blank plot and the copy number plot, default = c(1, -0.25, 6)}
 }
 \value{
 ggplot2 plot
