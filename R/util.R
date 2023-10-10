@@ -453,7 +453,10 @@ create_segments <- function(CNbins, field = "state") {
 }
 
 #' @export
-create_cntransitions <- function(CNbins, field = "state", add_orientation = TRUE) {
+create_cntransitions <- function(CNbins, 
+                                 field = "state", 
+                                 add_orientation = TRUE,
+                                 binsize = 0.5e6) {
   
   newsegs <- CNbins %>%
     data.table::as.data.table() %>%
@@ -461,7 +464,7 @@ create_cntransitions <- function(CNbins, field = "state", add_orientation = TRUE
     .[, rlid := data.table::rleid(get(field)), by = cell_id] %>%
     .[, list(
       start = min(start),
-      end = min(start) + 0.5e6 - 1
+      end = min(start) + binsize - 1
     ), by = .(cell_id, chr, get(field), rlid)] %>%
     .[order(cell_id, chr, start)] %>%
     dplyr::group_by(cell_id, chr) %>% 
@@ -478,7 +481,7 @@ create_cntransitions <- function(CNbins, field = "state", add_orientation = TRUE
       .[, rlid := data.table::rleid(get(field)), by = cell_id] %>%
       .[, list(
         start = min(start),
-        end = min(start) + 0.5e6 - 1
+        end = min(start) + binsize - 1
       ), by = .(cell_id, chr, state, rlid)] %>%
       .[order(cell_id, chr, start)] %>%
       dplyr::group_by(cell_id, chr) %>% 
@@ -1208,4 +1211,17 @@ filterbycells <- function(cn, cells){
   cn$qc_summary <- qc_summary(cn)
   
   return(cn)
+}
+
+#' @export
+format_tree_labels <- function(tree, removeloci = TRUE, internal_node_string = 'locus|internal'){
+  if (removeloci){
+    tip.loci <- grep(internal_node_string, tree$tip.label, value = T)
+    while (length(tip.loci) > 0) {
+      tree <- ape::drop.tip(tree, tip.loci, trim.internal = FALSE, collapse.singles = FALSE)
+      tip.loci <- grep(internal_node_string, tree$tip.label, value = T)
+    }
+  }
+  tree$tip.label <- str_remove(tree$tip.label, "cell_")
+  return(tree)
 }

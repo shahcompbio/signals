@@ -87,3 +87,4 @@ for (i in 1:dim(mymat)[1]) {
 test_that("Test rephasing by minimizing number of events", {
   expect_true(isTRUE(all.equal(trueA$x, newA)) | isTRUE(all.equal(trueB$x, newA)))
 })
+

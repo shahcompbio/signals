@@ -41,7 +41,7 @@ Imports:
     grid,
     ggforce,
     ggtree
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.3
 Suggests: 
     knitr,
     rmarkdown,
