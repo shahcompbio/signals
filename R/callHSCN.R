@@ -920,6 +920,10 @@ callHaplotypeSpecificCN <- function(CNbins,
   return(out)
 }
 
+# #TODO This is horrible and needs to be re-written!
+# Basic ideas is to remove singletons (single bins with copy number that is different from their neighbours)
+# this is done by checking whether the log-likelihood of read counts in bin i better supports
+# the copy number in bin i-1 or bin i+1
 #' @export
 fix_assignments <- function(hscn) {
   if (hscn$likelihood$likelihood == "binomial") {

@@ -21,6 +21,10 @@ plottinglist <- function(CNbins,
     stop("xaxis_order must be either 'bin' or 'genome_position'")
   }
   
+  if (nrow(CNbins) == 0){
+    stop("Data is empty!")
+  }
+  
   binsize <- CNbins$end[1] - CNbins$start[1] + 1
   tickwidth <- (tickwidth * 1e6) / binsize
   
@@ -77,7 +81,7 @@ plottinglist <- function(CNbins,
       dplyr::filter(!is.na(copy)) %>%
       dplyr::filter(!is.na(state)) %>%
       dplyr::mutate(copy = ifelse(copy > maxCN, maxCN, copy)) %>%
-      dplyr::mutate(state = ifelse(state > maxCN, maxCN, state)) %>%
+      #dplyr::mutate(state = ifelse(state > maxCN, maxCN, state)) %>%
       dplyr::mutate(idxs = forcats::fct_reorder(factor(idx), idx)) %>%
       dplyr::mutate(CNs = forcats::fct_reorder(ifelse(is.na(state), NA,
         paste0("CN", state)
@@ -171,9 +175,14 @@ plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL, chrstar
 
   breakpoints <- breakpoints %>%
     dplyr::mutate(
-      position_1 = binsize * floor(position_1 / binsize) + 1,
-      position_2 = binsize * floor(position_2 / binsize) + 1
+      position_1 = ifelse(position_1 < position_2, 
+                          binsize * floor(position_1 / binsize) + 1,
+                          binsize * ceiling(position_1 / binsize) + 1),
+      position_2 = ifelse(position_2 < position_1, 
+                          binsize * floor(position_2 / binsize) + 1,
+                          binsize * ceiling(position_2 / binsize) + 1)
     ) %>%
+    dplyr::mutate(position_2 = ifelse(abs(position_1- position_2) <= binsize, position_1, position_2)) %>% 
     dplyr::left_join(bins %>% dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx, maxidx_1 = maxidx, minidx_1 = minidx), by = c("chromosome_1", "position_1")) %>%
     dplyr::left_join(bins %>% dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx, maxidx_2 = maxidx, minidx_2 = minidx), by = c("chromosome_2", "position_2"))
 
@@ -469,6 +478,9 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
   maxidx <- max(cn$CNbins$idx, na.rm = TRUE)
   minidx <- min(cn$CNbins$idx, na.rm = TRUE)
   idxrange <- 0.05 * maxidx
+  
+  cn$CNbins <- cn$CNbins %>% 
+    tidyr::fill( c("state", "copy"), .direction = "downup")
 
   svcn1 <- dplyr::left_join(sv$breakpoints, cn$CNbins %>%
     dplyr::rename(chromosome_1 = chr, position_1 = start, copy_1 = copy) %>%
@@ -550,6 +562,7 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param xaxis_order Default is "genome_position"
 #' @param legend.position Where to place the legend, default is "bottom"
 #' @param annotateregions Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position
+#' @param annotateregions_linetype linetype for region annotation, default = 2 (dashed)
 #' @param SV Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.
 #' @param SVcol Default is TRUE. Colour SVs or not
 #' @param svalpha the alpha scaling of the SV lines, default = 0.5
@@ -561,10 +574,10 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param chrend End of region (in Mb) when plotting a single chromosome
 #' @param shape shape for plotting, default = 16
 #' @param positionticks set to TRUE to use position ticks rather than chromosome ticks
-#' @param genome genome to use, default = "hg19" (only used for karyogram)
-#' @param karyogram plot karyogram at the top, default = TRUE
-#' @param karyo_heights relative heights of the karyogram a blank plot and the copy number plot, default = c(1, -0.25, 6)
-#'
+#' @param genome genome to use, default = "hg19" (only used for ideogram)
+#' @param ideogram plot ideogram at the top, default = TRUE
+#' @param ideogram_height height of the ideogram
+#' 
 #' @return ggplot2 plot
 #'
 #' @examples
@@ -587,6 +600,7 @@ plotCNprofile <- function(CNbins,
                           xaxis_order = "genome_position",
                           legend.position = "bottom",
                           annotateregions = NULL,
+                          annotateregions_linetype = 2,
                           SV = NULL,
                           SVcol = TRUE,
                           svalpha = 0.5,
@@ -598,13 +612,13 @@ plotCNprofile <- function(CNbins,
                           chrend = NULL,
                           shape = 16,
                           positionticks = FALSE,
-                          karyogram = FALSE,
-                          karyo_heights = c(1, -0.25, 6),
+                          ideogram = FALSE,
+                          overwrite_color = NULL,
                           ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
   }
-
+  
   if (is.null(cellid)) {
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
   }
@@ -634,7 +648,13 @@ plotCNprofile <- function(CNbins,
     dplyr::filter(cell_id == cellid) %>%
     plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, positionticks = positionticks,
                  tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
-
+  
+  if (ideogram == TRUE){
+    miny <- -0.5
+  } else{
+    miny <- 0
+  }
+  
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
       stop("Package \"ggrastr\" needed for this function to work. Please install it.",
@@ -661,7 +681,7 @@ plotCNprofile <- function(CNbins,
         legend.position = "none"
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans) +
       ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -691,7 +711,7 @@ plotCNprofile <- function(CNbins,
         legend.position = "none"
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans) +
       ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -703,6 +723,10 @@ plotCNprofile <- function(CNbins,
   }
 
   if (!is.null(genes)) {
+    yplace <- maxCN
+    if (ideogram == TRUE){
+      yplace <- yplace - 2
+    }
     binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
     gene_idx <- get_gene_idx(genes, chr = chrfilt, binsize = binsize)
     npoints <- dim(pl$CNbins)[1]
@@ -712,13 +736,16 @@ plotCNprofile <- function(CNbins,
   }
 
   if (!is.null(annotateregions)) {
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    annotateregions <- dplyr::mutate(annotateregions, start = round(start / binsize) * binsize + 1)
     datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
+    datidx <- dplyr::mutate(datidx, idx = ifelse(idx > pl$maxidx, pl$maxidx, idx))
     gCN <- gCN +
-      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = annotateregions_linetype, size = 0.3, alpha = 0.5)
   }
   
-  if (!is.null(SV)){
-    SV <- dplyr::filter(SV, chromosome_1 %in% chrfilt | chromosome_2 %in% chrfilt)
+  if (!is.null(SV) & !is.null(chrfilt)){
+    SV <- dplyr::filter(SV, chromosome_1 %in% chrfilt & chromosome_2 %in% chrfilt)
   }
 
   if (!is.null(SV) && nrow(SV) > 0) {
@@ -727,7 +754,8 @@ plotCNprofile <- function(CNbins,
     pl$CNbins <- dplyr::left_join(getBins(binsize = binsize), pl$CNbins)
     bezdf <- get_bezier_df(svpl, pl, maxCN)
     bezdf <- bezdf %>%
-      dplyr::mutate(samebin = (position_1 == position_2) | rearrangement_type == "foldback")
+      dplyr::mutate(samebin = (position_1 == position_2) | 
+                      rearrangement_type == "foldback")
     bezdf$rearrangement_type = unlist(lapply(bezdf$rearrangement_type, CapStr))
     
     rearrangement_types <- unique(bezdf %>% pull(rearrangement_type))
@@ -765,11 +793,17 @@ plotCNprofile <- function(CNbins,
     }
   }
   
-  if (karyogram == TRUE){
+  if (!is.null(overwrite_color)){
+    gCN <- gCN + 
+      ggplot2::scale_color_manual(values = overwrite_color) +
+      ggplot2::theme(legend.position = "none")
+  }
+  
+  if (ideogram == TRUE){
     binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
-    karyogram_dat <- cytoband_map[[genome]]
-    names(karyogram_dat) <- c("chr", "start", "end", "band", "colval")
-    karyogram_dat <- karyogram_dat %>% 
+    ideogram_dat <- cytoband_map[[genome]]
+    names(ideogram_dat) <- c("chr", "start", "end", "band", "colval")
+    ideogram_dat <- ideogram_dat %>% 
       dplyr::mutate(chr = stringr::str_remove(chr, "chr")) %>% 
       dplyr::mutate(start = round(start / binsize) * binsize + 1, 
                     end = round(end / binsize) * binsize + 1)
@@ -782,43 +816,26 @@ plotCNprofile <- function(CNbins,
       dplyr::select(chr, start, idx) %>% 
       dplyr::rename(end = start) %>% 
       dplyr::rename(idx_end = idx)
-    karyogram_dat <- dplyr::inner_join(karyogram_dat,
+    ideogram_dat <- dplyr::inner_join(ideogram_dat,
                                        cnbin_idx_start, by = c("chr", "start")) %>% 
       dplyr::inner_join(cnbin_idx_end, by = c("chr", "end"))
     
-    gkaryo <- ggplot2::ggplot() +
-      ggplot2::geom_rect(data = karyogram_dat,
+    gCN <- gCN +
+      ggplot2::geom_rect(data = ideogram_dat,
                          ggplot2::aes(xmin = idx_start, 
                                       y = NULL,
                                       x = NULL,
                              xmax = idx_end, 
-                             ymin = 0, 
-                             ymax = 1, fill = colval)) +
+                             ymin = -0.5, 
+                             ymax = -0.15, fill = colval)) +
       ggplot2::scale_fill_manual(values = cyto_colors) +
-      ggplot2::scale_x_continuous(expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
-      cowplot::theme_cowplot(...) +
-      ggplot2::theme(legend.position = "none") +
-      removexaxis +
-      removeyaxis
+      ggplot2::theme(legend.position = "none")
       
-  } else{
-    gkaryo <- NULL
   }
 
   if (returnlist == TRUE) {
-    gCN <- list(CN = gCN, plist = pl, gkaryo = gkaryo)
+    gCN <- list(CN = gCN, plist = pl)
   }
-  
-  if (karyogram == TRUE){
-    gCN <- cowplot::plot_grid(gkaryo, 
-                              NULL,
-                              gCN,
-                              rel_heights = karyo_heights,
-                              ncol = 1, 
-                              align = "hv", 
-                              axis = "lr")
-  }
-
 
   return(gCN)
 }
@@ -837,6 +854,7 @@ plotCNprofileBAFhomolog <- function(cn,
                                     legend.position = "bottom",
                                     genes = NULL,
                                     annotateregions = NULL,
+                                    annotateregions_linetype = 2,
                                     homolog = FALSE,
                                     SV = NULL,
                                     adj = 0.03,
@@ -1097,9 +1115,11 @@ plotCNprofileBAFhomolog <- function(cn,
   }
 
   if (!is.null(annotateregions)) {
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    annotateregions <- dplyr::mutate(annotateregions, start = round(start / binsize) * binsize + 1)
     datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
     gCN <- gCN +
-      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = annotateregions_linetype, size = 0.3, alpha = 0.5)
   }
 
   return(gCN)
@@ -1121,6 +1141,7 @@ plotCNprofileBAFhomolog <- function(cn,
 #' @param xaxis_order Default is "genome_position"
 #' @param legend.position Where to place the legend, default is "bottom"
 #' @param annotateregions Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position
+#' @param annotateregions_linetype Linetype for region annotation, default = 2 (dashed)
 #' @param SV Default is NULL. If a dataframe with structural variant position is passed it will add a track on the top showin rearrangement links
 #' @param svalpha the alpha scaling of the SV lines, default = 0.5
 #' @param svwidth width of rearrangement connections
@@ -1166,6 +1187,7 @@ plotCNprofileBAF <- function(cn,
                              legend.position = "bottom",
                              genes = NULL,
                              annotateregions = NULL,
+                             annotateregions_linetype = 2,
                              homolog = FALSE,
                              SV = NULL,
                              adj = 0.03,
@@ -1195,6 +1217,7 @@ plotCNprofileBAF <- function(cn,
       legend.position = legend.position,
       genes = genes,
       annotateregions = annotateregions,
+      annotateregions_linetype = annotateregions_linetype,
       SV = SV,
       adj = adj,
       svalpha = svalpha,
@@ -1440,9 +1463,9 @@ plotCNprofileBAF <- function(cn,
   if (!is.null(annotateregions)) {
     datidx <- dplyr::inner_join(annotateregions, pl$bins %>% dplyr::select(chr, start, idx)) %>% dplyr::distinct(.)
     gBAF <- gBAF +
-      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = annotateregions_linetype, size = 0.3, alpha = 0.5)
     gCN <- gCN +
-      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3, alpha = 0.5)
+      ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = annotateregions_linetype, size = 0.3, alpha = 0.5)
   }
 
   g <- cowplot::plot_grid(gBAF, gCN, align = "v", ncol = 1, rel_heights = c(1, 1.2))

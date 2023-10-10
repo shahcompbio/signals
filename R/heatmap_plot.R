@@ -966,7 +966,7 @@ plotHeatmap <- function(cn,
                         annotation_height = NULL, 
                         annofontsize = 10,
                         na_col = "white",
-                        linkheight = 5,
+                        linkheight = 2.5,
                         newlegendname = NULL,
                         str_to_remove = NULL,
                         maxCNcol = 11,
@@ -1066,12 +1066,26 @@ plotHeatmap <- function(cn,
   }
 
   ncells <- length(unique(CNbins$cell_id))
+  
+  if (!is.null(clusters) & !is.null(tree)) {
+    cells_clusters <- unique(clusters$cell_id)
+    cells_data <- unique(CNbins$cell_id)
+    cells_tree <- unique(tree$tip.label)
+    check_cells <- all(c(length(cells_tree),length(cells_clusters),length(cells_data)) == length(cells_tree))
+    if (check_cells == FALSE){
+      warning("Trees, clusters and copy number data have different numbers of cells, removing non-overlapping cells.")
+      cells_to_keep <- intersect(intersect(cells_clusters, cells_data), cells_tree)
+      CNbins <- dplyr::filter(CNbins, cell_id %in% cells_to_keep)
+      clusters <- dplyr::filter(clusters, cell_id %in% cells_to_keep)
+      cells_to_remove <- setdiff(cells_tree, cells_to_keep)
+      tree <- ape::drop.tip(tree, cells_to_remove, collapse.singles = FALSE, trim.internal = FALSE)
+      tree <- format_tree_labels(tree)
+    }
+  } 
 
   if (is.null(clusters) & !is.null(tree)) {
     ordered_cell_ids <- paste0(unique(CNbins$cell_id))
     clusters <- data.frame(cell_id = unique(CNbins$cell_id), clone_id = "0")
-  } else {
-    ordered_cell_ids <- paste0(clusters$cell_id)
   }
 
   if (is.null(tree) & is.null(clusters)) {
@@ -1097,7 +1111,10 @@ plotHeatmap <- function(cn,
     cells_clusters <- length(unique(clusters$cell_id))
     cells_data <- length(unique(CNbins$cell_id))
     if (cells_data != cells_clusters){
-      warning("Number of cells in clusters dataframe !=  number of cells in the bins data!")
+      warning("Number of cells in clusters dataframe !=  number of cells in the bins data! Removing some cells")
+      cells_to_keep <- intersect(cells_clusters, cells_data)
+      CNbins <- dplyr::filter(CNbins, cell_id %in% cells_to_keep)
+      clusters <- dplyr::filter(clusters, cell_id %in% cells_to_keep)
     }
     if (!"clone_id" %in% names(clusters)) {
       stop("No clone_id columns in clusters dataframe, you might need to rename your clusters")
