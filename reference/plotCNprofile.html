@@ -77,11 +77,14 @@
 <span>  statecol <span class="op">=</span> <span class="st">"state"</span>,</span>
 <span>  returnlist <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  raster <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  genome <span class="op">=</span> <span class="st">"hg19"</span>,</span>
 <span>  y_axis_trans <span class="op">=</span> <span class="st">"identity"</span>,</span>
 <span>  xaxis_order <span class="op">=</span> <span class="st">"genome_position"</span>,</span>
 <span>  legend.position <span class="op">=</span> <span class="st">"bottom"</span>,</span>
 <span>  annotateregions <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotateregions_linetype <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  SV <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  SVcol <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  svalpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  svwidth <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  adj <span class="op">=</span> <span class="fl">0.03</span>,</span>
@@ -91,6 +94,8 @@
 <span>  chrend <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  shape <span class="op">=</span> <span class="fl">16</span>,</span>
 <span>  positionticks <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  ideogram <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  overwrite_color <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -137,6 +142,10 @@
 <dd><p>use ggrastr or not, default = FALSE</p></dd>
 
 
+<dt>genome</dt>
+<dd><p>genome to use, default = "hg19" (only used for ideogram)</p></dd>
+
+
 <dt>y_axis_trans</dt>
 <dd><p>What transformation to use on the y-axis, default is identity, the other option is "squashy" which uses a tanh transformation</p></dd>
 
@@ -153,8 +162,16 @@
 <dd><p>Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position</p></dd>
 
 
+<dt>annotateregions_linetype</dt>
+<dd><p>linetype for region annotation, default = 2 (dashed)</p></dd>
+
+
 <dt>SV</dt>
 <dd><p>Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.</p></dd>
+
+
+<dt>SVcol</dt>
+<dd><p>Default is TRUE. Colour SVs or not</p></dd>
 
 
 <dt>svalpha</dt>
@@ -192,6 +209,14 @@
 <dt>positionticks</dt>
 <dd><p>set to TRUE to use position ticks rather than chromosome ticks</p></dd>
 
+
+<dt>ideogram</dt>
+<dd><p>plot ideogram at the top, default = TRUE</p></dd>
+
+
+<dt>ideogram_height</dt>
+<dd><p>height of the ideogram</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
@@ -206,7 +231,6 @@
 <span class="r-in"><span><span class="fu">plotCNprofile</span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Making CN profile and BAF plot for cell - SA921-A90554A-R03-C44</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Making fixed-width bins for bin size 5e+05 ...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Joining with `by = join_by(chr, start, end)`</span>
 <span class="r-plt img"><img src="plotCNprofile-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>

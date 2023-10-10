@@ -100,7 +100,7 @@
 <div class="section level2">
 <h2 id="input-data">Input data<a class="anchor" aria-label="anchor" href="#input-data"></a>
 </h2>
-<p><code>signals</code> was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in <a href="https://www.sciencedirect.com/science/article/pii/S0092867419311766" class="external-link">Laks et al.</a>. As such it works using the output of the the pipeline developed to process this type of data, available <a href="https://github.com/shahcompbio/single_cell_pipeline" class="external-link">here</a>. Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it successfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP can also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running signals please open an issue. We describe in more detail the necessary input below.</p>
+<p><code>signals</code> was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in <a href="https://www.sciencedirect.com/science/article/pii/S0092867419311766" class="external-link">Laks et al.</a>. As such it works using the output of the the mondiran pipeline developed to process this type of data, available <a href="https://github.com/mondrian-scwgs" class="external-link">here</a>. Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it successfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNPs can also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running signals please open an issue. We describe in more detail the necessary input below.</p>
 <div class="section level3">
 <h3 id="dlp-data">DLP+ data<a class="anchor" aria-label="anchor" href="#dlp-data"></a>
 </h3>
@@ -109,7 +109,7 @@
 <div class="section level3">
 <h3 id="other-technologies">Other technologies<a class="anchor" aria-label="anchor" href="#other-technologies"></a>
 </h3>
-<p>Other technologies and software should also be compatible with signals. For example, we have used 10X data successfully. If you have single cell bam files or fastq files see the detailed documentation for running our single cell pipeline <a href="https://github.com/shahcompbio/single_cell_pipeline/blob/master/docs/source/install.md" class="external-link">here</a>. Alternatively, we provide a lightweight snakemake pipeline with the key steps <a href="https://github.com/marcjwilliams1/hscn_pipeline" class="external-link">here</a>. Also included there are some scripts to demultiplex 10X CNV bams.</p>
+<p>Other technologies and software should also be compatible with signals. For example, we have used 10X data successfully. If you have single cell bam files or fastq files see the detailed documentation for running our single cell pipeline <a href="https://mondrian-scwgs.github.io/mondrian/#/" class="external-link">here</a>. Alternatively, we provide a lightweight snakemake pipeline with the key steps <a href="https://github.com/marcjwilliams1/hscn_pipeline" class="external-link">here</a>. Also included there are some scripts to demultiplex 10X CNV bams.</p>
 <p>If you total copy number calls from other software such as 10X cellranger or <a href="https://github.com/rujinwang/SCOPE" class="external-link">scope</a>, these may also work but not something we have tried. Feel free to open an issue if you need some advice.</p>
 </div>
 <div class="section level3">
@@ -117,9 +117,9 @@
 </h3>
 <p>Some of the plotting tools assume that the <code>cell_id</code>’s conform to the following naming conventions</p>
 <pre><code>{sample}-{library}-{R*}-{C*}</code></pre>
-<p>Here R and C refer the rows and columns on the chip. If you’re using another technology and your cells are named differently, we would reccomend renaming your cell’s for easy compatability. For example, if you have 10X data where cell_id’s are barcodes that look like <code>CCGTACTTCACGGTAT-1</code> something like this would work</p>
+<p>Here R and C refer the rows and columns of the chip used in the DLP protocol. If you’re using another technology and your cells are named differently, we would reccomend renaming your cell’s for easy compatibility. For example, if you have 10X data where cell_id’s are barcodes that look like <code>CCGTACTTCACGGTAT-1</code> something like this would work</p>
 <pre class="{r}"><code><span><span class="va">new_cell_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"mysample"</span>, <span class="st">"mylibrary"</span>, <span class="st">"CCGTACTTCACGGTAT-1"</span>, sep <span class="op">=</span> <span class="st">"-"</span><span class="op">)</span></span></code></pre>
-<p>It is imortant to have 4 string’s seperated by “-”, but the unique cell identifier should be one of the last 2 strings for the heatmap labelling to format nicely.</p>
+<p>It is imortant to have 4 string’s seperated by “-”, but the unique cell identifier should be one of the last 2 strings for the heatmap labeling to format nicely.</p>
 </div>
 </div>
 <div class="section level2">
@@ -143,6 +143,10 @@
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, plotcol <span class="op">=</span> <span class="st">"state_BAF"</span><span class="op">)</span></span></code></pre></div>
 <p>This will cluster the cells using umap and hdbscan.</p>
+</div>
+<div class="section level2">
+<h2 id="utilities">Utilities<a class="anchor" aria-label="anchor" href="#utilities"></a>
+</h2>
 <p><code>signals</code> includes a number of other utilities for analysing single cell (haplotype-specific) copy number including the following:</p>
 <ul>
 <li>integration with scRNAseq using <a href="https://satijalab.org/seurat/index.html" class="external-link">seurat</a>
@@ -152,7 +156,7 @@
 <li>clustering</li>
 <li>utilities such as consensus copy number in cell clusters and arm level changes etc</li>
 </ul>
-<p>Please see the vignettes for more information.</p>
+<p>Even if you haven’t used <code>signals</code> for allele specific copy number calling, if you format your dataframe to match <code>hscn</code> then most functions should work. Even if you just have total copy number, many of the utilities should also work. Please see the vignettes for more information.</p>
 </div>
 <div class="section level2">
 <h2 id="outputs">Outputs<a class="anchor" aria-label="anchor" href="#outputs"></a>
