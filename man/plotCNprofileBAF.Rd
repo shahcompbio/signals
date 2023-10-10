@@ -21,6 +21,7 @@ plotCNprofileBAF(
   legend.position = "bottom",
   genes = NULL,
   annotateregions = NULL,
+  annotateregions_linetype = 2,
   homolog = FALSE,
   SV = NULL,
   adj = 0.03,
@@ -69,6 +70,8 @@ plotCNprofileBAF(
 \item{genes}{vector of genes to annotate, will add a dashed vertical line and label}
 
 \item{annotateregions}{Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position}
+
+\item{annotateregions_linetype}{Linetype for region annotation, default = 2 (dashed)}
 
 \item{homolog}{Rather than plot the BAF and CN seperately this will plot the 2 homologs on the same track}
 
