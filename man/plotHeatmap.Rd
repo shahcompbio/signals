@@ -39,7 +39,7 @@ plotHeatmap(
   annotation_height = NULL,
   annofontsize = 10,
   na_col = "white",
-  linkheight = 5,
+  linkheight = 2.5,
   newlegendname = NULL,
   str_to_remove = NULL,
   maxCNcol = 11,

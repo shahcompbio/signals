@@ -51,17 +51,53 @@ umap_clustering <- function(CNbins,
     pca <- NULL
     fast_sgd <- FALSE
   }
-  umapresults <- uwot::umap(cnmatrix,
-    metric = umapmetric,
-    n_neighbors = n_neighbors,
-    n_components = 2,
-    min_dist = min_dist,
-    ret_model = TRUE,
-    ret_nn = TRUE,
-    pca = pca,
-    fast_sgd = fast_sgd
-  )
+  # umapresults <- uwot::umap(cnmatrix,
+  #   metric = umapmetric,
+  #   n_neighbors = n_neighbors,
+  #   n_components = 2,
+  #   min_dist = min_dist,
+  #   ret_model = TRUE,
+  #   ret_nn = TRUE,
+  #   pca = pca,
+  #   fast_sgd = fast_sgd
+  # )
 
+  #TODO find out why umap gives an error for some cases, seems to be a new bug
+  umapresults <- tryCatch(
+    {
+      umapresults <- uwot::umap(cnmatrix,
+                                metric = umapmetric,
+                                n_neighbors = n_neighbors,
+                                n_components = 2,
+                                min_dist = min_dist,
+                                ret_model = TRUE,
+                                ret_nn = TRUE,
+                                pca = pca,
+                                fast_sgd = fast_sgd)
+    },
+    error = function(e) {
+      # Handle error by rerunning UMAP with different parameters
+      message("An error occurred in umap calculation: ", e$message)
+      message("Rerunning UMAP after adding small jitter to data points...")
+      
+      mat <- cnmatrix + matrix(runif(nrow(cnmatrix) * ncol(cnmatrix),
+                                     min=-0.005, max=0.005), 
+                               nrow=nrow(cnmatrix), ncol=ncol(cnmatrix))
+      
+      umapresults <- uwot::umap(mat,
+                                metric = umapmetric,
+                                n_neighbors = n_neighbors,
+                                n_components = 2,
+                                min_dist = min_dist,
+                                ret_model = TRUE,
+                                ret_nn = TRUE,
+                                pca = pca,
+                                fast_sgd = fast_sgd)
+    }
+  )
+  
+  
+  
   dfumap <- data.frame(
     umap1 = umapresults$embedding[, 1],
     umap2 = umapresults$embedding[, 2],
