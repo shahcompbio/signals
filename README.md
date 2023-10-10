@@ -25,7 +25,7 @@ A docker image is available [here](https://hub.docker.com/repository/docker/marc
 
 ## Input data
 
-`signals` was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in [Laks et al.](https://www.sciencedirect.com/science/article/pii/S0092867419311766). As such it works using the output of the the pipeline developed to process this type of data, available [here](https://github.com/shahcompbio/single_cell_pipeline). Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it successfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNP can also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running signals please open an issue. We describe in more detail the necessary input below.
+`signals` was developed to work with Direct Library Preperation + (DLP+) data. A high throughput single cell whole genome sequencing workflow, described in [Laks et al.](https://www.sciencedirect.com/science/article/pii/S0092867419311766). As such it works using the output of the the mondiran pipeline developed to process this type of data, available [here](https://github.com/mondrian-scwgs). Despite being developed with this type of data and pipeline in mind, it should work well with other single cell whole genome technologies. We have run it successfully with 10X CNV data for example. The required inputs are total copy number estimates in bins across the genome and haplotype block counts per cell (SNPs can also work). See the test datasets provided with the package for example inputs. If you have a different type of technology and would like some advice or help running signals please open an issue. We describe in more detail the necessary input below.
 
 ### DLP+ data
 
@@ -33,7 +33,7 @@ You will need the HMM copy results table (`CNbins`) with the following columns: 
 
 ### Other technologies
 
-Other technologies and software should also be compatible with signals. For example, we have used 10X data successfully. If you have single cell bam files or fastq files see the detailed documentation for running our single cell pipeline [here](https://github.com/shahcompbio/single_cell_pipeline/blob/master/docs/source/install.md). Alternatively, we provide a lightweight snakemake pipeline with the key steps [here](https://github.com/marcjwilliams1/hscn_pipeline). Also included there are some scripts to demultiplex 10X CNV bams.
+Other technologies and software should also be compatible with signals. For example, we have used 10X data successfully. If you have single cell bam files or fastq files see the detailed documentation for running our single cell pipeline [here](https://mondrian-scwgs.github.io/mondrian/#/). Alternatively, we provide a lightweight snakemake pipeline with the key steps [here](https://github.com/marcjwilliams1/hscn_pipeline). Also included there are some scripts to demultiplex 10X CNV bams.
 
 If you total copy number calls from other software such as 10X cellranger or [scope](https://github.com/rujinwang/SCOPE), these may also work but not something we have tried. Feel free to open an issue if you need some advice.
 
@@ -45,13 +45,13 @@ Some of the plotting tools assume that the `cell_id`'s conform to the following 
 {sample}-{library}-{R*}-{C*}
 ```
 
-Here R and C refer the rows and columns on the chip. If you're using another technology and your cells are named differently, we would reccomend renaming your cell's for easy compatability. For example, if you have 10X data where cell_id's are barcodes that look like `CCGTACTTCACGGTAT-1` something like this would work
+Here R and C refer the rows and columns of the chip used in the DLP protocol. If you're using another technology and your cells are named differently, we would reccomend renaming your cell's for easy compatibility. For example, if you have 10X data where cell_id's are barcodes that look like `CCGTACTTCACGGTAT-1` something like this would work
 
 ```{r}
 new_cell_id <- paste("mysample", "mylibrary", "CCGTACTTCACGGTAT-1", sep = "-")
 ```
 
-It is imortant to have 4 string's seperated by "-", but the unique cell identifier should be one of the last 2 strings for the heatmap labelling to format nicely.
+It is imortant to have 4 string's seperated by "-", but the unique cell identifier should be one of the last 2 strings for the heatmap labeling to format nicely.
 
 ## Example
 
@@ -85,6 +85,8 @@ plotHeatmap(hscn, plotcol = "state_BAF")
 ```
 This will cluster the cells using umap and hdbscan.
 
+## Utilities
+
 `signals` includes a number of other utilities for analysing single cell (haplotype-specific) copy number including the following:
 
 * integration with scRNAseq using [seurat](https://satijalab.org/seurat/index.html)
@@ -93,7 +95,7 @@ This will cluster the cells using umap and hdbscan.
 * clustering
 * utilities such as consensus copy number in cell clusters and arm level changes etc
 
-Please see the vignettes for more information.
+Even if you haven't used `signals` for allele specific copy number calling, if you format your dataframe to match `hscn` then most functions should work. Even if you just have total copy number, many of the utilities should also work. Please see the vignettes for more information.
 
 ## Outputs
 
