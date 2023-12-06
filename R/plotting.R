@@ -576,7 +576,6 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param positionticks set to TRUE to use position ticks rather than chromosome ticks
 #' @param genome genome to use, default = "hg19" (only used for ideogram)
 #' @param ideogram plot ideogram at the top, default = TRUE
-#' @param ideogram_height height of the ideogram
 #' 
 #' @return ggplot2 plot
 #'
@@ -869,6 +868,8 @@ plotCNprofileBAFhomolog <- function(cn,
                                     chrend = NULL,
                                     shape = 16,
                                     positionticks = FALSE,
+                                    ideogram = FALSE,
+                                    genome = "hg19",
                                     ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -901,6 +902,12 @@ plotCNprofileBAFhomolog <- function(cn,
 
   if (!"BAF" %in% names(CNbins)) {
     stop("No BAF column in dataframe, first calculate the BAF per bin using combineBAFCN and then callAlleleSpecificCN")
+  }
+  
+  if (ideogram == TRUE){
+    miny <- -0.5
+  } else{
+    miny <- 0
   }
 
   statecolpal <- scCNstate_cols()
@@ -954,7 +961,7 @@ plotCNprofileBAFhomolog <- function(cn,
           legend.position = "none"
         ) +
         ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-        ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
+        ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans) +
         ggplot2::xlab(xlab) +
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot(...) +
@@ -984,7 +991,7 @@ plotCNprofileBAFhomolog <- function(cn,
           legend.position = "none"
         ) +
         ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-        ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
+        ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans) +
         ggplot2::xlab(xlab) +
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot(...) +
@@ -1045,7 +1052,7 @@ plotCNprofileBAFhomolog <- function(cn,
           legend.position = "none"
         ) +
         ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-        ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0 - offset, maxCN + offset), trans = y_axis_trans) +
+        ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny - offset, maxCN + offset), trans = y_axis_trans) +
         ggplot2::xlab(xlab) +
         ggplot2::ylab("Copy Number") +
         cowplot::theme_cowplot(...) +
@@ -1121,6 +1128,40 @@ plotCNprofileBAFhomolog <- function(cn,
     gCN <- gCN +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = annotateregions_linetype, size = 0.3, alpha = 0.5)
   }
+  
+  if (ideogram == TRUE){
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    ideogram_dat <- cytoband_map[[genome]]
+    names(ideogram_dat) <- c("chr", "start", "end", "band", "colval")
+    ideogram_dat <- ideogram_dat %>% 
+      dplyr::mutate(chr = stringr::str_remove(chr, "chr")) %>% 
+      dplyr::mutate(start = round(start / binsize) * binsize + 1, 
+                    end = round(end / binsize) * binsize + 1)
+    
+    #create a dataframe that has the index of the start and end position
+    cnbin_idx_start <- pl$bins %>% 
+      dplyr::select(chr, start, idx) %>% 
+      dplyr::rename(idx_start = idx)
+    cnbin_idx_end <-  pl$bins %>% 
+      dplyr::select(chr, start, idx) %>% 
+      dplyr::rename(end = start) %>% 
+      dplyr::rename(idx_end = idx)
+    ideogram_dat <- dplyr::inner_join(ideogram_dat,
+                                      cnbin_idx_start, by = c("chr", "start")) %>% 
+      dplyr::inner_join(cnbin_idx_end, by = c("chr", "end"))
+    
+    gCN <- gCN +
+      ggplot2::geom_rect(data = ideogram_dat,
+                         ggplot2::aes(xmin = idx_start, 
+                                      y = NULL,
+                                      x = NULL,
+                                      xmax = idx_end, 
+                                      ymin = -0.5, 
+                                      ymax = -0.15, fill = colval)) +
+      ggplot2::scale_fill_manual(values = cyto_colors) +
+      ggplot2::theme(legend.position = "none")
+    
+  }
 
   return(gCN)
 }
@@ -1155,6 +1196,8 @@ plotCNprofileBAFhomolog <- function(cn,
 #' @param positionticks set to TRUE to use position ticks rather than chromosome ticks
 #' @param BAFcol state to use to colour BAF track, default = `state_phase`
 #' @param my_title string to use for title, if NULL cell_id is shown
+#' @param ideogram plot ideogram at the top, default = TRUE
+#' @param genome genome to use, default = "hg19" (only used for ideogram)
 #'
 #'
 #' @return ggplot2 plot
@@ -1200,7 +1243,9 @@ plotCNprofileBAF <- function(cn,
                              chrstart = NULL,
                              chrend = NULL,
                              shape = 16,
+                             ideogram = FALSE,
                              positionticks = FALSE,
+                             genome = "hg19",
                              ...) {
   if (homolog == TRUE) {
     ghomolog <- plotCNprofileBAFhomolog(cn,
@@ -1229,6 +1274,8 @@ plotCNprofileBAF <- function(cn,
       chrend = chrend,
       shape = shape,
       positionticks = positionticks,
+      ideogram = ideogram,
+      genome = genome,
       ...
     )
     return(ghomolog)
@@ -1278,6 +1325,12 @@ plotCNprofileBAF <- function(cn,
 
   if (BAFcol == "state_AS") {
     BAFcolpal <- scCNAS_cols()
+  }
+  
+  if (ideogram == TRUE){
+    miny <- -0.5
+  } else{
+    miny <- 0
   }
 
   statecolpal <- scCNstate_cols()
@@ -1354,7 +1407,7 @@ plotCNprofileBAF <- function(cn,
         legend.position = "none"
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans) +
       ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -1418,7 +1471,7 @@ plotCNprofileBAF <- function(cn,
         legend.position = "none"
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(0, maxCN), trans = y_axis_trans) +
+      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans) +
       ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -1466,6 +1519,40 @@ plotCNprofileBAF <- function(cn,
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = annotateregions_linetype, size = 0.3, alpha = 0.5)
     gCN <- gCN +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = annotateregions_linetype, size = 0.3, alpha = 0.5)
+  }
+  
+  if (ideogram == TRUE){
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    ideogram_dat <- cytoband_map[[genome]]
+    names(ideogram_dat) <- c("chr", "start", "end", "band", "colval")
+    ideogram_dat <- ideogram_dat %>% 
+      dplyr::mutate(chr = stringr::str_remove(chr, "chr")) %>% 
+      dplyr::mutate(start = round(start / binsize) * binsize + 1, 
+                    end = round(end / binsize) * binsize + 1)
+    
+    #create a dataframe that has the index of the start and end position
+    cnbin_idx_start <- pl$bins %>% 
+      dplyr::select(chr, start, idx) %>% 
+      dplyr::rename(idx_start = idx)
+    cnbin_idx_end <-  pl$bins %>% 
+      dplyr::select(chr, start, idx) %>% 
+      dplyr::rename(end = start) %>% 
+      dplyr::rename(idx_end = idx)
+    ideogram_dat <- dplyr::inner_join(ideogram_dat,
+                                      cnbin_idx_start, by = c("chr", "start")) %>% 
+      dplyr::inner_join(cnbin_idx_end, by = c("chr", "end"))
+    
+    gCN <- gCN +
+      ggplot2::geom_rect(data = ideogram_dat,
+                         ggplot2::aes(xmin = idx_start, 
+                                      y = NULL,
+                                      x = NULL,
+                                      xmax = idx_end, 
+                                      ymin = -0.5, 
+                                      ymax = -0.15, fill = colval)) +
+      ggplot2::scale_fill_manual(values = cyto_colors) +
+      ggplot2::theme(legend.position = "none")
+    
   }
 
   g <- cowplot::plot_grid(gBAF, gCN, align = "v", ncol = 1, rel_heights = c(1, 1.2))
