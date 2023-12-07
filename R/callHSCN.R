@@ -714,6 +714,12 @@ callHaplotypeSpecificCN <- function(CNbins,
     maxCN <- max(CNbins$state)
   }
   
+  if (any(grepl("chr", CNbins$chr))){
+    message("Removing chr string from chr column")
+    CNbins$chr <- sub("chr", "", CNbins$chr)
+    haplotypes$chr <- sub("chr", "", haplotypes$chr)
+  }
+  
   nhaplotypes <- haplotypes %>% 
     dplyr::group_by(cell_id) %>% 
     dplyr::summarize(n = sum(totalcounts)) %>% 

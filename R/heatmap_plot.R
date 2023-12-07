@@ -638,6 +638,9 @@ make_top_annotation_gain <- function(copynumber,
                                      plotfrequency = FALSE,
                                      cutoff = NULL,
                                      maxf = NULL,
+                                     frequency_height = 1.4,
+                                     sv_height = 0.7,
+                                     annofontsize = 10,
                                      SV = NULL) {
   ncells <- nrow(copynumber)
 
@@ -660,7 +663,8 @@ make_top_annotation_gain <- function(copynumber,
         gp = grid::gpar(col = "#E34A33", fill = "#E34A33"),
         axis_param = list(
           at = c(round(maxf / 2, 2), maxf),
-          labels = c(paste0(round(maxf / 2, 2)), paste0(maxf))
+          labels = c(paste0(round(maxf / 2, 2)), paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-1)
         ),
         ylim = c(0, maxf),
         border = FALSE,
@@ -671,13 +675,14 @@ make_top_annotation_gain <- function(copynumber,
         gp = grid::gpar(col = "#3182BD", fill = "#3182BD"),
         axis_param = list(
           at = c(0.0, -round(maxf / 2, 2), -maxf),
-          labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf))
+          labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-1)
         ),
         ylim = c(-maxf, 0),
         border = FALSE,
       ),
       show_annotation_name = FALSE,
-      height = grid::unit(1.4, "cm")
+      height = grid::unit(frequency_height, "cm")
     )
   } else if (plotcol == "state_phase" & plotfrequency == TRUE) {
     f1a <- colSums(apply(copynumber, 2, function(x) grepl("A-Gained", x))) / ncells
@@ -699,11 +704,11 @@ make_top_annotation_gain <- function(copynumber,
         bar_width = 1,
         gp = grid::gpar(
           col = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-Hom"]),
-          fill = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-Hom"])
-        ),
+          fill = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-Hom"])),
         axis_param = list(
           at = c(round(maxf / 2, 2), maxf),
-          labels = c(paste0(round(maxf / 2, 2)), paste0(maxf))
+          labels = c(paste0(round(maxf / 2, 2)), paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-1)
         ),
         ylim = c(0, maxf),
         border = FALSE,
@@ -713,17 +718,17 @@ make_top_annotation_gain <- function(copynumber,
         bar_width = 1,
         gp = grid::gpar(
           col = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-Hom"]),
-          fill = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-Hom"])
-        ),
+          fill = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-Hom"])),
         axis_param = list(
           at = c(0, -round(maxf / 2, 2), -maxf),
-          labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf))
+          labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-1)
         ),
         ylim = c(-maxf, 0),
         border = FALSE,
       ),
       show_annotation_name = FALSE,
-      height = grid::unit(1.4, "cm")
+      height = grid::unit(frequency_height, "cm")
     )
   }
   else if ((plotcol == "state_BAF" | plotcol == "BAF") & plotfrequency == TRUE) {
@@ -742,7 +747,8 @@ make_top_annotation_gain <- function(copynumber,
         gp = grid::gpar(col = scCNphase_colors["A-Hom"], fill = scCNphase_colors["A-Hom"]),
         axis_param = list(
           at = c(round(maxf / 2, 2), maxf),
-          labels = c(paste0(round(maxf / 2, 2)), paste0(maxf))
+          labels = c(paste0(round(maxf / 2, 2)), paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-1)
         ),
         ylim = c(0, maxf),
         border = FALSE,
@@ -753,13 +759,14 @@ make_top_annotation_gain <- function(copynumber,
         gp = grid::gpar(col = scCNphase_colors["B-Hom"], fill = scCNphase_colors["B-Hom"]),
         axis_param = list(
           at = c(0.0, -round(maxf / 2, 2), -maxf),
-          labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf))
+          labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-1)
         ),
         ylim = c(-maxf, 0),
         border = FALSE,
       ),
       show_annotation_name = FALSE,
-      height = grid::unit(1.4, "cm")
+      height = grid::unit(frequency_height, "cm")
     )
   }
   else {
@@ -781,7 +788,7 @@ make_top_annotation_gain <- function(copynumber,
       ),
       which = "column",
       show_annotation_name = TRUE,
-      height = grid::unit(0.7, "cm")
+      height = grid::unit(sv_height, "cm")
     )
   }
 
@@ -799,6 +806,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     maxf = 1.0,
                                     plotcol = "state",
                                     plotfrequency = FALSE,
+                                    frequency_height = 1.4,
                                     show_legend = TRUE,
                                     show_library_label = TRUE,
                                     show_clone_label = TRUE,
@@ -855,7 +863,9 @@ make_copynumber_heatmap <- function(copynumber,
     heatmap_legend_param = leg_params,
     top_annotation = make_top_annotation_gain(copynumber,
       cutoff = cutoff, maxf = maxf,
-      plotfrequency = plotfrequency, plotcol = plotcol, SV = SV
+      plotfrequency = plotfrequency, plotcol = plotcol, SV = SV,
+      frequency_height = frequency_height,
+      annofontsize = annofontsize
     ),
     use_raster = TRUE,
     raster_quality = rasterquality,
@@ -897,6 +907,7 @@ getSVlegend <- function(include = NULL) {
 #' @param frequencycutoff default = 2
 #' @param maxf Max frequency when plotting the frequency track, default = NULL infers this from the data
 #' @param plotfrequency Plot the frequency track of gains and losses across the genome
+#' @param frequency_height height of the frequency track if using, default = 1.4
 #' @param show_legend plot legend or not, boolean
 #' @param show_library_label show library label or not, boolean
 #' @param show_clone_label show clone label or not, boolean
@@ -950,6 +961,7 @@ plotHeatmap <- function(cn,
                         frequencycutoff = 2,
                         maxf = NULL,
                         plotfrequency = FALSE,
+                        frequency_height = 1.4,
                         show_legend = TRUE,
                         show_library_label = TRUE,
                         show_clone_label = TRUE,
@@ -1196,6 +1208,7 @@ plotHeatmap <- function(cn,
     maxf = maxf,
     plotcol = plotcol,
     plotfrequency = plotfrequency,
+    frequency_height = frequency_height,
     show_legend = show_legend,
     show_library_label = show_library_label,
     show_clone_label = show_clone_label,
