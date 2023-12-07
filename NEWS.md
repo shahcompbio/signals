@@ -1,3 +1,9 @@
+# signals 0.10.0
+
+* add chr string check
+* remove acrocentric chromosomes in arm consensus
+* minor changes to heatmap and plotting
+
 # signals 0.9.1
 
 * Update docker to install suggests packages

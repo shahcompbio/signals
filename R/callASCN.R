@@ -232,6 +232,12 @@ callAlleleSpecificCN <- function(CNbins,
     maxCN <- max(CNbins$state)
   }
   
+  if (any(grepl("chr", CNbins$chr))){
+    message("Removing chr string from chr column")
+    CNbins$chr <- sub("chr", "", CNbins$chr)
+    haplotypes$chr <- sub("chr", "", haplotypes$chr)
+  }
+  
   if (filterhaplotypes){
     haplotypes <- filter_haplotypes(haplotypes, filterhaplotypes)
   }
@@ -456,6 +462,11 @@ callAlleleSpecificCNfromHSCN <- function(hscn,
   
   CNbins <- hscn$data %>% 
     dplyr::select(cell_id, chr, start, end, state, copy)
+  
+  if (any(grepl("chr", CNbins$chr))){
+    message("Removing chr string from chr column")
+    CNbins$chr <- sub("chr", "", CNbins$chr)
+  }
   
   infloherror <- hscn$loherror
   

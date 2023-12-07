@@ -86,7 +86,7 @@ segments <- create_segments(consensus, field = "state_phase")
 segments <- filter_segments(segments, binwidth = 10e6)
 ```
 
-Note, that if you have some other ways to obtain segments such as bulk whole genome sequencing then that would also work. The `segments` data frame needs to have the columns `chr`, `start` and `end`. Alternatively, if you don't have any data that can be used to identify segments a priori you can just use chromosome arms as the segmentation. To do this just leave the segments option in any of the following function empty and the functions will revert to the default of using chromosome arms.
+Note, that if you have some other ways to obtain segments such as bulk whole genome sequencing then that would also work. The `segments` data frame needs to have the columns `chr`, `start` and `end`. Alternatively, if you don't have any data that can be used to identify segments a priori you can just use chromosome arms as the segmentation. To do this just leave the segments option in any of the following functions empty and the functions will revert to the default of using chromosome arms.
 
 Our inference scheme is based on using dirichilet process clustering using [Viber](https://github.com/caravagn/VIBER) to cluster cells that share similar BAF distributions across segments. We first compute BAF frequencies across each segment in each cell.
 
