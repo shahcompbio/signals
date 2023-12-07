@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.9.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.10.0</span>
       </span>
     </div>
 
@@ -133,13 +133,13 @@ but in general it will be less accurate.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span>
 <span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
 <span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -312778.6745</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -308794.6253</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -308239.1989</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -308213.4035</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -308213.0347</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -308213.0316</span></span>
-<span><span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -308213.0315</span></span></code></pre></div>
+<span><span class="co">#&gt; VGLM    linear loop  1 :  loglikelihood = -312940.2787</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  2 :  loglikelihood = -308997.6251</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  3 :  loglikelihood = -308451.1318</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  4 :  loglikelihood = -308425.6914</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  5 :  loglikelihood = -308425.3173</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  6 :  loglikelihood = -308425.3139</span></span>
+<span><span class="co">#&gt; VGLM    linear loop  7 :  loglikelihood = -308425.3139</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="ascn-inference">ASCN inference<a class="anchor" aria-label="anchor" href="#ascn-inference"></a>
@@ -196,7 +196,7 @@ bulk whole genome sequencing then that would also work. The
 Alternatively, if you don’t have any data that can be used to identify
 segments a priori you can just use chromosome arms as the segmentation.
 To do this just leave the segments option in any of the following
-function empty and the functions will revert to the default of using
+functions empty and the functions will revert to the default of using
 chromosome arms.</p>
 <p>Our inference scheme is based on using dirichilet process clustering
 using <a href="https://github.com/caravagn/VIBER" class="external-link">Viber</a> to cluster
@@ -313,7 +313,7 @@ shown below.</p>
 <span><span class="co">#&gt;  [9] "BAF-11-82500001-119500000"  "BAF-12-1-123000000"        </span></span>
 <span><span class="co">#&gt; [11] "BAF-13-1-110300000"         "BAF-14-1-54000000"         </span></span>
 <span><span class="co">#&gt; [13] "BAF-14-54000001-104000000"  "BAF-15-1-43000000"         </span></span>
-<span><span class="co">#&gt; [15] "BAF-15-43000001-77000000"   "BAF-15-77000001-98500000"  </span></span>
+<span><span class="co">#&gt; [15] "BAF-15-43000001-77000000"   "BAF-15-77000001-88500000"  </span></span>
 <span><span class="co">#&gt; [17] "BAF-16-1-88700000"          "BAF-17-1-75300000"         </span></span>
 <span><span class="co">#&gt; [19] "BAF-18-1-73100000"          "BAF-19-1-28000000"         </span></span>
 <span><span class="co">#&gt; [21] "BAF-19-28000001-56300000"   "BAF-2-1-88500000"          </span></span>
