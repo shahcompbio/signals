@@ -286,6 +286,53 @@ plotSV <- function(breakpoints,
   return(p)
 }
 
+#' @export
+plotSVlines <- function(breakpoints,
+                   chrfilt = NULL,
+                   returnlist = FALSE,
+                   ylims = c(0, 2),
+                   legend.position = "bottom",
+                   ...) {
+  pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
+  
+  pl$breakpoints <- pl$breakpoints %>% 
+    mutate(rearrangement_type = ifelse(rearrangement_type %in% c("unbalanced", "balanced"), type, rearrangement_type))
+  
+  pl$breakpoints$rearrangement_type <- unlist(lapply(pl$breakpoints$rearrangement_type, CapStr))
+  
+  gSV <- pl$bins %>%
+    ggplot2::ggplot(ggplot2::aes(x = idx, y = 1)) +
+    ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
+    ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx)) +
+    xlab("Chromosome") +
+    cowplot::theme_cowplot(...) +
+    ggplot2::theme(
+      axis.line.y = ggplot2::element_blank(),
+      axis.text.y = ggplot2::element_blank(),
+      axis.ticks.y = ggplot2::element_blank(),
+      legend.position = legend.position
+    ) +
+    ylab("SV") +
+    ggplot2::ylim(ylims)
+  
+  gSV <- gSV +
+    ggplot2::geom_linerange(data = pl$breakpoints, aes(x = idx_1, ymin = 0, ymax = 2, col = rearrangement_type)) +
+    ggplot2::geom_linerange(data = pl$breakpoints, aes(x = idx_2, ymin = 0, ymax = 2, col = rearrangement_type)) +
+    ggplot2::labs(col = "Rearrangement") +
+    ggplot2::scale_color_manual(
+      breaks = names(SV_colors),
+      values = as.vector(SV_colors)
+    )
+  
+  if (returnlist == TRUE) {
+    p <- list(SV = gSV, plist = pl)
+  } else {
+    p <- gSV
+  }
+  
+  return(p)
+}
+
 
 #' @export
 plotSV2 <- function(breakpoints,

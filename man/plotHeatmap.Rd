@@ -23,6 +23,7 @@ plotHeatmap(
   frequencycutoff = 2,
   maxf = NULL,
   plotfrequency = FALSE,
+  frequency_height = 1.4,
   show_legend = TRUE,
   show_library_label = TRUE,
   show_clone_label = TRUE,
@@ -45,6 +46,7 @@ plotHeatmap(
   maxCNcol = 11,
   anno_width = 0.4,
   rasterquality = 15,
+  tree_width = 4,
   ...
 )
 }
@@ -85,6 +87,8 @@ plotHeatmap(
 
 \item{plotfrequency}{Plot the frequency track of gains and losses across the genome}
 
+\item{frequency_height}{height of the frequency track if using, default = 1.4}
+
 \item{show_legend}{plot legend or not, boolean}
 
 \item{show_library_label}{show library label or not, boolean}
@@ -111,9 +115,7 @@ plotHeatmap(
 
 \item{fillgenome}{fill in any missing bins and add NA to centromeric regions}
 
-\item{annotation_height}{Height of the annotations
-
-If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.}
+\item{annotation_height}{Height of the annotations}
 
 \item{annofontsize}{Font size to use for annotations, default = 10}
 
@@ -130,6 +132,10 @@ If clusters are set to NULL then the function will compute clusters using UMAP a
 \item{anno_width}{width of left annotations}
 
 \item{rasterquality}{default = 15}
+
+\item{tree_width}{Width of phylogenetic tree, default = 4
+
+If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.}
 }
 \description{
 Plot a heatmap where rows are cells, columns are genome coordinates and colours map to (allele-specific) copy-number states
