@@ -292,6 +292,7 @@ plotSVlines <- function(breakpoints,
                    returnlist = FALSE,
                    ylims = c(0, 2),
                    legend.position = "bottom",
+                   line_width = 1.0,
                    ...) {
   pl <- plottinglistSV(breakpoints, chrfilt = chrfilt)
   
@@ -316,8 +317,8 @@ plotSVlines <- function(breakpoints,
     ggplot2::ylim(ylims)
   
   gSV <- gSV +
-    ggplot2::geom_linerange(data = pl$breakpoints, aes(x = idx_1, ymin = 0, ymax = 2, col = rearrangement_type)) +
-    ggplot2::geom_linerange(data = pl$breakpoints, aes(x = idx_2, ymin = 0, ymax = 2, col = rearrangement_type)) +
+    ggplot2::geom_linerange(size = line_width, data = pl$breakpoints, aes(x = idx_1, ymin = 0, ymax = 2, col = rearrangement_type)) +
+    ggplot2::geom_linerange(size = line_width, data = pl$breakpoints, aes(x = idx_2, ymin = 0, ymax = 2, col = rearrangement_type)) +
     ggplot2::labs(col = "Rearrangement") +
     ggplot2::scale_color_manual(
       breaks = names(SV_colors),
