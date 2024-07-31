@@ -93,8 +93,6 @@ plotCNprofile(
 \item{positionticks}{set to TRUE to use position ticks rather than chromosome ticks}
 
 \item{ideogram}{plot ideogram at the top, default = TRUE}
-
-\item{ideogram_height}{height of the ideogram}
 }
 \value{
 ggplot2 plot

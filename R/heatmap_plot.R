@@ -326,7 +326,7 @@ format_clones <- function(clones, ordered_cell_ids) {
   return(clonesdf)
 }
 
-make_corrupt_tree_heatmap <- function(tree_ggplot, ...) {
+make_corrupt_tree_heatmap <- function(tree_ggplot, tree_width, ...) {
   tree_annot_func <- ComplexHeatmap::AnnotationFunction(
     fun = function(index) {
       pushViewport(viewport(height = 1))
@@ -334,7 +334,7 @@ make_corrupt_tree_heatmap <- function(tree_ggplot, ...) {
       popViewport()
     },
     var_import = list(tree_ggplot = tree_ggplot),
-    width = grid::unit(4, "cm"),
+    width = grid::unit(tree_width, "cm"),
     which = "row"
   )
   tree_annot <- ComplexHeatmap::HeatmapAnnotation(
@@ -466,7 +466,9 @@ make_left_annot <- function(copynumber,
         annotation_legend_param = list(
           Cluster = list(nrow = clone_legend_rows, direction = "horizontal"),
           Sample = list(nrow = library_legend_rows, direction = "horizontal"),
-          labels_gp = grid::gpar(fontsize = annofontsize)
+          labels_gp = grid::gpar(fontsize = annofontsize-1),
+          legend_gp = grid::gpar(fontsize = annofontsize-1),
+          title_gp = grid::gpar(fontsize = annofontsize-1)
         ),
         show_legend = show_legend
       )
@@ -479,7 +481,9 @@ make_left_annot <- function(copynumber,
         annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
         annotation_legend_param = list(
           Cluster = list(nrow = clone_legend_rows),
-          labels_gp = grid::gpar(fontsize = annofontsize)
+          labels_gp = grid::gpar(fontsize = annofontsize-1),
+          legend_gp = grid::gpar(fontsize = annofontsize-1),
+          title_gp = grid::gpar(fontsize = annofontsize-1)
         ),
         show_legend = show_legend
       ) 
@@ -493,7 +497,9 @@ make_left_annot <- function(copynumber,
           annotation_legend_param = list(
             Cluster = list(nrow = clone_legend_rows, direction = "horizontal"),
             Sample = list(nrow = library_legend_rows, direction = "horizontal"),
-            labels_gp = grid::gpar(fontsize = annofontsize)
+            labels_gp = grid::gpar(fontsize = annofontsize-1),
+            legend_gp = grid::gpar(fontsize = annofontsize-1),
+            title_gp = grid::gpar(fontsize = annofontsize-1)
           ),
           show_legend = show_legend
         )
@@ -504,7 +510,9 @@ make_left_annot <- function(copynumber,
           annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
           annotation_legend_param = list(
             Sample = list(nrow = library_legend_rows),
-            labels_gp = grid::gpar(fontsize = annofontsize)
+            labels_gp = grid::gpar(fontsize = annofontsize-1),
+            legend_gp = grid::gpar(fontsize = annofontsize-1),
+            title_gp = grid::gpar(fontsize = annofontsize-1)
           ),
           show_legend = show_legend
         )
@@ -517,7 +525,9 @@ make_left_annot <- function(copynumber,
           annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
           annotation_legend_param = list(
             Cluster = list(nrow = clone_legend_rows),
-            labels_gp = grid::gpar(fontsize = annofontsize)
+            labels_gp = grid::gpar(fontsize = annofontsize-1),
+            legend_gp = grid::gpar(fontsize = annofontsize-1),
+            title_gp = grid::gpar(fontsize = annofontsize-1)
           ),
           show_legend = show_legend
         ) 
@@ -528,7 +538,10 @@ make_left_annot <- function(copynumber,
       which = "row", simple_anno_size = grid::unit(0.4, "cm"),
       annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
       annotation_legend_param = list(
-        Sample = list(nrow = library_legend_rows)
+        Cluster = list(nrow = clone_legend_rows),
+        labels_gp = grid::gpar(fontsize = annofontsize-1),
+        legend_gp = grid::gpar(fontsize = annofontsize-1),
+        title_gp = grid::gpar(fontsize = annofontsize-1)
       ),
       show_legend = show_legend
     )
@@ -930,6 +943,7 @@ getSVlegend <- function(include = NULL) {
 #' @param Mb Use Mb ticks when plotting single chromosome
 #' @param annofontsize Font size to use for annotations, default = 10
 #' @param annotation_height Height of the annotations
+#' @param tree_width Width of phylogenetic tree, default = 4
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #' 
@@ -984,6 +998,7 @@ plotHeatmap <- function(cn,
                         maxCNcol = 11,
                         anno_width = 0.4,
                         rasterquality = 15,
+                        tree_width = 4,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1112,7 +1127,7 @@ plotHeatmap <- function(cn,
     tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data
     message("Creating tree...")
-    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
     ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
 
     clusters <- clustering_results$clustering %>%
@@ -1120,9 +1135,9 @@ plotHeatmap <- function(cn,
   }
 
   if (!is.null(clusters)) {
-    cells_clusters <- length(unique(clusters$cell_id))
-    cells_data <- length(unique(CNbins$cell_id))
-    if (cells_data != cells_clusters){
+    cells_clusters <- unique(clusters$cell_id)
+    cells_data <- unique(CNbins$cell_id)
+    if (length(cells_data) != length(cells_clusters)){
       warning("Number of cells in clusters dataframe !=  number of cells in the bins data! Removing some cells")
       cells_to_keep <- intersect(cells_clusters, cells_data)
       CNbins <- dplyr::filter(CNbins, cell_id %in% cells_to_keep)
@@ -1147,7 +1162,7 @@ plotHeatmap <- function(cn,
     tree_plot_dat <- tree_ggplot$data
 
     message("Creating tree...")
-    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
     ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
   }
 
@@ -1165,7 +1180,7 @@ plotHeatmap <- function(cn,
       tree_plot_dat <- tree_ggplot$data
 
       message("Creating tree...")
-      tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+      tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
       ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
     }
     else if (reorderclusters == TRUE & is.null(tree)) {
@@ -1290,7 +1305,7 @@ plotSNVHeatmap <- function(SNVs,
   tree_plot_dat <- tree_ggplot$data
 
   message("Creating tree...")
-  tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+  tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
   ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
 
   muts <- muts[ordered_cell_ids, ]
@@ -1399,7 +1414,7 @@ plotHeatmapQC <- function(cn,
     tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
     tree_plot_dat <- tree_ggplot$data
     message("Creating tree...")
-    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
     ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
 
     clusters <- clustering_results$clustering %>%
@@ -1426,7 +1441,7 @@ plotHeatmapQC <- function(cn,
     tree_plot_dat <- tree_ggplot$data
 
     message("Creating tree...")
-    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot)
+    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
     ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
   }
 
