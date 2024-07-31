@@ -34,7 +34,9 @@ plotCNprofileBAF(
   chrstart = NULL,
   chrend = NULL,
   shape = 16,
+  ideogram = FALSE,
   positionticks = FALSE,
+  genome = "hg19",
   ...
 )
 }
@@ -91,7 +93,11 @@ plotCNprofileBAF(
 
 \item{shape}{shape for plotting, default = 16}
 
+\item{ideogram}{plot ideogram at the top, default = TRUE}
+
 \item{positionticks}{set to TRUE to use position ticks rather than chromosome ticks}
+
+\item{genome}{genome to use, default = "hg19" (only used for ideogram)}
 
 \item{offest}{to use when plotting inferred states in homolog plot}
 }
