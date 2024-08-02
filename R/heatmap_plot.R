@@ -672,24 +672,24 @@ make_top_annotation_gain <- function(copynumber,
     ha2 <- ComplexHeatmap::columnAnnotation(
       dist2 = ComplexHeatmap::anno_barplot(
         f1,
-        bar_width = 1,
-        gp = grid::gpar(col = "#E34A33", fill = "#E34A33"),
+        bar_width = 0.3,
+        gp = grid::gpar(col = "#E34A33", fill = "#E34A33", lwd = 0),
         axis_param = list(
           at = c(round(maxf / 2, 2), maxf),
-          labels = c(paste0(round(maxf / 2, 2)), paste0(maxf)),
-          gp = grid::gpar(fontsize = annofontsize-1)
+          labels = c("", paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-2)
         ),
         ylim = c(0, maxf),
         border = FALSE,
       ),
       dist3 = ComplexHeatmap::anno_barplot(
         f2,
-        bar_width = 1,
-        gp = grid::gpar(col = "#3182BD", fill = "#3182BD"),
+        bar_width = 0.3,
+        gp = grid::gpar(col = "#3182BD", fill = "#3182BD", lwd = 0),
         axis_param = list(
           at = c(0.0, -round(maxf / 2, 2), -maxf),
-          labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf)),
-          gp = grid::gpar(fontsize = annofontsize-1)
+          labels = c("0", "", paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-2)
         ),
         ylim = c(-maxf, 0),
         border = FALSE,
@@ -714,28 +714,30 @@ make_top_annotation_gain <- function(copynumber,
     ha2 <- ComplexHeatmap::columnAnnotation(
       dist2 = ComplexHeatmap::anno_barplot(
         matrix(data = c(f1a, f1b), ncol = 2),
-        bar_width = 1,
+        bar_width = 0.3,
         gp = grid::gpar(
           col = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-Hom"]),
-          fill = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-Hom"])),
+          fill = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-Hom"]),
+          lwd = 0),
         axis_param = list(
           at = c(round(maxf / 2, 2), maxf),
-          labels = c(paste0(round(maxf / 2, 2)), paste0(maxf)),
-          gp = grid::gpar(fontsize = annofontsize-1)
+          labels = c("", paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-2)
         ),
         ylim = c(0, maxf),
         border = FALSE,
       ),
       dist3 = ComplexHeatmap::anno_barplot(
         matrix(data = c(f2a, f2b), ncol = 2),
-        bar_width = 1,
+        bar_width = 0.3,
         gp = grid::gpar(
           col = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-Hom"]),
-          fill = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-Hom"])),
+          fill = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-Hom"]),
+          lwd = 0),
         axis_param = list(
           at = c(0, -round(maxf / 2, 2), -maxf),
-          labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf)),
-          gp = grid::gpar(fontsize = annofontsize-1)
+          labels = c("0", "", paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-2)
         ),
         ylim = c(-maxf, 0),
         border = FALSE,
@@ -756,24 +758,28 @@ make_top_annotation_gain <- function(copynumber,
     ha2 <- ComplexHeatmap::columnAnnotation(
       dist2 = ComplexHeatmap::anno_barplot(
         f1,
-        bar_width = 1,
-        gp = grid::gpar(col = scCNphase_colors["A-Hom"], fill = scCNphase_colors["A-Hom"]),
+        bar_width = 0.3,
+        gp = grid::gpar(col = scCNphase_colors["A-Hom"], 
+                        fill = scCNphase_colors["A-Hom"],
+                        lwd = 0),
         axis_param = list(
           at = c(round(maxf / 2, 2), maxf),
-          labels = c(paste0(round(maxf / 2, 2)), paste0(maxf)),
-          gp = grid::gpar(fontsize = annofontsize-1)
+          labels = c("", paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-2, lwd = 0.3)
         ),
         ylim = c(0, maxf),
         border = FALSE,
       ),
       dist3 = ComplexHeatmap::anno_barplot(
         f2,
-        bar_width = 1,
-        gp = grid::gpar(col = scCNphase_colors["B-Hom"], fill = scCNphase_colors["B-Hom"]),
+        bar_width = 0.3,
+        gp = grid::gpar(col = scCNphase_colors["B-Hom"], 
+                        fill = scCNphase_colors["B-Hom"],
+                        lwd = 0),
         axis_param = list(
           at = c(0.0, -round(maxf / 2, 2), -maxf),
-          labels = c("0", paste0(round(maxf / 2, 2)), paste0(maxf)),
-          gp = grid::gpar(fontsize = annofontsize-1)
+          labels = c("0", "", paste0(maxf)),
+          gp = grid::gpar(fontsize = annofontsize-2)
         ),
         ylim = c(-maxf, 0),
         border = FALSE,
