@@ -17,8 +17,8 @@ callHaplotypeSpecificCN(
   phasebyarm = FALSE,
   minfrachaplotypes = 0.7,
   likelihood = "auto",
-  minbins = 100,
-  minbinschr = 10,
+  minbins = 0,
+  minbinschr = 0,
   phased_haplotypes = NULL,
   clustering_method = "copy",
   maxloherror = 0.035,
@@ -31,7 +31,8 @@ callHaplotypeSpecificCN(
   smoothsingletons = TRUE,
   fillmissing = TRUE,
   global_phasing_for_balanced = FALSE,
-  chrs_for_global_phasing = NULL
+  chrs_for_global_phasing = NULL,
+  female = TRUE
 )
 }
 \arguments{
@@ -84,6 +85,8 @@ callHaplotypeSpecificCN(
 \item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
 
 \item{chrs_for_global_phasing}{Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes}
+
+\item{female}{Default is \code{TRUE}, if set to \code{FALSE} and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state}
 
 \item{viterbver}{Version of viterbi algorithm to use (cpp or R)}
 

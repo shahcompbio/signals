@@ -634,6 +634,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param fillmissing For bins with missing counts fill in values based on neighbouring bins
 #' @param global_phasing_for_diploid When using cluster_per_chr, use all cells for phasing diploid regions within the cluster
 #' @param chrs_for_global_phasing Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes
+#' @param female Default is `TRUE`, if set to `FALSE` and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state
 #' 
 #' @return Haplotype specific copy number object 
 #' 
@@ -691,7 +692,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     smoothsingletons = TRUE,
                                     fillmissing = TRUE,
                                     global_phasing_for_balanced = FALSE,
-                                    chrs_for_global_phasing = NULL) {
+                                    chrs_for_global_phasing = NULL,
+                                    female = TRUE) {
   if (!clustering_method %in% c("copy", "breakpoints")) {
     stop("Clustering method must be one of copy or breakpoints")
   }
@@ -718,6 +720,17 @@ callHaplotypeSpecificCN <- function(CNbins,
     message("Removing chr string from chr column")
     CNbins$chr <- sub("chr", "", CNbins$chr)
     haplotypes$chr <- sub("chr", "", haplotypes$chr)
+  }
+  
+  if (female == TRUE){
+    #do not infer states for chr "Y"
+    haplotypes <- filter(haplotypes, chr != "Y")
+    CNbins <- filter(CNbins, chr != "Y")
+  } else{
+    #do not infer states for chr "X" or "Y"
+    haplotypes <- filter(haplotypes, chr != "Y")
+    haplotypes <- filter(haplotypes, chr != "X")
+    CNbins <- filter(CNbins, chr != "Y")
   }
   
   nhaplotypes <- haplotypes %>% 
@@ -927,6 +940,12 @@ callHaplotypeSpecificCN <- function(CNbins,
     out[["data"]] <- out[["data"]] %>% 
       dplyr::mutate(A = ifelse(state == 0, 0, A)) %>% 
       dplyr::mutate(B = ifelse(state == 0, 0, B))
+    if (female == FALSE){
+      #for male patients set A == state and B == 0
+      out[["data"]] <- out[["data"]] %>% 
+        dplyr::mutate(A = ifelse(chr == "X", state, A)) %>% 
+        dplyr::mutate(B = ifelse(chr == "X", 0, B))
+    }
     out[["data"]] <- add_states(out[["data"]])
     out[["data"]] <- as.data.frame(out[["data"]])
   }
