@@ -97,9 +97,9 @@ There are also some function to plot per cell BAF and state plots. You can speci
 plotCNprofileBAF(hscn, cellid = "SA921-A90554A-R03-C44")
 ```
 
-Here we'll plot an equivalent plot merging data across cell clusters using the utility function `consensyscopynumber`. Here, the `cell_id` column becomes the 
-```{r, fig.show='hold', fig.height=5 , fig.width=10}
+Here we'll plot an equivalent plot merging data across cell clusters using the utility function `consensyscopynumber`. Here, the `cell_id` column becomes the `clone_id`.
 
+```{r, fig.show='hold', fig.height=5 , fig.width=10}
 consensus_clusters <- consensuscopynumber(hscn$data, cl = cl$clustering)
 
 plotCNprofileBAF(consensus_clusters, cellid = "A")

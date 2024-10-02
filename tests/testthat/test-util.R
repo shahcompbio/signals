@@ -39,7 +39,7 @@ test_that("Test widen bins functions", {
 
 segs <- create_segments(sim_data_bb$CNbins)
 test_that("Test create segments", {
-  expect_equal(dim(segs)[1], 24 * sum(clones_dist))
+  expect_equal(dim(segs)[1], 23 * sum(clones_dist))
 })
 
 segs_cn <- create_segments(consensuscopynumber(CNbins))

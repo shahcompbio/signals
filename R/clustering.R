@@ -92,7 +92,8 @@ umap_clustering <- function(CNbins,
                                 ret_model = TRUE,
                                 ret_nn = TRUE,
                                 pca = pca,
-                                fast_sgd = fast_sgd)
+                                fast_sgd = fast_sgd,
+                                pca_method = "svdr")
     }
   )
   

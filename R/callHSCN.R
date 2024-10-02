@@ -634,6 +634,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param fillmissing For bins with missing counts fill in values based on neighbouring bins
 #' @param global_phasing_for_diploid When using cluster_per_chr, use all cells for phasing diploid regions within the cluster
 #' @param chrs_for_global_phasing Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes
+#' @param female Default is `TRUE`, if set to `FALSE` and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state
 #' 
 #' @return Haplotype specific copy number object 
 #' 
@@ -677,8 +678,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     phasebyarm = FALSE,
                                     minfrachaplotypes = 0.7,
                                     likelihood = "auto",
-                                    minbins = 100,
-                                    minbinschr = 10,
+                                    minbins = 0,
+                                    minbinschr = 0,
                                     phased_haplotypes = NULL,
                                     clustering_method = "copy",
                                     maxloherror = 0.035,
@@ -691,7 +692,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     smoothsingletons = TRUE,
                                     fillmissing = TRUE,
                                     global_phasing_for_balanced = FALSE,
-                                    chrs_for_global_phasing = NULL) {
+                                    chrs_for_global_phasing = NULL,
+                                    female = TRUE) {
   if (!clustering_method %in% c("copy", "breakpoints")) {
     stop("Clustering method must be one of copy or breakpoints")
   }
@@ -718,6 +720,17 @@ callHaplotypeSpecificCN <- function(CNbins,
     message("Removing chr string from chr column")
     CNbins$chr <- sub("chr", "", CNbins$chr)
     haplotypes$chr <- sub("chr", "", haplotypes$chr)
+  }
+  
+  if (female == TRUE){
+    #do not infer states for chr "Y"
+    #haplotypes <- dplyr::filter(haplotypes, chr != "Y")
+    #CNbins <- dplyr::filter(CNbins, chr != "Y")
+  } else{
+    #do not infer states for chr "X" or "Y"
+    #haplotypes <- dplyr::filter(haplotypes, chr != "Y")
+    haplotypes <- dplyr::filter(haplotypes, chr != "X")
+    #CNbins <- dplyr::filter(CNbins, chr != "Y")
   }
   
   nhaplotypes <- haplotypes %>% 
@@ -794,18 +807,21 @@ callHaplotypeSpecificCN <- function(CNbins,
     cells_to_remove <- ave_dist %>% 
       dplyr::filter(average_distance >= 0.05)
     message(paste0("Removing ", dim(cells_to_remove)[1], " cells for phasing"))
-    ascn <- ascn %>% dplyr::filter(cell_id %in% cells_to_keep$cell_id)
-    haplotypes <- haplotypes %>% dplyr::filter(cell_id %in% cells_to_keep$cell_id)
+    ascn_filt <- ascn %>% dplyr::filter(cell_id %in% cells_to_keep$cell_id)
+    haplotypes_filt <- haplotypes %>% dplyr::filter(cell_id %in% cells_to_keep$cell_id)
+  } else{
+    ascn_filt <- ascn
+    haplotypes_filt <- haplotypes
   }
   
-  infloherror <- ascn %>%
+  infloherror <- ascn_filt %>%
     dplyr::filter(state_phase == "A-Hom") %>%
     dplyr::summarise(err = weighted.mean(x = BAF, w = totalcounts, na.rm = TRUE)) %>%
     dplyr::pull(err)
   infloherror <- min(infloherror, maxloherror) # ensure loh error rate is < maxloherror
   
   if (likelihood == "betabinomial" | likelihood == "auto") {
-    bbfit <- fitBB(ascn)
+    bbfit <- fitBB(ascn_filt)
     if (bbfit$taronesZ > 5) {
       likelihood <- "betabinomial"
       message(paste0("Tarones Z-score: ", round(bbfit$taronesZ, 3), ", using ", likelihood, " model for inference."))
@@ -824,11 +840,11 @@ callHaplotypeSpecificCN <- function(CNbins,
     )
   }
   
-  ascn$balance <- ifelse(ascn$phase == "Balanced", 0, 1)
+  ascn_filt$balance <- ifelse(ascn_filt$phase == "Balanced", 0, 1)
   
   if (is.null(phased_haplotypes)) {
-    chrlist <- proportion_imbalance(ascn,
-                                    haplotypes,
+    chrlist <- proportion_imbalance(ascn_filt,
+                                    haplotypes_filt,
                                     phasebyarm = phasebyarm,
                                     minfrachaplotypes = minfrachaplotypes,
                                     mincells = mincells,
@@ -839,8 +855,8 @@ callHaplotypeSpecificCN <- function(CNbins,
     propdf <- chrlist$propdf
     chrlist <- chrlist$chrlist
     phased_haplotypes <- phase_haplotypes_bychr(
-      ascn = ascn,
-      haplotypes = haplotypes,
+      ascn = ascn_filt,
+      haplotypes = haplotypes_filt,
       chrlist = chrlist,
       phasebyarm = phasebyarm,
       global_phasing_for_balanced = global_phasing_for_balanced,
@@ -920,6 +936,17 @@ callHaplotypeSpecificCN <- function(CNbins,
       tidyr::fill( c("state_min", "A", "B", "state_phase", "state_AS", 
                     "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup") %>% 
       dplyr::ungroup()
+    #add 0|0 states for  hom deletions
+    out[["data"]] <- out[["data"]] %>% 
+      dplyr::mutate(A = ifelse(state == 0, 0, A)) %>% 
+      dplyr::mutate(B = ifelse(state == 0, 0, B))
+    if (female == FALSE){
+      #for male patients set A == state and B == 0
+      out[["data"]] <- out[["data"]] %>% 
+        dplyr::mutate(A = ifelse(chr == "X", state, A)) %>% 
+        dplyr::mutate(B = ifelse(chr == "X", 0, B))
+    }
+    out[["data"]] <- add_states(out[["data"]])
     out[["data"]] <- as.data.frame(out[["data"]])
   }
   
