@@ -75,7 +75,7 @@ createCNmatrix <- function(CNbins,
     
     cnmatrix <- cnmatrix %>%
       dplyr::as_tibble() %>%
-      tidyr::fill(., colnames, .direction = "updown")
+      tidyr::fill(., tidyr::all_of(colnames), .direction = "updown")
   }
 
   cnmatrix <- as.data.frame(cnmatrix)
@@ -962,6 +962,7 @@ per_chr_cn <- function(hscn, arms = NULL) {
 #' @export
 add_states <- function(df) {
   df <- df %>%
+    data.table::as.data.table() %>%
     .[, state_AS_phased := paste0(A, "|", B)] %>%
     .[, state_AS := paste0(pmax(state - B, B), "|", pmin(state - B, B))] %>%
     .[, state_min := pmin(A, B)] %>%

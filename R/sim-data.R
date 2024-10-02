@@ -30,7 +30,7 @@ simulate_cell <- function(nchr = 2,
   }
 
   data("dlpbins", envir = environment())
-  bins <- dlpbins
+  bins <- dlpbins %>% dplyr::filter(chr != "Y")
   bins$state <- base_ploidy
   bins$state_min <- round(base_ploidy / 2)
   chrvec <- setdiff(unique(bins$chr), names(clonal_events))

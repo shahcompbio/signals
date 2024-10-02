@@ -432,14 +432,14 @@ plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5, raster = FALSE
       )
     }
     g <- ggplot2::ggplot(clustering, ggplot2::aes(x = umap1, y = umap2)) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = bycol), alpha = alphavalue) +
+      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[bycol]]), alpha = alphavalue) +
       ggplot2::xlab("UMAP 1") +
       ggplot2::ylab("UMAP 2") +
       ggplot2::theme_bw() +
       ggplot2::guides(colour = ggplot2::guide_legend(ncol = 3))
   } else {
     g <- ggplot2::ggplot(clustering, ggplot2::aes(x = umap1, y = umap2)) +
-      ggplot2::geom_point(ggplot2::aes_string(col = bycol), alpha = alphavalue) +
+      ggplot2::geom_point(ggplot2::aes(col = .data[[bycol]]), alpha = alphavalue) +
       ggplot2::xlab("UMAP 1") +
       ggplot2::ylab("UMAP 2") +
       ggplot2::theme_bw() +
@@ -713,7 +713,7 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = shape) +
+      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[statecol]]), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "Copy number",
         breaks = names(statecolpal),
@@ -743,7 +743,7 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = 16) +
+      ggplot2::geom_point(ggplot2::aes(col = .data[[statecol]]), size = pointsize, alpha = alphaval, shape = 16) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1405,7 +1405,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = shape) +
+      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[BAFcol]]), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
@@ -1440,7 +1440,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = shape) +
+      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[statecol]]), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1469,7 +1469,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = BAFcol), size = pointsize, alpha = alphaval, shape = shape) +
+      ggplot2::geom_point(ggplot2::aes(col = .data[[BAFcol]]), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
@@ -1504,7 +1504,7 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes_string(col = statecol), size = pointsize, alpha = alphaval, shape = shape) +
+      ggplot2::geom_point(ggplot2::aes(col = .data[[statecol]]), size = pointsize, alpha = alphaval, shape = shape) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1730,7 +1730,7 @@ plotBAFperstate <- function(cn, minpts = 250, minfrac = 0.01, maxstate = 10, den
     cowplot::theme_cowplot() +
     ggplot2::geom_crossbar(
       data = allASstates, ggplot2::aes(y = cBAF, ymin = cBAF, ymax = cBAF),
-      alpha = 0.2, size = 0.2
+      alpha = 0.2, linewidth = 0.2
     ) +
     ggplot2::geom_text(data = text_fraction, ggplot2::aes(x = state_AS_phased, y = y, label = pct)) +
     ggplot2::xlab("") +
@@ -1776,7 +1776,7 @@ plot_density_histogram <- function(dat, mystate, rho, nbins = 30, frac = "NA", l
   )
 
   g <- ggplot2::ggplot(dat, ggplot2::aes(x = BAF)) +
-    ggplot2::geom_histogram(ggplot2::aes(y = (..density..)), bins = nbins, fill = "azure4", alpha = 0.8) +
+    ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), bins = nbins, fill = "azure4", alpha = 0.8) +
     ggplot2::geom_line(data = dffit_bb, stat = "density", ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5) +
     ggplot2::geom_line(data = dffit_b, stat = "density", ggplot2::aes(BAF, col = type), size = 0.5, adjust = 5, linetype = 2) +
     ggplot2::scale_colour_manual(values = c(ggplot2::alpha("deepskyblue4", 0.6), ggplot2::alpha("firebrick4", 0.6))) +
