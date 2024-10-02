@@ -1227,6 +1227,6 @@ format_tree_labels <- function(tree, removeloci = TRUE, internal_node_string = '
       tip.loci <- grep(internal_node_string, tree$tip.label, value = T)
     }
   }
-  tree$tip.label <- str_remove(tree$tip.label, "cell_")
+  tree$tip.label <- stringr::str_remove(tree$tip.label, "cell_")
   return(tree)
 }
