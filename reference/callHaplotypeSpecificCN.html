@@ -79,8 +79,8 @@
 <span>  phasebyarm <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  minfrachaplotypes <span class="op">=</span> <span class="fl">0.7</span>,</span>
 <span>  likelihood <span class="op">=</span> <span class="st">"auto"</span>,</span>
-<span>  minbins <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  minbinschr <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  minbins <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  minbinschr <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  phased_haplotypes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  clustering_method <span class="op">=</span> <span class="st">"copy"</span>,</span>
 <span>  maxloherror <span class="op">=</span> <span class="fl">0.035</span>,</span>
@@ -93,7 +93,8 @@
 <span>  smoothsingletons <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  fillmissing <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  global_phasing_for_balanced <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  chrs_for_global_phasing <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  chrs_for_global_phasing <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  female <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -201,6 +202,10 @@
 <dd><p>Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes</p></dd>
 
 
+<dt id="arg-female">female<a class="anchor" aria-label="anchor" href="#arg-female"></a></dt>
+<dd><p>Default is <code>TRUE</code>, if set to <code>FALSE</code> and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state</p></dd>
+
+
 <dt id="arg-viterbver">viterbver<a class="anchor" aria-label="anchor" href="#arg-viterbver"></a></dt>
 <dd><p>Version of viterbi algorithm to use (cpp or R)</p></dd>
 
@@ -253,24 +258,29 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Phasing based on distribution across all cells</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Join phased haplotypes...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Reorder haplotypes based on phase...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Total number of cells after removing cells with &lt; 100 bins: 40</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Total number of cells after removing cells with &lt; 0 bins: 40</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`progress_estimated()` was deprecated in dplyr 1.0.0.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The deprecated feature was likely used in the <span style="color: #0000BB;">signals</span> package.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   Please report the issue to the authors.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Removing 0 cells for phasing</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Fitting beta-binomial model to state: 1|1...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  1 :  loglikelihood = -377120.453</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  2 :  loglikelihood = -352073.289</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  3 :  loglikelihood = -340743.4614</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  4 :  loglikelihood = -337479.0543</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  5 :  loglikelihood = -336818.3457</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  6 :  loglikelihood = -336705.7535</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  7 :  loglikelihood = -336686.9573</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  8 :  loglikelihood = -336684.4667</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>14769 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  9 :  loglikelihood = -336684.4667</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  1 :  loglikelihood = -377038.2394</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  2 :  loglikelihood = -351943.5317</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  3 :  loglikelihood = -340567.9024</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  4 :  loglikelihood = -337276.3768</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  5 :  loglikelihood = -336604.0917</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  6 :  loglikelihood = -336487.3401</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  7 :  loglikelihood = -336467.582</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>201 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  8 :  loglikelihood = -336465.6359</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>52742 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Applying Greenstadt modification to 26371 matrices</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  9 :  loglikelihood = -336465.6359</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Taking a modified step.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  9 :  loglikelihood = -336465.6359</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>some quantities such as z, residuals, SEs may be inaccurate due to convergence at a half-step</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Inferred mean: 0.496, Expected mean: 0.5, Inferred overdispersion (rho): 0</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Tarones Z-score: -3.162, using binomial model for inference.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Tarones Z-score: -4.112, using binomial model for inference.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Using 7 cells for clustering...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Clustering chromosome 1</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Creating CN matrix...</span>
@@ -442,13 +452,6 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Identified 1 clusters</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Distribution of clusters:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster 0: 40</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Clustering chromosome Y</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Creating CN matrix...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Calculating UMAP dimensionality reduction...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Clustering cells using hdbscan...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Identified 1 clusters</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Distribution of clusters:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Cluster 0: 40</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Finding overlapping cell IDs between CN data and haplotype data...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Total number of cells in both CN and haplotypes: 40</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Number of cells in CN data: 40</span>
@@ -457,9 +460,9 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Phase haplotypes...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Join phased haplotypes...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Reorder haplotypes based on phase...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Total number of cells after removing cells with &lt; 100 bins: 40</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0053</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0053</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Total number of cells after removing cells with &lt; 0 bins: 40</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0054</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Average distance from median to expected BAF = 0.0054</span>
 </code></pre></div>
     </div>
   </div>
@@ -474,7 +477,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer></div>

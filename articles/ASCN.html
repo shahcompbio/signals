@@ -221,10 +221,9 @@ data frame.</p>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-11-1.png" width="960"></p>
 <p>Here we’ll plot an equivalent plot merging data across cell clusters
 using the utility function <code>consensyscopynumber</code>. Here, the
-<code>cell_id</code> column becomes the</p>
+<code>cell_id</code> column becomes the <code>clone_id</code>.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"A"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN_files/figure-html/unnamed-chunk-12-1.png" width="960"></p>
@@ -252,7 +251,7 @@ additional columns specifying the allele specific states.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer>

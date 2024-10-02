@@ -1,9 +1,9 @@
 pandoc: 3.1.11
-pkgdown: 2.1.0
+pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   ASCN-RNA: ASCN-RNA.html
   ASCN: ASCN.html
   basic_scdnaseq: basic_scdnaseq.html
   BetaBinom: BetaBinom.html
-last_built: 2024-07-31T15:49Z
+last_built: 2024-10-02T10:35Z
