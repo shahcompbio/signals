@@ -713,7 +713,11 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[statecol]]), size = pointsize, alpha = alphaval, shape = shape) +
+      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[statecol]]), 
+                               show.legend = TRUE,
+                               size = pointsize, 
+                               alpha = alphaval, 
+                               shape = shape) +
       ggplot2::scale_color_manual(
         name = "Copy number",
         breaks = names(statecolpal),
@@ -743,7 +747,11 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes(col = .data[[statecol]]), size = pointsize, alpha = alphaval, shape = 16) +
+      ggplot2::geom_point(ggplot2::aes(col = .data[[statecol]]), 
+                          show.legend = TRUE,
+                          size = pointsize, 
+                          alpha = alphaval, 
+                          shape = 16) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -995,7 +1003,11 @@ plotCNprofileBAFhomolog <- function(cn,
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx)) +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        ggrastr::geom_point_rast(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = shape) +
+        ggrastr::geom_point_rast(ggplot2::aes(y = value, col = name), 
+                                 show.legend = TRUE,
+                                 size = pointsize, 
+                                 alpha = alphaval, 
+                                 shape = shape) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -1025,7 +1037,11 @@ plotCNprofileBAFhomolog <- function(cn,
         dplyr::mutate(state_min = paste0(state_min)) %>%
         ggplot2::ggplot(ggplot2::aes(x = idx)) +
         ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-        ggplot2::geom_point(ggplot2::aes(y = value, col = name), size = pointsize, alpha = alphaval, shape = shape) +
+        ggplot2::geom_point(ggplot2::aes(y = value, col = name), 
+                            show.legend = TRUE,
+                            size = pointsize, 
+                            alpha = alphaval, 
+                            shape = shape) +
         ggplot2::scale_color_manual(
           name = "",
           labels = c("Homolog A", "Homolog B"),
@@ -1375,7 +1391,8 @@ plotCNprofileBAF <- function(cn,
     BAFcolpal <- scCNAS_cols()
   }
   
-  if (ideogram == TRUE){
+  if (ideogram == TRUE
+      ){
     miny <- -0.5
   } else{
     miny <- 0
@@ -1405,7 +1422,11 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[BAFcol]]), size = pointsize, alpha = alphaval, shape = shape) +
+      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[BAFcol]]),
+                               show.legend = TRUE,
+                               size = pointsize, 
+                               alpha = alphaval, 
+                               shape = shape) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
@@ -1440,7 +1461,11 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[statecol]]), size = pointsize, alpha = alphaval, shape = shape) +
+      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[statecol]]),
+                               show.legend = TRUE,
+                               size = pointsize, 
+                               alpha = alphaval, 
+                               shape = shape) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
@@ -1469,7 +1494,11 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = BAF)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes(col = .data[[BAFcol]]), size = pointsize, alpha = alphaval, shape = shape) +
+      ggplot2::geom_point(ggplot2::aes(col = .data[[BAFcol]]), 
+                          show.legend = TRUE,
+                          size = pointsize, 
+                          alpha = alphaval, 
+                          shape = shape) +
       ggplot2::scale_color_manual(
         name = "CN",
         breaks = names(BAFcolpal),
@@ -1504,7 +1533,11 @@ plotCNprofileBAF <- function(cn,
       dplyr::mutate(state_min = paste0(state_min)) %>%
       ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
       ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes(col = .data[[statecol]]), size = pointsize, alpha = alphaval, shape = shape) +
+      ggplot2::geom_point(ggplot2::aes(col = .data[[statecol]]),
+                          show.legend = TRUE,
+                          size = pointsize,
+                          alpha = alphaval,
+                          shape = shape) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
         breaks = names(statecolpal),
