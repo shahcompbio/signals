@@ -75,7 +75,7 @@ createCNmatrix <- function(CNbins,
     
     cnmatrix <- cnmatrix %>%
       dplyr::as_tibble() %>%
-      tidyr::fill(., colnames, .direction = "updown")
+      tidyr::fill(., tidyr::all_of(colnames), .direction = "updown")
   }
 
   cnmatrix <- as.data.frame(cnmatrix)
