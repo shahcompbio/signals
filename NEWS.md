@@ -1,3 +1,11 @@
+# signals 0.11.0
+
+* updates to plotting
+* male/female option
+* filter some cell for second pass phasing but do not remove
+* do not remove cells by default if they have low coverage
+* keep cells with large hom-dels
+
 # signals 0.10.0
 
 * add chr string check
