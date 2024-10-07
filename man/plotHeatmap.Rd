@@ -21,6 +21,7 @@ plotHeatmap(
   sample_label_idx = 1,
   fillna = TRUE,
   frequencycutoff = 2,
+  frequency_bar_width = 0.5,
   maxf = NULL,
   plotfrequency = FALSE,
   frequency_height = 1.4,
@@ -82,6 +83,8 @@ plotHeatmap(
 \item{fillna}{Smooth over NA values, default = TRUE}
 
 \item{frequencycutoff}{default = 2}
+
+\item{frequency_bar_width}{Width of bars for frequency track, default = 0.5}
 
 \item{maxf}{Max frequency when plotting the frequency track, default = NULL infers this from the data}
 
