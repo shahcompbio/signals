@@ -654,10 +654,11 @@ make_top_annotation_gain <- function(copynumber,
                                      frequency_height = 1.4,
                                      sv_height = 0.7,
                                      annofontsize = 10,
+                                     frequency_bar_width = 0.5,
                                      SV = NULL) {
   ncells <- nrow(copynumber)
 
-  if ((plotcol == "state" | plotcol == "copy") & plotfrequency == TRUE) {
+  if ((plotcol == "state" | plotcol == "copy" | plotcol == "A" | plotcol == "B") & plotfrequency == TRUE) {
     copynumbermat <- copynumber
     copynumbermat[copynumbermat == "11+"] <- "11"
     copynumbermat <- sapply(copynumbermat, as.numeric)
@@ -672,7 +673,7 @@ make_top_annotation_gain <- function(copynumber,
     ha2 <- ComplexHeatmap::columnAnnotation(
       dist2 = ComplexHeatmap::anno_barplot(
         f1,
-        bar_width = 0.3,
+        bar_width = frequency_bar_width,
         gp = grid::gpar(col = "#E34A33", fill = "#E34A33", lwd = 0),
         axis_param = list(
           at = c(round(maxf / 2, 2), maxf),
@@ -684,7 +685,7 @@ make_top_annotation_gain <- function(copynumber,
       ),
       dist3 = ComplexHeatmap::anno_barplot(
         f2,
-        bar_width = 0.3,
+        bar_width = frequency_bar_width,
         gp = grid::gpar(col = "#3182BD", fill = "#3182BD", lwd = 0),
         axis_param = list(
           at = c(0.0, -round(maxf / 2, 2), -maxf),
@@ -714,7 +715,7 @@ make_top_annotation_gain <- function(copynumber,
     ha2 <- ComplexHeatmap::columnAnnotation(
       dist2 = ComplexHeatmap::anno_barplot(
         matrix(data = c(f1a, f1b), ncol = 2),
-        bar_width = 0.3,
+        bar_width = frequency_bar_width,
         gp = grid::gpar(
           col = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-Hom"]),
           fill = c(scCNphase_colors["A-Gained"], scCNphase_colors["A-Hom"]),
@@ -729,7 +730,7 @@ make_top_annotation_gain <- function(copynumber,
       ),
       dist3 = ComplexHeatmap::anno_barplot(
         matrix(data = c(f2a, f2b), ncol = 2),
-        bar_width = 0.3,
+        bar_width = frequency_bar_width,
         gp = grid::gpar(
           col = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-Hom"]),
           fill = c(scCNphase_colors["B-Gained"], scCNphase_colors["B-Hom"]),
@@ -758,7 +759,7 @@ make_top_annotation_gain <- function(copynumber,
     ha2 <- ComplexHeatmap::columnAnnotation(
       dist2 = ComplexHeatmap::anno_barplot(
         f1,
-        bar_width = 0.3,
+        bar_width = frequency_bar_width,
         gp = grid::gpar(col = scCNphase_colors["A-Hom"], 
                         fill = scCNphase_colors["A-Hom"],
                         lwd = 0),
@@ -772,7 +773,7 @@ make_top_annotation_gain <- function(copynumber,
       ),
       dist3 = ComplexHeatmap::anno_barplot(
         f2,
-        bar_width = 0.3,
+        bar_width = frequency_bar_width,
         gp = grid::gpar(col = scCNphase_colors["B-Hom"], 
                         fill = scCNphase_colors["B-Hom"],
                         lwd = 0),
@@ -826,6 +827,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     plotcol = "state",
                                     plotfrequency = FALSE,
                                     frequency_height = 1.4,
+                                    frequency_bar_width = 0.5,
                                     show_legend = TRUE,
                                     show_library_label = TRUE,
                                     show_clone_label = TRUE,
@@ -884,6 +886,7 @@ make_copynumber_heatmap <- function(copynumber,
       cutoff = cutoff, maxf = maxf,
       plotfrequency = plotfrequency, plotcol = plotcol, SV = SV,
       frequency_height = frequency_height,
+      frequency_bar_width = frequency_bar_width,
       annofontsize = annofontsize
     ),
     use_raster = TRUE,
@@ -924,6 +927,7 @@ getSVlegend <- function(include = NULL) {
 #' @param sample_label_idx default = 1
 #' @param fillna Smooth over NA values, default = TRUE
 #' @param frequencycutoff default = 2
+#' @param frequency_bar_width Width of bars for frequency track, default = 0.5
 #' @param maxf Max frequency when plotting the frequency track, default = NULL infers this from the data
 #' @param plotfrequency Plot the frequency track of gains and losses across the genome
 #' @param frequency_height height of the frequency track if using, default = 1.4
@@ -979,6 +983,7 @@ plotHeatmap <- function(cn,
                         sample_label_idx = 1,
                         fillna = TRUE,
                         frequencycutoff = 2,
+                        frequency_bar_width = 0.5,
                         maxf = NULL,
                         plotfrequency = FALSE,
                         frequency_height = 1.4,
@@ -1229,6 +1234,7 @@ plotHeatmap <- function(cn,
     maxf = maxf,
     plotcol = plotcol,
     plotfrequency = plotfrequency,
+    frequency_bar_width = frequency_bar_width,
     frequency_height = frequency_height,
     show_legend = show_legend,
     show_library_label = show_library_label,
