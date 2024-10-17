@@ -1,3 +1,41 @@
+#' Perform UMAP dimensionality reduction and HDBSCAN clustering on copy number data
+#'
+#' This function takes copy number data, performs UMAP dimensionality reduction,
+#' and then applies HDBSCAN clustering to identify cell populations. It can handle
+#' both standard copy number data and haplotype-specific copy number (HSCN) data.
+#'
+#' @param CNbins A data frame containing copy number data. Must include columns
+#'   for 'cell_id' and the specified `field`.
+#' @param n_neighbors Integer. The number of neighbors to consider in UMAP. Default is 10.
+#' @param min_dist Numeric. The minimum distance between points in UMAP. Default is 0.1.
+#' @param minPts Integer. The minimum number of points to form a cluster in HDBSCAN. Default is 30.
+#' @param seed Integer or NULL. Random seed for reproducibility. Default is NULL.
+#' @param field Character. The column name in `CNbins` to use for copy number values. Default is "copy".
+#' @param umapmetric Character. The distance metric to use in UMAP. Default is "correlation".
+#' @param hscn Logical. Whether to use haplotype-specific copy number data. Default is FALSE.
+#' @param pca Integer or NULL. Number of principal components to use in UMAP.  If NULL, pca not used, this is the default.
+#'
+#'
+#' @return A list containing:
+#'   \item{clustering}{A data frame with UMAP coordinates and cluster assignments for each cell.}
+#'   \item{hdbscanresults}{The results of the HDBSCAN clustering.}
+#'   \item{umapresults}{The results of the UMAP dimensionality reduction.}
+#'   \item{tree}{A phylogenetic tree object representing the hierarchical structure of the clusters.}
+#'
+#' @details
+#' The function performs the following steps:
+#' 1. Creates a copy number matrix from the input data.
+#' 2. Applies UMAP dimensionality reduction.
+#' 3. Performs HDBSCAN clustering on the UMAP results.
+#' 4. Generates a phylogenetic tree from the clustering results.
+#'
+#' If `hscn` is TRUE, the function expects columns 'copy' and 'BAF' in `CNbins`,
+#' and creates separate matrices for A and B alleles.
+#'
+#' The function automatically adjusts `n_neighbors` if there are too few cells.
+#' If UMAP fails, it attempts to rerun with small jitter added to the data points.
+#' The function will reduce `minPts` if only one cluster is initially found.
+#'
 #' @export
 umap_clustering <- function(CNbins,
                             n_neighbors = 10,
@@ -6,7 +44,8 @@ umap_clustering <- function(CNbins,
                             seed = NULL,
                             field = "copy",
                             umapmetric = "correlation",
-                            hscn = FALSE) {
+                            hscn = FALSE,
+                            pca = NULL) {
   if (length(unique(CNbins$cell_id)) < n_neighbors) {
     n_neighbors <- length(unique(CNbins$cell_id)) - 1
   }
@@ -44,8 +83,8 @@ umap_clustering <- function(CNbins,
     set.seed(seed)
   }
   message("Calculating UMAP dimensionality reduction...")
-  if (nrow(cnmatrix) > 500 & is.null(seed)) {
-    pca <- min(50, ncol(cnmatrix))
+  if (nrow(cnmatrix) > 500 & is.null(seed) & !is.null(pca)) {
+    pca <- min(pca, ncol(cnmatrix))
     fast_sgd <- TRUE
   } else {
     pca <- NULL
@@ -73,7 +112,8 @@ umap_clustering <- function(CNbins,
                                 ret_model = TRUE,
                                 ret_nn = TRUE,
                                 pca = pca,
-                                fast_sgd = fast_sgd)
+                                fast_sgd = fast_sgd,
+                                pca_method = "svdr")
     },
     error = function(e) {
       # Handle error by rerunning UMAP with different parameters

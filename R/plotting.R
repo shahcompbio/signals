@@ -424,7 +424,7 @@ get_gene_idx <- function(mygenes, chr = NULL, binsize = 0.5e6) {
 }
 
 #' @export
-plot_umap <- function(clustering, bycol = NULL, alphavalue = 0.5, raster = FALSE) {
+plot_umap <- function(clustering, bycol = "clone_id", alphavalue = 0.5, raster = FALSE) {
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
       stop("Package \"ggrastr\" needed for this function to work. Please install it.",

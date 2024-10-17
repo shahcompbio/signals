@@ -1,3 +1,7 @@
+# signals 0.11.1
+
+* for umap_clustering, default is now to not use PCA
+
 # signals 0.11.0
 
 * updates to plotting
