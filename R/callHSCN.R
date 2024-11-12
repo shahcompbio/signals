@@ -937,7 +937,7 @@ callHaplotypeSpecificCN <- function(CNbins,
       tidyr::fill( c("A", "B"), .direction = "down") %>% 
       dplyr::ungroup() %>% 
       #catch issue when there is a state transition in the empty bins causing A+B>state
-      mutate(A = ifelse(A + B > state, NA, A),
+      dplyr::mutate(A = ifelse(A + B > state, NA, A),
              B = ifelse(is.na(A), NA, B)) %>% 
       tidyr::fill( c("A", "B"), .direction = "up") 
     #add 0|0 states for  hom deletions
