@@ -933,9 +933,13 @@ callHaplotypeSpecificCN <- function(CNbins,
     out[["data"]] <- dplyr::left_join(CNbins, out[["data"]], by = c("chr", "start", "end", "copy", "state", "cell_id"))
     out[["data"]] <- out[["data"]] %>% 
       dplyr::group_by(chr, cell_id) %>% 
-      tidyr::fill( c("state_min", "A", "B", "state_phase", "state_AS", 
-                    "state_AS_phased", "LOH", "state_BAF", "phase"), .direction = "downup") %>% 
-      dplyr::ungroup()
+      #fill missing A,B
+      tidyr::fill( c("A", "B"), .direction = "down") %>% 
+      dplyr::ungroup() %>% 
+      #catch issue when there is a state transition in the empty bins causing A+B>state
+      mutate(A = ifelse(A + B > state, NA, A),
+             B = ifelse(is.na(A), NA, B)) %>% 
+      tidyr::fill( c("A", "B"), .direction = "up") 
     #add 0|0 states for  hom deletions
     out[["data"]] <- out[["data"]] %>% 
       dplyr::mutate(A = ifelse(state == 0, 0, A)) %>% 
