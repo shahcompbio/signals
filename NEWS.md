@@ -1,3 +1,9 @@
+# signals 0.11.2
+
+* fix negative state_AS issue. This was caused during the fill missing step which
+assigns states with NA BAF values based on neighbouring bins. When there was a 
+state transition between bins sometimes A+B>state.
+
 # signals 0.11.1
 
 * for umap_clustering, default is now to not use PCA
