@@ -938,12 +938,20 @@ callHaplotypeSpecificCN <- function(CNbins,
       dplyr::ungroup() %>% 
       #catch issue when there is a state transition in the empty bins causing A+B>state
       dplyr::mutate(A = ifelse(A + B > state, NA, A),
-             B = ifelse(is.na(A), NA, B)) %>% 
-      tidyr::fill( c("A", "B"), .direction = "up") 
+                    B = ifelse(is.na(A), NA, B)) %>% 
+      dplyr::group_by(chr, cell_id) %>% 
+      tidyr::fill( c("A", "B"), .direction = "up")  %>% 
+      dplyr::ungroup() %>% 
+      #sometimes if there is a singleton bin with a different state even the above doesn't catch
+      #all A + B >state, in this case change the state. This isn't ideal, very hacky
+      dplyr::mutate(state = ifelse(A + B > state, NA, state),
+                    A = ifelse(is.na(state), NA, B),
+                    B = ifelse(is.na(A), NA, B)) %>% 
+      tidyr::fill( c("state", "A", "B"), .direction = "up")
     #add 0|0 states for  hom deletions
     out[["data"]] <- out[["data"]] %>% 
       dplyr::mutate(A = ifelse(state == 0, 0, A)) %>% 
-      dplyr::mutate(B = ifelse(state == 0, 0, B))
+      dplyr::mutate(B = ifelse(state == 0, 0, B)) 
     if (female == FALSE){
       #for male patients set A == state and B == 0
       out[["data"]] <- out[["data"]] %>% 

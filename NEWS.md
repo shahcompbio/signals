@@ -1,3 +1,7 @@
+# signals 0.11.3
+
+* catch negative state_AS issue for singleton bins
+
 # signals 0.11.2
 
 * fix negative state_AS issue. This was caused during the fill missing step which
