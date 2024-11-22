@@ -1,3 +1,7 @@
+# signals 0.11.4
+
+* fix typo assigning A->B
+
 # signals 0.11.3
 
 * catch negative state_AS issue for singleton bins
