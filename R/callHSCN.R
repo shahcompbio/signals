@@ -724,13 +724,13 @@ callHaplotypeSpecificCN <- function(CNbins,
   
   if (female == TRUE){
     #do not infer states for chr "Y"
-    #haplotypes <- dplyr::filter(haplotypes, chr != "Y")
-    #CNbins <- dplyr::filter(CNbins, chr != "Y")
+    haplotypes <- dplyr::filter(haplotypes, chr != "Y")
+    CNbins <- dplyr::filter(CNbins, chr != "Y")
   } else{
     #do not infer states for chr "X" or "Y"
-    #haplotypes <- dplyr::filter(haplotypes, chr != "Y")
+    haplotypes <- dplyr::filter(haplotypes, chr != "Y")
     haplotypes <- dplyr::filter(haplotypes, chr != "X")
-    #CNbins <- dplyr::filter(CNbins, chr != "Y")
+    CNbins <- dplyr::filter(CNbins, chr != "Y")
   }
   
   nhaplotypes <- haplotypes %>% 
