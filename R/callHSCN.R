@@ -945,7 +945,7 @@ callHaplotypeSpecificCN <- function(CNbins,
       #sometimes if there is a singleton bin with a different state even the above doesn't catch
       #all A + B >state, in this case change the state. This isn't ideal, very hacky
       dplyr::mutate(state = ifelse(A + B > state, NA, state),
-                    A = ifelse(is.na(state), NA, B),
+                    A = ifelse(is.na(state), NA, A),
                     B = ifelse(is.na(A), NA, B)) %>% 
       tidyr::fill( c("state", "A", "B"), .direction = "up")
     #add 0|0 states for  hom deletions
