@@ -88,9 +88,9 @@ test_that("Test rephasing by minimizing number of events", {
   expect_true(isTRUE(all.equal(trueA$x, newA)) | isTRUE(all.equal(trueB$x, newA)))
 })
 
-df <- sim_data_bb$CNbins %>% 
+df <- sim_data_bb$ascn %>% 
   group_by(cell_id, chr) %>% 
-  summarize(x = sum(state != 2) / n()) %>% 
+  summarize(x = sum(A != B) / n()) %>% 
   arrange(desc(x)) %>% 
   group_by(chr) %>% 
   filter(row_number() < 5)
