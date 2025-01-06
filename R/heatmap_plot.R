@@ -1,5 +1,3 @@
-
-
 cn_colours <- structure(
   c(
     "#3182BD", "#9ECAE1", "#CCCCCC", "#FDCC8A", "#FC8D59", "#E34A33",
@@ -392,6 +390,64 @@ get_library_labels <- function(cell_ids, idx = 1, str_to_remove = NULL) {
     return(get_label(x, idx, str_to_remove))
   })
   return(labels)
+}
+
+make_left_annot_generic <- function(dfanno,
+                                   palettes = NULL,
+                                   show_legend = TRUE,
+                                   annofontsize = 14,
+                                   anno_width = 0.4) {
+  # Check if cell_id column exists
+  if (!"cell_id" %in% colnames(dfanno)) {
+    stop("dfanno must contain a 'cell_id' column")
+  }
+  
+  # Get annotation columns (all except cell_id)
+  anno_cols <- setdiff(colnames(dfanno), "cell_id")
+  if (length(anno_cols) == 0) {
+    stop("dfanno must contain at least one annotation column besides cell_id")
+  }
+  
+  # Default palette rotation if none specified
+  if (is.null(palettes)) {
+    default_palettes <- c("Set2", "Set1", "Set3", "Paired", "Dark2", "Accent")
+  } else {
+    default_palettes <- palettes
+  }
+  
+  # Create annotation colors for each column
+  annot_colours <- list()
+  for (i in seq_along(anno_cols)) {
+    col <- anno_cols[i]
+    # Cycle through palettes
+    palette_idx <- ((i-1) %% length(default_palettes)) + 1
+    current_palette <- default_palettes[palette_idx]
+    
+    # Get unique values for this column
+    levels <- gtools::mixedsort(unique(dfanno[[col]]))
+    # Create palette for this annotation
+    annot_colours[[col]] <- make_discrete_palette(current_palette, levels)
+  }
+  
+  # Create the annotation object
+  left_annot <- ComplexHeatmap::HeatmapAnnotation(
+    # Convert dfanno to a named list of vectors
+    df = as.data.frame(dfanno[, anno_cols, drop = FALSE]),
+    col = annot_colours,
+    which = "row",
+    show_legend = show_legend,
+    annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
+    simple_anno_size = grid::unit(anno_width, "cm"),
+    annotation_legend_param = list(
+      labels_gp = grid::gpar(fontsize = annofontsize-1),
+      title_gp = grid::gpar(fontsize = annofontsize-1),
+      legend_gp = grid::gpar(fontsize = annofontsize-1),
+      nrow = 3,
+      direction = "horizontal"
+    )
+  )
+  
+  return(left_annot)
 }
 
 make_left_annot <- function(copynumber,
@@ -816,6 +872,7 @@ make_top_annotation_gain <- function(copynumber,
 
 make_copynumber_heatmap <- function(copynumber,
                                     clones,
+                                    annotations = NULL,
                                     colvals = cn_colours,
                                     legendname = "Copy Number",
                                     library_mapping = NULL,
@@ -849,17 +906,42 @@ make_copynumber_heatmap <- function(copynumber,
     leg_params <- list(nrow = 3,
                        direction = "vertical",
                        labels_gp = grid::gpar(fontsize = annofontsize-1),
-                       title_gp = grid::gpar(fontsize = annofontsize, fontface = "bold"),
+                       title_gp = grid::gpar(fontsize = annofontsize-1),
                        legend_gp = grid::gpar(fontsize = annofontsize-1))
   } else {
     leg_params <- list(nrow = 3,
                        direction = "vertical",
                        at = names(colvals),
                        labels_gp = grid::gpar(fontsize = annofontsize-1),
-                       title_gp = grid::gpar(fontsize = annofontsize, fontface = "bold"),
+                       title_gp = grid::gpar(fontsize = annofontsize-1),
                        legend_gp = grid::gpar(fontsize = annofontsize-1))
   }
+
+    # Determine which left annotation to use
+  if (!is.null(annotations)) {
+    left_annot <- make_left_annot_generic(
+      annotations,
+      show_legend = show_legend,
+      annofontsize = annofontsize,
+      anno_width = anno_width
+    )
+  } else {
+    left_annot <- make_left_annot(copynumber,
+      clones,
+      library_mapping = library_mapping,
+      clone_pal = clone_pal,
+      show_clone_label = show_clone_label,
+      show_clone_text = show_clone_text,
+      idx = sample_label_idx,
+      show_legend = show_legend,
+      show_library_label = show_library_label,
+      annofontsize = annofontsize,
+      str_to_remove = str_to_remove,
+      anno_width = anno_width
+    )
+  }
   
+  # Create the heatmap
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name = legendname,
     as.matrix(copynumber),
@@ -869,21 +951,23 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_rows = FALSE,
     cluster_columns = FALSE,
     show_column_names = FALSE,
-    bottom_annotation = make_bottom_annot(copynumber, chrlabels = chrlabels, 
-                                          Mb = Mb, nticks = nticks, 
-                                          annotation_height = annotation_height, 
-                                          labeladjust = labeladjust,
-                                          annofontsize = annofontsize, 
-                                          linkheight = linkheight),
-    left_annotation = make_left_annot(copynumber, clones, anno_width = anno_width,
-      library_mapping = library_mapping, clone_pal = clone_pal, show_clone_label = show_clone_label, show_clone_text = show_clone_text,
-      idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,annofontsize = annofontsize, 
-      str_to_remove = str_to_remove
+    left_annotation = left_annot,
+    bottom_annotation = make_bottom_annot(copynumber,
+      chrlabels = chrlabels,
+      Mb = Mb,
+      nticks = nticks,
+      annotation_height = annotation_height,
+      labeladjust = labeladjust,
+      annofontsize = annofontsize,
+      linkheight = linkheight
     ),
     heatmap_legend_param = leg_params,
     top_annotation = make_top_annotation_gain(copynumber,
-      cutoff = cutoff, maxf = maxf,
-      plotfrequency = plotfrequency, plotcol = plotcol, SV = SV,
+      cutoff = cutoff,
+      maxf = maxf,
+      plotfrequency = plotfrequency,
+      plotcol = plotcol,
+      SV = SV,
       frequency_height = frequency_height,
       frequency_bar_width = frequency_bar_width,
       annofontsize = annofontsize
@@ -913,6 +997,7 @@ getSVlegend <- function(include = NULL) {
 #' @param cn Either a hscn object or a single cell allele specific copy number dataframe with the following columns: `cell_id`, `chr`, `start`, `end`, `state`, `copy`
 #' @param tree Tree in newick format to plot alongside the heatmap, default = NULL
 #' @param clusters data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL
+#' @param annotations Optional dataframe containing cell_id column and additional annotation columns
 #' @param normalize_ploidy Normalize ploidy of all cells to 2
 #' @param normalize_tree default = FALSE
 #' @param branch_length scales branch lengths to this size, default = 2
@@ -970,6 +1055,7 @@ getSVlegend <- function(include = NULL) {
 plotHeatmap <- function(cn,
                         tree = NULL,
                         clusters = NULL,
+                        annotations = NULL,
                         normalize_ploidy = FALSE,
                         normalize_tree = FALSE,
                         branch_length = 1,
@@ -1224,8 +1310,13 @@ plotHeatmap <- function(cn,
     clone_pal <- clone_pal[clones_idx$clone_id]
     names(clone_pal) <- clones_idx$clone_label
   }
+  if (!is.null(annotations)) {
+    row.names(annotations) <- annotations$cell_id
+    annotations <- annotations[ordered_cell_ids, ]
+  }
   copynumber_hm <- make_copynumber_heatmap(copynumber,
     clones_formatted,
+    annotations = annotations,
     colvals = colvals,
     legendname = legendname,
     library_mapping = library_mapping,

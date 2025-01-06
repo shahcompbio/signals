@@ -8,6 +8,7 @@ plotHeatmap(
   cn,
   tree = NULL,
   clusters = NULL,
+  annotations = NULL,
   normalize_ploidy = FALSE,
   normalize_tree = FALSE,
   branch_length = 1,
@@ -58,6 +59,8 @@ plotHeatmap(
 \item{tree}{Tree in newick format to plot alongside the heatmap, default = NULL}
 
 \item{clusters}{data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL}
+
+\item{annotations}{Optional dataframe containing cell_id column and additional annotation columns}
 
 \item{normalize_ploidy}{Normalize ploidy of all cells to 2}
 
