@@ -48,6 +48,7 @@ plotHeatmap(
   anno_width = 0.4,
   rasterquality = 15,
   tree_width = 4,
+  ladderize = TRUE,
   ...
 )
 }
@@ -136,7 +137,9 @@ plotHeatmap(
 
 \item{rasterquality}{default = 15}
 
-\item{tree_width}{Width of phylogenetic tree, default = 4
+\item{tree_width}{Width of phylogenetic tree, default = 4}
+
+\item{ladderize}{ladderize the tree, default = TRUE, same as default in ggtree
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.}
 }

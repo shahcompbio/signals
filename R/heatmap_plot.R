@@ -190,7 +190,7 @@ make_clone_palette <- function(levels) {
   return(pal)
 }
 
-make_tree_ggplot <- function(tree, clones, clone_pal = NULL) {
+make_tree_ggplot <- function(tree, clones, clone_pal = NULL, ladderize = TRUE) {
   if (!is.null(clones)) {
     clone_members <- get_clone_members(clones)
     tree <- ggtree::groupOTU(tree, clone_members)
@@ -204,8 +204,7 @@ make_tree_ggplot <- function(tree, clones, clone_pal = NULL) {
     tree_aes <- ggplot2::aes(x, y)
   }
 
-  p <- ggplot2::ggplot(tree, tree_aes) +
-    ggtree::geom_tree(size = 0.25) +
+  p <- ggtree::ggtree(tree, tree_aes, size = 0.25, ladderize = ladderize) +
     ggplot2::coord_cartesian(expand = FALSE) +
     ggplot2::ylim(0.5, length(tree$tip.label) + 0.5) +
     ggplot2::theme_void()
@@ -954,6 +953,7 @@ getSVlegend <- function(include = NULL) {
 #' @param annofontsize Font size to use for annotations, default = 10
 #' @param annotation_height Height of the annotations
 #' @param tree_width Width of phylogenetic tree, default = 4
+#' @param ladderize ladderize the tree, default = TRUE, same as default in ggtree
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #' 
@@ -1010,6 +1010,7 @@ plotHeatmap <- function(cn,
                         anno_width = 0.4,
                         rasterquality = 15,
                         tree_width = 4,
+                        ladderize = TRUE,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1135,7 +1136,7 @@ plotHeatmap <- function(cn,
       seed = seed
     )
     tree <- clustering_results$tree
-    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
+    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal, ladderize = ladderize)
     tree_plot_dat <- tree_ggplot$data
     message("Creating tree...")
     tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
@@ -1169,7 +1170,7 @@ plotHeatmap <- function(cn,
       tree <- format_tree(tree, branch_length)
     }
 
-    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal)
+    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal, ladderize = ladderize)
     tree_plot_dat <- tree_ggplot$data
 
     message("Creating tree...")
@@ -1187,7 +1188,7 @@ plotHeatmap <- function(cn,
         tree <- format_tree(tree, branch_length)
       }
 
-      tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal)
+      tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal, ladderize = ladderize)
       tree_plot_dat <- tree_ggplot$data
 
       message("Creating tree...")
@@ -1313,7 +1314,7 @@ plotSNVHeatmap <- function(SNVs,
     clusters <- data.frame(cell_id = tree$tip.label, clone_id = "0")
   }
 
-  tree_ggplot <- make_tree_ggplot(tree, clusters, clone_pal = clone_pal)
+  tree_ggplot <- make_tree_ggplot(tree, clusters, clone_pal = clone_pal, ladderize = ladderize)
   tree_plot_dat <- tree_ggplot$data
 
   message("Creating tree...")
@@ -1423,7 +1424,7 @@ plotHeatmapQC <- function(cn,
     message("No tree or cluster information provided, clustering using HDBSCAN")
     clustering_results <- umap_clustering(CNbins, minPts = max(round(pctcells * ncells), 2), field = "copy")
     tree <- clustering_results$tree
-    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal)
+    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clustering_results$clusters), clone_pal = clone_pal, ladderize = ladderize)
     tree_plot_dat <- tree_ggplot$data
     message("Creating tree...")
     tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
@@ -1449,7 +1450,7 @@ plotHeatmapQC <- function(cn,
       tree <- format_tree(tree, branch_length)
     }
 
-    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal)
+    tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal, ladderize = ladderize)
     tree_plot_dat <- tree_ggplot$data
 
     message("Creating tree...")
