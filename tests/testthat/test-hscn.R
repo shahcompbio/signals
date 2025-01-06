@@ -102,6 +102,8 @@ results_bb_2 <- callHaplotypeSpecificCN(sim_data_bb$CNbins,
                                       chr_cell_list = chr_cell_list)
 f <- table(results_bb_2$data[results_bb_2$data$chr == "1", ]$state_AS_phased)
 f <- f / sum(f)
+f <- sort(f)
+f <- f[names(f) != "1|1"]
 results_df <- orderdf(results_bb_2$data)
 truth_df <- orderdf(sim_data_bb$ascn)
 nbins <- length(truth_df$cell_id)
@@ -110,6 +112,6 @@ test_that("Test haplotype specific copy number inference using input chr-cell li
   expect_gt(sum(results_df$state_AS == truth_df$state_AS) / nbins, 0.99) # test accuraccy is > 99%
   expect_equal(round(results_bb_2$loherror, 2), loherror)
   expect_gt(results_bb_2$likelihood$taronesZ, 5)
-  expect_true(f[["0|2"]] == 0.125 | f[["0|2"]] == 0.25)
-  expect_true(f[["2|0"]] == 0.25 | f[["2|0"]] == 0.125)
+  expect_equal(f[[1]], 0.125)
+  expect_equal(f[[2]], 0.25)
 })
