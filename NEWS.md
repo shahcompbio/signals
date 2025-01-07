@@ -1,3 +1,9 @@
+# signals 0.12.0
+
+* option to input cells to use for phasing for each chromosome
+* plotHeatmap with arbitrary annotation dataframe
+* remove chrY
+
 # signals 0.11.4
 
 * fix typo assigning A->B
