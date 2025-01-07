@@ -2,6 +2,7 @@ library(ggplot2)
 library(dplyr)
 library(data.table)
 
+set.seed(123)
 loherror <- 0.02
 sim_data_bb <- simulate_data_cohort(
   clone_num = c(20, 25, 25, 10),
@@ -88,13 +89,31 @@ test_that("Test rephasing by minimizing number of events", {
   expect_true(isTRUE(all.equal(trueA$x, newA)) | isTRUE(all.equal(trueB$x, newA)))
 })
 
+set.seed(123)
+loherror <- 0.02
+sim_data_bb <- simulate_data_cohort(
+  clone_num = c(20, 25, 25, 10),
+  clonal_events = list(
+    list("1" = c(2, 0), "5" = c(3, 1)),
+    list("2" = c(6, 3), "3" = c(1, 0)),
+    list("17" = c(3, 1), "8" = c(6, 2)),
+    list("1" = c(2, 2), "9" = c(4, 1))
+  ), # opposite LOH on chr 1
+  loherror = loherror,
+  coverage = 100,
+  rho = 0.02,
+  likelihood = "betabinomial",
+  nchr = 0
+)
+
 df <- sim_data_bb$ascn %>% 
   group_by(cell_id, chr) %>% 
   summarize(x = sum(A != B) / n()) %>% 
   arrange(desc(x)) %>% 
   group_by(chr) %>% 
-  filter(row_number() < 5)
+  filter(row_number() <= 5)
 chr_cell_list <- split(df$cell_id, df$chr)
+print(chr_cell_list)
 
 results_bb_2 <- callHaplotypeSpecificCN(sim_data_bb$CNbins, 
                                       sim_data_bb$haplotypes, 
