@@ -8,6 +8,7 @@ plotHeatmap(
   cn,
   tree = NULL,
   clusters = NULL,
+  annotations = NULL,
   normalize_ploidy = FALSE,
   normalize_tree = FALSE,
   branch_length = 1,
@@ -48,6 +49,7 @@ plotHeatmap(
   anno_width = 0.4,
   rasterquality = 15,
   tree_width = 4,
+  ladderize = TRUE,
   ...
 )
 }
@@ -57,6 +59,8 @@ plotHeatmap(
 \item{tree}{Tree in newick format to plot alongside the heatmap, default = NULL}
 
 \item{clusters}{data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL}
+
+\item{annotations}{Optional dataframe containing cell_id column and additional annotation columns}
 
 \item{normalize_ploidy}{Normalize ploidy of all cells to 2}
 
@@ -136,7 +140,9 @@ plotHeatmap(
 
 \item{rasterquality}{default = 15}
 
-\item{tree_width}{Width of phylogenetic tree, default = 4
+\item{tree_width}{Width of phylogenetic tree, default = 4}
+
+\item{ladderize}{ladderize the tree, default = TRUE, same as default in ggtree
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.}
 }

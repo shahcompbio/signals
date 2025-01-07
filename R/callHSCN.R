@@ -624,6 +624,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param phased_haplotypes Use this if you want to manually define the haplotypes phasing if for example the default heuristics used by signals does not return a good fit.
 #' @param clustering_method Method to use to cluster cells for haplotype phasing, default is `copy` (using copy column), other option is `breakpoints` (using breakpoint for clustering)
 #' @param maxloherror Maximum value for LOH error rate
+#' @param chr_cell_list Cells to use for phasing for each chromosome, this should be a named list with a vector of cell_ids for each chromosome eg list("1" = c("cell_id1", "cell_id2)) etc. Default is null. If provided overrides internal phasing.
 #' @param mincells Minimum cluster size used for phasing, default = 7
 #' @param overwritemincells Force the number of cells to use for clustering/phasing rather than use the output of the clustering
 #' @param viterbver Version of viterbi algorithm to use (cpp or R)
@@ -631,7 +632,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
 #' @param firstpassfiltering Filter out cells with large discrepancy after first pass state assignment
 #' @param smoothsingletons Remove singleton bins by smoothing over based on states in adjacent bins
-#' @param fillmissing For bins with missing counts fill in values based on neighbouring bins
+#' @param fillmissing For bins with missing counts fill in values based on neighbouring bins, this ensures that the returned object is the same size as input CNbins
 #' @param global_phasing_for_diploid When using cluster_per_chr, use all cells for phasing diploid regions within the cluster
 #' @param chrs_for_global_phasing Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes
 #' @param female Default is `TRUE`, if set to `FALSE` and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state
@@ -692,6 +693,7 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     smoothsingletons = TRUE,
                                     fillmissing = TRUE,
                                     global_phasing_for_balanced = FALSE,
+                                    chr_cell_list = NULL,
                                     chrs_for_global_phasing = NULL,
                                     female = TRUE) {
   if (!clustering_method %in% c("copy", "breakpoints")) {
@@ -724,13 +726,13 @@ callHaplotypeSpecificCN <- function(CNbins,
   
   if (female == TRUE){
     #do not infer states for chr "Y"
-    #haplotypes <- dplyr::filter(haplotypes, chr != "Y")
-    #CNbins <- dplyr::filter(CNbins, chr != "Y")
+    haplotypes <- dplyr::filter(haplotypes, chr != "Y")
+    CNbins <- dplyr::filter(CNbins, chr != "Y")
   } else{
     #do not infer states for chr "X" or "Y"
-    #haplotypes <- dplyr::filter(haplotypes, chr != "Y")
+    haplotypes <- dplyr::filter(haplotypes, chr != "Y")
     haplotypes <- dplyr::filter(haplotypes, chr != "X")
-    #CNbins <- dplyr::filter(CNbins, chr != "Y")
+    CNbins <- dplyr::filter(CNbins, chr != "Y")
   }
   
   nhaplotypes <- haplotypes %>% 
@@ -842,7 +844,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   
   ascn_filt$balance <- ifelse(ascn_filt$phase == "Balanced", 0, 1)
   
-  if (is.null(phased_haplotypes)) {
+  if (is.null(phased_haplotypes) & is.null(chr_cell_list)){
     chrlist <- proportion_imbalance(ascn_filt,
                                     haplotypes_filt,
                                     phasebyarm = phasebyarm,
@@ -854,6 +856,24 @@ callHaplotypeSpecificCN <- function(CNbins,
     )
     propdf <- chrlist$propdf
     chrlist <- chrlist$chrlist
+  } else{
+    message("Using user provided cell list for phasing chromosomes")
+    #use the user provided list of cells to use for phasing
+    chrlist <- chr_cell_list
+    propdf <- NULL
+    
+    #check user provided chrcellist contains info for all chromosomes
+    check_chr <- all(names(chr_cell_list) %in% unique(ascn_filt$chr))
+    if (check_chr == FALSE){
+      stop("Cells for phasing not specified for all chromosomes in chr_cell_list")
+    }
+    check_cells <- all(as.vector(unlist(chr_cell_list)) %in% unique(ascn_filt$cell_id))
+    if (check_cells == FALSE){
+      stop("Not all cell_id's in chr_cell_list are present in CNbins or haplotypes")
+    }
+  }
+  
+  if (is.null(phased_haplotypes)) {
     phased_haplotypes <- phase_haplotypes_bychr(
       ascn = ascn_filt,
       haplotypes = haplotypes_filt,

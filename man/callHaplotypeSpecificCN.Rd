@@ -31,6 +31,7 @@ callHaplotypeSpecificCN(
   smoothsingletons = TRUE,
   fillmissing = TRUE,
   global_phasing_for_balanced = FALSE,
+  chr_cell_list = NULL,
   chrs_for_global_phasing = NULL,
   female = TRUE
 )
@@ -82,7 +83,9 @@ callHaplotypeSpecificCN(
 
 \item{smoothsingletons}{Remove singleton bins by smoothing over based on states in adjacent bins}
 
-\item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
+\item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins, this ensures that the returned object is the same size as input CNbins}
+
+\item{chr_cell_list}{Cells to use for phasing for each chromosome, this should be a named list with a vector of cell_ids for each chromosome eg list("1" = c("cell_id1", "cell_id2)) etc. Default is null. If provided overrides internal phasing.}
 
 \item{chrs_for_global_phasing}{Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes}
 
