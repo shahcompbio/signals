@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.11.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.0</span>
       </span>
     </div>
 
@@ -93,6 +93,7 @@
 <span>  smoothsingletons <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  fillmissing <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  global_phasing_for_balanced <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  chr_cell_list <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  chrs_for_global_phasing <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  female <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -195,7 +196,11 @@
 
 
 <dt id="arg-fillmissing">fillmissing<a class="anchor" aria-label="anchor" href="#arg-fillmissing"></a></dt>
-<dd><p>For bins with missing counts fill in values based on neighbouring bins</p></dd>
+<dd><p>For bins with missing counts fill in values based on neighbouring bins, this ensures that the returned object is the same size as input CNbins</p></dd>
+
+
+<dt id="arg-chr-cell-list">chr_cell_list<a class="anchor" aria-label="anchor" href="#arg-chr-cell-list"></a></dt>
+<dd><p>Cells to use for phasing for each chromosome, this should be a named list with a vector of cell_ids for each chromosome eg list("1" = c("cell_id1", "cell_id2)) etc. Default is null. If provided overrides internal phasing.</p></dd>
 
 
 <dt id="arg-chrs-for-global-phasing">chrs_for_global_phasing<a class="anchor" aria-label="anchor" href="#arg-chrs-for-global-phasing"></a></dt>
@@ -270,14 +275,20 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  4 :  loglikelihood = -337276.3768</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  5 :  loglikelihood = -336604.0917</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  6 :  loglikelihood = -336487.3401</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  7 :  loglikelihood = -336467.582</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>201 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  8 :  loglikelihood = -336465.6359</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>52742 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Applying Greenstadt modification to 26371 matrices</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  9 :  loglikelihood = -336465.6359</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  7 :  loglikelihood = -336467.5816</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  8 :  loglikelihood = -336465.6372</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>27927 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  9 :  loglikelihood = -336465.6369</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>27104 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  10 :  loglikelihood = -336465.6363</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>41027 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  11 :  loglikelihood = -336465.6366</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Taking a modified step.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  9 :  loglikelihood = -336465.6359</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  11 :  loglikelihood = -336465.6353</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>97402 diagonal elements of the working weights variable 'wz' have been replaced by 1.819e-12</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  12 :  loglikelihood = -336465.6364</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Taking a modified step..</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> VGLM    linear loop  12 :  loglikelihood = -336465.6353</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>some quantities such as z, residuals, SEs may be inaccurate due to convergence at a half-step</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Inferred mean: 0.496, Expected mean: 0.5, Inferred overdispersion (rho): 0</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Tarones Z-score: -4.112, using binomial model for inference.</span>
