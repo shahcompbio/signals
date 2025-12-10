@@ -327,7 +327,7 @@ make_corrupt_tree_heatmap <- function(tree_ggplot, tree_width, ...) {
   tree_annot_func <- ComplexHeatmap::AnnotationFunction(
     fun = function(index) {
       pushViewport(viewport(height = 1))
-      grid.draw(ggplot2::ggplotGrob(tree_ggplot)$grobs[[5]])
+      grid.draw(ggplot2::ggplotGrob(tree_ggplot)$grobs[[6]])
       popViewport()
     },
     var_import = list(tree_ggplot = tree_ggplot),
