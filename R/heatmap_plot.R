@@ -326,9 +326,23 @@ format_clones <- function(clones, ordered_cell_ids) {
 make_corrupt_tree_heatmap <- function(tree_ggplot, tree_width, ...) {
   tree_annot_func <- ComplexHeatmap::AnnotationFunction(
     fun = function(index) {
-      pushViewport(viewport(height = 1))
-      grid.draw(ggplot2::ggplotGrob(tree_ggplot)$grobs[[6]])
-      popViewport()
+      grid::pushViewport(grid::viewport(height = 1))
+
+      # Avoid hard-coded grob indices: grob order is not stable across ggplot2/ggtree versions.
+      tree_grob <- ggplot2::ggplotGrob(tree_ggplot)
+      panel_idx <- which(tree_grob$layout$name == "panel")
+      if (length(panel_idx) == 0) {
+        panel_idx <- which(grepl("^panel", tree_grob$layout$name))
+      }
+
+      if (length(panel_idx) >= 1) {
+        grid::grid.draw(tree_grob$grobs[[panel_idx[[1]]]])
+      } else {
+        # Fallback: draw the full grob if we can't reliably locate the panel.
+        grid::grid.draw(tree_grob)
+      }
+
+      grid::popViewport()
     },
     var_import = list(tree_ggplot = tree_ggplot),
     width = grid::unit(tree_width, "cm"),
