@@ -123,15 +123,13 @@ object, here we’ll just use the <code>CNbins</code> dataframe.</p>
 <p>The first thing we can do is plot single cell copy number
 profiles.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCNprofile.html">plotCNprofile</a></span><span class="op">(</span><span class="va">CNbins</span>, cellid <span class="op">=</span> <span class="st">"SA921-A90554A-R03-C44"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error in get(paste0(generic, ".", class), envir = get_method_env()) : </span></span>
-<span><span class="co">#&gt;   object 'type_sum.accel' not found</span></span></code></pre></div>
-<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCNprofile.html">plotCNprofile</a></span><span class="op">(</span><span class="va">CNbins</span>, cellid <span class="op">=</span> <span class="st">"SA921-A90554A-R03-C44"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-2-1.png" class="r-plt" width="700"></p>
 <p>These can tweaked in various ways, including modifying the y-axis,
 only plotting certain chromosomes or changing the point size etc:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCNprofile.html">plotCNprofile</a></span><span class="op">(</span><span class="va">CNbins</span>, cellid <span class="op">=</span> <span class="st">"SA921-A90554A-R03-C44"</span>, y_axis_trans <span class="op">=</span> <span class="st">"squashy"</span>, maxCN <span class="op">=</span> <span class="fl">25</span>, chrfilt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"6"</span>, <span class="st">"7"</span>, <span class="st">"8"</span><span class="op">)</span>, pointsize <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
+<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-3-1.png" class="r-plt" width="700"></p>
 <p>We can also plot all the cells using the <code>plotHeatmap</code>
 function. This can optionally take in a phylogenetic/clustering tree in
 newick format. If you don’t have this you can use the
@@ -149,12 +147,12 @@ empty then <code>plotHeatmap</code> will fall back to use
 <code>umap_clustering</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">CNbins</span>, tree <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">tree</span>, clusters <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span></span></code></pre></div>
-<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-5-1.png" width="1152"></p>
+<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" width="1152"></p>
 <p>The default is to plot the <code>state</code> column, we can change
 this to plot the <code>copy</code> raw data column.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">CNbins</span>, tree <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">tree</span>, clusters <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">clustering</span>, show_clone_label <span class="op">=</span> <span class="cn">F</span>, plotcol <span class="op">=</span> <span class="st">"copy"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-6-1.png" width="1152"></p>
+<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" width="1152"></p>
 </div>
 </div>
 <div class="section level2">
@@ -165,7 +163,7 @@ this to plot the <code>copy</code> raw data column.</p>
 <code class="sourceCode R"><span><span class="va">CNbins_consensus</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">CNbins</span>, cl <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span> <span class="co">#cell_id becomes clone_id</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plotCNprofile.html">plotCNprofile</a></span><span class="op">(</span><span class="va">CNbins_consensus</span><span class="op">)</span></span></code></pre></div>
-<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-7-1.png" width="700"></p>
+<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" width="700"></p>
 <p>Create segmentation from binned data.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">segments</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></span></code></pre></div>
@@ -192,7 +190,7 @@ this to plot the <code>copy</code> raw data column.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
       </footer>
