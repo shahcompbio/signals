@@ -29,6 +29,7 @@ Imports:
     forcats,
     ComplexHeatmap,
     GenomicRanges,
+    GenomeInfoDb,
     cowplot,
     ape,
     RColorBrewer,
