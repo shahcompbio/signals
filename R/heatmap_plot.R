@@ -913,7 +913,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     linkheight = 5,
                                     str_to_remove = NULL,
                                     anno_width = 0.4,
-                                    rasterquality = 15,
+                                    rasterquality = 1,
                                     ...) {
   
   if (class(colvals) == "function"){
@@ -986,7 +986,6 @@ make_copynumber_heatmap <- function(copynumber,
       frequency_bar_width = frequency_bar_width,
       annofontsize = annofontsize
     ),
-    use_raster = TRUE,
     raster_quality = rasterquality,
     ...
   )
@@ -1454,7 +1453,6 @@ plotSNVHeatmap <- function(SNVs,
       idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,
       str_to_remove = strstr_to_remove
     ),
-    use_raster = TRUE,
     # top_annotation = HeatmapAnnotation(df = mutgroups,col = list(MutationGroup = colpal)),
     heatmap_legend_param = list(nrow = 4)
   )
