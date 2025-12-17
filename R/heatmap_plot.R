@@ -326,9 +326,23 @@ format_clones <- function(clones, ordered_cell_ids) {
 make_corrupt_tree_heatmap <- function(tree_ggplot, tree_width, ...) {
   tree_annot_func <- ComplexHeatmap::AnnotationFunction(
     fun = function(index) {
-      pushViewport(viewport(height = 1))
-      grid.draw(ggplot2::ggplotGrob(tree_ggplot)$grobs[[5]])
-      popViewport()
+      grid::pushViewport(grid::viewport(height = 1))
+
+      # Avoid hard-coded grob indices: grob order is not stable across ggplot2/ggtree versions.
+      tree_grob <- ggplot2::ggplotGrob(tree_ggplot)
+      panel_idx <- which(tree_grob$layout$name == "panel")
+      if (length(panel_idx) == 0) {
+        panel_idx <- which(grepl("^panel", tree_grob$layout$name))
+      }
+
+      if (length(panel_idx) >= 1) {
+        grid::grid.draw(tree_grob$grobs[[panel_idx[[1]]]])
+      } else {
+        # Fallback: draw the full grob if we can't reliably locate the panel.
+        grid::grid.draw(tree_grob)
+      }
+
+      grid::popViewport()
     },
     var_import = list(tree_ggplot = tree_ggplot),
     width = grid::unit(tree_width, "cm"),
@@ -899,7 +913,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     linkheight = 5,
                                     str_to_remove = NULL,
                                     anno_width = 0.4,
-                                    rasterquality = 15,
+                                    rasterquality = 1,
                                     ...) {
   
   if (class(colvals) == "function"){
@@ -972,7 +986,6 @@ make_copynumber_heatmap <- function(copynumber,
       frequency_bar_width = frequency_bar_width,
       annofontsize = annofontsize
     ),
-    use_raster = TRUE,
     raster_quality = rasterquality,
     ...
   )
@@ -1440,7 +1453,6 @@ plotSNVHeatmap <- function(SNVs,
       idx = sample_label_idx, show_legend = show_legend, show_library_label = show_library_label,
       str_to_remove = strstr_to_remove
     ),
-    use_raster = TRUE,
     # top_annotation = HeatmapAnnotation(df = mutgroups,col = list(MutationGroup = colpal)),
     heatmap_legend_param = list(nrow = 4)
   )
