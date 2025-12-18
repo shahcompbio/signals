@@ -1,0 +1,48 @@
+name: test-coverage2
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  test-coverage:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::covr
+          needs: coverage
+
+      - name: Generate coverage report
+        run: |
+          covr::package_coverage(
+            quiet = FALSE,
+            clean = FALSE,
+            install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
+          ) |>
+            covr::report(file = "coverage-report.html", browse = FALSE)
+        shell: Rscript {0}
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report.html
+
+      - name: Post coverage summary
+        run: |
+          cov <- covr::package_coverage(quiet = TRUE)
+          pct <- round(covr::percent_coverage(cov), 1)
+          cat(sprintf("## Code Coverage: %.1f%%\n", pct), file = Sys.getenv("GITHUB_STEP_SUMMARY"))
+        shell: Rscript {0}
