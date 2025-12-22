@@ -117,13 +117,14 @@ umap_clustering <- function(CNbins,
     },
     error = function(e) {
       # Handle error by rerunning UMAP with different parameters
-      message("An error occurred in umap calculation: ", e$message)
-      message("Rerunning UMAP after adding small jitter to data points...")
-      
+      warning("UMAP calculation failed: ", e$message, "\n",
+              "Retrying with small jitter added to data. Results may differ slightly.",
+              call. = FALSE)
+
       mat <- cnmatrix + matrix(runif(nrow(cnmatrix) * ncol(cnmatrix),
-                                     min=-0.005, max=0.005), 
+                                     min=-0.005, max=0.005),
                                nrow=nrow(cnmatrix), ncol=ncol(cnmatrix))
-      
+
       umapresults <- uwot::umap(mat,
                                 metric = umapmetric,
                                 n_neighbors = n_neighbors,
@@ -306,7 +307,13 @@ umap_clustering_breakpoints <- function(CNbins,
   ))
 }
 
+#' Hierarchical clustering (deprecated)
+#'
+#' This function is deprecated and not implemented. Use [umap_clustering()] instead.
+#'
+#' @return NULL (with deprecation warning)
 #' @export
 hc_clustering <- function() {
-
+  .Deprecated("umap_clustering", msg = "hc_clustering() is not implemented. Use umap_clustering() instead.")
+  invisible(NULL)
 }

@@ -411,15 +411,48 @@ make_left_annot_generic <- function(dfanno,
                                    show_legend = TRUE,
                                    annofontsize = 14,
                                    anno_width = 0.4) {
+  # Convert to data.frame if not already
+  if (!is.data.frame(dfanno)) {
+    dfanno <- as.data.frame(dfanno)
+    warning("dfanno was converted to data.frame")
+  }
+  
   # Check if cell_id column exists
   if (!"cell_id" %in% colnames(dfanno)) {
     stop("dfanno must contain a 'cell_id' column")
+  }
+  
+  # Check for NA values in dfanno
+  na_cols <- colnames(dfanno)[sapply(dfanno, function(x) any(is.na(x)))]
+  if (length(na_cols) > 0) {
+    stop(paste0("dfanno contains NA values in the following column(s): ", 
+                paste(na_cols, collapse = ", "), 
+                ". Please remove or impute NA values before calling this function."))
   }
   
   # Get annotation columns (all except cell_id)
   anno_cols <- setdiff(colnames(dfanno), "cell_id")
   if (length(anno_cols) == 0) {
     stop("dfanno must contain at least one annotation column besides cell_id")
+  }
+  
+  # Detect continuous vs discrete columns
+  continuous_cols <- character(0)
+  discrete_cols <- character(0)
+  col_types <- list()
+  
+  for (col in anno_cols) {
+    col_data <- dfanno[[col]]
+    is_numeric <- is.numeric(col_data) || is.integer(col_data)
+    n_unique <- length(unique(col_data))
+    
+    if (is_numeric && n_unique > 10) {
+      continuous_cols <- c(continuous_cols, col)
+      col_types[[col]] <- "continuous"
+    } else {
+      discrete_cols <- c(discrete_cols, col)
+      col_types[[col]] <- "discrete"
+    }
   }
   
   # Default palette rotation if none specified
@@ -429,10 +462,10 @@ make_left_annot_generic <- function(dfanno,
     default_palettes <- palettes
   }
   
-  # Create annotation colors for each column
+  # Create annotation colors for discrete columns
   annot_colours <- list()
-  for (i in seq_along(anno_cols)) {
-    col <- anno_cols[i]
+  for (i in seq_along(discrete_cols)) {
+    col <- discrete_cols[i]
     # Cycle through palettes
     palette_idx <- ((i-1) %% length(default_palettes)) + 1
     current_palette <- default_palettes[palette_idx]
@@ -443,22 +476,64 @@ make_left_annot_generic <- function(dfanno,
     annot_colours[[col]] <- make_discrete_palette(current_palette, levels)
   }
   
-  # Create the annotation object
+  # Create color mappings for continuous columns
+  continuous_col_funs <- list()
+  if (length(continuous_cols) > 0) {
+    # Check if viridis is available, otherwise use a fallback
+    if (requireNamespace("viridis", quietly = TRUE)) {
+      viridis_colors <- viridis::viridis(100)
+    } else {
+      # Fallback: use viridis-like gradient via colorRampPalette
+      viridis_colors <- grDevices::colorRampPalette(c("#440154", "#31688E", "#35B779", "#FDE725"))(100)
+    }
+    
+    for (col in continuous_cols) {
+      col_data <- dfanno[[col]]
+      col_range <- range(col_data, na.rm = TRUE)
+      
+      # Create color mapping function and store it
+      continuous_col_funs[[col]] <- circlize::colorRamp2(
+        seq(col_range[1], col_range[2], length.out = 100),
+        viridis_colors
+      )
+      
+      # Add to annot_colours for use with df parameter
+      annot_colours[[col]] <- continuous_col_funs[[col]]
+    }
+  }
+  
+  # Build annotation using df parameter (auto-generates legends for all columns)
+  # This works for both discrete (named color vectors) and continuous (color functions)
+  legend_params <- list()
+  for (col in anno_cols) {
+    if (col_types[[col]] == "discrete") {
+      legend_params[[col]] <- list(
+        nrow = 3,
+        direction = "horizontal",
+        labels_gp = grid::gpar(fontsize = annofontsize-1),
+        title_gp = grid::gpar(fontsize = annofontsize-1),
+        legend_gp = grid::gpar(fontsize = annofontsize-1)
+      )
+    } else {
+      # Continuous columns get simpler legend params
+      legend_params[[col]] <- list(
+        labels_gp = grid::gpar(fontsize = annofontsize-1),
+        title_gp = grid::gpar(fontsize = annofontsize-1),
+        legend_gp = grid::gpar(fontsize = annofontsize-1)
+      )
+    }
+  }
+  
+  # Create the annotation object using df parameter
+  # This approach auto-generates legends for both discrete and continuous columns
   left_annot <- ComplexHeatmap::HeatmapAnnotation(
-    # Convert dfanno to a named list of vectors
     df = as.data.frame(dfanno[, anno_cols, drop = FALSE]),
     col = annot_colours,
     which = "row",
     show_legend = show_legend,
     annotation_name_gp = grid::gpar(fontsize = annofontsize - 1),
     simple_anno_size = grid::unit(anno_width, "cm"),
-    annotation_legend_param = list(
-      labels_gp = grid::gpar(fontsize = annofontsize-1),
-      title_gp = grid::gpar(fontsize = annofontsize-1),
-      legend_gp = grid::gpar(fontsize = annofontsize-1),
-      nrow = 3,
-      direction = "horizontal"
-    )
+    annotation_legend_param = legend_params
   )
   
   return(left_annot)

@@ -866,7 +866,7 @@ per_chrarm_cn <- function(hscn, arms = NULL) {
           state = as.double(round(median(state, na.rm = TRUE))),
           copy = as.double(median(copy, na.rm = TRUE)),
           A = as.double(floor(median(A, na.rm = TRUE))),
-          alleleA = sum(alleleA), na.rm = TRUE,
+          alleleA = sum(alleleA, na.rm = TRUE),
           alleleB = sum(alleleB, na.rm = TRUE),
           totalcounts = sum(totalcounts, na.rm = TRUE),
           state_sd = sd(state, na.rm = TRUE),

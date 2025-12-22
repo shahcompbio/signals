@@ -1,7 +1,42 @@
+#' Add two numbers in log space
+#'
+#' Computes log(exp(logx) + exp(logy)) in a numerically stable way.
+#'
+#' @param logx First value in log space.
+#' @param logy Second value in log space.
+#' @return log(exp(logx) + exp(logy))
+#' @keywords internal
 logspace_add <- function(logx, logy) {
   pmax(logx, logy) + log1p(exp(-abs(logx - logy)))
 }
 
+#' Run Viterbi HMM for allele-specific copy number inference
+#'
+#' Applies a Hidden Markov Model with Viterbi decoding to infer minor allele
+#' copy number, considering both possible phasings (A|B and B|A) for each bin.
+#' Unlike [HaplotypeHMM()], this function does not assume consistent phasing
+#' within haplotype blocks.
+#'
+#' @param n Integer vector of total read counts per bin.
+#' @param x Integer vector of B-allele read counts per bin.
+#' @param binstates Integer vector of total copy number states per bin.
+#' @param minor_cn Integer vector of possible minor allele copy number states.
+#' @param loherror Sequencing error rate for LOH regions. Default 0.02.
+#' @param selftransitionprob Self-transition probability in HMM. Default 0.999.
+#' @param eps Small value for numerical stability. Default 1e-12.
+#' @param rho Overdispersion for beta-binomial model. Default 0.0.
+#' @param likelihood Likelihood model: "binomial" (default) or "betabinomial".
+#'
+#' @return A list with:
+#'   * `minorcn`: Inferred minor allele copy number states
+#'   * `l`: Matrix of log-likelihoods
+#'
+#' @details
+#' This function considers both A|B and B|A configurations for each bin by
+#' computing likelihoods for both x/n and (n-x)/n and taking the sum.
+#'
+#' @seealso [HaplotypeHMM()] for phased version, [callAlleleSpecificCN()] for full pipeline
+#' @keywords internal
 #' @export
 alleleHMM <- function(n,
                       x,
@@ -67,6 +102,28 @@ alleleHMM <- function(n,
   return(list(minorcn = res, l = l))
 }
 
+#' Assign allele-specific copy number to a single cell
+#'
+#' Wrapper around [alleleHMM()] that processes a single cell's data from the
+#' combined CN/BAF data.frame format.
+#'
+#' @param CNBAF A data.frame for a single cell containing copy number and BAF data.
+#'   Required columns: `chr`, `totalcounts`, `alleleB`, `state`.
+#' @param minor_cn Integer vector of possible minor allele copy number states.
+#' @param eps Small value for numerical stability. Default 1e-12.
+#' @param loherror Sequencing error rate for LOH regions. Default 0.02.
+#' @param selftransitionprob Self-transition probability in HMM. Default 0.999.
+#' @param pb Optional progress bar object from dplyr.
+#' @param rho Overdispersion parameter for beta-binomial. Default 0.0.
+#' @param likelihood Likelihood model: "binomial" (default) or "betabinomial".
+#'
+#' @return A data.frame with the input columns plus:
+#'   * `state_min`: Inferred minor allele copy number
+#'   * `A`, `B`: Major and minor allele copy numbers
+#'   * `state_AS_phased`: Allele-specific state as "A|B" string
+#'
+#' @seealso [alleleHMM()] for underlying HMM, [callAlleleSpecificCN()] for full pipeline
+#' @keywords internal
 #' @export
 assignalleleHMM <- function(CNBAF,
                             minor_cn,
@@ -210,13 +267,28 @@ callAlleleSpecificCN <- function(CNbins,
                                  minbins = 100,
                                  minbinschr = 10,
                                  maxloherror = 0.03,
-                                 filterhaplotypes = 0.1, 
+                                 filterhaplotypes = 0.1,
                                  fillmissing = TRUE) {
+  # Validate input data.frames
+  validate_cnbins(CNbins)
+  validate_haplotypes(haplotypes, formatted = TRUE)
+
+  # Validate probability parameters
+  check_probability(selftransitionprob, "selftransitionprob")
+  check_positive_numeric(eps, "eps", allow_zero = TRUE)
+  check_positive_numeric(loherror, "loherror")
+  check_positive_numeric(maxloherror, "maxloherror")
+
+  # Validate integer parameters
+  check_positive_integer(minbins, "minbins")
+  check_positive_integer(minbinschr, "minbinschr")
+  check_positive_integer(ncores, "ncores")
+  if (!is.null(maxCN)) check_positive_integer(maxCN, "maxCN")
+
+  # Validate choice parameters
   if (!likelihood %in% c("binomial", "betabinomial", "auto")) {
-    stop("Likelihood model for HMM emission model must
-         be one of binomial, betabinomial or auto",
-      call. = FALSE
-    )
+    stop(sprintf("likelihood must be one of: binomial, betabinomial, auto. Got: '%s'",
+                 likelihood), call. = FALSE)
   }
 
   if (likelihood == "betabinomial" | likelihood == "auto") {

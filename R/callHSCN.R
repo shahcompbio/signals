@@ -1,3 +1,37 @@
+#' Run Viterbi HMM for haplotype-specific copy number inference
+#'
+#' Applies a Hidden Markov Model with Viterbi decoding to infer the most likely
+#' sequence of minor allele copy number states given observed B-allele frequencies.
+#'
+#' @param n Integer vector of total read counts per bin (denominator for BAF).
+#' @param x Integer vector of B-allele read counts per bin (numerator for BAF).
+#' @param binstates Integer vector of total copy number states per bin.
+#' @param minor_cn Integer vector of possible minor allele copy number states
+#'   (typically 0:maxCN).
+#' @param loherror Sequencing error rate for LOH regions. Default 0.02.
+#' @param selftransitionprob Self-transition probability in HMM. Higher values
+#'   produce smoother state calls. Default 0.999.
+#' @param eps Small value added to likelihoods for numerical stability. Default 1e-12.
+#' @param likelihood Likelihood model for emission probabilities. One of
+#'   "binomial" (default) or "betabinomial".
+#' @param rho Overdispersion parameter for beta-binomial model. Only used when
+#'   likelihood = "betabinomial". Default 0.0.
+#' @param Abias Bias towards A-allele states (for debugging). Default 0.0.
+#' @param viterbiver Viterbi implementation to use. "cpp" (default) for C++
+#'   implementation, "R" for pure R (slower, for debugging).
+#'
+#' @return A list with two elements:
+#'   * `minorcn`: Integer vector of inferred minor allele copy number states
+#'   * `l`: Matrix of log-likelihoods (bins x states)
+#'
+#' @details
+#' The HMM uses binomial or beta-binomial emission probabilities based on
+#' expected BAF for each state. States where minor CN > total CN / 2 are
+#' forbidden (zero probability).
+#'
+#' @seealso [assignHaplotypeHMM()] for per-cell wrapper,
+#'   [callHaplotypeSpecificCN()] for full pipeline
+#' @keywords internal
 #' @export
 HaplotypeHMM <- function(n,
                          x,
@@ -73,6 +107,30 @@ HaplotypeHMM <- function(n,
   return(list(minorcn = res, l = l))
 }
 
+#' Assign haplotype-specific copy number to a single cell
+#'
+#' Wrapper around [HaplotypeHMM()] that processes a single cell's data from the
+#' combined CN/BAF data.frame format.
+#'
+#' @param CNBAF A data.frame for a single cell containing copy number and BAF data.
+#'   Required columns: `totalcounts`, `alleleB`, `state`.
+#' @param minor_cn Integer vector of possible minor allele copy number states.
+#' @param eps Small value for numerical stability. Default 1e-12.
+#' @param loherror Sequencing error rate for LOH regions. Default 0.02.
+#' @param selftransitionprob Self-transition probability in HMM. Default 0.999.
+#' @param pb Optional progress bar object from dplyr.
+#' @param likelihood Likelihood model: "binomial" (default) or "betabinomial".
+#' @param rho Overdispersion parameter for beta-binomial. Default 0.0.
+#' @param Abias Bias towards A-allele states. Default 0.0.
+#' @param viterbiver Viterbi implementation: "cpp" (default) or "R".
+#'
+#' @return A data.frame with the input columns plus:
+#'   * `state_min`: Inferred minor allele copy number
+#'   * `A`, `B`: Inferred A and B allele copy numbers
+#'   * `state_AS_phased`: Allele-specific state as "A|B" string
+#'
+#' @seealso [HaplotypeHMM()] for underlying HMM, [callHaplotypeSpecificCN()] for full pipeline
+#' @keywords internal
 #' @export
 assignHaplotypeHMM <- function(CNBAF,
                                minor_cn,
@@ -696,14 +754,35 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     chr_cell_list = NULL,
                                     chrs_for_global_phasing = NULL,
                                     female = TRUE) {
+  # Validate input data.frames
+
+  validate_cnbins(CNbins)
+  validate_haplotypes(haplotypes, formatted = TRUE)
+
+  # Validate probability parameters
+  check_probability(selftransitionprob, "selftransitionprob")
+  check_probability(minfrachaplotypes, "minfrachaplotypes", strict = TRUE)
+  check_positive_numeric(eps, "eps", allow_zero = TRUE)
+  check_positive_numeric(loherror, "loherror")
+  check_positive_numeric(maxloherror, "maxloherror")
+
+  # Validate integer parameters
+  check_positive_integer(minbins, "minbins", allow_zero = TRUE)
+  check_positive_integer(minbinschr, "minbinschr", allow_zero = TRUE)
+  check_positive_integer(mincells, "mincells")
+  check_positive_integer(ncores, "ncores")
+  if (!is.null(maxCN)) check_positive_integer(maxCN, "maxCN")
+  if (!is.null(overwritemincells)) check_positive_integer(overwritemincells, "overwritemincells")
+
+  # Validate choice parameters
   if (!clustering_method %in% c("copy", "breakpoints")) {
-    stop("Clustering method must be one of copy or breakpoints")
+    stop(sprintf("clustering_method must be one of: copy, breakpoints. Got: '%s'",
+                 clustering_method), call. = FALSE)
   }
-  
+
   if (!likelihood %in% c("binomial", "betabinomial", "auto")) {
-    stop("Likelihood model for HMM emission model must be one of binomial, betabinomial or auto",
-         call. = FALSE
-    )
+    stop(sprintf("likelihood must be one of: binomial, betabinomial, auto. Got: '%s'",
+                 likelihood), call. = FALSE)
   }
   
   if (likelihood == "betabinomial" | likelihood == "auto") {
