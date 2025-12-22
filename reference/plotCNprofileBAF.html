@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.1</span>
       </span>
     </div>
 
@@ -238,7 +238,7 @@
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu"><a href="format_haplotypes_dlp.html">format_haplotypes_dlp</a></span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, likelihood <span class="op">=</span> <span class="st">"binomial"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">plotCNprofileBAF</span><span class="op">(</span><span class="va">hscn</span>, genes <span class="op">=</span> <span class="st">"MYC"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">plotCNprofileBAF</span><span class="op">(</span><span class="va">hscn</span>, homolog <span class="op">=</span> <span class="cn">TRUE</span>, chrfilt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1"</span>, <span class="st">"8"</span><span class="op">)</span><span class="op">)</span></span></span>

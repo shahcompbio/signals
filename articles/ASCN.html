@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.1</span>
       </span>
     </div>
 
@@ -125,7 +125,7 @@ data in wide format so we will use the helper function
 format, this function will also remove any bins present in the
 haplotypes data frame that is not present in the CNbins data frame.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/format_haplotypes_dlp.html">format_haplotypes_dlp</a></span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">haplotypes</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  cell_id chr   start     end hap_label allele1 allele0</span></span>
 <span><span class="co">#&gt; 1 SA1090-A96213A-R20-C13   1 2000001 2500000       101       0       3</span></span>

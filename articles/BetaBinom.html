@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.1</span>
       </span>
     </div>
 
@@ -103,7 +103,7 @@ of a binomial model for the HMM emission model.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span>
-<span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
+<span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/format_haplotypes_dlp.html">format_haplotypes_dlp</a></span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
 <span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span>, likelihood <span class="op">=</span> <span class="st">"binomial"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">hscn</span><span class="op">)</span></span>
@@ -178,14 +178,14 @@ dataframes. We find for this data that the results are very similar.</p>
 <span><span class="co">#&gt;  [3] "Component \"totalcounts\": 'is.NA' value mismatch: 14565 in current 14564 in target"</span></span>
 <span><span class="co">#&gt;  [4] "Component \"BAF\": 'is.NA' value mismatch: 14565 in current 14564 in target"        </span></span>
 <span><span class="co">#&gt;  [5] "Component \"state_min\": Mean relative difference: 0.6618628"                       </span></span>
-<span><span class="co">#&gt;  [6] "Component \"A\": Mean relative difference: 0.5809962"                               </span></span>
-<span><span class="co">#&gt;  [7] "Component \"B\": Mean relative difference: 0.7459933"                               </span></span>
-<span><span class="co">#&gt;  [8] "Component \"state_AS_phased\": 37020 string mismatches"                             </span></span>
+<span><span class="co">#&gt;  [6] "Component \"A\": Mean relative difference: 0.5814508"                               </span></span>
+<span><span class="co">#&gt;  [7] "Component \"B\": Mean relative difference: 0.7457706"                               </span></span>
+<span><span class="co">#&gt;  [8] "Component \"state_AS_phased\": 36982 string mismatches"                             </span></span>
 <span><span class="co">#&gt;  [9] "Component \"state_AS\": 4138 string mismatches"                                     </span></span>
 <span><span class="co">#&gt; [10] "Component \"LOH\": 2922 string mismatches"                                          </span></span>
-<span><span class="co">#&gt; [11] "Component \"phase\": 33643 string mismatches"                                       </span></span>
-<span><span class="co">#&gt; [12] "Component \"state_phase\": 34824 string mismatches"                                 </span></span>
-<span><span class="co">#&gt; [13] "Component \"state_BAF\": Mean relative difference: 1.094896"</span></span></code></pre></div>
+<span><span class="co">#&gt; [11] "Component \"phase\": 33607 string mismatches"                                       </span></span>
+<span><span class="co">#&gt; [12] "Component \"state_phase\": 34787 string mismatches"                                 </span></span>
+<span><span class="co">#&gt; [13] "Component \"state_BAF\": Mean relative difference: 1.094162"</span></span></code></pre></div>
 <p>Another thing we can check is the total number of segments identified
 by the HMM. Using the beta-binomial model should reduce the influence of
 any noisy regions and thus we might expect fewer segments. We do observe
@@ -198,7 +198,7 @@ fewer segments in the beta-binomial model.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">segs</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 38478     5</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">segs_bb</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 35114     5</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 35122     5</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

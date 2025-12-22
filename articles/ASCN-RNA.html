@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.1</span>
       </span>
     </div>
 
@@ -130,7 +130,7 @@ but in general it will be less accurate.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"haplotypes"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span>
-<span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu">format_haplotypes_dlp</span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
+<span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/format_haplotypes_dlp.html">format_haplotypes_dlp</a></span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
 <span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Iteration 1: loglikelihood = -313387.1605</span></span>
 <span><span class="co">#&gt; Iteration 2: loglikelihood = -309515.5822</span></span>
