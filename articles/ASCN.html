@@ -178,7 +178,7 @@ function of inferred state. We would expect to see a distribution around
 the expected value which is exactly what we see below.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotBAFperstate.html">plotBAFperstate</a></span><span class="op">(</span><span class="va">hscn</span>, maxstate <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" width="960"></p>
+<p><img src="ASCN_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="960"></p>
 <p>Now we can plot the copy number heatmaps. First we’ll plot the
 heatmap based on copy number states. We can provide the
 <code>plotHeatmap</code> function with a tree in newick format to plot
@@ -194,7 +194,7 @@ hdbscan if neither of these is provided.</p>
 <span>            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, </span>
 <span>            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span></span>
 <span>            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" width="960"></p>
+<p><img src="ASCN_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="960"></p>
 <p>Now we can plot some heatmaps to visualize the allele specific state.
 This heatmap plots the B allele copy number state.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -203,7 +203,7 @@ This heatmap plots the B allele copy number state.</p>
 <span>            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, </span>
 <span>            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span></span>
 <span>            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" width="960"></p>
+<p><img src="ASCN_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" alt="" width="960"></p>
 <p>Discrete representation of allelic imbalance:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">hscn</span>, </span>
@@ -212,13 +212,13 @@ This heatmap plots the B allele copy number state.</p>
 <span>            tree <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">tree</span>, </span>
 <span>            reorderclusters <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#order according to tree</span></span>
 <span>            plottree <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co">#do not plot the tree but keep the ordering )</span></span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" width="960"></p>
+<p><img src="ASCN_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" alt="" width="960"></p>
 <p>There are also some function to plot per cell BAF and state plots.
 You can specify a cell, or the default will take the first cell in the
 data frame.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">hscn</span>, cellid <span class="op">=</span> <span class="st">"SA921-A90554A-R03-C44"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" width="960"></p>
+<p><img src="ASCN_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="960"></p>
 <p>Here we’ll plot an equivalent plot merging data across cell clusters
 using the utility function <code>consensyscopynumber</code>. Here, the
 <code>cell_id</code> column becomes the <code>clone_id</code>.</p>
@@ -226,7 +226,7 @@ using the utility function <code>consensyscopynumber</code>. Here, the
 <code class="sourceCode R"><span><span class="va">consensus_clusters</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, cl <span class="op">=</span> <span class="va">cl</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plotCNprofileBAF.html">plotCNprofileBAF</a></span><span class="op">(</span><span class="va">consensus_clusters</span>, cellid <span class="op">=</span> <span class="st">"A"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" width="960"></p>
+<p><img src="ASCN_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="960"></p>
 <p>The object returned by the inference function is of type
 <code>hscn</code>, if you want to pull out the data to use in your own
 scripts you can just do <code>hscn$data</code>. This will return a

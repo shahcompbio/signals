@@ -160,7 +160,7 @@ can also see other chromosome arms such as 4p and 2q that have
 multimodal distributions, suggesting different clusters of cells.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">per_chr_baf_plot</span><span class="op">(</span><span class="va">haplotypes_rna</span><span class="op">$</span><span class="va">block_counts</span>, perarm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" width="576"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="576"></p>
 <p>For comparison we can plot a similar distribution from our scDNAseq
 dataset. Here we notice similar trends but note that data from the
 scRNAseq is much more dispersed due to the lower number of counts per
@@ -168,15 +168,15 @@ cell. scRNAseq will have 1-2 orders of magnitude lower reads so our
 ability to identify SNPs is reduced.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">per_chr_baf_plot</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span>, perarm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" width="576"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="576"></p>
 <p>We can also plot heatmaps of the 2 modalities as shown below, rows
 are clustered by hierarchical clustering.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plotHeatmapBAF</span><span class="op">(</span><span class="va">haplotypes_rna</span><span class="op">$</span><span class="va">block_counts</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" width="672"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plotHeatmapBAF</span><span class="op">(</span><span class="va">hscn</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" width="672"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="672"></p>
 <p>We’ll now move on to inferring the allele specific copy number in the
 scRNAseq. Rather than use chromosome arms, we first use the single cell
 DNA sequencing data to identify segments that have different allele
@@ -220,7 +220,7 @@ clusters using a similar plot to before. Setting
 assignment.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">per_segment_baf_plot</span><span class="op">(</span><span class="va">ascn_rna_dp</span><span class="op">$</span><span class="va">hscn</span>, labelclones <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" width="576"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="576"></p>
 <div class="section level3">
 <h3 id="heatmap">Heatmap<a class="anchor" aria-label="anchor" href="#heatmap"></a>
 </h3>
@@ -238,7 +238,7 @@ the scRNA.</p>
 <span>            show_library_label <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>            show_clone_label <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>            show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" width="816"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="816"></p>
 <p>We can also do this for the scDNAseq data. For more straightforward
 comparison we’ll perform the dirichlet process arm level inference as we
 do for the scRNAseq. We can see that the scRNAseq has much lower
@@ -262,7 +262,7 @@ frequency.</p>
 <span>            plottree <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>            show_library_label <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>            show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" width="816"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="816"></p>
 </div>
 </div>
 <div class="section level2">
@@ -302,7 +302,7 @@ embeddings of BAF values per cell per chromosome or coloured by clone as
 shown below.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">x</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-17-1.png" class="r-plt" width="700"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-17-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">x</span><span class="op">@</span><span class="va">assays</span><span class="op">$</span><span class="va">segBAF</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "BAF-1-1-47000000"           "BAF-1-225500001-243700000" </span></span>
@@ -331,16 +331,16 @@ shown below.</p>
 <span><span class="co">#&gt; [47] "BAF-8-1-75000000"           "BAF-8-75000001-139900000"  </span></span>
 <span><span class="co">#&gt; [49] "BAF-9-1-137400000"          "BAF-X-1-147100000"</span></span>
 <span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-3-75500001-192300000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" width="700"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-10-1-97000000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" width="700"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-2-99000001-225000000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-20-1.png" class="r-plt" width="700"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-20-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/VlnPlot.html" class="external-link">VlnPlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-2-99000001-225000000"</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ylab</a></span><span class="op">(</span><span class="st">"BAF"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-21-1.png" class="r-plt" width="700"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-21-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can also pull out the allelic imbalance in individual genes. Let’s
 look at some genes on 4p, where one group of cells is homozygous. Most
 genes have very few counts, so we’ll pull out genes with a large number
@@ -356,7 +356,7 @@ of genotyped SNPs to take a look at.</p>
 <span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">mygene</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">x</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/VlnPlot.html" class="external-link">VlnPlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"BAF-"</span>, <span class="va">mygene</span><span class="op">)</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ylab</a></span><span class="op">(</span><span class="st">"BAF"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-22-1.png" class="r-plt" width="700"></p>
+<p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-22-1.png" class="r-plt" alt="" width="700"></p>
 <p>Note that even in this example where we have been able to identify
 lots of SNP counts in this gene, most individual cells will still have
 very few counts. This explains why in cluster C2, the violin plot shows
