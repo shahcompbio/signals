@@ -34,6 +34,13 @@ plotCNprofile(
   positionticks = FALSE,
   ideogram = FALSE,
   overwrite_color = NULL,
+  sv_style = "curves",
+  sv_point_size = 2,
+  sv_arc_alpha = 0.3,
+  sv_arc_height = 0.2,
+  show_sv_read_axis = TRUE,
+  sv_read_axis_scale = NULL,
+  show_sv_legend = FALSE,
   ...
 )
 }
@@ -70,7 +77,7 @@ plotCNprofile(
 
 \item{annotateregions_linetype}{linetype for region annotation, default = 2 (dashed)}
 
-\item{SV}{Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.}
+\item{SV}{Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins. For lines_and_arcs style, SV must include columns: strand_1, strand_2 (values '+' or '-'), and read_count.}
 
 \item{SVcol}{Default is TRUE. Colour SVs or not}
 
@@ -93,6 +100,20 @@ plotCNprofile(
 \item{positionticks}{set to TRUE to use position ticks rather than chromosome ticks}
 
 \item{ideogram}{plot ideogram at the top, default = TRUE}
+
+\item{sv_style}{visualization style for structural variants: "curves" (default, bezier curves), "lines_and_arcs" (colored lines with arcs), or "both"}
+
+\item{sv_point_size}{size of SV breakpoint points when using lines_and_arcs style, default = 2}
+
+\item{sv_arc_alpha}{transparency of SV arcs when using lines_and_arcs style, default = 0.3}
+
+\item{sv_arc_height}{height of SV arcs as fraction of maxCN when using lines_and_arcs style, default = 0.2}
+
+\item{show_sv_read_axis}{show secondary y-axis for SV read support when using lines_and_arcs style, default = TRUE. Works with both identity and squashy y-axis transformations.}
+
+\item{sv_read_axis_scale}{maximum value for SV read support axis (auto-scaled if NULL), default = NULL}
+
+\item{show_sv_legend}{show legend for SV orientations when using lines_and_arcs style, default = FALSE}
 }
 \value{
 ggplot2 plot

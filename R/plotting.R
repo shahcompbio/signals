@@ -221,6 +221,167 @@ CapStr <- function(y) {
   )
 }
 
+classify_sv_orientation <- function(SV) {
+  # Classify SV orientation based on strand_1, strand_2, and chromosome_1/chromosome_2
+  # Returns vector of orientation categories: "+-", "-+", "++", "--", "Translocation"
+  if (is.null(SV) || nrow(SV) == 0) {
+    return(character(0))
+  }
+  
+  # Check if inter-chromosomal (translocation)
+  is_translocation <- SV$chromosome_1 != SV$chromosome_2
+  
+  # Classify orientation
+  orientation <- ifelse(
+    is_translocation,
+    "Translocation",
+    paste0(SV$strand_1, SV$strand_2)
+  )
+  
+  return(orientation)
+}
+
+prepare_sv_points <- function(SV, bins, binsize) {
+  # Prepare SV data for plotting as points
+  # Input: SV dataframe with strand_1, strand_2, read_count, chromosome_1, chromosome_2, position_1, position_2
+  #        bins dataframe with chr, start, idx
+  #        binsize: bin size in bp
+  # Output: Long-format dataframe with idx, read_count, orientation, breakpoint_id, sv_id
+
+  if (is.null(SV) || nrow(SV) == 0) {
+    return(data.frame(idx = numeric(0), read_count = numeric(0),
+                     orientation = character(0), breakpoint_id = character(0),
+                     sv_id = character(0)))
+  }
+
+  # Add unique SV identifier to track pairings
+  SV <- SV %>%
+    dplyr::mutate(sv_id = paste0("sv_", 1:dplyr::n()))
+
+  # Add orientation classification
+  SV <- SV %>%
+    dplyr::mutate(orientation = classify_sv_orientation(.))
+
+  # Round positions to bin boundaries
+  SV <- SV %>%
+    dplyr::mutate(
+      position_1 = binsize * floor(position_1 / binsize) + 1,
+      position_2 = binsize * floor(position_2 / binsize) + 1
+    )
+
+  # Join with bin indices
+  SV <- SV %>%
+    dplyr::left_join(
+      bins %>% dplyr::select(chr, start, idx) %>%
+        dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx),
+      by = c("chromosome_1", "position_1")
+    ) %>%
+    dplyr::left_join(
+      bins %>% dplyr::select(chr, start, idx) %>%
+        dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx),
+      by = c("chromosome_2", "position_2")
+    )
+
+  # Filter out SVs where we couldn't find bin indices
+  SV <- SV %>%
+    dplyr::filter(!is.na(idx_1) & !is.na(idx_2))
+
+  if (nrow(SV) == 0) {
+    return(data.frame(idx = numeric(0), read_count = numeric(0),
+                     orientation = character(0), breakpoint_id = character(0),
+                     sv_id = character(0)))
+  }
+
+  # Convert to long format (separate rows for position_1 and position_2)
+  # Keep sv_id to track which breakpoints belong to the same SV
+  SV_points <- dplyr::bind_rows(
+    SV %>% dplyr::select(idx = idx_1, read_count, orientation,
+                        chromosome = chromosome_1, position = position_1, sv_id) %>%
+      dplyr::mutate(breakpoint_id = paste0("bp1_", 1:dplyr::n()), bp_end = "1"),
+    SV %>% dplyr::select(idx = idx_2, read_count, orientation,
+                        chromosome = chromosome_2, position = position_2, sv_id) %>%
+      dplyr::mutate(breakpoint_id = paste0("bp2_", 1:dplyr::n()), bp_end = "2")
+  )
+
+  # Remove duplicates by breakpoint_id (in case same position appears multiple times)
+  SV_points <- SV_points %>%
+    dplyr::distinct(breakpoint_id, .keep_all = TRUE)
+
+  return(SV_points)
+}
+
+generate_sv_arcs <- function(SV, y_start, y_end, arc_height_factor = 0.2, n_points = 50) {
+  # Generate parabolic arcs connecting SV breakpoint pairs
+  # Input: SV dataframe with idx_1, idx_2, orientation
+  #        y_start: y position of start point (vector, same length as SV)
+  #        y_end: y position of end point (vector, same length as SV)
+  #        arc_height_factor: factor to determine arc height relative to point heights
+  #        n_points: number of points per arc
+  # Output: Dataframe with idx, y, arc_id, orientation
+  
+  if (is.null(SV) || nrow(SV) == 0) {
+    return(data.frame(idx = numeric(0), y = numeric(0), 
+                     arc_id = character(0), orientation = character(0)))
+  }
+  
+  # Filter out SVs where start and end are the same (no arc needed)
+  SV_arcs <- SV %>%
+    dplyr::filter(!is.na(idx_1) & !is.na(idx_2) & idx_1 != idx_2)
+  
+  if (nrow(SV_arcs) == 0) {
+    return(data.frame(idx = numeric(0), y = numeric(0), 
+                     arc_id = character(0), orientation = character(0)))
+  }
+  
+  # Match y_start and y_end to filtered SV_arcs
+  # We need to match by row indices since SV_arcs is filtered
+  original_indices <- which(!is.na(SV$idx_1) & !is.na(SV$idx_2) & SV$idx_1 != SV$idx_2)
+  y_start_matched <- y_start[original_indices]
+  y_end_matched <- y_end[original_indices]
+  
+  # Generate arc paths for each SV
+  arc_list <- list()
+  for (i in 1:nrow(SV_arcs)) {
+    idx_start <- SV_arcs$idx_1[i]
+    idx_end <- SV_arcs$idx_2[i]
+    orientation <- SV_arcs$orientation[i]
+    arc_id <- paste0("arc_", i)
+    
+    y_start_val <- y_start_matched[i]
+    y_end_val <- y_end_matched[i]
+    
+    # Generate x coordinates (idx values)
+    t <- seq(0, 1, length.out = n_points)
+    idx <- idx_start + t * (idx_end - idx_start)
+    
+    # Generate y coordinates: connect the two points with a parabolic arc
+    # The arc goes from y_start to y_end, with additional height in the middle
+    # Use quadratic interpolation: y = (1-t)*y_start + t*y_end + 4*arc_height*t*(1-t)
+    # where arc_height is relative to the average of the two points
+    avg_y <- (y_start_val + y_end_val) / 2
+    arc_height <- avg_y * arc_height_factor
+    
+    # Linear interpolation between points
+    y_linear <- (1 - t) * y_start_val + t * y_end_val
+    
+    # Add parabolic component for arc shape
+    y_arc_component <- 4 * arc_height * t * (1 - t)
+    
+    # Combine: arc goes above the linear interpolation
+    y <- y_linear + y_arc_component
+    
+    arc_list[[i]] <- data.frame(
+      idx = idx,
+      y = y,
+      arc_id = arc_id,
+      orientation = orientation
+    )
+  }
+  
+  arcs_df <- dplyr::bind_rows(arc_list)
+  return(arcs_df)
+}
+
 #' @export
 plotSV <- function(breakpoints,
                    chrfilt = NULL,
@@ -611,7 +772,7 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param legend.position Where to place the legend, default is "bottom"
 #' @param annotateregions Dataframe with chr start and end positions to annotate, will draw a dashed vertical line at this position
 #' @param annotateregions_linetype linetype for region annotation, default = 2 (dashed)
-#' @param SV Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.
+#' @param SV Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins. For lines_and_arcs style, SV must include columns: strand_1, strand_2 (values '+' or '-'), and read_count.
 #' @param SVcol Default is TRUE. Colour SVs or not
 #' @param svalpha the alpha scaling of the SV lines, default = 0.5
 #' @param genes vector of genes to annotate, will add a dashed vertical line and label
@@ -624,7 +785,14 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param positionticks set to TRUE to use position ticks rather than chromosome ticks
 #' @param genome genome to use, default = "hg19" (only used for ideogram)
 #' @param ideogram plot ideogram at the top, default = TRUE
-#' 
+#' @param sv_style visualization style for structural variants: "curves" (default, bezier curves), "lines_and_arcs" (colored lines with arcs), or "both"
+#' @param sv_point_size size of SV breakpoint points when using lines_and_arcs style, default = 2
+#' @param sv_arc_alpha transparency of SV arcs when using lines_and_arcs style, default = 0.3
+#' @param sv_arc_height height of SV arcs as fraction of maxCN when using lines_and_arcs style, default = 0.2
+#' @param show_sv_read_axis show secondary y-axis for SV read support when using lines_and_arcs style, default = TRUE. Works with both identity and squashy y-axis transformations.
+#' @param sv_read_axis_scale maximum value for SV read support axis (auto-scaled if NULL), default = NULL
+#' @param show_sv_legend show legend for SV orientations when using lines_and_arcs style, default = FALSE
+#'
 #' @return ggplot2 plot
 #'
 #' @examples
@@ -661,9 +829,31 @@ plotCNprofile <- function(CNbins,
                           positionticks = FALSE,
                           ideogram = FALSE,
                           overwrite_color = NULL,
+                          sv_style = "curves",
+                          sv_point_size = 2,
+                          sv_arc_alpha = 0.3,
+                          sv_arc_height = 0.2,
+                          show_sv_read_axis = TRUE,
+                          sv_read_axis_scale = NULL,
+                          show_sv_legend = FALSE,
                           ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
+  }
+  
+  # Validate sv_style
+  if (!sv_style %in% c("curves", "lines_and_arcs", "both")) {
+    stop("sv_style must be one of: 'curves', 'lines_and_arcs', 'both'")
+  }
+
+  # Check required columns for lines_and_arcs
+  if (sv_style %in% c("lines_and_arcs", "both") && !is.null(SV)) {
+    required_cols <- c("strand_1", "strand_2", "read_count")
+    missing_cols <- setdiff(required_cols, names(SV))
+    if (length(missing_cols) > 0) {
+      stop(paste0("SV data missing required columns: ",
+                  paste(missing_cols, collapse = ", ")))
+    }
   }
   
   if (is.null(cellid)) {
@@ -690,11 +880,100 @@ plotCNprofile <- function(CNbins,
     message(paste0("Filtering for chromosomes: ", paste0(chrfilt, collapse = ",")))
     CNbins <- dplyr::filter(CNbins, chr %in% chrfilt)
   }
+  
+  # Filter SV by chrfilt early (needed for lines_and_arcs processing)
+  if (!is.null(SV) && !is.null(chrfilt)) {
+    SV <- dplyr::filter(SV, chromosome_1 %in% chrfilt & chromosome_2 %in% chrfilt)
+  }
 
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
     plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, positionticks = positionticks,
                  tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
+  
+  # Process SV data for lines_and_arcs mode (needed for secondary axis)
+  sv_points_data <- NULL
+  sv_arcs_data <- NULL
+  max_read_count <- NULL
+  use_secondary_axis <- FALSE
+
+  if (!is.null(SV) && nrow(SV) > 0 && sv_style %in% c("lines_and_arcs", "both")) {
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    bins <- pl$bins
+    
+    # Prepare SV points
+    sv_points_data <- prepare_sv_points(SV, bins, binsize)
+    
+    if (nrow(sv_points_data) > 0) {
+      # Determine max read count for scaling
+      max_read_count <- ifelse(
+        is.null(sv_read_axis_scale),
+        max(sv_points_data$read_count, na.rm = TRUE) * 1.1,
+        sv_read_axis_scale
+      )
+      
+      # Transform read_count to CN scale
+      sv_points_data <- sv_points_data %>%
+        dplyr::mutate(y_scaled = (read_count / max_read_count) * maxCN)
+      
+      # Generate arcs
+      # Add sv_id to original SV data to track pairings
+      SV_with_idx <- SV %>%
+        dplyr::mutate(
+          sv_id = paste0("sv_", 1:dplyr::n()),
+          position_1 = binsize * floor(position_1 / binsize) + 1,
+          position_2 = binsize * floor(position_2 / binsize) + 1
+        ) %>%
+        dplyr::left_join(
+          bins %>% dplyr::select(chr, start, idx) %>%
+            dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx),
+          by = c("chromosome_1", "position_1")
+        ) %>%
+        dplyr::left_join(
+          bins %>% dplyr::select(chr, start, idx) %>%
+            dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx),
+          by = c("chromosome_2", "position_2")
+        ) %>%
+        dplyr::filter(!is.na(idx_1) & !is.na(idx_2))
+
+      if (nrow(SV_with_idx) > 0) {
+        SV_with_idx <- SV_with_idx %>%
+          dplyr::mutate(orientation = classify_sv_orientation(.))
+
+        # Get y positions for start and end points
+        # Join with sv_points_data using sv_id to ensure correct pairing
+        SV_with_y <- SV_with_idx %>%
+          dplyr::left_join(
+            sv_points_data %>%
+              dplyr::filter(bp_end == "1") %>%
+              dplyr::select(sv_id, y_scaled) %>%
+              dplyr::rename(y_start = y_scaled),
+            by = "sv_id"
+          ) %>%
+          dplyr::left_join(
+            sv_points_data %>%
+              dplyr::filter(bp_end == "2") %>%
+              dplyr::select(sv_id, y_scaled) %>%
+              dplyr::rename(y_end = y_scaled),
+            by = "sv_id"
+          ) %>%
+          dplyr::filter(!is.na(y_start) & !is.na(y_end))
+        
+        if (nrow(SV_with_y) > 0) {
+          sv_arcs_data <- generate_sv_arcs(
+            SV_with_y, 
+            y_start = SV_with_y$y_start,
+            y_end = SV_with_y$y_end,
+            arc_height_factor = sv_arc_height,
+            n_points = 50
+          )
+        }
+      }
+      
+      # Check if we should use secondary axis
+      use_secondary_axis <- show_sv_read_axis
+    }
+  }
   
   if (ideogram == TRUE){
     miny <- -0.5
@@ -708,15 +987,89 @@ plotCNprofile <- function(CNbins,
         call. = FALSE
       )
     }
-    gCN <- pl$CNbins %>%
+    # Prepare data for plotting
+    plot_data <- pl$CNbins %>%
       dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
-      dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
-      ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
-      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[statecol]]), 
+      dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+")))
+
+    # Create base plot with chromosome breaks
+    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy)) +
+      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+
+    # Add SV lines_and_arcs visualization BEFORE CN points (so it appears behind)
+    if (!is.null(sv_points_data) && nrow(sv_points_data) > 0 && requireNamespace("ggnewscale", quietly = TRUE)) {
+      # Add vertical lines using aesthetic mapping for legend support
+      gCN <- gCN +
+        ggplot2::geom_segment(
+          data = sv_points_data,
+          ggplot2::aes(x = idx, xend = idx, y = miny, yend = y_scaled, color = orientation),
+          alpha = sv_arc_alpha,
+          size = svwidth * 0.5,
+          show.legend = show_sv_legend
+        )
+
+      # Add arcs if available
+      if (!is.null(sv_arcs_data) && nrow(sv_arcs_data) > 0) {
+        gCN <- gCN +
+          ggplot2::geom_path(
+            data = sv_arcs_data,
+            ggplot2::aes(x = idx, y = y, group = arc_id, color = orientation),
+            alpha = sv_arc_alpha,
+            size = svwidth,
+            show.legend = show_sv_legend
+          )
+      }
+
+      # Add SV orientation color scale
+      gCN <- gCN +
+        ggplot2::scale_color_manual(
+          name = "SV Orientation",
+          values = SV_orientation_colors,
+          breaks = names(SV_orientation_colors),
+          guide = if (show_sv_legend) ggplot2::guide_legend(override.aes = list(size = 2, alpha = 1)) else "none"
+        ) +
+        ggnewscale::new_scale_color()
+    } else if (!is.null(sv_points_data) && nrow(sv_points_data) > 0) {
+      # Fallback: ggnewscale not available, use manual colors without legend
+      orientation_levels <- unique(sv_points_data$orientation)
+      for (orient in orientation_levels) {
+        orient_data <- sv_points_data %>% dplyr::filter(orientation == orient)
+        if (nrow(orient_data) > 0) {
+          gCN <- gCN +
+            ggplot2::geom_segment(
+              data = orient_data,
+              ggplot2::aes(x = idx, xend = idx, y = miny, yend = y_scaled),
+              color = as.vector(SV_orientation_colors[orient]),
+              alpha = sv_arc_alpha,
+              size = svwidth * 0.5
+            )
+        }
+      }
+
+      if (!is.null(sv_arcs_data) && nrow(sv_arcs_data) > 0) {
+        arc_orientations <- unique(sv_arcs_data$orientation)
+        for (orient in arc_orientations) {
+          arc_data <- sv_arcs_data %>% dplyr::filter(orientation == orient)
+          if (nrow(arc_data) > 0) {
+            gCN <- gCN +
+              ggplot2::geom_path(
+                data = arc_data,
+                ggplot2::aes(x = idx, y = y, group = arc_id),
+                color = as.vector(SV_orientation_colors[orient]),
+                alpha = sv_arc_alpha,
+                size = svwidth
+              )
+          }
+        }
+      }
+    }
+
+    # Now add CN points on top
+    gCN <- gCN +
+      ggrastr::geom_point_rast(ggplot2::aes(col = .data[[statecol]]),
                                show.legend = TRUE,
-                               size = pointsize, 
-                               alpha = alphaval, 
+                               size = pointsize,
+                               alpha = alphaval,
                                shape = shape) +
       ggplot2::scale_color_manual(
         name = "Copy number",
@@ -732,7 +1085,30 @@ plotCNprofile <- function(CNbins,
         legend.position = "none"
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans) +
+      {
+        if (use_secondary_axis && !is.null(max_read_count)) {
+          # Determine secondary axis transformation based on y_axis_trans
+          if (y_axis_trans == "squashy") {
+            # Inverse squashy transform before converting to read counts
+            sec_trans <- ~ squashy_trans()$inverse(.) * (max_read_count / maxCN)
+          } else {
+            # Identity transform, direct linear scaling
+            sec_trans <- ~ . * max_read_count / maxCN
+          }
+
+          ggplot2::scale_y_continuous(
+            breaks = ybreaks,
+            limits = c(miny, maxCN),
+            trans = y_axis_trans,
+            sec.axis = ggplot2::sec_axis(
+              transform = sec_trans,
+              name = "SV Read Support"
+            )
+          )
+        } else {
+          ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans)
+        }
+      } +
       ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -742,15 +1118,89 @@ plotCNprofile <- function(CNbins,
       )) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
   } else {
-    gCN <- pl$CNbins %>%
+    # Prepare data for plotting
+    plot_data <- pl$CNbins %>%
       dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
-      dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+"))) %>%
-      ggplot2::ggplot(ggplot2::aes(x = idx, y = copy)) +
-      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75) +
-      ggplot2::geom_point(ggplot2::aes(col = .data[[statecol]]), 
+      dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+")))
+
+    # Create base plot with chromosome breaks
+    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy)) +
+      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+
+    # Add SV lines_and_arcs visualization BEFORE CN points (so it appears behind)
+    if (!is.null(sv_points_data) && nrow(sv_points_data) > 0 && requireNamespace("ggnewscale", quietly = TRUE)) {
+      # Add vertical lines using aesthetic mapping for legend support
+      gCN <- gCN +
+        ggplot2::geom_segment(
+          data = sv_points_data,
+          ggplot2::aes(x = idx, xend = idx, y = miny, yend = y_scaled, color = orientation),
+          alpha = sv_arc_alpha,
+          size = svwidth * 0.5,
+          show.legend = show_sv_legend
+        )
+
+      # Add arcs if available
+      if (!is.null(sv_arcs_data) && nrow(sv_arcs_data) > 0) {
+        gCN <- gCN +
+          ggplot2::geom_path(
+            data = sv_arcs_data,
+            ggplot2::aes(x = idx, y = y, group = arc_id, color = orientation),
+            alpha = sv_arc_alpha,
+            size = svwidth,
+            show.legend = show_sv_legend
+          )
+      }
+
+      # Add SV orientation color scale
+      gCN <- gCN +
+        ggplot2::scale_color_manual(
+          name = "SV Orientation",
+          values = SV_orientation_colors,
+          breaks = names(SV_orientation_colors),
+          guide = if (show_sv_legend) ggplot2::guide_legend(override.aes = list(size = 2, alpha = 1)) else "none"
+        ) +
+        ggnewscale::new_scale_color()
+    } else if (!is.null(sv_points_data) && nrow(sv_points_data) > 0) {
+      # Fallback: ggnewscale not available, use manual colors without legend
+      orientation_levels <- unique(sv_points_data$orientation)
+      for (orient in orientation_levels) {
+        orient_data <- sv_points_data %>% dplyr::filter(orientation == orient)
+        if (nrow(orient_data) > 0) {
+          gCN <- gCN +
+            ggplot2::geom_segment(
+              data = orient_data,
+              ggplot2::aes(x = idx, xend = idx, y = miny, yend = y_scaled),
+              color = as.vector(SV_orientation_colors[orient]),
+              alpha = sv_arc_alpha,
+              size = svwidth * 0.5
+            )
+        }
+      }
+
+      if (!is.null(sv_arcs_data) && nrow(sv_arcs_data) > 0) {
+        arc_orientations <- unique(sv_arcs_data$orientation)
+        for (orient in arc_orientations) {
+          arc_data <- sv_arcs_data %>% dplyr::filter(orientation == orient)
+          if (nrow(arc_data) > 0) {
+            gCN <- gCN +
+              ggplot2::geom_path(
+                data = arc_data,
+                ggplot2::aes(x = idx, y = y, group = arc_id),
+                color = as.vector(SV_orientation_colors[orient]),
+                alpha = sv_arc_alpha,
+                size = svwidth
+              )
+          }
+        }
+      }
+    }
+
+    # Now add CN points on top
+    gCN <- gCN +
+      ggplot2::geom_point(ggplot2::aes(col = .data[[statecol]]),
                           show.legend = TRUE,
-                          size = pointsize, 
-                          alpha = alphaval, 
+                          size = pointsize,
+                          alpha = alphaval,
                           shape = 16) +
       ggplot2::scale_color_manual(
         name = "Allele Specific CN",
@@ -766,7 +1216,30 @@ plotCNprofile <- function(CNbins,
         legend.position = "none"
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans) +
+      {
+        if (use_secondary_axis && !is.null(max_read_count)) {
+          # Determine secondary axis transformation based on y_axis_trans
+          if (y_axis_trans == "squashy") {
+            # Inverse squashy transform before converting to read counts
+            sec_trans <- ~ squashy_trans()$inverse(.) * (max_read_count / maxCN)
+          } else {
+            # Identity transform, direct linear scaling
+            sec_trans <- ~ . * max_read_count / maxCN
+          }
+
+          ggplot2::scale_y_continuous(
+            breaks = ybreaks,
+            limits = c(miny, maxCN),
+            trans = y_axis_trans,
+            sec.axis = ggplot2::sec_axis(
+              transform = sec_trans,
+              name = "SV Read Support"
+            )
+          )
+        } else {
+          ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans)
+        }
+      } +
       ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -798,12 +1271,8 @@ plotCNprofile <- function(CNbins,
     gCN <- gCN +
       ggplot2::geom_vline(data = datidx, ggplot2::aes(xintercept = idx), lty = annotateregions_linetype, size = 0.3, alpha = 0.5)
   }
-  
-  if (!is.null(SV) & !is.null(chrfilt)){
-    SV <- dplyr::filter(SV, chromosome_1 %in% chrfilt & chromosome_2 %in% chrfilt)
-  }
 
-  if (!is.null(SV) && nrow(SV) > 0) {
+  if (!is.null(SV) && nrow(SV) > 0 && sv_style %in% c("curves", "both")) {
     binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
     svpl <- plottinglistSV(SV, chrfilt = chrfilt, binsize = binsize)
     pl$CNbins <- dplyr::left_join(getBins(binsize = binsize), pl$CNbins)
@@ -847,7 +1316,7 @@ plotCNprofile <- function(CNbins,
         )
     }
   }
-  
+
   if (!is.null(overwrite_color)){
     gCN <- gCN + 
       ggplot2::scale_color_manual(values = overwrite_color) +

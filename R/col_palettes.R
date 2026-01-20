@@ -117,6 +117,15 @@ SV_colors <- c(
   `Translocation` = "#313A3A"
 )
 
+# Orientation-based SV colors
+SV_orientation_colors <- c(
+  `+-` = "#E63946",        # Red: head-to-head
+  `-+` = "#457B9D",        # Blue: tail-to-tail
+  `++` = "#2A9D8F",        # Teal: same forward
+  `--` = "#F4A261",        # Orange: same reverse
+  `Translocation` = "#264653"  # Dark grey: inter-chromosomal
+)
+
 #' @export
 scCN_cols <- function(...) {
   cols <- c(...)
@@ -170,6 +179,15 @@ scCNstate_cols <- function(...) {
   }
 
   scCNstate_colors[cols]
+}
+
+#' @export
+SV_orientation_cols <- function(...) {
+  cols <- c(...)
+  if (is.null(cols)) {
+    return(SV_orientation_colors)
+  }
+  SV_orientation_colors[cols]
 }
 
 # lighten <- function(color, factor = 1.4) {
