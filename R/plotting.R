@@ -1156,6 +1156,13 @@ plotCNprofile <- function(CNbins,
           alpha = sv_arc_alpha,
           size = svwidth * 0.5,
           show.legend = show_sv_legend
+        ) +
+        ggplot2::geom_point(
+          data = sv_points_data,
+          ggplot2::aes(x = idx, y = y_scaled, color = orientation),
+          alpha = sv_arc_alpha,
+          size = sv_point_size,
+          show.legend = show_sv_legend
         )
 
       # Add arcs if available
@@ -1192,6 +1199,13 @@ plotCNprofile <- function(CNbins,
               color = as.vector(SV_orientation_colors[orient]),
               alpha = sv_arc_alpha,
               size = svwidth * 0.5
+            ) +
+            ggplot2::geom_point(
+              data = orient_data,
+              ggplot2::aes(x = idx, y = y_scaled),
+              color = as.vector(SV_orientation_colors[orient]),
+              alpha = sv_arc_alpha,
+              size = sv_point_size
             )
         }
       }
@@ -1280,6 +1294,13 @@ plotCNprofile <- function(CNbins,
           alpha = sv_arc_alpha,
           size = svwidth * 0.5,
           show.legend = show_sv_legend
+        ) +
+        ggplot2::geom_point(
+          data = sv_points_data,
+          ggplot2::aes(x = idx, y = y_scaled, color = orientation),
+          alpha = sv_arc_alpha,
+          size = sv_point_size,
+          show.legend = show_sv_legend
         )
 
       # Add arcs if available
@@ -1316,6 +1337,13 @@ plotCNprofile <- function(CNbins,
               color = as.vector(SV_orientation_colors[orient]),
               alpha = sv_arc_alpha,
               size = svwidth * 0.5
+            ) +
+            ggplot2::geom_point(
+              data = orient_data,
+              ggplot2::aes(x = idx, y = y_scaled),
+              color = as.vector(SV_orientation_colors[orient]),
+              alpha = sv_arc_alpha,
+              size = sv_point_size
             )
         }
       }
