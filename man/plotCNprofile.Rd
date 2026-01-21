@@ -35,7 +35,6 @@ plotCNprofile(
   ideogram = FALSE,
   overwrite_color = NULL,
   sv_style = "curves",
-  sv_point_size = 2,
   sv_arc_alpha = 0.3,
   sv_arc_height = 0.2,
   show_sv_read_axis = TRUE,
@@ -102,8 +101,6 @@ plotCNprofile(
 \item{ideogram}{plot ideogram at the top, default = TRUE}
 
 \item{sv_style}{visualization style for structural variants: "curves" (default, bezier curves), "lines_and_arcs" (colored lines with arcs), or "both"}
-
-\item{sv_point_size}{size of SV breakpoint points when using lines_and_arcs style, default = 2}
 
 \item{sv_arc_alpha}{transparency of SV arcs when using lines_and_arcs style, default = 0.3}
 

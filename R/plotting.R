@@ -909,7 +909,6 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param genome genome to use, default = "hg19" (only used for ideogram)
 #' @param ideogram plot ideogram at the top, default = TRUE
 #' @param sv_style visualization style for structural variants: "curves" (default, bezier curves), "lines_and_arcs" (colored lines with arcs), or "both"
-#' @param sv_point_size size of SV breakpoint points when using lines_and_arcs style, default = 2
 #' @param sv_arc_alpha transparency of SV arcs when using lines_and_arcs style, default = 0.3
 #' @param sv_arc_height height of SV arcs as fraction of maxCN when using lines_and_arcs style, default = 0.2
 #' @param show_sv_read_axis show secondary y-axis for SV read support when using lines_and_arcs style, default = TRUE. Works with both identity and squashy y-axis transformations.
@@ -953,7 +952,6 @@ plotCNprofile <- function(CNbins,
                           ideogram = FALSE,
                           overwrite_color = NULL,
                           sv_style = "curves",
-                          sv_point_size = 2,
                           sv_arc_alpha = 0.3,
                           sv_arc_height = 0.2,
                           show_sv_read_axis = TRUE,
@@ -1156,13 +1154,6 @@ plotCNprofile <- function(CNbins,
           alpha = sv_arc_alpha,
           size = svwidth * 0.5,
           show.legend = show_sv_legend
-        ) +
-        ggplot2::geom_point(
-          data = sv_points_data,
-          ggplot2::aes(x = idx, y = y_scaled, color = orientation),
-          alpha = sv_arc_alpha,
-          size = sv_point_size,
-          show.legend = show_sv_legend
         )
 
       # Add arcs if available
@@ -1199,13 +1190,6 @@ plotCNprofile <- function(CNbins,
               color = as.vector(SV_orientation_colors[orient]),
               alpha = sv_arc_alpha,
               size = svwidth * 0.5
-            ) +
-            ggplot2::geom_point(
-              data = orient_data,
-              ggplot2::aes(x = idx, y = y_scaled),
-              color = as.vector(SV_orientation_colors[orient]),
-              alpha = sv_arc_alpha,
-              size = sv_point_size
             )
         }
       }
@@ -1294,13 +1278,6 @@ plotCNprofile <- function(CNbins,
           alpha = sv_arc_alpha,
           size = svwidth * 0.5,
           show.legend = show_sv_legend
-        ) +
-        ggplot2::geom_point(
-          data = sv_points_data,
-          ggplot2::aes(x = idx, y = y_scaled, color = orientation),
-          alpha = sv_arc_alpha,
-          size = sv_point_size,
-          show.legend = show_sv_legend
         )
 
       # Add arcs if available
@@ -1337,13 +1314,6 @@ plotCNprofile <- function(CNbins,
               color = as.vector(SV_orientation_colors[orient]),
               alpha = sv_arc_alpha,
               size = svwidth * 0.5
-            ) +
-            ggplot2::geom_point(
-              data = orient_data,
-              ggplot2::aes(x = idx, y = y_scaled),
-              color = as.vector(SV_orientation_colors[orient]),
-              alpha = sv_arc_alpha,
-              size = sv_point_size
             )
         }
       }
