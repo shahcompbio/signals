@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.12.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.13.0</span>
       </span>
     </div>
 
@@ -96,6 +96,12 @@
 <span>  positionticks <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ideogram <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  overwrite_color <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  sv_style <span class="op">=</span> <span class="st">"curves"</span>,</span>
+<span>  sv_arc_alpha <span class="op">=</span> <span class="fl">0.3</span>,</span>
+<span>  sv_arc_height <span class="op">=</span> <span class="fl">0.2</span>,</span>
+<span>  show_sv_read_axis <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  sv_read_axis_scale <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  show_sv_legend <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -169,7 +175,7 @@
 
 
 <dt id="arg-sv">SV<a class="anchor" aria-label="anchor" href="#arg-sv"></a></dt>
-<dd><p>Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins.</p></dd>
+<dd><p>Default is NULL. If a dataframe with structural variant position is passed it will add rearrangement links between bins. For lines_and_arcs style, SV must include columns: strand_1, strand_2 (values '+' or '-'), and read_count.</p></dd>
 
 
 <dt id="arg-svcol">SVcol<a class="anchor" aria-label="anchor" href="#arg-svcol"></a></dt>
@@ -214,6 +220,30 @@
 
 <dt id="arg-ideogram">ideogram<a class="anchor" aria-label="anchor" href="#arg-ideogram"></a></dt>
 <dd><p>plot ideogram at the top, default = TRUE</p></dd>
+
+
+<dt id="arg-sv-style">sv_style<a class="anchor" aria-label="anchor" href="#arg-sv-style"></a></dt>
+<dd><p>visualization style for structural variants: "curves" (default, bezier curves), "lines_and_arcs" (colored lines with arcs), or "both"</p></dd>
+
+
+<dt id="arg-sv-arc-alpha">sv_arc_alpha<a class="anchor" aria-label="anchor" href="#arg-sv-arc-alpha"></a></dt>
+<dd><p>transparency of SV arcs when using lines_and_arcs style, default = 0.3</p></dd>
+
+
+<dt id="arg-sv-arc-height">sv_arc_height<a class="anchor" aria-label="anchor" href="#arg-sv-arc-height"></a></dt>
+<dd><p>height of SV arcs as fraction of maxCN when using lines_and_arcs style, default = 0.2</p></dd>
+
+
+<dt id="arg-show-sv-read-axis">show_sv_read_axis<a class="anchor" aria-label="anchor" href="#arg-show-sv-read-axis"></a></dt>
+<dd><p>show secondary y-axis for SV read support when using lines_and_arcs style, default = TRUE. Works with both identity and squashy y-axis transformations.</p></dd>
+
+
+<dt id="arg-sv-read-axis-scale">sv_read_axis_scale<a class="anchor" aria-label="anchor" href="#arg-sv-read-axis-scale"></a></dt>
+<dd><p>maximum value for SV read support axis (auto-scaled if NULL), default = NULL</p></dd>
+
+
+<dt id="arg-show-sv-legend">show_sv_legend<a class="anchor" aria-label="anchor" href="#arg-show-sv-legend"></a></dt>
+<dd><p>show legend for SV orientations when using lines_and_arcs style, default = FALSE</p></dd>
 
 </dl></div>
     <div id="value">
