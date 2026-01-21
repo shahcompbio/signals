@@ -382,6 +382,79 @@ generate_sv_arcs <- function(SV, y_start, y_end, arc_height_factor = 0.2, n_poin
   return(arcs_df)
 }
 
+#' Get SV Orientation Legend for lines_and_arcs Style
+#'
+#' Creates a standalone legend showing the five SV orientation categories
+#' used in the lines_and_arcs visualization style. Useful for manual plot
+#' composition when the embedded legend does not display correctly.
+#'
+#' @param legend_title Character string for legend title. Default: "SV Orientation"
+#' @param text_size Numeric size for legend text. Default: 10
+#' @param title_size Numeric size for legend title. Default: 11
+#' @param direction Character string specifying legend direction. Either "vertical"
+#'   (default) or "horizontal".
+#'
+#' @return A ggplot grob containing the legend, suitable for use with
+#'   \code{cowplot::plot_grid()} or similar layout functions.
+#'
+#' @examples
+#' \dontrun{
+#' # Create plot without embedded legend
+#' p <- plotCNprofile(CNbins, SV = svs,
+#'                    sv_style = "lines_and_arcs",
+#'                    legend.position = "none")
+#'
+#' # Get vertical legend (default)
+#' leg <- get_sv_lines_and_arcs_legend()
+#'
+#' # Get horizontal legend
+#' leg_horiz <- get_sv_lines_and_arcs_legend(direction = "horizontal")
+#'
+#' # Combine
+#' cowplot::plot_grid(p, leg, rel_widths = c(1, 0.2))
+#' }
+#'
+#' @export
+get_sv_lines_and_arcs_legend <- function(legend_title = "SV Orientation",
+                                          text_size = 10,
+                                          title_size = 11,
+                                          direction = "vertical") {
+
+  # Validate direction parameter
+  if (!direction %in% c("vertical", "horizontal")) {
+    stop("direction must be either 'vertical' or 'horizontal'")
+  }
+
+  # Create minimal dummy data with all 5 orientation categories
+  dummy_data <- data.frame(
+    x = 1:5,
+    y = 1:5,
+    orientation = factor(names(SV_orientation_colors),
+                        levels = names(SV_orientation_colors))
+  )
+
+  # Create dummy plot with SV orientation color scale
+  dummy_plot <- ggplot2::ggplot(dummy_data, ggplot2::aes(x = x, y = y, color = orientation)) +
+    ggplot2::geom_point(size = 2, alpha = 1) +
+    ggplot2::scale_color_manual(
+      name = legend_title,
+      values = SV_orientation_colors,
+      breaks = names(SV_orientation_colors),
+      labels = names(SV_orientation_colors),
+      guide = ggplot2::guide_legend(override.aes = list(size = 2, alpha = 1))
+    ) +
+    ggplot2::theme(
+      legend.title = ggplot2::element_text(size = title_size),
+      legend.text = ggplot2::element_text(size = text_size),
+      legend.direction = direction
+    )
+
+  # Extract and return the legend grob
+  legend <- cowplot::get_legend(dummy_plot)
+
+  return(legend)
+}
+
 #' @export
 plotSV <- function(breakpoints,
                    chrfilt = NULL,
@@ -1089,8 +1162,7 @@ plotCNprofile <- function(CNbins,
       ggplot2::theme(
         axis.title.y = ggplot2::element_blank(),
         axis.text.y = ggplot2::element_blank(),
-        axis.ticks.y = ggplot2::element_blank(),
-        legend.position = "none"
+        axis.ticks.y = ggplot2::element_blank()
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       {
@@ -1214,8 +1286,7 @@ plotCNprofile <- function(CNbins,
       ggplot2::theme(
         axis.title.y = ggplot2::element_blank(),
         axis.text.y = ggplot2::element_blank(),
-        axis.ticks.y = ggplot2::element_blank(),
-        legend.position = "none"
+        axis.ticks.y = ggplot2::element_blank()
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       {

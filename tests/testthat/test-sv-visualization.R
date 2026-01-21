@@ -254,3 +254,61 @@ test_that("plotCNprofile with lines_and_arcs and squashy transform works", {
 
   expect_true(inherits(p_identity, "ggplot"))
 })
+
+test_that("get_sv_lines_and_arcs_legend returns a legend grob", {
+  leg <- get_sv_lines_and_arcs_legend()
+
+  # Check it returns a grob
+  expect_s3_class(leg, "gtable")
+
+  # Check it's not empty
+  expect_true(length(leg$grobs) > 0)
+})
+
+test_that("get_sv_lines_and_arcs_legend accepts custom parameters", {
+  leg <- get_sv_lines_and_arcs_legend(
+    legend_title = "Custom Title",
+    text_size = 12,
+    title_size = 14
+  )
+
+  expect_s3_class(leg, "gtable")
+})
+
+test_that("get_sv_lines_and_arcs_legend can be combined with plotCNprofile", {
+  # Create plot without legend using mock data
+  p <- plotCNprofile(mock_CNbins,
+                     cellid = "test_cell",
+                     SV = mock_SV,
+                     sv_style = "lines_and_arcs",
+                     legend.position = "none",
+                     chrfilt = c("11", "6"))
+
+  # Get legend
+  leg <- get_sv_lines_and_arcs_legend()
+
+  # Combine with cowplot
+  combined <- cowplot::plot_grid(p, leg, rel_widths = c(1, 0.2))
+
+  expect_s3_class(combined, "ggplot")
+})
+
+test_that("get_sv_lines_and_arcs_legend supports horizontal direction", {
+  # Test vertical (default)
+  leg_vert <- get_sv_lines_and_arcs_legend(direction = "vertical")
+  expect_s3_class(leg_vert, "gtable")
+
+  # Test horizontal
+  leg_horiz <- get_sv_lines_and_arcs_legend(direction = "horizontal")
+  expect_s3_class(leg_horiz, "gtable")
+
+  # Dimensions should be different for horizontal vs vertical
+  expect_false(identical(dim(leg_vert), dim(leg_horiz)))
+})
+
+test_that("get_sv_lines_and_arcs_legend validates direction parameter", {
+  expect_error(
+    get_sv_lines_and_arcs_legend(direction = "invalid"),
+    "direction must be either 'vertical' or 'horizontal'"
+  )
+})
