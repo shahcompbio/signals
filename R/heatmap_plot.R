@@ -411,15 +411,13 @@ make_left_annot_generic <- function(dfanno,
                                    show_legend = TRUE,
                                    annofontsize = 14,
                                    anno_width = 0.4) {
-  # Convert to data.frame if not already
-  if (!is.data.frame(dfanno)) {
-    if (inherits(dfanno, "data.table") || inherits(dfanno, "tbl_df") || inherits(dfanno, "tbl")) {
-      message("Converting dfanno from ", class(dfanno)[1], " to data.frame")
-      dfanno <- as.data.frame(dfanno)
-    } else {
-      warning("dfanno was converted to data.frame from ", class(dfanno)[1])
-      dfanno <- as.data.frame(dfanno)
-    }
+  # Convert to data.frame if needed
+  if (inherits(dfanno, "data.table") || inherits(dfanno, "tbl_df") || inherits(dfanno, "tbl")) {
+    message("Converting dfanno from ", class(dfanno)[1], " to data.frame")
+    dfanno <- as.data.frame(dfanno)
+  } else if (!is.data.frame(dfanno)) {
+    warning("dfanno was converted to data.frame from ", class(dfanno)[1])
+    dfanno <- as.data.frame(dfanno)
   }
   
   # Check if cell_id column exists
@@ -1405,14 +1403,12 @@ plotHeatmap <- function(cn,
   }
   if (!is.null(annotations)) {
     # Validate and convert annotations type if needed
-    if (!is.data.frame(annotations)) {
-      if (inherits(annotations, "data.table") || inherits(annotations, "tbl_df") || inherits(annotations, "tbl")) {
-        message("Converting annotations from ", class(annotations)[1], " to data.frame")
-        annotations <- as.data.frame(annotations)
-      } else {
-        warning("annotations is not a data.frame, data.table, or tibble. Attempting conversion to data.frame")
-        annotations <- as.data.frame(annotations)
-      }
+    if (inherits(annotations, "data.table") || inherits(annotations, "tbl_df") || inherits(annotations, "tbl")) {
+      message("Converting annotations from ", class(annotations)[1], " to data.frame")
+      annotations <- as.data.frame(annotations)
+    } else if (!is.data.frame(annotations)) {
+      warning("annotations is not a data.frame, data.table, or tibble. Attempting conversion to data.frame")
+      annotations <- as.data.frame(annotations)
     }
     row.names(annotations) <- annotations$cell_id
     annotations <- annotations[ordered_cell_ids, ]
