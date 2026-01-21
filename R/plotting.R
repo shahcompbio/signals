@@ -906,15 +906,23 @@ plotCNprofile <- function(CNbins,
     
     if (nrow(sv_points_data) > 0) {
       # Determine max read count for scaling
-      max_read_count <- ifelse(
-        is.null(sv_read_axis_scale),
-        max(sv_points_data$read_count, na.rm = TRUE) * 1.1,
-        sv_read_axis_scale
-      )
+      if (is.null(sv_read_axis_scale)) {
+        max_read_count <- max(sv_points_data$read_count, na.rm = TRUE) * 1.1
+      } else {
+        max_read_count <- sv_read_axis_scale
+      }
+      if (!is.finite(max_read_count) || max_read_count <= 0) {
+        max_read_count <- 0
+      }
       
       # Transform read_count to CN scale
-      sv_points_data <- sv_points_data %>%
-        dplyr::mutate(y_scaled = (read_count / max_read_count) * maxCN)
+      if (max_read_count > 0) {
+        sv_points_data <- sv_points_data %>%
+          dplyr::mutate(y_scaled = (read_count / max_read_count) * maxCN)
+      } else {
+        sv_points_data <- sv_points_data %>%
+          dplyr::mutate(y_scaled = 0)
+      }
       
       # Generate arcs
       # Add sv_id to original SV data to track pairings
@@ -971,7 +979,7 @@ plotCNprofile <- function(CNbins,
       }
       
       # Check if we should use secondary axis
-      use_secondary_axis <- show_sv_read_axis
+      use_secondary_axis <- show_sv_read_axis && max_read_count > 0
     }
   }
   
