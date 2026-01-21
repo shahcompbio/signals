@@ -221,6 +221,56 @@ CapStr <- function(y) {
   )
 }
 
+#' Flip SV Positions and Strands for Intra-Chromosomal SVs
+#'
+#' For intra-chromosomal SVs where position_1 > position_2, flip the positions
+#' and strands to ensure position_1 < position_2. This normalizes SV data for
+#' consistent downstream processing.
+#'
+#' @param SV Data frame with SV data containing columns: chromosome_1, chromosome_2,
+#'   position_1, position_2, strand_1, strand_2
+#'
+#' @return SV data frame with positions and strands flipped where needed
+#'
+#' @keywords internal
+flip_sv_positions <- function(SV) {
+  if (is.null(SV) || nrow(SV) == 0) {
+    return(SV)
+  }
+
+  # Check for required columns
+  required_cols <- c("chromosome_1", "chromosome_2", "position_1", "position_2",
+                     "strand_1", "strand_2")
+  missing_cols <- setdiff(required_cols, names(SV))
+  if (length(missing_cols) > 0) {
+    stop(paste0("SV data missing required columns for position flipping: ",
+                paste(missing_cols, collapse = ", ")))
+  }
+
+  # Identify intra-chromosomal SVs where position_1 > position_2
+  needs_flip <- SV$chromosome_1 == SV$chromosome_2 & SV$position_1 > SV$position_2
+  n_flipped <- sum(needs_flip, na.rm = TRUE)
+
+  # Issue warning if any SVs need flipping
+  if (n_flipped > 0) {
+    warning(sprintf(
+      "Flipped positions and strands for %d intra-chromosomal SV(s) where position_1 > position_2",
+      n_flipped
+    ))
+
+    # Flip positions and strands
+    SV_flipped <- SV
+    SV_flipped$position_1[needs_flip] <- SV$position_2[needs_flip]
+    SV_flipped$position_2[needs_flip] <- SV$position_1[needs_flip]
+    SV_flipped$strand_1[needs_flip] <- SV$strand_2[needs_flip]
+    SV_flipped$strand_2[needs_flip] <- SV$strand_1[needs_flip]
+
+    return(SV_flipped)
+  }
+
+  return(SV)
+}
+
 classify_sv_orientation <- function(SV) {
   # Classify SV orientation based on strand_1, strand_2, and chromosome_1/chromosome_2
   # Returns vector of orientation categories: "+-", "-+", "++", "--", "Translocation"
@@ -959,6 +1009,11 @@ plotCNprofile <- function(CNbins,
     SV <- dplyr::filter(SV, chromosome_1 %in% chrfilt & chromosome_2 %in% chrfilt)
   }
 
+  # Flip positions and strands for intra-chromosomal SVs where position_1 > position_2
+  if (!is.null(SV)) {
+    SV <- flip_sv_positions(SV)
+  }
+
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
     plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, positionticks = positionticks,
@@ -987,7 +1042,21 @@ plotCNprofile <- function(CNbins,
       if (!is.finite(max_read_count) || max_read_count <= 0) {
         max_read_count <- 0
       }
-      
+
+      # Cap read counts that exceed sv_read_axis_scale
+      if (!is.null(sv_read_axis_scale) && max_read_count > 0) {
+        n_capped <- sum(sv_points_data$read_count > sv_read_axis_scale, na.rm = TRUE)
+        if (n_capped > 0) {
+          max_capped <- max(sv_points_data$read_count[sv_points_data$read_count > sv_read_axis_scale], na.rm = TRUE)
+          warning(sprintf(
+            "Capped %d SV breakpoint(s) with read_count > sv_read_axis_scale (%d). Maximum capped value was %d.",
+            n_capped, sv_read_axis_scale, max_capped
+          ))
+          sv_points_data <- sv_points_data %>%
+            dplyr::mutate(read_count = ifelse(read_count > sv_read_axis_scale, sv_read_axis_scale, read_count))
+        }
+      }
+
       # Transform read_count to CN scale
       if (max_read_count > 0) {
         sv_points_data <- sv_points_data %>%

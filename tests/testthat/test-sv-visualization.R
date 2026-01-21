@@ -312,3 +312,139 @@ test_that("get_sv_lines_and_arcs_legend validates direction parameter", {
     "direction must be either 'vertical' or 'horizontal'"
   )
 })
+
+test_that("flip_sv_positions handles intra-chromosomal SVs with reversed positions", {
+  # Create mock SV data with reversed positions
+  mock_SV_reversed <- data.frame(
+    chromosome_1 = c("11", "11", "11", "6"),
+    chromosome_2 = c("11", "11", "6", "11"),  # Mix of intra and inter-chromosomal
+    position_1 = c(20e6, 30e6, 10e6, 5e6),    # Two need flipping
+    position_2 = c(10e6, 25e6, 20e6, 15e6),   # position_1 > position_2 for rows 1,2
+    strand_1 = c("+", "-", "+", "-"),
+    strand_2 = c("-", "+", "-", "+"),
+    read_count = c(100, 150, 200, 120),
+    rearrangement_type = c("deletion", "duplication", "translocation", "deletion"),
+    type = c("DEL", "DUP", "TRA", "DEL")
+  )
+
+  # Should give warning
+  expect_warning(
+    result <- signals:::flip_sv_positions(mock_SV_reversed),
+    "Flipped positions and strands for 2 intra-chromosomal SV"
+  )
+
+  # Check that positions are now correct for intra-chromosomal SVs
+  intra <- result[result$chromosome_1 == result$chromosome_2, ]
+  expect_true(all(intra$position_1 < intra$position_2))
+
+  # Check that strands were also flipped for row 1
+  expect_equal(result$strand_1[1], "-")  # Was "+"
+  expect_equal(result$strand_2[1], "+")  # Was "-"
+
+  # Check that strands were also flipped for row 2
+  expect_equal(result$strand_1[2], "+")  # Was "-"
+  expect_equal(result$strand_2[2], "-")  # Was "+"
+
+  # Check that inter-chromosomal SV (row 3) was NOT touched
+  expect_equal(result$position_1[3], 10e6)
+  expect_equal(result$position_2[3], 20e6)
+  expect_equal(result$strand_1[3], "+")
+  expect_equal(result$strand_2[3], "-")
+})
+
+test_that("flip_sv_positions handles already-correct positions", {
+  # Create mock SV data with correct positions (position_1 < position_2)
+  mock_SV_correct <- data.frame(
+    chromosome_1 = c("11", "11"),
+    chromosome_2 = c("11", "11"),
+    position_1 = c(10e6, 20e6),
+    position_2 = c(20e6, 30e6),
+    strand_1 = c("+", "-"),
+    strand_2 = c("-", "+"),
+    read_count = c(100, 150),
+    rearrangement_type = c("deletion", "duplication"),
+    type = c("DEL", "DUP")
+  )
+
+  # Should NOT give warning
+  expect_silent(
+    result <- signals:::flip_sv_positions(mock_SV_correct)
+  )
+
+  # Data should be unchanged
+  expect_equal(result, mock_SV_correct)
+})
+
+test_that("flip_sv_positions handles missing columns", {
+  # Create mock SV data missing strand columns
+  mock_SV_incomplete <- data.frame(
+    chromosome_1 = c("11"),
+    chromosome_2 = c("11"),
+    position_1 = c(20e6),
+    position_2 = c(10e6)
+    # Missing strand_1, strand_2
+  )
+
+  # Should error
+  expect_error(
+    signals:::flip_sv_positions(mock_SV_incomplete),
+    "SV data missing required columns"
+  )
+})
+
+test_that("plotCNprofile calls flip_sv_positions", {
+  # Create mock data with reversed positions
+  mock_SV_reversed <- data.frame(
+    chromosome_1 = c("11", "11"),
+    chromosome_2 = c("11", "11"),
+    position_1 = c(20e6, 30e6),
+    position_2 = c(10e6, 25e6),
+    strand_1 = c("+", "-"),
+    strand_2 = c("-", "+"),
+    read_count = c(100, 150),
+    rearrangement_type = c("deletion", "duplication"),
+    type = c("DEL", "DUP")
+  )
+
+  # Plotting should trigger the warning
+  expect_warning(
+    p <- plotCNprofile(mock_CNbins,
+                       cellid = "test_cell",
+                       SV = mock_SV_reversed,
+                       sv_style = "lines_and_arcs",
+                       chrfilt = c("11", "6")),
+    "Flipped positions and strands for 2 intra-chromosomal SV"
+  )
+
+  # Plot should still be created successfully
+  expect_true(inherits(p, "ggplot"))
+})
+
+test_that("plotCNprofile caps read_count when exceeding sv_read_axis_scale", {
+  # Create mock data with high read counts
+  mock_SV_high_reads <- data.frame(
+    chromosome_1 = c("11", "11"),
+    chromosome_2 = c("11", "11"),
+    position_1 = c(10e6, 20e6),
+    position_2 = c(15e6, 25e6),
+    strand_1 = c("+", "-"),
+    strand_2 = c("-", "+"),
+    read_count = c(500, 1000),  # High read counts
+    rearrangement_type = c("deletion", "duplication"),
+    type = c("DEL", "DUP")
+  )
+
+  # Should give a warning when sv_read_axis_scale is lower than max read_count
+  expect_warning(
+    p <- plotCNprofile(mock_CNbins,
+                       cellid = "test_cell",
+                       SV = mock_SV_high_reads,
+                       sv_style = "lines_and_arcs",
+                       sv_read_axis_scale = 200,
+                       chrfilt = c("11", "6")),
+    "Capped .* SV breakpoint\\(s\\) with read_count > sv_read_axis_scale"
+  )
+
+  # Plot should still be created successfully
+  expect_true(inherits(p, "ggplot"))
+})
