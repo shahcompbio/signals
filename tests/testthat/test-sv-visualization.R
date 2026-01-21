@@ -91,7 +91,16 @@ test_that("generate_sv_arcs creates valid paths", {
     orientation = c("+-", "-+", "++")
   )
   
-  arcs <- generate_sv_arcs(sv_with_idx, arc_height = 2, n_points = 10)
+  y_start <- c(1, 1.5, 2)
+  y_end <- c(1.2, 1.7, 2.2)
+  
+  arcs <- generate_sv_arcs(
+    sv_with_idx,
+    y_start = y_start,
+    y_end = y_end,
+    arc_height_factor = 0.5,
+    n_points = 10
+  )
   
   expect_true(nrow(arcs) > 0)
   expect_true(all(c("idx", "y", "arc_id", "orientation") %in% names(arcs)))
@@ -105,11 +114,21 @@ test_that("generate_sv_arcs creates valid paths", {
     idx_2 = c(10, 20),
     orientation = c("+-", "-+")
   )
-  arcs_same <- generate_sv_arcs(sv_same, arc_height = 2)
+  arcs_same <- generate_sv_arcs(
+    sv_same,
+    y_start = c(1, 1),
+    y_end = c(1.2, 1.2),
+    arc_height_factor = 0.5
+  )
   expect_equal(nrow(arcs_same), 0)
   
   # Test with empty input
-  empty_arcs <- generate_sv_arcs(data.frame(), arc_height = 2)
+  empty_arcs <- generate_sv_arcs(
+    data.frame(),
+    y_start = numeric(0),
+    y_end = numeric(0),
+    arc_height_factor = 0.5
+  )
   expect_equal(nrow(empty_arcs), 0)
 })
 
