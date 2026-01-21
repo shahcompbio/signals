@@ -1,3 +1,10 @@
+# signals 0.13.0
+
+* Add SV visualization with lines and arcs style showing orientation
+* Add automatic position and strand correction for SV data with reversed coordinates
+* Add SV legend support for orientation color coding
+* Fix SV read count axis scaling issues
+
 # signals 0.12.0
 
 * option to input cells to use for phasing for each chromosome
