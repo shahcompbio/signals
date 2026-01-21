@@ -167,6 +167,20 @@ test_that("plotCNprofile with sv_style = lines_and_arcs works", {
   expect_true(inherits(p_curves, "ggplot"))
 })
 
+test_that("plotCNprofile squashy axis with SV read axis works", {
+  p_squashy <- plotCNprofile(
+    mock_CNbins,
+    cellid = "test_cell",
+    SV = mock_SV,
+    sv_style = "lines_and_arcs",
+    chrfilt = c("11", "6"),
+    y_axis_trans = "squashy",
+    show_sv_read_axis = TRUE
+  )
+
+  expect_true(inherits(p_squashy, "ggplot"))
+})
+
 test_that("plotCNprofile validation catches invalid sv_style", {
   expect_error(
     plotCNprofile(mock_CNbins, SV = mock_SV, sv_style = "invalid"),

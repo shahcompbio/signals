@@ -1095,14 +1095,8 @@ plotCNprofile <- function(CNbins,
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       {
         if (use_secondary_axis && !is.null(max_read_count)) {
-          # Determine secondary axis transformation based on y_axis_trans
-          if (y_axis_trans == "squashy") {
-            # Inverse squashy transform before converting to read counts
-            sec_trans <- ~ squashy_trans()$inverse(.) * (max_read_count / maxCN)
-          } else {
-            # Identity transform, direct linear scaling
-            sec_trans <- ~ . * max_read_count / maxCN
-          }
+          # Secondary axis maps primary CN values to read counts
+          sec_trans <- ~ . * (max_read_count / maxCN)
 
           ggplot2::scale_y_continuous(
             breaks = ybreaks,
@@ -1226,14 +1220,8 @@ plotCNprofile <- function(CNbins,
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
       {
         if (use_secondary_axis && !is.null(max_read_count)) {
-          # Determine secondary axis transformation based on y_axis_trans
-          if (y_axis_trans == "squashy") {
-            # Inverse squashy transform before converting to read counts
-            sec_trans <- ~ squashy_trans()$inverse(.) * (max_read_count / maxCN)
-          } else {
-            # Identity transform, direct linear scaling
-            sec_trans <- ~ . * max_read_count / maxCN
-          }
+          # Secondary axis maps primary CN values to read counts
+          sec_trans <- ~ . * (max_read_count / maxCN)
 
           ggplot2::scale_y_continuous(
             breaks = ybreaks,
