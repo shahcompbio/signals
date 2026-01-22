@@ -412,10 +412,11 @@ make_left_annot_generic <- function(dfanno,
                                    annofontsize = 14,
                                    anno_width = 0.4) {
   # Convert to data.frame if needed
-  if (inherits(dfanno, "data.table") || inherits(dfanno, "tbl_df") || inherits(dfanno, "tbl")) {
+  if (inherits(dfanno, c("data.table", "tbl_df", "tbl"))) {
     message("Converting dfanno from ", class(dfanno)[1], " to data.frame")
     dfanno <- as.data.frame(dfanno)
-  } else if (!is.data.frame(dfanno)) {
+  }
+  if (!is.data.frame(dfanno)) {
     warning("dfanno was converted to data.frame from ", class(dfanno)[1])
     dfanno <- as.data.frame(dfanno)
   }
@@ -1403,10 +1404,11 @@ plotHeatmap <- function(cn,
   }
   if (!is.null(annotations)) {
     # Validate and convert annotations type if needed
-    if (inherits(annotations, "data.table") || inherits(annotations, "tbl_df") || inherits(annotations, "tbl")) {
+    if (inherits(annotations, c("data.table", "tbl_df", "tbl"))) {
       message("Converting annotations from ", class(annotations)[1], " to data.frame")
       annotations <- as.data.frame(annotations)
-    } else if (!is.data.frame(annotations)) {
+    }
+    if (!is.data.frame(annotations)) {
       warning("annotations is not a data.frame, data.table, or tibble. Attempting conversion to data.frame")
       annotations <- as.data.frame(annotations)
     }
