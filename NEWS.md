@@ -1,3 +1,7 @@
+# signals 0.13.1
+
+* Fix plotHeatmap annotation handling for data.table/tibble inputs
+
 # signals 0.13.0
 
 * Add SV visualization with lines and arcs style showing orientation
