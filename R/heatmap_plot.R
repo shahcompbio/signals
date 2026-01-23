@@ -1403,20 +1403,12 @@ plotHeatmap <- function(cn,
     names(clone_pal) <- clones_idx$clone_label
   }
   if (!is.null(annotations)) {
-    # Validate and convert annotations type if needed
-    if (inherits(annotations, c("data.table", "tbl_df", "tbl"))) {
-      message("Converting annotations from ", class(annotations)[1], " to data.frame")
-      annotations <- as.data.frame(annotations)
-    }
     if (!is.data.frame(annotations)) {
-      warning("annotations is not a data.frame, data.table, or tibble. Attempting conversion to data.frame")
+      warning("annotations is not a data.frame. Attempting conversion to data.frame")
       annotations <- as.data.frame(annotations)
     }
-    if (!"cell_id" %in% colnames(annotations)) {
-      stop("annotations must contain a 'cell_id' column")
-    }
-    row.names(annotations) <- annotations$cell_id
-    annotations <- annotations[ordered_cell_ids, ]
+    annotation_idx <- match(ordered_cell_ids, annotations$cell_id)
+    annotations <- annotations[annotation_idx, , drop = FALSE]
   }
   copynumber_hm <- make_copynumber_heatmap(copynumber,
     clones_formatted,
