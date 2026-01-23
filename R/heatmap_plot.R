@@ -1412,6 +1412,9 @@ plotHeatmap <- function(cn,
       warning("annotations is not a data.frame, data.table, or tibble. Attempting conversion to data.frame")
       annotations <- as.data.frame(annotations)
     }
+    if (!"cell_id" %in% colnames(annotations)) {
+      stop("annotations must contain a 'cell_id' column")
+    }
     row.names(annotations) <- annotations$cell_id
     annotations <- annotations[ordered_cell_ids, ]
   }
