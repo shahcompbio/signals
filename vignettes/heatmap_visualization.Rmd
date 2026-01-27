@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-devtools::load_all("/home/william1/bin/R/signals")
+library(signals)
 library(dplyr)
 ```
 
