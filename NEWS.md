@@ -1,3 +1,10 @@
+# signals 0.14.0
+
+* Add gene annotation feature to plotHeatmap with customizable positions and styling
+* Add chromosome ideogram (cytoband) visualization at the bottom of heatmaps
+* Add plotideogram and plotallbins parameters to visualize centromeric regions
+* Improve frequency annotation handling for BAF and state plots
+
 # signals 0.13.1
 
 * Fix plotHeatmap annotation handling for data.table/tibble inputs

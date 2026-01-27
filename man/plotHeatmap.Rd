@@ -50,6 +50,15 @@ plotHeatmap(
   rasterquality = 15,
   tree_width = 4,
   ladderize = TRUE,
+  plotallbins = FALSE,
+  plotideogram = FALSE,
+  genome = "hg19",
+  centromere_col = "#E8E8E8",
+  ideogram_height = 0.3,
+  gene_annotations = NULL,
+  gene_annotation_fontsize = NULL,
+  gene_link_height = 5,
+  gene_label_sep = "/",
   ...
 )
 }
@@ -110,7 +119,7 @@ plotHeatmap(
 
 \item{chrlabels}{include chromosome labels or not, boolean}
 
-\item{labeladjust}{}
+\item{labeladjust}{Adjustment for chromosome label position}
 
 \item{SV}{sv data frame}
 
@@ -120,7 +129,7 @@ plotHeatmap(
 
 \item{Mb}{Use Mb ticks when plotting single chromosome}
 
-\item{fillgenome}{fill in any missing bins and add NA to centromeric regions}
+\item{fillgenome}{Deprecated. Use plotallbins instead.}
 
 \item{annotation_height}{Height of the annotations}
 
@@ -142,7 +151,26 @@ plotHeatmap(
 
 \item{tree_width}{Width of phylogenetic tree, default = 4}
 
-\item{ladderize}{ladderize the tree, default = TRUE, same as default in ggtree
+\item{ladderize}{ladderize the tree, default = TRUE, same as default in ggtree}
+
+\item{plotallbins}{Include all genomic bins in the heatmap, with centromeric regions displayed as NA (light grey). Default is FALSE.}
+
+\item{plotideogram}{Display chromosome ideogram (cytoband) annotation at the bottom of the heatmap. Requires plotallbins = TRUE. Default is FALSE.}
+
+\item{genome}{Genome assembly to use for ideogram and centromere identification. Either "hg19" or "hg38". Default is "hg19".}
+
+\item{centromere_col}{Color to use for centromeric regions when plotallbins = TRUE. Default is "#E8E8E8" (light grey).}
+
+\item{ideogram_height}{Height of the ideogram annotation in cm. Default is 0.3.}
+
+\item{gene_annotations}{Character vector of gene names to annotate at the top of the heatmap.
+Gene names must match the `ensembl_gene_symbol` column in `gene_locations` data. Default is NULL.}
+
+\item{gene_annotation_fontsize}{Font size for gene annotation labels. Defaults to `annofontsize` if NULL.}
+
+\item{gene_link_height}{Height of link lines connecting gene labels to positions, in mm. Default is 5.}
+
+\item{gene_label_sep}{Separator used when multiple genes fall within the same genomic bin. Default is "/".
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.}
 }

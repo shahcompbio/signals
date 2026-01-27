@@ -3,6 +3,78 @@ Mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
+#' Get centromeric bins
+#'
+#' Identifies genomic bins that overlap with centromeric regions based on cytoband data.
+#'
+#' @param genome Genome assembly, either "hg19" or "hg38". Default is "hg19".
+#' @param binsize Size of genomic bins in base pairs. Default is 500000 (500kb).
+#'
+#' @return A data.frame with chr, start, end columns for bins overlapping centromeres.
+#'
+#' @export
+get_centromere_bins <- function(genome = "hg19", binsize = 500000) {
+  data("cytoband_map", envir = environment())
+
+  # Get centromere regions (acen = acrocentric/centromeric)
+  centromeres <- cytoband_map[[genome]][V5 == "acen"]
+
+  if (nrow(centromeres) == 0) {
+    warning("No centromere data found for genome: ", genome)
+    return(data.frame(chr = character(), start = integer(), end = integer()))
+  }
+
+  # Remove "chr" prefix to match bin format
+  centromeres <- centromeres[, .(
+    chr = gsub("chr", "", V1),
+    cen_start = V2,
+    cen_end = V3
+  )]
+
+  # Get all bins for the genome
+  if (genome == "hg19") {
+    bins <- getBins(chrom.lengths = hg19_chrlength, binsize = binsize)
+  } else if (genome == "hg38") {
+    if (!exists("hg38_chrlength")) {
+      stop("hg38_chrlength not available. Please use hg19 or provide hg38 chromosome lengths.")
+    }
+    bins <- getBins(chrom.lengths = hg38_chrlength, binsize = binsize)
+  } else {
+    stop("Unsupported genome: ", genome, ". Use 'hg19' or 'hg38'.")
+  }
+
+  bins_dt <- data.table::as.data.table(bins)
+
+ # Find bins that overlap with centromeres
+  # A bin overlaps if: bin_start < cen_end AND bin_end > cen_start
+  centromere_bins <- bins_dt[centromeres,
+    on = .(chr, start < cen_end, end > cen_start),
+    nomatch = NULL,
+    .(chr = x.chr, start = x.start, end = x.end)
+  ]
+
+  # Remove duplicates (a bin might overlap multiple centromere bands)
+  centromere_bins <- unique(centromere_bins)
+
+  return(as.data.frame(centromere_bins))
+}
+
+# Sentinel value used to mark centromeric bins (distinct from NA which is used for spacers)
+CENTROMERE_SENTINEL <- -999
+
+#' Create copy number matrix for heatmap visualization
+#'
+#' @param CNbins Copy number data frame with chr, start, end, cell_id columns
+#' @param field Column to use for values in matrix
+#' @param maxval Maximum value to cap state at
+#' @param na.rm Remove rows with NA values
+#' @param fillna Fill NA values by propagating neighboring values
+#' @param fillnaplot Fill NA values while preserving centromeric gaps
+#' @param wholegenome Expand to all genomic bins (deprecated, use plotallbins)
+#' @param genome Genome assembly ("hg19" or "hg38")
+#' @param centromere Mark centromeric regions as NA after filling
+#' @param plotallbins Include all genomic bins, marking centromeres with sentinel value
+#'
 #' @export
 createCNmatrix <- function(CNbins,
                            field = "state",
@@ -12,20 +84,39 @@ createCNmatrix <- function(CNbins,
                            fillnaplot = FALSE,
                            wholegenome = FALSE,
                            genome = "hg19",
-                           centromere = FALSE) {
+                           centromere = FALSE,
+                           plotallbins = FALSE) {
   dfchr <- data.frame(chr = c(paste0(1:22), "X", "Y"), idx = seq(1:24))
   dfchr <- dplyr::filter(dfchr, chr %in% unique(CNbins$chr))
 
   CNbins <- data.table::as.data.table(CNbins)
+  binsize <- CNbins$end[1] - CNbins$start[1] + 1
 
-  if (wholegenome == TRUE){
-    genome <- as.data.table(getBins(binsize = CNbins$end[1] - CNbins$start[1]+1))
+  # plotallbins: expand to all bins and mark centromeres with sentinel value
+
+  if (plotallbins == TRUE) {
+    # Get all genomic bins
+    all_bins <- data.table::as.data.table(getBins(binsize = binsize))
+
+    # Get centromeric bins to mark with sentinel later
+    centromere_bins <- data.table::as.data.table(get_centromere_bins(genome = genome, binsize = binsize))
+    centromere_bins[, is_centromere := TRUE]
+
+    # Expand data for each cell
     CNbins <- lapply(unique(CNbins$cell_id),
-                function(x) merge(genome,
+                function(x) merge(all_bins,
                                   CNbins[cell_id == x],
-                                  on = c("chr", "start", "end"),
+                                  by = c("chr", "start", "end"),
+                                  all.x = TRUE)[, cell_id := x]) %>%
+              data.table::rbindlist(.)
+  } else if (wholegenome == TRUE) {
+    genome_bins <- data.table::as.data.table(getBins(binsize = binsize))
+    CNbins <- lapply(unique(CNbins$cell_id),
+                function(x) merge(genome_bins,
+                                  CNbins[cell_id == x],
+                                  by = c("chr", "start", "end"),
                                   all = TRUE)[, cell_id := x]) %>%
-              rbindlist(.)
+              data.table::rbindlist(.)
   }
 
   if (field == "state") {
@@ -45,34 +136,58 @@ createCNmatrix <- function(CNbins,
       .[order(idx, start)]
   }
 
-  if (fillnaplot == TRUE) {
-    
+  # For plotallbins: fill non-centromeric NAs, then set centromeres to sentinel value
+  if (plotallbins == TRUE) {
+    cell_cols <- names(cnmatrix)
+    cell_cols <- cell_cols[!cell_cols %in% c("chr", "start", "end", "idx", "width")]
+
+    # Mark centromeric bins before filling
+    cnmatrix_dt <- data.table::as.data.table(cnmatrix)
+    cnmatrix_dt <- merge(cnmatrix_dt, centromere_bins[, .(chr, start, end, is_centromere)],
+                         by = c("chr", "start", "end"), all.x = TRUE)
+    cnmatrix_dt[is.na(is_centromere), is_centromere := FALSE]
+
+    # Fill NA values (bidirectional within each chromosome)
+    cnmatrix <- cnmatrix_dt %>%
+      dplyr::as_tibble() %>%
+      dplyr::group_by(chr) %>%
+      tidyr::fill(tidyr::all_of(cell_cols), .direction = "downup") %>%
+      dplyr::ungroup()
+
+    # Set centromeric bins to sentinel value (not NA, so spacers remain distinct)
+    cnmatrix <- data.table::as.data.table(cnmatrix)
+    for (col in cell_cols) {
+      data.table::set(cnmatrix, i = which(cnmatrix$is_centromere), j = col, value = CENTROMERE_SENTINEL)
+    }
+    cnmatrix[, is_centromere := NULL]
+
+    # Re-sort by chromosome order
+    cnmatrix <- cnmatrix[dfchr, on = "chr"][order(idx, start)]
+  } else if (fillnaplot == TRUE) {
     colnames <- names(cnmatrix)
     colnames <- colnames[!colnames %in% c("chr", "start", "end", "idx", "width")]
-    
+
     #count proportion of rows that have NA values
     narows <- cnmatrix[, ..colnames]
     narows <- apply(narows, 1, function(x) sum(is.na(x))) / length(colnames)
     #remove the largest region of consecutive NA's, this will the centromere in most chroms
-    narowsdf <- cnmatrix[, 1:4] %>% 
-      dplyr::mutate(id = 1:dplyr::n()) %>% 
-      dplyr::mutate(isna = narows) %>% 
-      dplyr::mutate(runid = rleid(isna > 0.9)) %>% 
-      dplyr::add_count(runid) %>% 
-      dplyr::group_by(chr) %>% 
-      dplyr::mutate(maxn = max(n)) %>% 
-      dplyr::ungroup() %>% 
+    narowsdf <- cnmatrix[, 1:4] %>%
+      dplyr::mutate(id = 1:dplyr::n()) %>%
+      dplyr::mutate(isna = narows) %>%
+      dplyr::mutate(runid = rleid(isna > 0.9)) %>%
+      dplyr::add_count(runid) %>%
+      dplyr::group_by(chr) %>%
+      dplyr::mutate(maxn = max(n)) %>%
+      dplyr::ungroup() %>%
       dplyr::filter(isna & n == maxn & n > 9)
-    
+
     cnmatrix <- cnmatrix %>%
       dplyr::as_tibble() %>%
       tidyr::fill(., colnames, .direction = "downup")
-  }
-  
-  if (fillna == TRUE) {
+  } else if (fillna == TRUE) {
     colnames <- names(cnmatrix)
     colnames <- colnames[!colnames %in% c("chr", "start", "end", "idx", "width")]
-    
+
     cnmatrix <- cnmatrix %>%
       dplyr::as_tibble() %>%
       tidyr::fill(., tidyr::all_of(colnames), .direction = "updown")

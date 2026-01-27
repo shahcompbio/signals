@@ -794,6 +794,270 @@ make_bottom_annot <- function(copynumber,
   return(bottom_annot)
 }
 
+#' Create ideogram annotation for heatmap
+#'
+#' Creates a ComplexHeatmap annotation showing chromosome ideogram (cytobands)
+#' at the bottom of the heatmap.
+#'
+#' @param copynumber Copy number matrix with column names in format "chr:start:end"
+#' @param genome Genome assembly ("hg19" or "hg38"). Default is "hg19".
+#' @param ideogram_height Height of the ideogram annotation in cm. Default is 0.3.
+#'
+#' @return A ComplexHeatmap HeatmapAnnotation object
+#'
+#' @keywords internal
+make_ideogram_annotation <- function(copynumber,
+                                     genome = "hg19",
+                                     ideogram_height = 0.3) {
+  # Load cytoband data
+  data("cytoband_map", envir = environment())
+  cytobands <- cytoband_map[[genome]]
+
+  if (is.null(cytobands) || nrow(cytobands) == 0) {
+    warning("No cytoband data found for genome: ", genome)
+    return(NULL)
+  }
+
+  # Parse column names to get coordinates (format: "chr:start:end" or spacer columns "V*")
+  col_names <- colnames(copynumber)
+  n_cols <- length(col_names)
+
+  # Initialize stain type vector for all columns (use "spacer" for gaps)
+  stain_types <- rep("spacer", n_cols)
+
+  # Process each column
+  for (i in seq_len(n_cols)) {
+    col_name <- col_names[i]
+
+    # Skip spacer columns (contain "V" pattern from space_copynumber_columns)
+    if (grepl("^V[0-9]+$", col_name) || is.na(col_name)) {
+      next
+    }
+
+    # Parse coordinate from column name
+    parts <- strsplit(col_name, ":")[[1]]
+    if (length(parts) != 3) {
+      next
+    }
+
+    chr <- parts[1]
+    bin_start <- as.numeric(parts[2])
+    bin_end <- as.numeric(parts[3])
+    bin_mid <- (bin_start + bin_end) / 2
+
+    # Find matching cytoband (use midpoint of bin)
+    chr_with_prefix <- paste0("chr", chr)
+    matching_band <- cytobands[V1 == chr_with_prefix & V2 <= bin_mid & V3 > bin_mid]
+
+    if (nrow(matching_band) > 0) {
+      stain <- matching_band$V5[1]
+      if (stain %in% names(cyto_colors)) {
+        stain_types[i] <- stain
+      }
+    }
+  }
+
+  # Create color mapping with spacer as white
+  all_colors <- c(cyto_colors, spacer = "white")
+
+  # Create the annotation using a custom annotation function for colored bars
+  ideogram_annot <- ComplexHeatmap::HeatmapAnnotation(
+    ideogram = ComplexHeatmap::anno_simple(
+      stain_types,
+      col = all_colors,
+      height = grid::unit(ideogram_height, "cm")
+    ),
+    which = "column",
+    show_annotation_name = FALSE,
+    show_legend = FALSE
+  )
+
+  return(ideogram_annot)
+}
+
+#' Find column positions for gene annotations
+#'
+#' Maps gene names to their corresponding column indices in the copynumber matrix.
+#' Genes are matched to bins where the gene start position falls within the bin boundaries.
+#'
+#' @param copynumber Copy number matrix with column names in format "chr:start:end"
+#' @param gene_annotations Character vector of gene names to annotate
+#' @param genome Genome assembly ("hg19" or "hg38"). Default is "hg19".
+#' @param gene_label_sep Separator when multiple genes fall in the same bin. Default is "/".
+#'
+#' @return A list with components:
+#'   \item{at}{Integer vector of column indices}
+#'   \item{labels}{Character vector of gene labels}
+#'   Returns NULL if no genes are found in the matrix columns.
+#'
+#' @keywords internal
+find_gene_bin_positions <- function(copynumber,
+                                    gene_annotations,
+                                    genome = "hg19",
+                                    gene_label_sep = "/") {
+  # Load gene locations data
+
+  data("gene_locations", envir = environment())
+  gene_data <- gene_locations[[genome]]
+
+  if (is.null(gene_data) || nrow(gene_data) == 0) {
+    warning("No gene location data found for genome: ", genome)
+    return(NULL)
+  }
+
+  # Parse column names to get bin coordinates
+  col_names <- colnames(copynumber)
+  n_cols <- length(col_names)
+
+  # Build a data frame of non-spacer columns with their indices
+  col_info <- data.frame(
+    col_idx = integer(0),
+    chr = character(0),
+    start = numeric(0),
+    end = numeric(0),
+    stringsAsFactors = FALSE
+  )
+
+  for (i in seq_len(n_cols)) {
+    col_name <- col_names[i]
+
+    # Skip spacer columns (V1, V2, etc.)
+    if (grepl("^V[0-9]+$", col_name) || is.na(col_name)) {
+      next
+    }
+
+    # Parse coordinate from column name (format: "chr:start:end")
+    parts <- strsplit(col_name, ":")[[1]]
+    if (length(parts) != 3) {
+      next
+    }
+
+    col_info <- rbind(col_info, data.frame(
+      col_idx = i,
+      chr = parts[1],
+      start = as.numeric(parts[2]),
+      end = as.numeric(parts[3]),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  if (nrow(col_info) == 0) {
+    warning("No valid genomic bins found in copynumber matrix")
+    return(NULL)
+  }
+
+  # Find bin positions for each gene
+  gene_positions <- list()  # col_idx -> list of gene names
+  genes_not_found <- character(0)
+  genes_not_in_bins <- character(0)
+
+  for (gene in gene_annotations) {
+    # Find gene in gene_data
+    gene_row <- gene_data[gene_data$ensembl_gene_symbol == gene, ]
+
+    if (nrow(gene_row) == 0) {
+      genes_not_found <- c(genes_not_found, gene)
+      next
+    }
+
+    # Use first occurrence if multiple (some genes have multiple loci)
+    gene_chr <- gene_row$chr[1]
+    gene_start <- gene_row$start[1]
+
+    # Find matching bin: gene start falls within [bin_start, bin_end)
+    matching_idx <- which(
+      col_info$chr == gene_chr &
+      col_info$start <= gene_start &
+      col_info$end > gene_start
+    )
+
+    if (length(matching_idx) == 0) {
+      genes_not_in_bins <- c(genes_not_in_bins, gene)
+      next
+    }
+
+    # Get the column index
+    col_idx <- col_info$col_idx[matching_idx[1]]
+
+    # Add gene to this position (may have multiple genes per bin)
+    if (is.null(gene_positions[[as.character(col_idx)]])) {
+      gene_positions[[as.character(col_idx)]] <- gene
+    } else {
+      gene_positions[[as.character(col_idx)]] <- c(
+        gene_positions[[as.character(col_idx)]],
+        gene
+      )
+    }
+  }
+
+  # Warn about genes not found
+
+if (length(genes_not_found) > 0) {
+    warning("Gene(s) not found in gene_locations: ",
+            paste(genes_not_found, collapse = ", "))
+  }
+
+  if (length(genes_not_in_bins) > 0) {
+    warning("Gene(s) not in displayed bins (may be in filtered regions): ",
+            paste(genes_not_in_bins, collapse = ", "))
+  }
+
+  # Return NULL if no genes were successfully mapped
+  if (length(gene_positions) == 0) {
+    return(NULL)
+  }
+
+  # Convert to at/labels format, collapsing multiple genes per bin
+  at <- as.integer(names(gene_positions))
+  labels <- sapply(gene_positions, function(genes) {
+    paste(genes, collapse = gene_label_sep)
+  })
+
+  # Sort by position
+  ord <- order(at)
+  at <- at[ord]
+  labels <- unname(labels[ord])
+
+  return(list(at = at, labels = labels))
+}
+
+#' Create gene annotation for heatmap
+#'
+#' Creates a ComplexHeatmap annotation showing gene labels at specific genomic positions.
+#'
+#' @param gene_positions List with `at` (column indices) and `labels` (gene names)
+#'   as returned by \code{\link{find_gene_bin_positions}}.
+#' @param fontsize Font size for gene labels. Default is 10.
+#' @param link_height Height of link lines in mm. Default is 5.
+#'
+#' @return A ComplexHeatmap HeatmapAnnotation object, or NULL if gene_positions is NULL.
+#'
+#' @keywords internal
+make_gene_annotation <- function(gene_positions,
+                                 fontsize = 10,
+                                 link_height = 5) {
+  if (is.null(gene_positions)) {
+    return(NULL)
+  }
+
+  gene_annot <- ComplexHeatmap::HeatmapAnnotation(
+    gene_labels = ComplexHeatmap::anno_mark(
+      at = gene_positions$at,
+      labels = gene_positions$labels,
+      side = "top",
+      labels_rot = 45,
+      labels_gp = grid::gpar(fontsize = fontsize, fontface = "italic"),
+      link_height = grid::unit(link_height, "mm"),
+      padding = grid::unit(0.5, "mm"),
+      extend = 0.01
+    ),
+    which = "column",
+    show_annotation_name = FALSE
+  )
+
+  return(gene_annot)
+}
+
 make_top_annotation_gain <- function(copynumber,
                                      plotcol = "state",
                                      plotfrequency = FALSE,
@@ -811,7 +1075,7 @@ make_top_annotation_gain <- function(copynumber,
     copynumbermat[copynumbermat == "11+"] <- "11"
     copynumbermat <- sapply(copynumbermat, as.numeric)
     f1 <- colSums(copynumbermat > cutoff, na.rm = TRUE) / ncells
-    f2 <- -colSums(copynumbermat < cutoff, na.rm = TRUE) / ncells
+    f2 <- -colSums((copynumbermat < cutoff) & (copynumbermat > 0), na.rm = TRUE) / ncells
     if (is.null(maxf)) {
       maxf <- ceiling(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
       if (maxf < 0.01) {
@@ -896,7 +1160,7 @@ make_top_annotation_gain <- function(copynumber,
     )
   }
   else if ((plotcol == "state_BAF" | plotcol == "BAF") & plotfrequency == TRUE) {
-    f1 <- colSums(copynumber < 0.5, na.rm = TRUE) / ncells
+    f1 <- colSums((copynumber < 0.5) & (copynumber > 0), na.rm = TRUE) / ncells
     f2 <- -colSums(copynumber > 0.5, na.rm = TRUE) / ncells
     if (is.null(maxf)) {
       maxf <- ceiling(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
@@ -986,15 +1250,23 @@ make_copynumber_heatmap <- function(copynumber,
                                     labeladjust = -1,
                                     nticks = 4,
                                     Mb = TRUE,
-                                    annotation_height = NULL, 
+                                    annotation_height = NULL,
                                     annofontsize = 14,
                                     na_col = "white",
                                     linkheight = 5,
                                     str_to_remove = NULL,
                                     anno_width = 0.4,
                                     rasterquality = 1,
+                                    plotideogram = FALSE,
+                                    genome = "hg19",
+                                    ideogram_height = 0.3,
+                                    legend_at = NULL,
+                                    gene_annotations = NULL,
+                                    gene_annotation_fontsize = NULL,
+                                    gene_link_height = 5,
+                                    gene_label_sep = "/",
                                     ...) {
-  
+
   if (class(colvals) == "function"){
     leg_params <- list(nrow = 3,
                        direction = "vertical",
@@ -1002,9 +1274,11 @@ make_copynumber_heatmap <- function(copynumber,
                        title_gp = grid::gpar(fontsize = annofontsize-1),
                        legend_gp = grid::gpar(fontsize = annofontsize-1))
   } else {
+    # Use legend_at if provided (to exclude sentinel from legend), otherwise use all color names
+    legend_values <- if (!is.null(legend_at)) legend_at else names(colvals)
     leg_params <- list(nrow = 3,
                        direction = "vertical",
-                       at = names(colvals),
+                       at = legend_values,
                        labels_gp = grid::gpar(fontsize = annofontsize-1),
                        title_gp = grid::gpar(fontsize = annofontsize-1),
                        legend_gp = grid::gpar(fontsize = annofontsize-1))
@@ -1033,7 +1307,77 @@ make_copynumber_heatmap <- function(copynumber,
       anno_width = anno_width
     )
   }
-  
+
+  # Build bottom annotation: chromosome labels + optional ideogram
+  chrom_annot <- make_bottom_annot(copynumber,
+    chrlabels = chrlabels,
+    Mb = Mb,
+    nticks = nticks,
+    annotation_height = annotation_height,
+    labeladjust = labeladjust,
+    annofontsize = annofontsize,
+    linkheight = linkheight
+  )
+
+  if (plotideogram) {
+    ideogram_annot <- make_ideogram_annotation(copynumber, genome = genome,
+                                               ideogram_height = ideogram_height)
+    if (!is.null(ideogram_annot) && !is.null(chrom_annot)) {
+      # Stack ideogram below chromosome labels
+      bottom_annot <- c(ideogram_annot, chrom_annot)
+    } else if (!is.null(ideogram_annot)) {
+      bottom_annot <- ideogram_annot
+    } else {
+      bottom_annot <- chrom_annot
+    }
+  } else {
+    bottom_annot <- chrom_annot
+  }
+
+  # Build top annotation: gene labels + frequency
+  freq_annot <- make_top_annotation_gain(copynumber,
+    cutoff = cutoff,
+    maxf = maxf,
+    plotfrequency = plotfrequency,
+    plotcol = plotcol,
+    SV = SV,
+    frequency_height = frequency_height,
+    frequency_bar_width = frequency_bar_width,
+    annofontsize = annofontsize
+  )
+
+  # Create gene annotation if requested
+  gene_annot <- NULL
+  if (!is.null(gene_annotations)) {
+    gene_fontsize <- if (!is.null(gene_annotation_fontsize)) {
+      gene_annotation_fontsize
+    } else {
+      annofontsize
+    }
+
+    gene_positions <- find_gene_bin_positions(
+      copynumber,
+      gene_annotations,
+      genome = genome,
+      gene_label_sep = gene_label_sep
+    )
+
+    gene_annot <- make_gene_annotation(
+      gene_positions,
+      fontsize = gene_fontsize,
+      link_height = gene_link_height
+    )
+  }
+
+  # Combine gene and frequency annotations (genes above frequency)
+  if (!is.null(gene_annot) && !is.null(freq_annot)) {
+    top_annot <- c(gene_annot, freq_annot)
+  } else if (!is.null(gene_annot)) {
+    top_annot <- gene_annot
+  } else {
+    top_annot <- freq_annot
+  }
+
   # Create the heatmap
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name = legendname,
@@ -1045,26 +1389,9 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_columns = FALSE,
     show_column_names = FALSE,
     left_annotation = left_annot,
-    bottom_annotation = make_bottom_annot(copynumber,
-      chrlabels = chrlabels,
-      Mb = Mb,
-      nticks = nticks,
-      annotation_height = annotation_height,
-      labeladjust = labeladjust,
-      annofontsize = annofontsize,
-      linkheight = linkheight
-    ),
+    bottom_annotation = bottom_annot,
     heatmap_legend_param = leg_params,
-    top_annotation = make_top_annotation_gain(copynumber,
-      cutoff = cutoff,
-      maxf = maxf,
-      plotfrequency = plotfrequency,
-      plotcol = plotcol,
-      SV = SV,
-      frequency_height = frequency_height,
-      frequency_bar_width = frequency_bar_width,
-      annofontsize = annofontsize
-    ),
+    top_annotation = top_annot,
     raster_quality = rasterquality,
     ...
   )
@@ -1112,11 +1439,11 @@ getSVlegend <- function(include = NULL) {
 #' @param show_clone_label show clone label or not, boolean
 #' @param umapmetric metric to use in umap dimensionality reduction if no clusters are specified
 #' @param chrlabels include chromosome labels or not, boolean
-#' @param labeladjust 
+#' @param labeladjust Adjustment for chromosome label position
 #' @param SV sv data frame
 #' @param seed seed for UMAP
 #' @param nticks number of ticks in x-axis label when plotting a single chromosome
-#' @param fillgenome fill in any missing bins and add NA to centromeric regions
+#' @param fillgenome Deprecated. Use plotallbins instead.
 #' @param na_col colour of NA values
 #' @param linkheight height of x-axis ticks
 #' @param newlegendname overwrite default legend name
@@ -1131,6 +1458,16 @@ getSVlegend <- function(include = NULL) {
 #' @param annotation_height Height of the annotations
 #' @param tree_width Width of phylogenetic tree, default = 4
 #' @param ladderize ladderize the tree, default = TRUE, same as default in ggtree
+#' @param plotallbins Include all genomic bins in the heatmap, with centromeric regions displayed as NA (light grey). Default is FALSE.
+#' @param plotideogram Display chromosome ideogram (cytoband) annotation at the bottom of the heatmap. Requires plotallbins = TRUE. Default is FALSE.
+#' @param genome Genome assembly to use for ideogram and centromere identification. Either "hg19" or "hg38". Default is "hg19".
+#' @param centromere_col Color to use for centromeric regions when plotallbins = TRUE. Default is "#E8E8E8" (light grey).
+#' @param ideogram_height Height of the ideogram annotation in cm. Default is 0.3.
+#' @param gene_annotations Character vector of gene names to annotate at the top of the heatmap.
+#'   Gene names must match the `ensembl_gene_symbol` column in `gene_locations` data. Default is NULL.
+#' @param gene_annotation_fontsize Font size for gene annotation labels. Defaults to `annofontsize` if NULL.
+#' @param gene_link_height Height of link lines connecting gene labels to positions, in mm. Default is 5.
+#' @param gene_label_sep Separator used when multiple genes fall within the same genomic bin. Default is "/".
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #' 
@@ -1178,7 +1515,7 @@ plotHeatmap <- function(cn,
                         nticks = 4,
                         Mb = TRUE,
                         fillgenome = FALSE,
-                        annotation_height = NULL, 
+                        annotation_height = NULL,
                         annofontsize = 10,
                         na_col = "white",
                         linkheight = 2.5,
@@ -1189,6 +1526,15 @@ plotHeatmap <- function(cn,
                         rasterquality = 15,
                         tree_width = 4,
                         ladderize = TRUE,
+                        plotallbins = FALSE,
+                        plotideogram = FALSE,
+                        genome = "hg19",
+                        centromere_col = "#E8E8E8",
+                        ideogram_height = 0.3,
+                        gene_annotations = NULL,
+                        gene_annotation_fontsize = NULL,
+                        gene_link_height = 5,
+                        gene_label_sep = "/",
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1277,7 +1623,34 @@ plotHeatmap <- function(cn,
     colvals <- cn_colours_phase
     legendname <- "Allelic Imbalance"
   }
-  
+
+  # When plotallbins is TRUE, add centromere sentinel value to color scale
+  # Centromeres use sentinel value (-999), spacers remain NA (white)
+  # Store legend values before adding sentinel (to exclude sentinel from legend)
+  legend_at <- NULL
+  if (plotallbins) {
+    sentinel_val <- CENTROMERE_SENTINEL
+    if (inherits(colvals, "function")) {
+      # For colorRamp2 functions, create a new function that handles the sentinel
+      original_colvals <- colvals
+      colvals <- function(x) {
+        result <- rep(centromere_col, length(x))
+        non_sentinel <- !is.na(x) & x != sentinel_val
+        result[non_sentinel] <- original_colvals(x[non_sentinel])
+        result[is.na(x)] <- NA
+        result
+      }
+      # Preserve the breaks for the legend (without sentinel)
+      attr(colvals, "breaks") <- attr(original_colvals, "breaks")
+      class(colvals) <- class(original_colvals)
+    } else {
+      # Store original legend values before adding sentinel
+      legend_at <- names(colvals)
+      # Add sentinel value to color scale (for rendering only, not legend)
+      colvals[[as.character(sentinel_val)]] <- centromere_col
+    }
+  }
+
   if (!is.null(newlegendname)){
     legendname <- newlegendname
   }
@@ -1381,12 +1754,31 @@ plotHeatmap <- function(cn,
   }
 
   message("Creating copy number heatmap...")
+
+  # Handle deprecated fillgenome parameter
   if (fillgenome) {
-    copynumber <- createCNmatrix(CNbins, field = plotcol, wholegenome = TRUE,
-                                 fillnaplot = fillna, centromere = FALSE)
+    warning("fillgenome is deprecated. Use plotallbins = TRUE instead.")
+    if (!plotallbins) {
+      plotallbins <- TRUE
+    }
+  }
+
+  # Validate plotideogram requires plotallbins
+  if (plotideogram && !plotallbins) {
+    stop("plotideogram = TRUE requires plotallbins = TRUE")
+  }
+
+  # Create copy number matrix
+  # When plotallbins = TRUE, centromeres get sentinel value (colored by centromere_col in color scale)
+
+  # Spacers remain NA (colored white by na_col)
+  if (plotallbins) {
+    copynumber <- createCNmatrix(CNbins, field = plotcol,
+                                 plotallbins = TRUE, genome = genome)
   } else {
     copynumber <- createCNmatrix(CNbins, field = plotcol, fillnaplot = fillna)
   }
+
   if (normalize_ploidy == T) {
     message("Normalizing ploidy for each cell to 2")
     copynumber <- normalize_cell_ploidy(copynumber)
@@ -1430,9 +1822,9 @@ plotHeatmap <- function(cn,
     show_clone_text = show_clone_text,
     chrlabels = chrlabels,
     SV = SV,
-    Mb = Mb, 
+    Mb = Mb,
     nticks = nticks,
-    annotation_height = annotation_height, 
+    annotation_height = annotation_height,
     annofontsize = annofontsize,
     na_col = na_col,
     linkheight = linkheight,
@@ -1440,6 +1832,14 @@ plotHeatmap <- function(cn,
     str_to_remove = str_to_remove,
     anno_width = anno_width,
     rasterquality = rasterquality,
+    plotideogram = plotideogram,
+    genome = genome,
+    ideogram_height = ideogram_height,
+    legend_at = legend_at,
+    gene_annotations = gene_annotations,
+    gene_annotation_fontsize = gene_annotation_fontsize,
+    gene_link_height = gene_link_height,
+    gene_label_sep = gene_label_sep,
     ...
   )
   if (plottree == TRUE) {
