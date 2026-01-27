@@ -794,6 +794,87 @@ make_bottom_annot <- function(copynumber,
   return(bottom_annot)
 }
 
+#' Create ideogram annotation for heatmap
+#'
+#' Creates a ComplexHeatmap annotation showing chromosome ideogram (cytobands)
+#' at the bottom of the heatmap.
+#'
+#' @param copynumber Copy number matrix with column names in format "chr:start:end"
+#' @param genome Genome assembly ("hg19" or "hg38"). Default is "hg19".
+#' @param ideogram_height Height of the ideogram annotation in cm. Default is 0.3.
+#'
+#' @return A ComplexHeatmap HeatmapAnnotation object
+#'
+#' @keywords internal
+make_ideogram_annotation <- function(copynumber,
+                                     genome = "hg19",
+                                     ideogram_height = 0.3) {
+  # Load cytoband data
+  data("cytoband_map", envir = environment())
+  cytobands <- cytoband_map[[genome]]
+
+  if (is.null(cytobands) || nrow(cytobands) == 0) {
+    warning("No cytoband data found for genome: ", genome)
+    return(NULL)
+  }
+
+  # Parse column names to get coordinates (format: "chr:start:end" or spacer columns "V*")
+  col_names <- colnames(copynumber)
+  n_cols <- length(col_names)
+
+  # Initialize stain type vector for all columns (use "spacer" for gaps)
+  stain_types <- rep("spacer", n_cols)
+
+  # Process each column
+  for (i in seq_len(n_cols)) {
+    col_name <- col_names[i]
+
+    # Skip spacer columns (contain "V" pattern from space_copynumber_columns)
+    if (grepl("^V[0-9]+$", col_name) || is.na(col_name)) {
+      next
+    }
+
+    # Parse coordinate from column name
+    parts <- strsplit(col_name, ":")[[1]]
+    if (length(parts) != 3) {
+      next
+    }
+
+    chr <- parts[1]
+    bin_start <- as.numeric(parts[2])
+    bin_end <- as.numeric(parts[3])
+    bin_mid <- (bin_start + bin_end) / 2
+
+    # Find matching cytoband (use midpoint of bin)
+    chr_with_prefix <- paste0("chr", chr)
+    matching_band <- cytobands[V1 == chr_with_prefix & V2 <= bin_mid & V3 > bin_mid]
+
+    if (nrow(matching_band) > 0) {
+      stain <- matching_band$V5[1]
+      if (stain %in% names(cyto_colors)) {
+        stain_types[i] <- stain
+      }
+    }
+  }
+
+  # Create color mapping with spacer as white
+  all_colors <- c(cyto_colors, spacer = "white")
+
+  # Create the annotation using a custom annotation function for colored bars
+  ideogram_annot <- ComplexHeatmap::HeatmapAnnotation(
+    ideogram = ComplexHeatmap::anno_simple(
+      stain_types,
+      col = all_colors,
+      height = grid::unit(ideogram_height, "cm")
+    ),
+    which = "column",
+    show_annotation_name = FALSE,
+    show_legend = FALSE
+  )
+
+  return(ideogram_annot)
+}
+
 make_top_annotation_gain <- function(copynumber,
                                      plotcol = "state",
                                      plotfrequency = FALSE,
@@ -986,15 +1067,19 @@ make_copynumber_heatmap <- function(copynumber,
                                     labeladjust = -1,
                                     nticks = 4,
                                     Mb = TRUE,
-                                    annotation_height = NULL, 
+                                    annotation_height = NULL,
                                     annofontsize = 14,
                                     na_col = "white",
                                     linkheight = 5,
                                     str_to_remove = NULL,
                                     anno_width = 0.4,
                                     rasterquality = 1,
+                                    plotideogram = FALSE,
+                                    genome = "hg19",
+                                    ideogram_height = 0.3,
+                                    legend_at = NULL,
                                     ...) {
-  
+
   if (class(colvals) == "function"){
     leg_params <- list(nrow = 3,
                        direction = "vertical",
@@ -1002,9 +1087,11 @@ make_copynumber_heatmap <- function(copynumber,
                        title_gp = grid::gpar(fontsize = annofontsize-1),
                        legend_gp = grid::gpar(fontsize = annofontsize-1))
   } else {
+    # Use legend_at if provided (to exclude sentinel from legend), otherwise use all color names
+    legend_values <- if (!is.null(legend_at)) legend_at else names(colvals)
     leg_params <- list(nrow = 3,
                        direction = "vertical",
-                       at = names(colvals),
+                       at = legend_values,
                        labels_gp = grid::gpar(fontsize = annofontsize-1),
                        title_gp = grid::gpar(fontsize = annofontsize-1),
                        legend_gp = grid::gpar(fontsize = annofontsize-1))
@@ -1033,7 +1120,33 @@ make_copynumber_heatmap <- function(copynumber,
       anno_width = anno_width
     )
   }
-  
+
+  # Build bottom annotation: chromosome labels + optional ideogram
+  chrom_annot <- make_bottom_annot(copynumber,
+    chrlabels = chrlabels,
+    Mb = Mb,
+    nticks = nticks,
+    annotation_height = annotation_height,
+    labeladjust = labeladjust,
+    annofontsize = annofontsize,
+    linkheight = linkheight
+  )
+
+  if (plotideogram) {
+    ideogram_annot <- make_ideogram_annotation(copynumber, genome = genome,
+                                               ideogram_height = ideogram_height)
+    if (!is.null(ideogram_annot) && !is.null(chrom_annot)) {
+      # Stack ideogram below chromosome labels
+      bottom_annot <- c(ideogram_annot, chrom_annot)
+    } else if (!is.null(ideogram_annot)) {
+      bottom_annot <- ideogram_annot
+    } else {
+      bottom_annot <- chrom_annot
+    }
+  } else {
+    bottom_annot <- chrom_annot
+  }
+
   # Create the heatmap
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name = legendname,
@@ -1045,15 +1158,7 @@ make_copynumber_heatmap <- function(copynumber,
     cluster_columns = FALSE,
     show_column_names = FALSE,
     left_annotation = left_annot,
-    bottom_annotation = make_bottom_annot(copynumber,
-      chrlabels = chrlabels,
-      Mb = Mb,
-      nticks = nticks,
-      annotation_height = annotation_height,
-      labeladjust = labeladjust,
-      annofontsize = annofontsize,
-      linkheight = linkheight
-    ),
+    bottom_annotation = bottom_annot,
     heatmap_legend_param = leg_params,
     top_annotation = make_top_annotation_gain(copynumber,
       cutoff = cutoff,
@@ -1112,11 +1217,11 @@ getSVlegend <- function(include = NULL) {
 #' @param show_clone_label show clone label or not, boolean
 #' @param umapmetric metric to use in umap dimensionality reduction if no clusters are specified
 #' @param chrlabels include chromosome labels or not, boolean
-#' @param labeladjust 
+#' @param labeladjust Adjustment for chromosome label position
 #' @param SV sv data frame
 #' @param seed seed for UMAP
 #' @param nticks number of ticks in x-axis label when plotting a single chromosome
-#' @param fillgenome fill in any missing bins and add NA to centromeric regions
+#' @param fillgenome Deprecated. Use plotallbins instead.
 #' @param na_col colour of NA values
 #' @param linkheight height of x-axis ticks
 #' @param newlegendname overwrite default legend name
@@ -1131,6 +1236,11 @@ getSVlegend <- function(include = NULL) {
 #' @param annotation_height Height of the annotations
 #' @param tree_width Width of phylogenetic tree, default = 4
 #' @param ladderize ladderize the tree, default = TRUE, same as default in ggtree
+#' @param plotallbins Include all genomic bins in the heatmap, with centromeric regions displayed as NA (light grey). Default is FALSE.
+#' @param plotideogram Display chromosome ideogram (cytoband) annotation at the bottom of the heatmap. Requires plotallbins = TRUE. Default is FALSE.
+#' @param genome Genome assembly to use for ideogram and centromere identification. Either "hg19" or "hg38". Default is "hg19".
+#' @param centromere_col Color to use for centromeric regions when plotallbins = TRUE. Default is "#E8E8E8" (light grey).
+#' @param ideogram_height Height of the ideogram annotation in cm. Default is 0.3.
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #' 
@@ -1178,7 +1288,7 @@ plotHeatmap <- function(cn,
                         nticks = 4,
                         Mb = TRUE,
                         fillgenome = FALSE,
-                        annotation_height = NULL, 
+                        annotation_height = NULL,
                         annofontsize = 10,
                         na_col = "white",
                         linkheight = 2.5,
@@ -1189,6 +1299,11 @@ plotHeatmap <- function(cn,
                         rasterquality = 15,
                         tree_width = 4,
                         ladderize = TRUE,
+                        plotallbins = FALSE,
+                        plotideogram = FALSE,
+                        genome = "hg19",
+                        centromere_col = "#E8E8E8",
+                        ideogram_height = 0.3,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1277,7 +1392,34 @@ plotHeatmap <- function(cn,
     colvals <- cn_colours_phase
     legendname <- "Allelic Imbalance"
   }
-  
+
+  # When plotallbins is TRUE, add centromere sentinel value to color scale
+  # Centromeres use sentinel value (-999), spacers remain NA (white)
+  # Store legend values before adding sentinel (to exclude sentinel from legend)
+  legend_at <- NULL
+  if (plotallbins) {
+    sentinel_val <- CENTROMERE_SENTINEL
+    if (inherits(colvals, "function")) {
+      # For colorRamp2 functions, create a new function that handles the sentinel
+      original_colvals <- colvals
+      colvals <- function(x) {
+        result <- rep(centromere_col, length(x))
+        non_sentinel <- !is.na(x) & x != sentinel_val
+        result[non_sentinel] <- original_colvals(x[non_sentinel])
+        result[is.na(x)] <- NA
+        result
+      }
+      # Preserve the breaks for the legend (without sentinel)
+      attr(colvals, "breaks") <- attr(original_colvals, "breaks")
+      class(colvals) <- class(original_colvals)
+    } else {
+      # Store original legend values before adding sentinel
+      legend_at <- names(colvals)
+      # Add sentinel value to color scale (for rendering only, not legend)
+      colvals[[as.character(sentinel_val)]] <- centromere_col
+    }
+  }
+
   if (!is.null(newlegendname)){
     legendname <- newlegendname
   }
@@ -1381,12 +1523,31 @@ plotHeatmap <- function(cn,
   }
 
   message("Creating copy number heatmap...")
+
+  # Handle deprecated fillgenome parameter
   if (fillgenome) {
-    copynumber <- createCNmatrix(CNbins, field = plotcol, wholegenome = TRUE,
-                                 fillnaplot = fillna, centromere = FALSE)
+    warning("fillgenome is deprecated. Use plotallbins = TRUE instead.")
+    if (!plotallbins) {
+      plotallbins <- TRUE
+    }
+  }
+
+  # Validate plotideogram requires plotallbins
+  if (plotideogram && !plotallbins) {
+    stop("plotideogram = TRUE requires plotallbins = TRUE")
+  }
+
+  # Create copy number matrix
+  # When plotallbins = TRUE, centromeres get sentinel value (colored by centromere_col in color scale)
+
+  # Spacers remain NA (colored white by na_col)
+  if (plotallbins) {
+    copynumber <- createCNmatrix(CNbins, field = plotcol,
+                                 plotallbins = TRUE, genome = genome)
   } else {
     copynumber <- createCNmatrix(CNbins, field = plotcol, fillnaplot = fillna)
   }
+
   if (normalize_ploidy == T) {
     message("Normalizing ploidy for each cell to 2")
     copynumber <- normalize_cell_ploidy(copynumber)
@@ -1430,9 +1591,9 @@ plotHeatmap <- function(cn,
     show_clone_text = show_clone_text,
     chrlabels = chrlabels,
     SV = SV,
-    Mb = Mb, 
+    Mb = Mb,
     nticks = nticks,
-    annotation_height = annotation_height, 
+    annotation_height = annotation_height,
     annofontsize = annofontsize,
     na_col = na_col,
     linkheight = linkheight,
@@ -1440,6 +1601,10 @@ plotHeatmap <- function(cn,
     str_to_remove = str_to_remove,
     anno_width = anno_width,
     rasterquality = rasterquality,
+    plotideogram = plotideogram,
+    genome = genome,
+    ideogram_height = ideogram_height,
+    legend_at = legend_at,
     ...
   )
   if (plottree == TRUE) {
