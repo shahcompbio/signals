@@ -411,10 +411,14 @@ make_left_annot_generic <- function(dfanno,
                                    show_legend = TRUE,
                                    annofontsize = 14,
                                    anno_width = 0.4) {
-  # Convert to data.frame if not already
-  if (!is.data.frame(dfanno)) {
+  # Convert to data.frame if needed
+  if (inherits(dfanno, c("data.table", "tbl_df", "tbl"))) {
+    message("Converting dfanno from ", class(dfanno)[1], " to data.frame")
     dfanno <- as.data.frame(dfanno)
-    warning("dfanno was converted to data.frame")
+  }
+  if (!is.data.frame(dfanno)) {
+    warning("dfanno was converted to data.frame from ", class(dfanno)[1])
+    dfanno <- as.data.frame(dfanno)
   }
   
   # Check if cell_id column exists
@@ -1399,8 +1403,12 @@ plotHeatmap <- function(cn,
     names(clone_pal) <- clones_idx$clone_label
   }
   if (!is.null(annotations)) {
-    row.names(annotations) <- annotations$cell_id
-    annotations <- annotations[ordered_cell_ids, ]
+    if (!is.data.frame(annotations)) {
+      warning("annotations is not a data.frame. Attempting conversion to data.frame")
+      annotations <- as.data.frame(annotations)
+    }
+    annotation_idx <- match(ordered_cell_ids, annotations$cell_id)
+    annotations <- annotations[annotation_idx, , drop = FALSE]
   }
   copynumber_hm <- make_copynumber_heatmap(copynumber,
     clones_formatted,
