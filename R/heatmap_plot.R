@@ -875,6 +875,189 @@ make_ideogram_annotation <- function(copynumber,
   return(ideogram_annot)
 }
 
+#' Find column positions for gene annotations
+#'
+#' Maps gene names to their corresponding column indices in the copynumber matrix.
+#' Genes are matched to bins where the gene start position falls within the bin boundaries.
+#'
+#' @param copynumber Copy number matrix with column names in format "chr:start:end"
+#' @param gene_annotations Character vector of gene names to annotate
+#' @param genome Genome assembly ("hg19" or "hg38"). Default is "hg19".
+#' @param gene_label_sep Separator when multiple genes fall in the same bin. Default is "/".
+#'
+#' @return A list with components:
+#'   \item{at}{Integer vector of column indices}
+#'   \item{labels}{Character vector of gene labels}
+#'   Returns NULL if no genes are found in the matrix columns.
+#'
+#' @keywords internal
+find_gene_bin_positions <- function(copynumber,
+                                    gene_annotations,
+                                    genome = "hg19",
+                                    gene_label_sep = "/") {
+  # Load gene locations data
+
+  data("gene_locations", envir = environment())
+  gene_data <- gene_locations[[genome]]
+
+  if (is.null(gene_data) || nrow(gene_data) == 0) {
+    warning("No gene location data found for genome: ", genome)
+    return(NULL)
+  }
+
+  # Parse column names to get bin coordinates
+  col_names <- colnames(copynumber)
+  n_cols <- length(col_names)
+
+  # Build a data frame of non-spacer columns with their indices
+  col_info <- data.frame(
+    col_idx = integer(0),
+    chr = character(0),
+    start = numeric(0),
+    end = numeric(0),
+    stringsAsFactors = FALSE
+  )
+
+  for (i in seq_len(n_cols)) {
+    col_name <- col_names[i]
+
+    # Skip spacer columns (V1, V2, etc.)
+    if (grepl("^V[0-9]+$", col_name) || is.na(col_name)) {
+      next
+    }
+
+    # Parse coordinate from column name (format: "chr:start:end")
+    parts <- strsplit(col_name, ":")[[1]]
+    if (length(parts) != 3) {
+      next
+    }
+
+    col_info <- rbind(col_info, data.frame(
+      col_idx = i,
+      chr = parts[1],
+      start = as.numeric(parts[2]),
+      end = as.numeric(parts[3]),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  if (nrow(col_info) == 0) {
+    warning("No valid genomic bins found in copynumber matrix")
+    return(NULL)
+  }
+
+  # Find bin positions for each gene
+  gene_positions <- list()  # col_idx -> list of gene names
+  genes_not_found <- character(0)
+  genes_not_in_bins <- character(0)
+
+  for (gene in gene_annotations) {
+    # Find gene in gene_data
+    gene_row <- gene_data[gene_data$ensembl_gene_symbol == gene, ]
+
+    if (nrow(gene_row) == 0) {
+      genes_not_found <- c(genes_not_found, gene)
+      next
+    }
+
+    # Use first occurrence if multiple (some genes have multiple loci)
+    gene_chr <- gene_row$chr[1]
+    gene_start <- gene_row$start[1]
+
+    # Find matching bin: gene start falls within [bin_start, bin_end)
+    matching_idx <- which(
+      col_info$chr == gene_chr &
+      col_info$start <= gene_start &
+      col_info$end > gene_start
+    )
+
+    if (length(matching_idx) == 0) {
+      genes_not_in_bins <- c(genes_not_in_bins, gene)
+      next
+    }
+
+    # Get the column index
+    col_idx <- col_info$col_idx[matching_idx[1]]
+
+    # Add gene to this position (may have multiple genes per bin)
+    if (is.null(gene_positions[[as.character(col_idx)]])) {
+      gene_positions[[as.character(col_idx)]] <- gene
+    } else {
+      gene_positions[[as.character(col_idx)]] <- c(
+        gene_positions[[as.character(col_idx)]],
+        gene
+      )
+    }
+  }
+
+  # Warn about genes not found
+
+if (length(genes_not_found) > 0) {
+    warning("Gene(s) not found in gene_locations: ",
+            paste(genes_not_found, collapse = ", "))
+  }
+
+  if (length(genes_not_in_bins) > 0) {
+    warning("Gene(s) not in displayed bins (may be in filtered regions): ",
+            paste(genes_not_in_bins, collapse = ", "))
+  }
+
+  # Return NULL if no genes were successfully mapped
+  if (length(gene_positions) == 0) {
+    return(NULL)
+  }
+
+  # Convert to at/labels format, collapsing multiple genes per bin
+  at <- as.integer(names(gene_positions))
+  labels <- sapply(gene_positions, function(genes) {
+    paste(genes, collapse = gene_label_sep)
+  })
+
+  # Sort by position
+  ord <- order(at)
+  at <- at[ord]
+  labels <- unname(labels[ord])
+
+  return(list(at = at, labels = labels))
+}
+
+#' Create gene annotation for heatmap
+#'
+#' Creates a ComplexHeatmap annotation showing gene labels at specific genomic positions.
+#'
+#' @param gene_positions List with `at` (column indices) and `labels` (gene names)
+#'   as returned by \code{\link{find_gene_bin_positions}}.
+#' @param fontsize Font size for gene labels. Default is 10.
+#' @param link_height Height of link lines in mm. Default is 5.
+#'
+#' @return A ComplexHeatmap HeatmapAnnotation object, or NULL if gene_positions is NULL.
+#'
+#' @keywords internal
+make_gene_annotation <- function(gene_positions,
+                                 fontsize = 10,
+                                 link_height = 5) {
+  if (is.null(gene_positions)) {
+    return(NULL)
+  }
+
+  gene_annot <- ComplexHeatmap::HeatmapAnnotation(
+    gene_labels = ComplexHeatmap::anno_mark(
+      at = gene_positions$at,
+      labels = gene_positions$labels,
+      side = "top",
+      labels_rot = 45,
+      labels_gp = grid::gpar(fontsize = fontsize, fontface = "italic"),
+      link_height = grid::unit(link_height, "mm"),
+      padding = grid::unit(0.5, "mm"),
+      extend = 0.01
+    ),
+    which = "column",
+    show_annotation_name = FALSE
+  )
+
+  return(gene_annot)
+}
+
 make_top_annotation_gain <- function(copynumber,
                                      plotcol = "state",
                                      plotfrequency = FALSE,
@@ -892,7 +1075,7 @@ make_top_annotation_gain <- function(copynumber,
     copynumbermat[copynumbermat == "11+"] <- "11"
     copynumbermat <- sapply(copynumbermat, as.numeric)
     f1 <- colSums(copynumbermat > cutoff, na.rm = TRUE) / ncells
-    f2 <- -colSums(copynumbermat < cutoff, na.rm = TRUE) / ncells
+    f2 <- -colSums((copynumbermat < cutoff) & (copynumbermat > 0), na.rm = TRUE) / ncells
     if (is.null(maxf)) {
       maxf <- ceiling(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
       if (maxf < 0.01) {
@@ -977,7 +1160,7 @@ make_top_annotation_gain <- function(copynumber,
     )
   }
   else if ((plotcol == "state_BAF" | plotcol == "BAF") & plotfrequency == TRUE) {
-    f1 <- colSums(copynumber < 0.5, na.rm = TRUE) / ncells
+    f1 <- colSums((copynumber < 0.5) & (copynumber > 0), na.rm = TRUE) / ncells
     f2 <- -colSums(copynumber > 0.5, na.rm = TRUE) / ncells
     if (is.null(maxf)) {
       maxf <- ceiling(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
@@ -1078,6 +1261,10 @@ make_copynumber_heatmap <- function(copynumber,
                                     genome = "hg19",
                                     ideogram_height = 0.3,
                                     legend_at = NULL,
+                                    gene_annotations = NULL,
+                                    gene_annotation_fontsize = NULL,
+                                    gene_link_height = 5,
+                                    gene_label_sep = "/",
                                     ...) {
 
   if (class(colvals) == "function"){
@@ -1147,6 +1334,50 @@ make_copynumber_heatmap <- function(copynumber,
     bottom_annot <- chrom_annot
   }
 
+  # Build top annotation: gene labels + frequency
+  freq_annot <- make_top_annotation_gain(copynumber,
+    cutoff = cutoff,
+    maxf = maxf,
+    plotfrequency = plotfrequency,
+    plotcol = plotcol,
+    SV = SV,
+    frequency_height = frequency_height,
+    frequency_bar_width = frequency_bar_width,
+    annofontsize = annofontsize
+  )
+
+  # Create gene annotation if requested
+  gene_annot <- NULL
+  if (!is.null(gene_annotations)) {
+    gene_fontsize <- if (!is.null(gene_annotation_fontsize)) {
+      gene_annotation_fontsize
+    } else {
+      annofontsize
+    }
+
+    gene_positions <- find_gene_bin_positions(
+      copynumber,
+      gene_annotations,
+      genome = genome,
+      gene_label_sep = gene_label_sep
+    )
+
+    gene_annot <- make_gene_annotation(
+      gene_positions,
+      fontsize = gene_fontsize,
+      link_height = gene_link_height
+    )
+  }
+
+  # Combine gene and frequency annotations (genes above frequency)
+  if (!is.null(gene_annot) && !is.null(freq_annot)) {
+    top_annot <- c(gene_annot, freq_annot)
+  } else if (!is.null(gene_annot)) {
+    top_annot <- gene_annot
+  } else {
+    top_annot <- freq_annot
+  }
+
   # Create the heatmap
   copynumber_hm <- ComplexHeatmap::Heatmap(
     name = legendname,
@@ -1160,16 +1391,7 @@ make_copynumber_heatmap <- function(copynumber,
     left_annotation = left_annot,
     bottom_annotation = bottom_annot,
     heatmap_legend_param = leg_params,
-    top_annotation = make_top_annotation_gain(copynumber,
-      cutoff = cutoff,
-      maxf = maxf,
-      plotfrequency = plotfrequency,
-      plotcol = plotcol,
-      SV = SV,
-      frequency_height = frequency_height,
-      frequency_bar_width = frequency_bar_width,
-      annofontsize = annofontsize
-    ),
+    top_annotation = top_annot,
     raster_quality = rasterquality,
     ...
   )
@@ -1241,6 +1463,11 @@ getSVlegend <- function(include = NULL) {
 #' @param genome Genome assembly to use for ideogram and centromere identification. Either "hg19" or "hg38". Default is "hg19".
 #' @param centromere_col Color to use for centromeric regions when plotallbins = TRUE. Default is "#E8E8E8" (light grey).
 #' @param ideogram_height Height of the ideogram annotation in cm. Default is 0.3.
+#' @param gene_annotations Character vector of gene names to annotate at the top of the heatmap.
+#'   Gene names must match the `ensembl_gene_symbol` column in `gene_locations` data. Default is NULL.
+#' @param gene_annotation_fontsize Font size for gene annotation labels. Defaults to `annofontsize` if NULL.
+#' @param gene_link_height Height of link lines connecting gene labels to positions, in mm. Default is 5.
+#' @param gene_label_sep Separator used when multiple genes fall within the same genomic bin. Default is "/".
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #' 
@@ -1304,6 +1531,10 @@ plotHeatmap <- function(cn,
                         genome = "hg19",
                         centromere_col = "#E8E8E8",
                         ideogram_height = 0.3,
+                        gene_annotations = NULL,
+                        gene_annotation_fontsize = NULL,
+                        gene_link_height = 5,
+                        gene_label_sep = "/",
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1605,6 +1836,10 @@ plotHeatmap <- function(cn,
     genome = genome,
     ideogram_height = ideogram_height,
     legend_at = legend_at,
+    gene_annotations = gene_annotations,
+    gene_annotation_fontsize = gene_annotation_fontsize,
+    gene_link_height = gene_link_height,
+    gene_label_sep = gene_label_sep,
     ...
   )
   if (plottree == TRUE) {

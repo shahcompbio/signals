@@ -48,3 +48,43 @@ test_that("Test returns plot object", {
   expect_true(typeof(hm1) == "S4")
   expect_true(typeof(hm2) == "S4")
 })
+
+# Gene annotation tests
+test_that("Gene annotations render correctly", {
+  # Test with valid genes on chromosomes in the data
+  hm_genes <- plotHeatmap(sim_data_bb$ascn,
+                          gene_annotations = c("TP53", "MYC"),
+                          plottree = FALSE,
+                          reorderclusters = TRUE)
+  expect_true(typeof(hm_genes) == "S4")
+})
+
+test_that("Gene annotations work with frequency plot", {
+  hm_genes_freq <- plotHeatmap(sim_data_bb$ascn,
+                               gene_annotations = c("TP53"),
+                               plotfrequency = TRUE,
+                               plottree = FALSE,
+                               reorderclusters = TRUE)
+  expect_true(typeof(hm_genes_freq) == "S4")
+})
+
+test_that("Invalid gene names produce warning", {
+  expect_warning(
+    plotHeatmap(sim_data_bb$ascn,
+                gene_annotations = c("FAKE_GENE_NAME"),
+                plottree = FALSE,
+                reorderclusters = TRUE),
+    "Gene\\(s\\) not found"
+  )
+})
+
+test_that("Gene annotation parameters are respected", {
+  hm_custom <- plotHeatmap(sim_data_bb$ascn,
+                           gene_annotations = c("TP53", "MYC"),
+                           gene_annotation_fontsize = 8,
+                           gene_link_height = 10,
+                           gene_label_sep = " | ",
+                           plottree = FALSE,
+                           reorderclusters = TRUE)
+  expect_true(typeof(hm_custom) == "S4")
+})

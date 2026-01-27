@@ -36,7 +36,7 @@ createCNmatrix(
 
 \item{centromere}{Mark centromeric regions as NA after filling}
 
-\item{plotallbins}{Include all genomic bins, marking centromeres as NA}
+\item{plotallbins}{Include all genomic bins, marking centromeres with sentinel value}
 }
 \description{
 Create copy number matrix for heatmap visualization
