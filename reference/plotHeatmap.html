@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.13.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.14.0</span>
       </span>
     </div>
 
@@ -42,6 +42,9 @@
     </li>
     <li>
       <a href="../articles/BetaBinom.html">Beta-Binomial model for signals</a>
+    </li>
+    <li>
+      <a href="../articles/heatmap_visualization.html">Advanced Heatmap Visualization</a>
     </li>
   </ul></li>
 <li>
@@ -112,6 +115,15 @@
 <span>  rasterquality <span class="op">=</span> <span class="fl">15</span>,</span>
 <span>  tree_width <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  ladderize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  plotallbins <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  plotideogram <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  genome <span class="op">=</span> <span class="st">"hg19"</span>,</span>
+<span>  centromere_col <span class="op">=</span> <span class="st">"#E8E8E8"</span>,</span>
+<span>  ideogram_height <span class="op">=</span> <span class="fl">0.3</span>,</span>
+<span>  gene_annotations <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  gene_annotation_fontsize <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  gene_link_height <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  gene_label_sep <span class="op">=</span> <span class="st">"/"</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -233,7 +245,7 @@
 
 
 <dt id="arg-labeladjust">labeladjust<a class="anchor" aria-label="anchor" href="#arg-labeladjust"></a></dt>
-<dd></dd>
+<dd><p>Adjustment for chromosome label position</p></dd>
 
 
 <dt id="arg-sv">SV<a class="anchor" aria-label="anchor" href="#arg-sv"></a></dt>
@@ -253,7 +265,7 @@
 
 
 <dt id="arg-fillgenome">fillgenome<a class="anchor" aria-label="anchor" href="#arg-fillgenome"></a></dt>
-<dd><p>fill in any missing bins and add NA to centromeric regions</p></dd>
+<dd><p>Deprecated. Use plotallbins instead.</p></dd>
 
 
 <dt id="arg-annotation-height">annotation_height<a class="anchor" aria-label="anchor" href="#arg-annotation-height"></a></dt>
@@ -297,7 +309,44 @@
 
 
 <dt id="arg-ladderize">ladderize<a class="anchor" aria-label="anchor" href="#arg-ladderize"></a></dt>
-<dd><p>ladderize the tree, default = TRUE, same as default in ggtree</p>
+<dd><p>ladderize the tree, default = TRUE, same as default in ggtree</p></dd>
+
+
+<dt id="arg-plotallbins">plotallbins<a class="anchor" aria-label="anchor" href="#arg-plotallbins"></a></dt>
+<dd><p>Include all genomic bins in the heatmap, with centromeric regions displayed as NA (light grey). Default is FALSE.</p></dd>
+
+
+<dt id="arg-plotideogram">plotideogram<a class="anchor" aria-label="anchor" href="#arg-plotideogram"></a></dt>
+<dd><p>Display chromosome ideogram (cytoband) annotation at the bottom of the heatmap. Requires plotallbins = TRUE. Default is FALSE.</p></dd>
+
+
+<dt id="arg-genome">genome<a class="anchor" aria-label="anchor" href="#arg-genome"></a></dt>
+<dd><p>Genome assembly to use for ideogram and centromere identification. Either "hg19" or "hg38". Default is "hg19".</p></dd>
+
+
+<dt id="arg-centromere-col">centromere_col<a class="anchor" aria-label="anchor" href="#arg-centromere-col"></a></dt>
+<dd><p>Color to use for centromeric regions when plotallbins = TRUE. Default is "#E8E8E8" (light grey).</p></dd>
+
+
+<dt id="arg-ideogram-height">ideogram_height<a class="anchor" aria-label="anchor" href="#arg-ideogram-height"></a></dt>
+<dd><p>Height of the ideogram annotation in cm. Default is 0.3.</p></dd>
+
+
+<dt id="arg-gene-annotations">gene_annotations<a class="anchor" aria-label="anchor" href="#arg-gene-annotations"></a></dt>
+<dd><p>Character vector of gene names to annotate at the top of the heatmap.
+Gene names must match the `ensembl_gene_symbol` column in `gene_locations` data. Default is NULL.</p></dd>
+
+
+<dt id="arg-gene-annotation-fontsize">gene_annotation_fontsize<a class="anchor" aria-label="anchor" href="#arg-gene-annotation-fontsize"></a></dt>
+<dd><p>Font size for gene annotation labels. Defaults to `annofontsize` if NULL.</p></dd>
+
+
+<dt id="arg-gene-link-height">gene_link_height<a class="anchor" aria-label="anchor" href="#arg-gene-link-height"></a></dt>
+<dd><p>Height of link lines connecting gene labels to positions, in mm. Default is 5.</p></dd>
+
+
+<dt id="arg-gene-label-sep">gene_label_sep<a class="anchor" aria-label="anchor" href="#arg-gene-label-sep"></a></dt>
+<dd><p>Separator used when multiple genes fall within the same genomic bin. Default is "/".</p>
 <p>If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.</p></dd>
 
 </dl></div>
