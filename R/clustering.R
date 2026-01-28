@@ -489,9 +489,36 @@ leiden_clustering <- function(CNbins,
 
   # Generate phylogenetic tree
   message(paste0("Generating ", tree_type, " phylogenetic tree..."))
-  if (tree_type == "centroid") {
+
+  # Check for single cluster case
+  cluster_labels <- sort(unique(clustering_df$clone_id))
+
+  if (length(cluster_labels) == 1) {
+    # Only one cluster - no need for backbone tree, just build tree of all cells
+    message("Only one cluster found, creating simple tree of all cells...")
+    all_cells <- clustering_df$cell_id
+
+    if (tree_type == "centroid") {
+      # Flat tree - all cells at same level
+      if (length(all_cells) == 1) {
+        tree <- ape::read.tree(text = paste0("(", all_cells, ");"))
+      } else {
+        newick_str <- paste0("(", paste(all_cells, collapse = ","), ");")
+        tree <- ape::read.tree(text = newick_str)
+      }
+    } else {
+      # tree_type == "cell" - hierarchical clustering of all cells
+      if (length(all_cells) == 1) {
+        tree <- ape::read.tree(text = paste0("(", all_cells, ");"))
+      } else {
+        hc <- stats::hclust(stats::dist(pca_coords), method = "average")
+        tree <- ape::as.phylo(hc)
+        tree$tip.label <- rownames(pca_coords)
+      }
+    }
+  } else if (tree_type == "centroid") {
+    # Multiple clusters - centroid tree with flat subtrees
     # Compute cluster centroids in PCA space
-    cluster_labels <- sort(unique(clustering_df$clone_id))
     centroids <- matrix(0, nrow = length(cluster_labels), ncol = ncol(pca_coords))
     rownames(centroids) <- cluster_labels
 
@@ -531,11 +558,10 @@ leiden_clustering <- function(CNbins,
       tree <- ape::bind.tree(tree, subtree, where = idx)
     }
   } else {
-    # tree_type == "cell"
+    # tree_type == "cell" with multiple clusters
     # Graft cell subtrees onto centroid backbone to preserve cluster blocks
 
     # Step 1: Build centroid backbone tree
-    cluster_labels <- sort(unique(clustering_df$clone_id))
     centroids <- matrix(0, nrow = length(cluster_labels), ncol = ncol(pca_coords))
     rownames(centroids) <- cluster_labels
 
