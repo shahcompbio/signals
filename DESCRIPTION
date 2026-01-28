@@ -43,7 +43,7 @@ Imports:
     ggforce,
     ggtree
 RoxygenNote: 7.3.3
-Suggests: 
+Suggests:
     knitr,
     rmarkdown,
     markdown,
@@ -53,7 +53,8 @@ Suggests:
     ggrastr,
     VIBER,
     Seurat,
-    plyranges
+    plyranges,
+    igraph
 Remotes: 
   caravagnalab/easypar,
   caravagnalab/VIBER
