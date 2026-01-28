@@ -39,4 +39,4 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           secrets: |
-            github_token=${{ secrets.GH_TOKEN }}
+            github_token=${{ secrets.GITHUB_TOKEN }}
