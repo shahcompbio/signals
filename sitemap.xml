@@ -29,6 +29,7 @@
 <url><loc>/reference/coord_to_arm.html</loc></url>
 <url><loc>/reference/createCNmatrix.html</loc></url>
 <url><loc>/reference/find_gene_bin_positions.html</loc></url>
+<url><loc>/reference/flip_sv_positions.html</loc></url>
 <url><loc>/reference/format_haplotypes.html</loc></url>
 <url><loc>/reference/format_haplotypes_dlp.html</loc></url>
 <url><loc>/reference/getBins.html</loc></url>
@@ -36,6 +37,7 @@
 <url><loc>/reference/get_sv_lines_and_arcs_legend.html</loc></url>
 <url><loc>/reference/hc_clustering.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/leiden_clustering.html</loc></url>
 <url><loc>/reference/logspace_add.html</loc></url>
 <url><loc>/reference/make_gene_annotation.html</loc></url>
 <url><loc>/reference/make_ideogram_annotation.html</loc></url>

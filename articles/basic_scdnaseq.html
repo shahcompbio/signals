@@ -159,19 +159,48 @@ this to plot the <code>copy</code> raw data column.</p>
 </div>
 </div>
 <div class="section level2">
+<h2 id="alternative-clustering-with-leiden">Alternative clustering with Leiden<a class="anchor" aria-label="anchor" href="#alternative-clustering-with-leiden"></a>
+</h2>
+<p>An alternative to UMAP+HDBSCAN clustering is the Leiden algorithm,
+which uses PCA + k-nearest neighbor graphs for community detection. This
+approach can produce different clustering results and offers more
+control over the tree structure.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">leiden_clustering_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/leiden_clustering.html">leiden_clustering</a></span><span class="op">(</span><span class="va">CNbins</span>, field <span class="op">=</span> <span class="st">"copy"</span>, k <span class="op">=</span> <span class="fl">15</span>, resolution <span class="op">=</span> <span class="fl">0.7</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></code></pre></div>
+<p>We can visualize the Leiden clustering results in a heatmap. By
+default, <code>leiden_clustering</code> uses
+<code>tree_type = "centroid"</code>, which creates a tree where cells
+within each cluster form a flat star structure (all cells at the same
+depth within their cluster):</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">CNbins</span>, tree <span class="op">=</span> <span class="va">leiden_clustering_result</span><span class="op">$</span><span class="va">tree</span>, clusters <span class="op">=</span> <span class="va">leiden_clustering_result</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span></span></code></pre></div>
+<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="1152"></p>
+<p>For a more detailed cell-level tree that adds hierarchical structure
+within clusters, we can use <code>tree_type = "cell"</code>. This
+creates subtrees via hierarchical clustering within each cluster and
+grafts them onto the backbone tree of cluster centroids:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">leiden_cell_tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/leiden_clustering.html">leiden_clustering</a></span><span class="op">(</span><span class="va">CNbins</span>, field <span class="op">=</span> <span class="st">"copy"</span>, k <span class="op">=</span> <span class="fl">15</span>, resolution <span class="op">=</span> <span class="fl">0.7</span>, tree_type <span class="op">=</span> <span class="st">"cell"</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotHeatmap.html">plotHeatmap</a></span><span class="op">(</span><span class="va">CNbins</span>, tree <span class="op">=</span> <span class="va">leiden_cell_tree</span><span class="op">$</span><span class="va">tree</span>, clusters <span class="op">=</span> <span class="va">leiden_cell_tree</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span></span></code></pre></div>
+<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" alt="" width="1152"></p>
+<p>Both tree types preserve cluster blocks (cells from the same cluster
+are always adjacent in the tree).</p>
+</div>
+<div class="section level2">
 <h2 id="utilities">Utilities<a class="anchor" aria-label="anchor" href="#utilities"></a>
 </h2>
 <p>Compute consensus copy number profiles.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">CNbins_consensus</span> <span class="op">&lt;-</span> <span class="fu">consensuscopynumber</span><span class="op">(</span><span class="va">CNbins</span>, cl <span class="op">=</span> <span class="va">clustering</span><span class="op">$</span><span class="va">clustering</span><span class="op">)</span> <span class="co">#cell_id becomes clone_id</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plotCNprofile.html">plotCNprofile</a></span><span class="op">(</span><span class="va">CNbins_consensus</span><span class="op">)</span></span></code></pre></div>
-<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="basic_scdnaseq_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="700"></p>
 <p>Create segmentation from binned data.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">segments</span> <span class="op">&lt;-</span> <span class="fu">create_segments</span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></span></code></pre></div>
 <p>Compute average copy number per chromosome or chromosome arm.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">CNbins_chr</span> <span class="op">&lt;-</span> <span class="fu">per_chr_cn</span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">CNbins_arm</span> <span class="op">&lt;-</span> <span class="fu">per_chrarm_cn</span><span class="op">(</span><span class="va">CNbins</span><span class="op">)</span></span></code></pre></div>
