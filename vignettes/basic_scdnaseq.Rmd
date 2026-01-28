@@ -63,6 +63,32 @@ The default is to plot the `state` column, we can change this to plot the `copy`
 plotHeatmap(CNbins, tree = clustering$tree, clusters = clustering$clustering, show_clone_label = F, plotcol = "copy")
 ```
 
+## Alternative clustering with Leiden
+
+An alternative to UMAP+HDBSCAN clustering is the Leiden algorithm, which uses PCA + k-nearest neighbor graphs for community detection. This approach can produce different clustering results and offers more control over the tree structure.
+
+```{r}
+leiden_clustering_result <- leiden_clustering(CNbins, field = "copy", k = 15, resolution = 0.7, seed = 42)
+```
+
+We can visualize the Leiden clustering results in a heatmap. By default, `leiden_clustering` uses `tree_type = "centroid"`, which creates a tree where cells within each cluster form a flat star structure (all cells at the same depth within their cluster):
+
+```{r, fig.height=4 , fig.width=12}
+plotHeatmap(CNbins, tree = leiden_clustering_result$tree, clusters = leiden_clustering_result$clustering)
+```
+
+For a more detailed cell-level tree that adds hierarchical structure within clusters, we can use `tree_type = "cell"`. This creates subtrees via hierarchical clustering within each cluster and grafts them onto the backbone tree of cluster centroids:
+
+```{r}
+leiden_cell_tree <- leiden_clustering(CNbins, field = "copy", k = 15, resolution = 0.7, tree_type = "cell", seed = 42)
+```
+
+```{r, fig.height=4 , fig.width=12}
+plotHeatmap(CNbins, tree = leiden_cell_tree$tree, clusters = leiden_cell_tree$clustering)
+```
+
+Both tree types preserve cluster blocks (cells from the same cluster are always adjacent in the tree).
+
 ## Utilities
 
 Compute consensus copy number profiles.
