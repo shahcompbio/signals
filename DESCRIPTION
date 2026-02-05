@@ -1,6 +1,6 @@
 Package: signals
 Title: Single Cell Genomes with Allele Specificity
-Version: 0.14.0
+Version: 0.14.1
 Author@R: c(person("Marc", "Williams", email = "marcjwilliams1@gmail.com",
                   role = c("aut", "cre")),
             person("Tyler", "Funnell",

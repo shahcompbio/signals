@@ -1,3 +1,7 @@
+# signals 0.14.1
+
+* Fix rephasebins stability to ensure idempotent results
+
 # signals 0.14.0
 
 * Add gene annotation feature to plotHeatmap with customizable positions and styling
