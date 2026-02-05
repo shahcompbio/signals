@@ -1,6 +1,6 @@
 # signals 0.14.1
 
-* Fix rephasebins stability to ensure idempotent results
+* Fix rephasebins stability to ensure stable results
 
 # signals 0.14.0
 
