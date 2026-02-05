@@ -1314,7 +1314,7 @@ getphase <- function(A, B) {
   }
   
   phasebin <- c()
-  if (Df$Dnon[nbins] < Df$Dswa[nbins]) {
+  if (Df$Dnon[nbins] <= Df$Dswa[nbins]) {
     phasebin <- c(phasebin, 0)
     prev <- Bf$Bnon[nbins]
   } else {
@@ -1469,18 +1469,24 @@ phasing_LOH <- function(cndat, chromosomes, cutoff = 0.9, ncells = 1) {
 
 #' Rephase haplotype copy number
 #'
-#' This function implements 2 rephasing algorithms. The first `mindist`, implementthe dynamic programming algorithm to rephase haplotype copy number first described in CHISEL.
+#' This function implements 2 rephasing algorithms. The first `mindist` implements the dynamic programming algorithm to rephase haplotype copy number first described in CHISEL.
 #' The objective is to find the phase that minimizes the number of copy number events. The second `LOH` finds cells with whole chromosome losses and assumes this was a single
 #' event and rephases all the bins relative to this.
+#'
+#' The algorithm iterates until convergence (no more bins need switching) to ensure
+#' idempotency - running rephasebins twice on the same data will produce identical results.
 #'
 #' @param cn either a `hscn` object from `callHaplotypeSpecificCN` or a dataframe with haplotype specific copy number ie the `data` slot in an `hscn` object
 #' @param chromosomes vector specifying which chromosomes to phase, default is NULL whereby all chromosomes are phased
 #' @param method either `mindist` or `LOH`
+#' @param whole_chr_cutoff Cutoff for whole chromosome LOH detection when method is `LOH`, default 0.9
 #' @param ncells default 1
 #' @param clusterfirst Whether to cluster cells and perform rephasing on clusters rather than cells
 #' @param cl Precomputed clustering object from `umap_clustering`
+#' @param seed Random seed for UMAP clustering reproducibility when `clusterfirst = TRUE`, default 42
+#' @param max_iterations Maximum number of convergence iterations, default 10
 #'
-#' @return Either a new `hscn` object or a dataframe with rephased bins depdending on the input
+#' @return Either a new `hscn` object or a dataframe with rephased bins depending on the input
 #'
 #' @md
 #' @export
@@ -1490,57 +1496,107 @@ rephasebins <- function(cn,
                         whole_chr_cutoff = 0.9,
                         ncells = 1,
                         clusterfirst = FALSE,
-                        cl = NULL) {
+                        cl = NULL,
+                        seed = 42,
+                        max_iterations = 10) {
   if (!method %in% c("mindist", "LOH")) {
     stop(paste0("method must be one of mindist or LOH"))
   }
-  
-  
+
+
   if (is.hscn(cn)) {
     cndat <- cn$data
   } else {
     cndat <- cn
   }
-  
+
   if (is.null(chromosomes)) {
     chromosomes <- unique(cndat$chr)
   }
-  
-  if (method == "mindist") {
-    if (clusterfirst){
-      if (is.null(cl)){
-        ncells <- length(unique(cndat$cell_id))
-        cl <- umap_clustering(cndat,
-                              minPts = max(round(0.05 * ncells), 2),
-                              field = "copy")
-        cl <- cl$clustering
-      }
-      cndatclone <- consensuscopynumber(cndat, cl = cl)
-      phase_df <- phasing_minevents(cndatclone, chromosomes)
-    } else {
-      phase_df <- phasing_minevents(cndat, chromosomes)
-    }
-  } else if (method == "LOH") {
-    phase_df <- phasing_LOH(cndat,
-                            chromosomes,
-                            cutoff = whole_chr_cutoff,
-                            ncells = ncells
-    )
+
+  # For clusterfirst, compute clustering once with seed for reproducibility
+  if (method == "mindist" && clusterfirst && is.null(cl)) {
+    n_cells <- length(unique(cndat$cell_id))
+    cl <- umap_clustering(cndat,
+                          minPts = max(round(0.05 * n_cells), 2),
+                          field = "copy",
+                          seed = seed)
+    cl <- cl$clustering
   }
-  
-  #switch the bins
-  newhscn <- switchbins(cndat, phase_df)
-  
+
+  # Convergence loop: iterate until no bins change
+  cumulative_phase_df <- NULL
+  for (iter in seq_len(max_iterations)) {
+    if (method == "mindist") {
+      if (clusterfirst) {
+        cndatclone <- consensuscopynumber(cndat, cl = cl)
+        phase_df <- phasing_minevents(cndatclone, chromosomes)
+      } else {
+        phase_df <- phasing_minevents(cndat, chromosomes)
+      }
+    } else if (method == "LOH") {
+      phase_df <- phasing_LOH(cndat,
+                              chromosomes,
+                              cutoff = whole_chr_cutoff,
+                              ncells = ncells
+      )
+    }
+
+    n_switches <- sum(phase_df$phasing == "switch")
+
+    if (n_switches == 0) {
+      message(paste0("Converged after ", iter, " iteration(s) with no switches needed"))
+      break
+    }
+
+    message(paste0("Iteration ", iter, ": ", n_switches, " bins to switch"))
+
+    # Track cumulative phase changes
+    if (is.null(cumulative_phase_df)) {
+      cumulative_phase_df <- phase_df
+    } else {
+      # XOR the phases: switch + switch = stick, switch + stick = switch
+      cumulative_phase_df <- dplyr::left_join(
+        cumulative_phase_df %>% dplyr::select(chr, start, end, phasing),
+        phase_df %>% dplyr::select(chr, start, end, phasing),
+        by = c("chr", "start", "end"),
+        suffix = c("_prev", "_new")
+      ) %>%
+        dplyr::mutate(phasing = dplyr::case_when(
+          phasing_prev == "switch" & phasing_new == "switch" ~ "stick",
+          phasing_prev == "stick" & phasing_new == "switch" ~ "switch",
+          phasing_prev == "switch" & phasing_new == "stick" ~ "switch",
+          TRUE ~ "stick"
+        )) %>%
+        dplyr::select(chr, start, end, phasing)
+    }
+
+    # Apply switches for next iteration
+    cndat <- switchbins(cndat, phase_df)
+
+    if (iter == max_iterations) {
+      message(paste0("Reached max iterations (", max_iterations, "), stopping"))
+    }
+  }
+
+  # Use cumulative phase for final result if we iterated
+  if (!is.null(cumulative_phase_df)) {
+    phase_df <- cumulative_phase_df
+  }
+
+  # Apply final switches to original data
   if (is.hscn(cn)) {
+    newhscn <- switchbins(cn$data, phase_df)
     cn$haplotype_phasing <-
       rephasehaplotypes(phase_df, cn$haplotype_phasing) %>% as.data.frame()
     cn$data <- newhscn %>% orderdf(.) %>%  as.data.frame()
     cn$qc_summary <- qc_summary(cn$data)
     x <- cn
   } else {
+    newhscn <- switchbins(cn, phase_df)
     x <- list(newhscn = newhscn %>% orderdf(.), phase = phase_df)
   }
-  
+
   return(x)
 }
 
