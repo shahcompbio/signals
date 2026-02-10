@@ -1075,7 +1075,7 @@ make_top_annotation_gain <- function(copynumber,
     copynumbermat[copynumbermat == "11+"] <- "11"
     copynumbermat <- sapply(copynumbermat, as.numeric)
     f1 <- colSums(copynumbermat > cutoff, na.rm = TRUE) / ncells
-    f2 <- -colSums((copynumbermat < cutoff) & (copynumbermat > 0), na.rm = TRUE) / ncells
+    f2 <- -colSums((copynumbermat < cutoff) & (copynumbermat >= 0), na.rm = TRUE) / ncells
     if (is.null(maxf)) {
       maxf <- ceiling(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
       if (maxf < 0.01) {
@@ -1160,7 +1160,7 @@ make_top_annotation_gain <- function(copynumber,
     )
   }
   else if ((plotcol == "state_BAF" | plotcol == "BAF") & plotfrequency == TRUE) {
-    f1 <- colSums((copynumber < 0.5) & (copynumber > 0), na.rm = TRUE) / ncells
+    f1 <- colSums((copynumber < 0.5) & (copynumber >= 0), na.rm = TRUE) / ncells
     f2 <- -colSums(copynumber > 0.5, na.rm = TRUE) / ncells
     if (is.null(maxf)) {
       maxf <- ceiling(max(max(f1, max(abs(f2)))) / 0.1) * 0.1
