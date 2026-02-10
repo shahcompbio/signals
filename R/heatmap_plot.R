@@ -1227,6 +1227,71 @@ make_top_annotation_gain <- function(copynumber,
   return(ha2)
 }
 
+make_summary_annotations <- function(copynumber,
+                                     plotcol = "state",
+                                     plotmean = FALSE,
+                                     plotdiversity = FALSE,
+                                     mean_height = 0.7,
+                                     diversity_height = 0.7,
+                                     annofontsize = 10) {
+  if (!plotmean && !plotdiversity) {
+    return(NULL)
+  }
+
+  # Convert matrix to numeric
+  mat <- copynumber
+  mat[mat == "11+"] <- "11"
+  mat <- suppressWarnings(apply(mat, 2, as.numeric))
+
+  # Check if conversion produced mostly NAs (non-numeric plotcol)
+  na_frac <- sum(is.na(mat)) / length(mat)
+  orig_na_frac <- sum(is.na(copynumber)) / length(copynumber)
+  if ((na_frac - orig_na_frac) > 0.5) {
+    warning(
+      "Column '", plotcol,
+      "' is not numeric. Skipping mean/diversity tracks."
+    )
+    return(NULL)
+  }
+
+  anno_args <- list(show_annotation_name = FALSE)
+  heights <- c()
+
+  if (plotmean) {
+    mean_vals <- colMeans(mat, na.rm = TRUE)
+    anno_args[["mean_cn"]] <- ComplexHeatmap::anno_lines(
+      mean_vals,
+      gp = grid::gpar(col = "black", lwd = 1),
+      add_points = FALSE,
+      axis_param = list(
+        side = "right",
+        gp = grid::gpar(fontsize = annofontsize - 2)
+      ),
+      border = FALSE
+    )
+    heights <- c(heights, mean_height)
+  }
+
+  if (plotdiversity) {
+    sd_vals <- apply(mat, 2, sd, na.rm = TRUE)
+    anno_args[["diversity_cn"]] <- ComplexHeatmap::anno_lines(
+      sd_vals,
+      gp = grid::gpar(col = "#666666", lwd = 1),
+      add_points = FALSE,
+      axis_param = list(
+        side = "right",
+        gp = grid::gpar(fontsize = annofontsize - 2)
+      ),
+      border = FALSE
+    )
+    heights <- c(heights, diversity_height)
+  }
+
+  anno_args[["height"]] <- grid::unit(sum(heights), "cm")
+
+  do.call(ComplexHeatmap::columnAnnotation, anno_args)
+}
+
 make_copynumber_heatmap <- function(copynumber,
                                     clones,
                                     annotations = NULL,
@@ -1265,6 +1330,10 @@ make_copynumber_heatmap <- function(copynumber,
                                     gene_annotation_fontsize = NULL,
                                     gene_link_height = 5,
                                     gene_label_sep = "/",
+                                    plotmean = FALSE,
+                                    plotdiversity = FALSE,
+                                    mean_height = 0.7,
+                                    diversity_height = 0.7,
                                     ...) {
 
   if (class(colvals) == "function"){
@@ -1369,13 +1438,24 @@ make_copynumber_heatmap <- function(copynumber,
     )
   }
 
-  # Combine gene and frequency annotations (genes above frequency)
-  if (!is.null(gene_annot) && !is.null(freq_annot)) {
-    top_annot <- c(gene_annot, freq_annot)
-  } else if (!is.null(gene_annot)) {
-    top_annot <- gene_annot
+  # Build summary annotations (mean CN / diversity)
+  summary_annot <- make_summary_annotations(
+    copynumber,
+    plotcol = plotcol,
+    plotmean = plotmean,
+    plotdiversity = plotdiversity,
+    mean_height = mean_height,
+    diversity_height = diversity_height,
+    annofontsize = annofontsize
+  )
+
+  # Combine all top annotations (genes above frequency above summary)
+  # Order: gene_annot (topmost) > freq_annot > summary_annot (closest to heatmap)
+  annot_list <- Filter(Negate(is.null), list(gene_annot, freq_annot, summary_annot))
+  if (length(annot_list) > 0) {
+    top_annot <- Reduce(c, annot_list)
   } else {
-    top_annot <- freq_annot
+    top_annot <- NULL
   }
 
   # Create the heatmap
@@ -1468,6 +1548,10 @@ getSVlegend <- function(include = NULL) {
 #' @param gene_annotation_fontsize Font size for gene annotation labels. Defaults to `annofontsize` if NULL.
 #' @param gene_link_height Height of link lines connecting gene labels to positions, in mm. Default is 5.
 #' @param gene_label_sep Separator used when multiple genes fall within the same genomic bin. Default is "/".
+#' @param plotmean Show a mean copy number line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.
+#' @param plotdiversity Show a copy number diversity (standard deviation) line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.
+#' @param mean_height Height of the mean copy number track in cm. Default is 0.7.
+#' @param diversity_height Height of the diversity track in cm. Default is 0.7.
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #' 
@@ -1535,6 +1619,10 @@ plotHeatmap <- function(cn,
                         gene_annotation_fontsize = NULL,
                         gene_link_height = 5,
                         gene_label_sep = "/",
+                        plotmean = FALSE,
+                        plotdiversity = FALSE,
+                        mean_height = 0.7,
+                        diversity_height = 0.7,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1840,6 +1928,10 @@ plotHeatmap <- function(cn,
     gene_annotation_fontsize = gene_annotation_fontsize,
     gene_link_height = gene_link_height,
     gene_label_sep = gene_label_sep,
+    plotmean = plotmean,
+    plotdiversity = plotdiversity,
+    mean_height = mean_height,
+    diversity_height = diversity_height,
     ...
   )
   if (plottree == TRUE) {
