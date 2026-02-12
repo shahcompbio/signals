@@ -59,6 +59,10 @@ plotHeatmap(
   gene_annotation_fontsize = NULL,
   gene_link_height = 5,
   gene_label_sep = "/",
+  plotmean = FALSE,
+  plotdiversity = FALSE,
+  mean_height = 0.7,
+  diversity_height = 0.7,
   ...
 )
 }
@@ -170,7 +174,15 @@ Gene names must match the `ensembl_gene_symbol` column in `gene_locations` data.
 
 \item{gene_link_height}{Height of link lines connecting gene labels to positions, in mm. Default is 5.}
 
-\item{gene_label_sep}{Separator used when multiple genes fall within the same genomic bin. Default is "/".
+\item{gene_label_sep}{Separator used when multiple genes fall within the same genomic bin. Default is "/".}
+
+\item{plotmean}{Show a mean copy number line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.}
+
+\item{plotdiversity}{Show a copy number diversity (standard deviation) line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.}
+
+\item{mean_height}{Height of the mean copy number track in cm. Default is 0.7.}
+
+\item{diversity_height}{Height of the diversity track in cm. Default is 0.7.
 
 If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.}
 }

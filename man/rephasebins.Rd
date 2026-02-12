@@ -11,7 +11,9 @@ rephasebins(
   whole_chr_cutoff = 0.9,
   ncells = 1,
   clusterfirst = FALSE,
-  cl = NULL
+  cl = NULL,
+  seed = 42,
+  max_iterations = 10
 )
 }
 \arguments{
@@ -21,17 +23,27 @@ rephasebins(
 
 \item{method}{either \code{mindist} or \code{LOH}}
 
+\item{whole_chr_cutoff}{Cutoff for whole chromosome LOH detection when method is \code{LOH}, default 0.9}
+
 \item{ncells}{default 1}
 
 \item{clusterfirst}{Whether to cluster cells and perform rephasing on clusters rather than cells}
 
 \item{cl}{Precomputed clustering object from \code{umap_clustering}}
+
+\item{seed}{Random seed for UMAP clustering reproducibility when \code{clusterfirst = TRUE}, default 42}
+
+\item{max_iterations}{Maximum number of convergence iterations, default 10}
 }
 \value{
-Either a new \code{hscn} object or a dataframe with rephased bins depdending on the input
+Either a new \code{hscn} object or a dataframe with rephased bins depending on the input
 }
 \description{
-This function implements 2 rephasing algorithms. The first \code{mindist}, implementthe dynamic programming algorithm to rephase haplotype copy number first described in CHISEL.
+This function implements 2 rephasing algorithms. The first \code{mindist} implements the dynamic programming algorithm to rephase haplotype copy number first described in CHISEL.
 The objective is to find the phase that minimizes the number of copy number events. The second \code{LOH} finds cells with whole chromosome losses and assumes this was a single
 event and rephases all the bins relative to this.
+}
+\details{
+The algorithm iterates until convergence (no more bins need switching) to ensure
+idempotency - running rephasebins twice on the same data will produce identical results.
 }

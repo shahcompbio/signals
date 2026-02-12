@@ -865,7 +865,8 @@ make_ideogram_annotation <- function(copynumber,
     ideogram = ComplexHeatmap::anno_simple(
       stain_types,
       col = all_colors,
-      height = grid::unit(ideogram_height, "cm")
+      height = grid::unit(ideogram_height, "cm"),
+      border = TRUE
     ),
     which = "column",
     show_annotation_name = FALSE,
@@ -1243,6 +1244,9 @@ make_summary_annotations <- function(copynumber,
   mat[mat == "11+"] <- "11"
   mat <- suppressWarnings(apply(mat, 2, as.numeric))
 
+  # Exclude centromere sentinel values (plotallbins sets these to -999)
+  mat[mat == CENTROMERE_SENTINEL] <- NA
+
   # Check if conversion produced mostly NAs (non-numeric plotcol)
   na_frac <- sum(is.na(mat)) / length(mat)
   orig_na_frac <- sum(is.na(copynumber)) / length(copynumber)
@@ -1264,7 +1268,7 @@ make_summary_annotations <- function(copynumber,
       gp = grid::gpar(col = "black", lwd = 1),
       add_points = FALSE,
       axis_param = list(
-        side = "right",
+        side = "left",
         gp = grid::gpar(fontsize = annofontsize - 2)
       ),
       border = FALSE
@@ -1279,7 +1283,7 @@ make_summary_annotations <- function(copynumber,
       gp = grid::gpar(col = "#666666", lwd = 1),
       add_points = FALSE,
       axis_param = list(
-        side = "right",
+        side = "left",
         gp = grid::gpar(fontsize = annofontsize - 2)
       ),
       border = FALSE
@@ -1334,6 +1338,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     plotdiversity = FALSE,
                                     mean_height = 0.7,
                                     diversity_height = 0.7,
+                                    annotation_gap = 2,
                                     ...) {
 
   if (class(colvals) == "function"){
@@ -1449,11 +1454,14 @@ make_copynumber_heatmap <- function(copynumber,
     annofontsize = annofontsize
   )
 
-  # Combine all top annotations (genes above frequency above summary)
-  # Order: gene_annot (topmost) > freq_annot > summary_annot (closest to heatmap)
-  annot_list <- Filter(Negate(is.null), list(gene_annot, freq_annot, summary_annot))
+  # Combine all top annotations
+  # Order: gene_annot (topmost) > summary_annot > freq_annot (closest to heatmap)
+  annot_list <- Filter(Negate(is.null), list(gene_annot, summary_annot, freq_annot))
   if (length(annot_list) > 0) {
-    top_annot <- Reduce(c, annot_list)
+    top_annot <- Reduce(
+      function(a, b) c(a, b, gap = grid::unit(annotation_gap, "mm")),
+      annot_list
+    )
   } else {
     top_annot <- NULL
   }
@@ -1552,6 +1560,7 @@ getSVlegend <- function(include = NULL) {
 #' @param plotdiversity Show a copy number diversity (standard deviation) line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.
 #' @param mean_height Height of the mean copy number track in cm. Default is 0.7.
 #' @param diversity_height Height of the diversity track in cm. Default is 0.7.
+#' @param annotation_gap Gap between top annotation tracks in mm. Default is 2.
 #'
 #' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #' 
@@ -1623,6 +1632,7 @@ plotHeatmap <- function(cn,
                         plotdiversity = FALSE,
                         mean_height = 0.7,
                         diversity_height = 0.7,
+                        annotation_gap = 2,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
     CNbins <- cn$data
@@ -1932,6 +1942,7 @@ plotHeatmap <- function(cn,
     plotdiversity = plotdiversity,
     mean_height = mean_height,
     diversity_height = diversity_height,
+    annotation_gap = annotation_gap,
     ...
   )
   if (plottree == TRUE) {
