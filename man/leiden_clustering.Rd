@@ -37,7 +37,7 @@ for 'cell_id' and the specified `field`.}
 
 \item{objective_function}{Character. Leiden objective function: "modularity" or "CPM". Default is "modularity".}
 
-\item{tree_type}{Character. Type of phylogenetic tree to generate: "centroid" (cluster-level) or "cell" (cell-level). Default is "centroid".}
+\item{tree_type}{Character. Type of phylogenetic tree to generate: "centroid" (flat clusters) or "cell" (hierarchical within clusters). Default is "centroid".}
 }
 \value{
 A list containing:
@@ -53,6 +53,10 @@ cell populations. It can handle both standard copy number data and haplotype-spe
 copy number (HSCN) data.
 }
 \details{
+Inspired by community detection approaches developed by Sohrab Salehi.
+TODO: Add reference to Salehi et al. paper on community detection in single-cell genomics.
+
+
 The function performs the following steps:
 1. Creates a copy number matrix from the input data.
 2. Applies z-score standardization with clipping to handle outliers.
@@ -66,6 +70,8 @@ and creates separate matrices for A and B alleles.
 
 The function automatically adjusts `k` if there are too few cells.
 Unlike HDBSCAN (used in umap_clustering), Leiden produces flat cluster assignments,
-so tree generation uses hierarchical clustering on either cluster centroids (faster)
-or all cells (more detailed).
+so tree generation uses hierarchical clustering on cluster centroids to create a backbone,
+then grafts cell subtrees onto it. Both tree types preserve clone blocks in the tree structure:
+- `tree_type = "centroid"`: Cells within each cluster form a flat star/polytomy (no within-cluster hierarchy)
+- `tree_type = "cell"`: Cells within each cluster are hierarchically organized via hclust
 }
