@@ -131,7 +131,7 @@ for 'cell_id' and the specified `field`.</p></dd>
 
 
 <dt id="arg-tree-type">tree_type<a class="anchor" aria-label="anchor" href="#arg-tree-type"></a></dt>
-<dd><p>Character. Type of phylogenetic tree to generate: "centroid" (cluster-level) or "cell" (cell-level). Default is "centroid".</p></dd>
+<dd><p>Character. Type of phylogenetic tree to generate: "centroid" (flat clusters) or "cell" (hierarchical within clusters). Default is "centroid".</p></dd>
 
 </dl></div>
     <div id="value">
@@ -152,7 +152,10 @@ for 'cell_id' and the specified `field`.</p></dd>
 </dl></div>
     <div id="details">
     <h2>Details</h2>
-    <p>The function performs the following steps:
+    <p>Inspired by community detection approaches developed by Sohrab Salehi.
+TODO: Add reference to Salehi et al. paper on community detection in single-cell genomics.</p>
+
+<p>The function performs the following steps:
 1. Creates a copy number matrix from the input data.
 2. Applies z-score standardization with clipping to handle outliers.
 3. Performs PCA dimensionality reduction.
@@ -163,8 +166,10 @@ for 'cell_id' and the specified `field`.</p></dd>
 and creates separate matrices for A and B alleles.</p>
 <p>The function automatically adjusts `k` if there are too few cells.
 Unlike HDBSCAN (used in umap_clustering), Leiden produces flat cluster assignments,
-so tree generation uses hierarchical clustering on either cluster centroids (faster)
-or all cells (more detailed).</p>
+so tree generation uses hierarchical clustering on cluster centroids to create a backbone,
+then grafts cell subtrees onto it. Both tree types preserve clone blocks in the tree structure:
+- `tree_type = "centroid"`: Cells within each cluster form a flat star/polytomy (no within-cluster hierarchy)
+- `tree_type = "cell"`: Cells within each cluster are hierarchically organized via hclust</p>
     </div>
 
   </div>

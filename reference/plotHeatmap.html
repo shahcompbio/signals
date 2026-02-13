@@ -124,6 +124,10 @@
 <span>  gene_annotation_fontsize <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  gene_link_height <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  gene_label_sep <span class="op">=</span> <span class="st">"/"</span>,</span>
+<span>  plotmean <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  plotdiversity <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  mean_height <span class="op">=</span> <span class="fl">0.7</span>,</span>
+<span>  diversity_height <span class="op">=</span> <span class="fl">0.7</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -346,7 +350,23 @@ Gene names must match the `ensembl_gene_symbol` column in `gene_locations` data.
 
 
 <dt id="arg-gene-label-sep">gene_label_sep<a class="anchor" aria-label="anchor" href="#arg-gene-label-sep"></a></dt>
-<dd><p>Separator used when multiple genes fall within the same genomic bin. Default is "/".</p>
+<dd><p>Separator used when multiple genes fall within the same genomic bin. Default is "/".</p></dd>
+
+
+<dt id="arg-plotmean">plotmean<a class="anchor" aria-label="anchor" href="#arg-plotmean"></a></dt>
+<dd><p>Show a mean copy number line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.</p></dd>
+
+
+<dt id="arg-plotdiversity">plotdiversity<a class="anchor" aria-label="anchor" href="#arg-plotdiversity"></a></dt>
+<dd><p>Show a copy number diversity (standard deviation) line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.</p></dd>
+
+
+<dt id="arg-mean-height">mean_height<a class="anchor" aria-label="anchor" href="#arg-mean-height"></a></dt>
+<dd><p>Height of the mean copy number track in cm. Default is 0.7.</p></dd>
+
+
+<dt id="arg-diversity-height">diversity_height<a class="anchor" aria-label="anchor" href="#arg-diversity-height"></a></dt>
+<dd><p>Height of the diversity track in cm. Default is 0.7.</p>
 <p>If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.</p></dd>
 
 </dl></div>
