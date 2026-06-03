@@ -119,10 +119,10 @@ SV_colors <- c(
 
 # Orientation-based SV colors
 SV_orientation_colors <- c(
-  `+-` = "#E63946",        # Red: head-to-head
-  `-+` = "#457B9D",        # Blue: tail-to-tail
+  `-+` = "#E63946",        # Red: duplication-like
+  `+-` = "#6EB5E0",        # Blue: deletion-like
   `++` = "#2A9D8F",        # Teal: same forward
-  `--` = "#F4A261",        # Orange: same reverse
+  `--` = "darkorange3",        # Orange: same reverse
   `Translocation` = "#264653"  # Dark grey: inter-chromosomal
 )
 
