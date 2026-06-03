@@ -44,9 +44,45 @@ hm2 <- plotHeatmap(sim_data_bb$ascn,
             reorderclusters = TRUE, 
             plottree = TRUE)
 
+dfannot_continuous <- data.frame(cell_id = unique(sim_data_bb$ascn$cell_id))
+dfannot_continuous$RedScore <- seq(0, 1, length.out = nrow(dfannot_continuous))
+dfannot_continuous$BlueScore <- seq(10, 89, length.out = nrow(dfannot_continuous))
+dfannot_continuous$PurpleScore <- seq(100, 179, length.out = nrow(dfannot_continuous))
+dfannot_continuous$OrangeScore <- seq(1000, 1079, length.out = nrow(dfannot_continuous))
+
+hm_continuous <- plotHeatmap(
+  sim_data_bb$ascn,
+  annotations = dfannot_continuous,
+  tree = NULL,
+  reorderclusters = TRUE,
+  plottree = FALSE
+)
+
 test_that("Test returns plot object", {
   expect_true(typeof(hm1) == "S4")
   expect_true(typeof(hm2) == "S4")
+  expect_true(typeof(hm_continuous) == "S4")
+})
+
+test_that("Continuous annotations use pale to accent gradients in order", {
+  ha <- signals:::make_left_annot_generic(dfannot_continuous)
+
+  expect_identical(
+    ha@anno_list$RedScore@color_mapping@col_fun(c(0, 1)),
+    c("#F5F4F0FF", "#C95D63FF")
+  )
+  expect_identical(
+    ha@anno_list$BlueScore@color_mapping@col_fun(c(10, 89)),
+    c("#F5F4F0FF", "#5B84B1FF")
+  )
+  expect_identical(
+    ha@anno_list$PurpleScore@color_mapping@col_fun(c(100, 179)),
+    c("#F5F4F0FF", "#8C6BB1FF")
+  )
+  expect_identical(
+    ha@anno_list$OrangeScore@color_mapping@col_fun(c(1000, 1079)),
+    c("#F5F4F0FF", "#D99A4EFF")
+  )
 })
 
 # Gene annotation tests

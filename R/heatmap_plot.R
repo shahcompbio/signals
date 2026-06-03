@@ -225,6 +225,12 @@ make_discrete_palette <- function(pal_name, levels) {
   return(pal)
 }
 
+make_continuous_palette <- function(level_index, low = "#F5F4F0", n = 100) {
+  high_cols <- c("#C95D63", "#5B84B1", "#8C6BB1", "#D99A4E")
+  high_col <- high_cols[((level_index - 1) %% length(high_cols)) + 1]
+  grDevices::colorRampPalette(c(low, high_col))(n)
+}
+
 format_copynumber_values <- function(copynumber, plotcol = "state") {
   # copynumber[copynumber > 11] <- 11
 
@@ -483,22 +489,16 @@ make_left_annot_generic <- function(dfanno,
   # Create color mappings for continuous columns
   continuous_col_funs <- list()
   if (length(continuous_cols) > 0) {
-    # Check if viridis is available, otherwise use a fallback
-    if (requireNamespace("viridis", quietly = TRUE)) {
-      viridis_colors <- viridis::viridis(100)
-    } else {
-      # Fallback: use viridis-like gradient via colorRampPalette
-      viridis_colors <- grDevices::colorRampPalette(c("#440154", "#31688E", "#35B779", "#FDE725"))(100)
-    }
-    
-    for (col in continuous_cols) {
+    for (i in seq_along(continuous_cols)) {
+      col <- continuous_cols[i]
       col_data <- dfanno[[col]]
       col_range <- range(col_data, na.rm = TRUE)
+      continuous_palette <- make_continuous_palette(i)
       
       # Create color mapping function and store it
       continuous_col_funs[[col]] <- circlize::colorRamp2(
         seq(col_range[1], col_range[2], length.out = 100),
-        viridis_colors
+        continuous_palette
       )
       
       # Add to annot_colours for use with df parameter
