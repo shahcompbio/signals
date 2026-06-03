@@ -414,9 +414,11 @@ get_library_labels <- function(cell_ids, idx = 1, str_to_remove = NULL) {
 
 make_left_annot_generic <- function(dfanno,
                                    palettes = NULL,
+                                   annotation_colours = NULL,
                                    show_legend = TRUE,
                                    annofontsize = 14,
-                                   anno_width = 0.4) {
+                                   anno_width = 0.4,
+                                   continuous_threshold = 10) {
   # Convert to data.frame if needed
   if (inherits(dfanno, c("data.table", "tbl_df", "tbl"))) {
     message("Converting dfanno from ", class(dfanno)[1], " to data.frame")
@@ -425,6 +427,12 @@ make_left_annot_generic <- function(dfanno,
   if (!is.data.frame(dfanno)) {
     warning("dfanno was converted to data.frame from ", class(dfanno)[1])
     dfanno <- as.data.frame(dfanno)
+  }
+
+  if (!is.numeric(continuous_threshold) || length(continuous_threshold) != 1 ||
+      is.na(continuous_threshold) || !is.finite(continuous_threshold) ||
+      continuous_threshold < 0) {
+    stop("continuous_threshold must be a single non-negative number")
   }
   
   # Check if cell_id column exists
@@ -445,6 +453,23 @@ make_left_annot_generic <- function(dfanno,
   if (length(anno_cols) == 0) {
     stop("dfanno must contain at least one annotation column besides cell_id")
   }
+
+  if (!is.null(annotation_colours)) {
+    if (!is.list(annotation_colours) || is.null(names(annotation_colours))) {
+      stop("annotation_colours must be a named list")
+    }
+    if (any(is.na(names(annotation_colours))) || any(names(annotation_colours) == "")) {
+      stop("annotation_colours must use non-empty names that match annotation columns")
+    }
+
+    unknown_annotation_cols <- setdiff(names(annotation_colours), anno_cols)
+    if (length(unknown_annotation_cols) > 0) {
+      warning(
+        "annotation_colours contains unknown annotation column(s): ",
+        paste(unknown_annotation_cols, collapse = ", ")
+      )
+    }
+  }
   
   # Detect continuous vs discrete columns
   continuous_cols <- character(0)
@@ -455,8 +480,51 @@ make_left_annot_generic <- function(dfanno,
     col_data <- dfanno[[col]]
     is_numeric <- is.numeric(col_data) || is.integer(col_data)
     n_unique <- length(unique(col_data))
-    
-    if (is_numeric && n_unique > 10) {
+
+    has_override <- !is.null(annotation_colours) && col %in% names(annotation_colours)
+    if (has_override) {
+      override <- annotation_colours[[col]]
+      if (is.null(override)) {
+        stop("annotation_colours[['", col, "']] cannot be NULL")
+      }
+
+      if (is.function(override)) {
+        if (!is_numeric) {
+          stop(
+            "annotation_colours[['", col,
+            "']] is a function (continuous mapping) but column '", col,
+            "' is not numeric"
+          )
+        }
+        continuous_cols <- c(continuous_cols, col)
+        col_types[[col]] <- "continuous"
+      } else if (is.character(override)) {
+        if (is.null(names(override)) || any(is.na(names(override))) || any(names(override) == "")) {
+          stop(
+            "annotation_colours[['", col,
+            "']] must be a named character vector when used for discrete annotations"
+          )
+        }
+
+        col_levels <- unique(as.character(col_data))
+        missing_levels <- setdiff(col_levels, names(override))
+        if (length(missing_levels) > 0) {
+          stop(
+            "annotation_colours[['", col,
+            "']] does not cover all values in the data: ",
+            paste(shQuote(missing_levels), collapse = ", ")
+          )
+        }
+
+        discrete_cols <- c(discrete_cols, col)
+        col_types[[col]] <- "discrete"
+      } else {
+        stop(
+          "annotation_colours[['", col,
+          "']] must be either a named character vector or a color-mapping function"
+        )
+      }
+    } else if (is_numeric && n_unique > continuous_threshold) {
       continuous_cols <- c(continuous_cols, col)
       col_types[[col]] <- "continuous"
     } else {
@@ -479,11 +547,22 @@ make_left_annot_generic <- function(dfanno,
     # Cycle through palettes
     palette_idx <- ((i-1) %% length(default_palettes)) + 1
     current_palette <- default_palettes[palette_idx]
-    
-    # Get unique values for this column
-    levels <- gtools::mixedsort(unique(dfanno[[col]]))
-    # Create palette for this annotation
-    annot_colours[[col]] <- make_discrete_palette(current_palette, levels)
+
+    has_override <- !is.null(annotation_colours) && col %in% names(annotation_colours)
+    if (has_override) {
+      levels <- names(annotation_colours[[col]])
+      levels <- levels[levels %in% unique(as.character(dfanno[[col]]))]
+      dfanno[[col]] <- factor(as.character(dfanno[[col]]), levels = levels)
+      annot_colours[[col]] <- annotation_colours[[col]][levels]
+    } else {
+      # Get unique values for this column
+      levels <- gtools::mixedsort(unique(dfanno[[col]]))
+      if (is.numeric(dfanno[[col]]) || is.integer(dfanno[[col]])) {
+        dfanno[[col]] <- factor(as.character(dfanno[[col]]), levels = as.character(levels))
+      }
+      # Create palette for this annotation
+      annot_colours[[col]] <- make_discrete_palette(current_palette, levels)
+    }
   }
   
   # Create color mappings for continuous columns
@@ -491,16 +570,21 @@ make_left_annot_generic <- function(dfanno,
   if (length(continuous_cols) > 0) {
     for (i in seq_along(continuous_cols)) {
       col <- continuous_cols[i]
-      col_data <- dfanno[[col]]
-      col_range <- range(col_data, na.rm = TRUE)
-      continuous_palette <- make_continuous_palette(i)
-      
-      # Create color mapping function and store it
-      continuous_col_funs[[col]] <- circlize::colorRamp2(
-        seq(col_range[1], col_range[2], length.out = 100),
-        continuous_palette
-      )
-      
+      has_override <- !is.null(annotation_colours) && col %in% names(annotation_colours)
+      if (has_override) {
+        continuous_col_funs[[col]] <- annotation_colours[[col]]
+      } else {
+        col_data <- dfanno[[col]]
+        col_range <- range(col_data, na.rm = TRUE)
+        continuous_palette <- make_continuous_palette(i)
+
+        # Create color mapping function and store it
+        continuous_col_funs[[col]] <- circlize::colorRamp2(
+          seq(col_range[1], col_range[2], length.out = 100),
+          continuous_palette
+        )
+      }
+
       # Add to annot_colours for use with df parameter
       annot_colours[[col]] <- continuous_col_funs[[col]]
     }
@@ -1299,6 +1383,8 @@ make_summary_annotations <- function(copynumber,
 make_copynumber_heatmap <- function(copynumber,
                                     clones,
                                     annotations = NULL,
+                                    annotation_continuous_threshold = 10,
+                                    annotation_colours = NULL,
                                     colvals = cn_colours,
                                     legendname = "Copy Number",
                                     library_mapping = NULL,
@@ -1362,9 +1448,11 @@ make_copynumber_heatmap <- function(copynumber,
   if (!is.null(annotations)) {
     left_annot <- make_left_annot_generic(
       annotations,
+      annotation_colours = annotation_colours,
       show_legend = show_legend,
       annofontsize = annofontsize,
-      anno_width = anno_width
+      anno_width = anno_width,
+      continuous_threshold = annotation_continuous_threshold
     )
   } else {
     left_annot <- make_left_annot(copynumber,
@@ -1505,6 +1593,12 @@ getSVlegend <- function(include = NULL) {
 #' @param tree Tree in newick format to plot alongside the heatmap, default = NULL
 #' @param clusters data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL
 #' @param annotations Optional dataframe containing cell_id column and additional annotation columns
+#' @param annotation_continuous_threshold Numeric annotation columns with more than this many unique
+#'   values are treated as continuous in `annotations`. Default is 10.
+#' @param annotation_colours Optional named list of colour mappings for annotation columns.
+#'   Use a named character vector for discrete annotations or a colour function (for example
+#'   from `circlize::colorRamp2()`) for continuous annotations. Unspecified columns use the
+#'   default automatic palettes.
 #' @param normalize_ploidy Normalize ploidy of all cells to 2
 #' @param normalize_tree default = FALSE
 #' @param branch_length scales branch lengths to this size, default = 2
@@ -1562,7 +1656,7 @@ getSVlegend <- function(include = NULL) {
 #' @param diversity_height Height of the diversity track in cm. Default is 0.7.
 #' @param annotation_gap Gap between top annotation tracks in mm. Default is 2.
 #'
-#' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
+#' @details If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #' 
 #' @examples
 #' \dontrun{
@@ -1578,6 +1672,8 @@ plotHeatmap <- function(cn,
                         tree = NULL,
                         clusters = NULL,
                         annotations = NULL,
+                        annotation_continuous_threshold = 10,
+                        annotation_colours = NULL,
                         normalize_ploidy = FALSE,
                         normalize_tree = FALSE,
                         branch_length = 1,
@@ -1753,6 +1849,49 @@ plotHeatmap <- function(cn,
     legendname <- newlegendname
   }
 
+  if (!is.null(annotations)) {
+    if (!is.data.frame(annotations)) {
+      warning("annotations is not a data.frame. Attempting conversion to data.frame")
+      annotations <- as.data.frame(annotations)
+    }
+    if (!"cell_id" %in% names(annotations)) {
+      stop("annotations must contain a 'cell_id' column")
+    }
+  }
+
+  cell_sources <- list(copy_number = unique(CNbins$cell_id))
+  if (!is.null(clusters)) {
+    cell_sources$clusters <- unique(clusters$cell_id)
+  }
+  if (!is.null(tree)) {
+    cell_sources$tree <- unique(tree$tip.label)
+  }
+  if (!is.null(annotations)) {
+    cell_sources$annotations <- unique(annotations$cell_id)
+  }
+
+  cells_to_keep <- Reduce(intersect, cell_sources)
+  if (length(cells_to_keep) == 0) {
+    stop("No overlapping cells found across the copy number data and supplied metadata.")
+  }
+  if (any(lengths(cell_sources) != length(cells_to_keep))) {
+    warning("Copy number data and supplied metadata have different numbers of cells, removing non-overlapping cells.")
+    CNbins <- dplyr::filter(CNbins, cell_id %in% cells_to_keep)
+    if (!is.null(clusters)) {
+      clusters <- dplyr::filter(clusters, cell_id %in% cells_to_keep)
+    }
+    if (!is.null(annotations)) {
+      annotations <- dplyr::filter(annotations, cell_id %in% cells_to_keep)
+    }
+    if (!is.null(tree)) {
+      cells_to_remove <- setdiff(unique(tree$tip.label), cells_to_keep)
+      if (length(cells_to_remove) > 0) {
+        tree <- ape::drop.tip(tree, cells_to_remove, collapse.singles = FALSE, trim.internal = FALSE)
+        tree <- format_tree_labels(tree)
+      }
+    }
+  }
+
   ncells <- length(unique(CNbins$cell_id))
   
   if (!is.null(clusters) & !is.null(tree)) {
@@ -1893,16 +2032,17 @@ plotHeatmap <- function(cn,
     names(clone_pal) <- clones_idx$clone_label
   }
   if (!is.null(annotations)) {
-    if (!is.data.frame(annotations)) {
-      warning("annotations is not a data.frame. Attempting conversion to data.frame")
-      annotations <- as.data.frame(annotations)
-    }
     annotation_idx <- match(ordered_cell_ids, annotations$cell_id)
+    if (anyNA(annotation_idx)) {
+      stop("annotations are missing rows for one or more plotted cells after cell matching")
+    }
     annotations <- annotations[annotation_idx, , drop = FALSE]
   }
   copynumber_hm <- make_copynumber_heatmap(copynumber,
     clones_formatted,
     annotations = annotations,
+    annotation_continuous_threshold = annotation_continuous_threshold,
+    annotation_colours = annotation_colours,
     colvals = colvals,
     legendname = legendname,
     library_mapping = library_mapping,

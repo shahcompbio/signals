@@ -9,6 +9,8 @@ plotHeatmap(
   tree = NULL,
   clusters = NULL,
   annotations = NULL,
+  annotation_continuous_threshold = 10,
+  annotation_colours = NULL,
   normalize_ploidy = FALSE,
   normalize_tree = FALSE,
   branch_length = 1,
@@ -63,6 +65,7 @@ plotHeatmap(
   plotdiversity = FALSE,
   mean_height = 0.7,
   diversity_height = 0.7,
+  annotation_gap = 2,
   ...
 )
 }
@@ -74,6 +77,14 @@ plotHeatmap(
 \item{clusters}{data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL}
 
 \item{annotations}{Optional dataframe containing cell_id column and additional annotation columns}
+
+\item{annotation_continuous_threshold}{Numeric annotation columns with more than this many unique
+values are treated as continuous in `annotations`. Default is 10.}
+
+\item{annotation_colours}{Optional named list of colour mappings for annotation columns.
+Use a named character vector for discrete annotations or a colour function (for example
+from `circlize::colorRamp2()`) for continuous annotations. Unspecified columns use the
+default automatic palettes.}
 
 \item{normalize_ploidy}{Normalize ploidy of all cells to 2}
 
@@ -182,12 +193,15 @@ Gene names must match the `ensembl_gene_symbol` column in `gene_locations` data.
 
 \item{mean_height}{Height of the mean copy number track in cm. Default is 0.7.}
 
-\item{diversity_height}{Height of the diversity track in cm. Default is 0.7.
+\item{diversity_height}{Height of the diversity track in cm. Default is 0.7.}
 
-If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.}
+\item{annotation_gap}{Gap between top annotation tracks in mm. Default is 2.}
 }
 \description{
 Plot a heatmap where rows are cells, columns are genome coordinates and colours map to (allele-specific) copy-number states
+}
+\details{
+If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 }
 \examples{
 \dontrun{
