@@ -1312,14 +1312,124 @@ make_top_annotation_gain <- function(copynumber,
   return(ha2)
 }
 
+split_contiguous_runs <- function(idx) {
+  if (length(idx) == 0) {
+    return(list())
+  }
+
+  split(idx, cumsum(c(1, diff(idx) != 1)))
+}
+
+summarize_heatmap_columns <- function(mat) {
+  summaries <- vapply(seq_len(ncol(mat)), function(i) {
+    x <- mat[, i]
+    x <- x[is.finite(x)]
+
+    if (length(x) == 0) {
+      return(c(mean = NA_real_, q25 = NA_real_, q75 = NA_real_, sd = NA_real_))
+    }
+
+    c(
+      mean = mean(x),
+      q25 = stats::quantile(x, probs = 0.25, names = FALSE),
+      q75 = stats::quantile(x, probs = 0.75, names = FALSE),
+      sd = stats::sd(x)
+    )
+  }, numeric(4))
+
+  as.data.frame(t(summaries))
+}
+
+make_mean_iqr_annotation <- function(mean_vals,
+                                     q25_vals,
+                                     q75_vals,
+                                     annofontsize = 10,
+                                     ribbon_fill = grDevices::adjustcolor("#9E9E9E", alpha.f = 0.45),
+                                     line_col = "black") {
+  valid <- is.finite(mean_vals) & is.finite(q25_vals) & is.finite(q75_vals)
+  if (!any(valid)) {
+    return(NULL)
+  }
+
+  yrange <- range(c(mean_vals[valid], q25_vals[valid], q75_vals[valid]), na.rm = TRUE)
+  if (yrange[1] == yrange[2]) {
+    pad <- max(abs(yrange[1]) * 0.05, 0.5)
+    yrange <- yrange + c(-pad, pad)
+  }
+
+  ComplexHeatmap::AnnotationFunction(
+    fun = function(index) {
+      valid_idx <- index[valid[index]]
+      if (length(valid_idx) == 0) {
+        return(invisible(NULL))
+      }
+
+      xscale <- c(min(index), max(index))
+      if (xscale[1] == xscale[2]) {
+        xscale <- xscale + c(-0.5, 0.5)
+      }
+
+      grid::pushViewport(grid::viewport(
+        xscale = xscale,
+        yscale = yrange,
+        clip = "off"
+      ))
+
+      for (run in split_contiguous_runs(valid_idx)) {
+        run <- as.integer(run)
+
+        if (length(run) >= 2) {
+          grid::grid.polygon(
+            x = grid::unit(c(run, rev(run)), "native"),
+            y = grid::unit(c(q25_vals[run], rev(q75_vals[run])), "native"),
+            gp = grid::gpar(fill = ribbon_fill, col = NA)
+          )
+          grid::grid.lines(
+            x = grid::unit(run, "native"),
+            y = grid::unit(mean_vals[run], "native"),
+            gp = grid::gpar(col = line_col, lwd = 1)
+          )
+        } else {
+          grid::grid.points(
+            x = grid::unit(run, "native"),
+            y = grid::unit(mean_vals[run], "native"),
+            pch = 16,
+            size = grid::unit(0.8, "mm"),
+            gp = grid::gpar(col = line_col)
+          )
+        }
+      }
+
+      grid::grid.yaxis(
+        main = TRUE,
+        gp = grid::gpar(fontsize = annofontsize - 2)
+      )
+      grid::popViewport()
+    },
+    var_import = list(
+      mean_vals = mean_vals,
+      q25_vals = q25_vals,
+      q75_vals = q75_vals,
+      valid = valid,
+      yrange = yrange,
+      annofontsize = annofontsize,
+      ribbon_fill = ribbon_fill,
+      line_col = line_col
+    ),
+    which = "column"
+  )
+}
+
 make_summary_annotations <- function(copynumber,
                                      plotcol = "state",
                                      plotmean = FALSE,
                                      plotdiversity = FALSE,
+                                     plotmeaniqr = FALSE,
                                      mean_height = 0.7,
                                      diversity_height = 0.7,
+                                     meaniqr_height = 0.9,
                                      annofontsize = 10) {
-  if (!plotmean && !plotdiversity) {
+  if (!plotmean && !plotdiversity && !plotmeaniqr) {
     return(NULL)
   }
 
@@ -1337,18 +1447,19 @@ make_summary_annotations <- function(copynumber,
   if ((na_frac - orig_na_frac) > 0.5) {
     warning(
       "Column '", plotcol,
-      "' is not numeric. Skipping mean/diversity tracks."
+      "' is not numeric. Skipping summary tracks."
     )
     return(NULL)
   }
+
+  summary_stats <- summarize_heatmap_columns(mat)
 
   anno_args <- list(show_annotation_name = FALSE)
   heights <- c()
 
   if (plotmean) {
-    mean_vals <- colMeans(mat, na.rm = TRUE)
     anno_args[["mean_cn"]] <- ComplexHeatmap::anno_lines(
-      mean_vals,
+      summary_stats$mean,
       gp = grid::gpar(col = "black", lwd = 1),
       add_points = FALSE,
       axis_param = list(
@@ -1361,9 +1472,8 @@ make_summary_annotations <- function(copynumber,
   }
 
   if (plotdiversity) {
-    sd_vals <- apply(mat, 2, sd, na.rm = TRUE)
     anno_args[["diversity_cn"]] <- ComplexHeatmap::anno_lines(
-      sd_vals,
+      summary_stats$sd,
       gp = grid::gpar(col = "#666666", lwd = 1),
       add_points = FALSE,
       axis_param = list(
@@ -1375,7 +1485,21 @@ make_summary_annotations <- function(copynumber,
     heights <- c(heights, diversity_height)
   }
 
-  anno_args[["height"]] <- grid::unit(sum(heights), "cm")
+  if (plotmeaniqr) {
+    meaniqr_annot <- make_mean_iqr_annotation(
+      mean_vals = summary_stats$mean,
+      q25_vals = summary_stats$q25,
+      q75_vals = summary_stats$q75,
+      annofontsize = annofontsize
+    )
+
+    if (!is.null(meaniqr_annot)) {
+      anno_args[["mean_iqr_cn"]] <- meaniqr_annot
+      heights <- c(heights, meaniqr_height)
+    }
+  }
+
+  anno_args[["annotation_height"]] <- grid::unit(heights, "cm")
 
   do.call(ComplexHeatmap::columnAnnotation, anno_args)
 }
@@ -1422,8 +1546,10 @@ make_copynumber_heatmap <- function(copynumber,
                                     gene_label_sep = "/",
                                     plotmean = FALSE,
                                     plotdiversity = FALSE,
+                                    plotmeaniqr = FALSE,
                                     mean_height = 0.7,
                                     diversity_height = 0.7,
+                                    meaniqr_height = 0.9,
                                     annotation_gap = 2,
                                     ...) {
 
@@ -1537,8 +1663,10 @@ make_copynumber_heatmap <- function(copynumber,
     plotcol = plotcol,
     plotmean = plotmean,
     plotdiversity = plotdiversity,
+    plotmeaniqr = plotmeaniqr,
     mean_height = mean_height,
     diversity_height = diversity_height,
+    meaniqr_height = meaniqr_height,
     annofontsize = annofontsize
   )
 
@@ -1652,8 +1780,11 @@ getSVlegend <- function(include = NULL) {
 #' @param gene_label_sep Separator used when multiple genes fall within the same genomic bin. Default is "/".
 #' @param plotmean Show a mean copy number line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.
 #' @param plotdiversity Show a copy number diversity (standard deviation) line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.
+#' @param plotmeaniqr Show a top summary track with a black mean line and a shaded interquartile range.
+#'   Only works with numeric plotcol values. Default is FALSE.
 #' @param mean_height Height of the mean copy number track in cm. Default is 0.7.
 #' @param diversity_height Height of the diversity track in cm. Default is 0.7.
+#' @param meaniqr_height Height of the mean plus interquartile range track in cm. Default is 0.9.
 #' @param annotation_gap Gap between top annotation tracks in mm. Default is 2.
 #'
 #' @details If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
@@ -1726,8 +1857,10 @@ plotHeatmap <- function(cn,
                         gene_label_sep = "/",
                         plotmean = FALSE,
                         plotdiversity = FALSE,
+                        plotmeaniqr = FALSE,
                         mean_height = 0.7,
                         diversity_height = 0.7,
+                        meaniqr_height = 0.9,
                         annotation_gap = 2,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
@@ -2080,8 +2213,10 @@ plotHeatmap <- function(cn,
     gene_label_sep = gene_label_sep,
     plotmean = plotmean,
     plotdiversity = plotdiversity,
+    plotmeaniqr = plotmeaniqr,
     mean_height = mean_height,
     diversity_height = diversity_height,
+    meaniqr_height = meaniqr_height,
     annotation_gap = annotation_gap,
     ...
   )

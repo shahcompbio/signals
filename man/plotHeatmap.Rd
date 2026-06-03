@@ -63,8 +63,10 @@ plotHeatmap(
   gene_label_sep = "/",
   plotmean = FALSE,
   plotdiversity = FALSE,
+  plotmeaniqr = FALSE,
   mean_height = 0.7,
   diversity_height = 0.7,
+  meaniqr_height = 0.9,
   annotation_gap = 2,
   ...
 )
@@ -191,9 +193,14 @@ Gene names must match the `ensembl_gene_symbol` column in `gene_locations` data.
 
 \item{plotdiversity}{Show a copy number diversity (standard deviation) line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.}
 
+\item{plotmeaniqr}{Show a top summary track with a black mean line and a shaded interquartile range.
+Only works with numeric plotcol values. Default is FALSE.}
+
 \item{mean_height}{Height of the mean copy number track in cm. Default is 0.7.}
 
 \item{diversity_height}{Height of the diversity track in cm. Default is 0.7.}
+
+\item{meaniqr_height}{Height of the mean plus interquartile range track in cm. Default is 0.9.}
 
 \item{annotation_gap}{Gap between top annotation tracks in mm. Default is 2.}
 }
