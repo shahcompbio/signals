@@ -64,6 +64,7 @@ plotHeatmap(
   plotmean = FALSE,
   plotdiversity = FALSE,
   plotmeaniqr = FALSE,
+  meaniqr_plotcol = plotcol,
   mean_height = 0.7,
   diversity_height = 0.7,
   meaniqr_height = 0.9,
@@ -195,6 +196,10 @@ Gene names must match the `ensembl_gene_symbol` column in `gene_locations` data.
 
 \item{plotmeaniqr}{Show a top summary track with a black mean line and a shaded interquartile range.
 Only works with numeric plotcol values. Default is FALSE.}
+
+\item{meaniqr_plotcol}{Optional column to use for the mean plus interquartile range summary track.
+Defaults to `plotcol`. This allows, for example, plotting `state` in the heatmap while
+drawing the summary track from `copy`.}
 
 \item{mean_height}{Height of the mean copy number track in cm. Default is 0.7.}
 

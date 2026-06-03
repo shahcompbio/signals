@@ -112,6 +112,16 @@ hm_meaniqr <- plotHeatmap(
   plottree = FALSE
 )
 
+hm_meaniqr_from_copy <- plotHeatmap(
+  sim_data_bb$ascn,
+  clusters = cl$clustering,
+  plotcol = "state",
+  plotmeaniqr = TRUE,
+  meaniqr_plotcol = "copy",
+  reorderclusters = TRUE,
+  plottree = FALSE
+)
+
 copynumber_copy <- signals:::createCNmatrix(sim_data_bb$ascn, field = "copy")
 copynumber_copy_formatted <- signals:::format_copynumber(
   copynumber_copy,
@@ -127,6 +137,7 @@ test_that("Test returns plot object", {
   expect_true(typeof(hm_threshold) == "S4")
   expect_true(typeof(hm_manual_colours) == "S4")
   expect_true(typeof(hm_meaniqr) == "S4")
+  expect_true(typeof(hm_meaniqr_from_copy) == "S4")
 })
 
 test_that("Continuous annotations use pale to accent gradients in order", {
@@ -201,6 +212,20 @@ test_that("Mean plus IQR summary annotation renders", {
 
   expect_true(typeof(summary_annot) == "S4")
   expect_true("mean_iqr_cn" %in% names(summary_annot@anno_list))
+})
+
+test_that("Mean plus IQR track can use a different source column", {
+  summary_annot <- signals:::make_summary_annotations(
+    copynumber = hm1@matrix,
+    meaniqr_copynumber = copynumber_copy_formatted,
+    plotcol = "state",
+    meaniqr_plotcol = "copy",
+    plotmeaniqr = TRUE
+  )
+
+  expect_true(typeof(summary_annot) == "S4")
+  expect_true("mean_iqr_cn" %in% names(summary_annot@anno_list))
+  expect_true("mean_iqr_cn" %in% names(hm_meaniqr_from_copy@top_annotation@anno_list))
 })
 
 test_that("Missing annotation cells are removed before reordering", {

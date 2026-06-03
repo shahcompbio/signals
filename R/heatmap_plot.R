@@ -312,6 +312,38 @@ format_copynumber <- function(copynumber,
   return(copynumber)
 }
 
+prepare_heatmap_matrix <- function(CNbins,
+                                   ordered_cell_ids,
+                                   plotcol = "state",
+                                   spacer_cols = 20,
+                                   fillna = TRUE,
+                                   plotallbins = FALSE,
+                                   genome = "hg19",
+                                   normalize_ploidy = FALSE) {
+  if (plotallbins) {
+    copynumber <- createCNmatrix(
+      CNbins,
+      field = plotcol,
+      plotallbins = TRUE,
+      genome = genome
+    )
+  } else {
+    copynumber <- createCNmatrix(CNbins, field = plotcol, fillnaplot = fillna)
+  }
+
+  if (normalize_ploidy) {
+    message("Normalizing ploidy for each cell to 2")
+    copynumber <- normalize_cell_ploidy(copynumber)
+  }
+
+  format_copynumber(
+    copynumber,
+    ordered_cell_ids,
+    spacer_cols = spacer_cols,
+    plotcol = plotcol
+  )
+}
+
 format_clones <- function(clones, ordered_cell_ids) {
   clonesdf <- dplyr::full_join(clones, data.frame(cell_id = ordered_cell_ids), by = "cell_id")
   clonesdf[is.na(clonesdf$clone_id), "clone_id"] <- "None"
@@ -1421,7 +1453,9 @@ make_mean_iqr_annotation <- function(mean_vals,
 }
 
 make_summary_annotations <- function(copynumber,
+                                     meaniqr_copynumber = NULL,
                                      plotcol = "state",
+                                     meaniqr_plotcol = plotcol,
                                      plotmean = FALSE,
                                      plotdiversity = FALSE,
                                      plotmeaniqr = FALSE,
@@ -1433,70 +1467,95 @@ make_summary_annotations <- function(copynumber,
     return(NULL)
   }
 
-  # Convert matrix to numeric
-  mat <- copynumber
-  mat[mat == "11+"] <- "11"
-  mat <- suppressWarnings(apply(mat, 2, as.numeric))
-
-  # Exclude centromere sentinel values (plotallbins sets these to -999)
-  mat[mat == CENTROMERE_SENTINEL] <- NA
-
-  # Check if conversion produced mostly NAs (non-numeric plotcol)
-  na_frac <- sum(is.na(mat)) / length(mat)
-  orig_na_frac <- sum(is.na(copynumber)) / length(copynumber)
-  if ((na_frac - orig_na_frac) > 0.5) {
-    warning(
-      "Column '", plotcol,
-      "' is not numeric. Skipping summary tracks."
-    )
-    return(NULL)
-  }
-
-  summary_stats <- summarize_heatmap_columns(mat)
-
   anno_args <- list(show_annotation_name = FALSE)
   heights <- c()
 
-  if (plotmean) {
-    anno_args[["mean_cn"]] <- ComplexHeatmap::anno_lines(
-      summary_stats$mean,
-      gp = grid::gpar(col = "black", lwd = 1),
-      add_points = FALSE,
-      axis_param = list(
-        side = "left",
-        gp = grid::gpar(fontsize = annofontsize - 2)
-      ),
-      border = FALSE
-    )
-    heights <- c(heights, mean_height)
-  }
+  if (plotmean || plotdiversity) {
+    # Convert matrix to numeric
+    mat <- copynumber
+    mat[mat == "11+"] <- "11"
+    mat <- suppressWarnings(apply(mat, 2, as.numeric))
 
-  if (plotdiversity) {
-    anno_args[["diversity_cn"]] <- ComplexHeatmap::anno_lines(
-      summary_stats$sd,
-      gp = grid::gpar(col = "#666666", lwd = 1),
-      add_points = FALSE,
-      axis_param = list(
-        side = "left",
-        gp = grid::gpar(fontsize = annofontsize - 2)
-      ),
-      border = FALSE
-    )
-    heights <- c(heights, diversity_height)
+    # Exclude centromere sentinel values (plotallbins sets these to -999)
+    mat[mat == CENTROMERE_SENTINEL] <- NA
+
+    # Check if conversion produced mostly NAs (non-numeric plotcol)
+    na_frac <- sum(is.na(mat)) / length(mat)
+    orig_na_frac <- sum(is.na(copynumber)) / length(copynumber)
+    if ((na_frac - orig_na_frac) > 0.5) {
+      warning(
+        "Column '", plotcol,
+        "' is not numeric. Skipping mean/diversity tracks."
+      )
+    } else {
+      summary_stats <- summarize_heatmap_columns(mat)
+
+      if (plotmean) {
+        anno_args[["mean_cn"]] <- ComplexHeatmap::anno_lines(
+          summary_stats$mean,
+          gp = grid::gpar(col = "black", lwd = 1),
+          add_points = FALSE,
+          axis_param = list(
+            side = "left",
+            gp = grid::gpar(fontsize = annofontsize - 2)
+          ),
+          border = FALSE
+        )
+        heights <- c(heights, mean_height)
+      }
+
+      if (plotdiversity) {
+        anno_args[["diversity_cn"]] <- ComplexHeatmap::anno_lines(
+          summary_stats$sd,
+          gp = grid::gpar(col = "#666666", lwd = 1),
+          add_points = FALSE,
+          axis_param = list(
+            side = "left",
+            gp = grid::gpar(fontsize = annofontsize - 2)
+          ),
+          border = FALSE
+        )
+        heights <- c(heights, diversity_height)
+      }
+    }
   }
 
   if (plotmeaniqr) {
-    meaniqr_annot <- make_mean_iqr_annotation(
-      mean_vals = summary_stats$mean,
-      q25_vals = summary_stats$q25,
-      q75_vals = summary_stats$q75,
-      annofontsize = annofontsize
-    )
-
-    if (!is.null(meaniqr_annot)) {
-      anno_args[["mean_iqr_cn"]] <- meaniqr_annot
-      heights <- c(heights, meaniqr_height)
+    if (is.null(meaniqr_copynumber)) {
+      meaniqr_copynumber <- copynumber
     }
+
+    meaniqr_mat <- meaniqr_copynumber
+    meaniqr_mat[meaniqr_mat == "11+"] <- "11"
+    meaniqr_mat <- suppressWarnings(apply(meaniqr_mat, 2, as.numeric))
+    meaniqr_mat[meaniqr_mat == CENTROMERE_SENTINEL] <- NA
+
+    na_frac <- sum(is.na(meaniqr_mat)) / length(meaniqr_mat)
+    orig_na_frac <- sum(is.na(meaniqr_copynumber)) / length(meaniqr_copynumber)
+    if ((na_frac - orig_na_frac) > 0.5) {
+      warning(
+        "Column '", meaniqr_plotcol,
+        "' is not numeric. Skipping mean plus interquartile range track."
+      )
+    } else {
+      meaniqr_stats <- summarize_heatmap_columns(meaniqr_mat)
+
+      meaniqr_annot <- make_mean_iqr_annotation(
+        mean_vals = meaniqr_stats$mean,
+        q25_vals = meaniqr_stats$q25,
+        q75_vals = meaniqr_stats$q75,
+        annofontsize = annofontsize
+      )
+
+      if (!is.null(meaniqr_annot)) {
+        anno_args[["mean_iqr_cn"]] <- meaniqr_annot
+        heights <- c(heights, meaniqr_height)
+      }
+    }
+  }
+
+  if (length(heights) == 0) {
+    return(NULL)
   }
 
   anno_args[["annotation_height"]] <- grid::unit(heights, "cm")
@@ -1505,6 +1564,7 @@ make_summary_annotations <- function(copynumber,
 }
 
 make_copynumber_heatmap <- function(copynumber,
+                                    meaniqr_copynumber = NULL,
                                     clones,
                                     annotations = NULL,
                                     annotation_continuous_threshold = 10,
@@ -1547,6 +1607,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     plotmean = FALSE,
                                     plotdiversity = FALSE,
                                     plotmeaniqr = FALSE,
+                                    meaniqr_plotcol = plotcol,
                                     mean_height = 0.7,
                                     diversity_height = 0.7,
                                     meaniqr_height = 0.9,
@@ -1660,7 +1721,9 @@ make_copynumber_heatmap <- function(copynumber,
   # Build summary annotations (mean CN / diversity)
   summary_annot <- make_summary_annotations(
     copynumber,
+    meaniqr_copynumber = meaniqr_copynumber,
     plotcol = plotcol,
+    meaniqr_plotcol = meaniqr_plotcol,
     plotmean = plotmean,
     plotdiversity = plotdiversity,
     plotmeaniqr = plotmeaniqr,
@@ -1782,6 +1845,9 @@ getSVlegend <- function(include = NULL) {
 #' @param plotdiversity Show a copy number diversity (standard deviation) line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.
 #' @param plotmeaniqr Show a top summary track with a black mean line and a shaded interquartile range.
 #'   Only works with numeric plotcol values. Default is FALSE.
+#' @param meaniqr_plotcol Optional column to use for the mean plus interquartile range summary track.
+#'   Defaults to `plotcol`. This allows, for example, plotting `state` in the heatmap while
+#'   drawing the summary track from `copy`.
 #' @param mean_height Height of the mean copy number track in cm. Default is 0.7.
 #' @param diversity_height Height of the diversity track in cm. Default is 0.7.
 #' @param meaniqr_height Height of the mean plus interquartile range track in cm. Default is 0.9.
@@ -1858,6 +1924,7 @@ plotHeatmap <- function(cn,
                         plotmean = FALSE,
                         plotdiversity = FALSE,
                         plotmeaniqr = FALSE,
+                        meaniqr_plotcol = plotcol,
                         mean_height = 0.7,
                         diversity_height = 0.7,
                         meaniqr_height = 0.9,
@@ -1899,6 +1966,10 @@ plotHeatmap <- function(cn,
 
   if (!plotcol %in% names(CNbins)) {
     stop(paste0("Column name - ", plotcol, " not in CNbins data frame..."))
+  }
+
+  if (!is.null(meaniqr_plotcol) && !meaniqr_plotcol %in% names(CNbins)) {
+    stop(paste0("Column name - ", meaniqr_plotcol, " not in CNbins data frame..."))
   }
 
   if (plotcol == "state") {
@@ -2138,26 +2209,32 @@ plotHeatmap <- function(cn,
     stop("plotideogram = TRUE requires plotallbins = TRUE")
   }
 
-  # Create copy number matrix
-  # When plotallbins = TRUE, centromeres get sentinel value (colored by centromere_col in color scale)
-
-  # Spacers remain NA (colored white by na_col)
-  if (plotallbins) {
-    copynumber <- createCNmatrix(CNbins, field = plotcol,
-                                 plotallbins = TRUE, genome = genome)
-  } else {
-    copynumber <- createCNmatrix(CNbins, field = plotcol, fillnaplot = fillna)
-  }
-
-  if (normalize_ploidy == T) {
-    message("Normalizing ploidy for each cell to 2")
-    copynumber <- normalize_cell_ploidy(copynumber)
-  }
-  copynumber <- format_copynumber(copynumber,
+  # Create copy number matrix. When plotallbins = TRUE, centromeres get sentinel
+  # values in the matrix and spacers remain NA.
+  copynumber <- prepare_heatmap_matrix(
+    CNbins,
     ordered_cell_ids,
+    plotcol = plotcol,
     spacer_cols = spacer_cols,
-    plotcol = plotcol
+    fillna = fillna,
+    plotallbins = plotallbins,
+    genome = genome,
+    normalize_ploidy = normalize_ploidy
   )
+
+  meaniqr_copynumber <- NULL
+  if (plotmeaniqr && !identical(meaniqr_plotcol, plotcol)) {
+    meaniqr_copynumber <- prepare_heatmap_matrix(
+      CNbins,
+      ordered_cell_ids,
+      plotcol = meaniqr_plotcol,
+      spacer_cols = spacer_cols,
+      fillna = fillna,
+      plotallbins = plotallbins,
+      genome = genome,
+      normalize_ploidy = normalize_ploidy
+    )
+  }
   clones_formatted <- format_clones(as.data.frame(clusters), ordered_cell_ids)
   if (!is.null(clone_pal)) {
     clones_idx <- dplyr::distinct(clones_formatted, clone_id, clone_label)
@@ -2172,7 +2249,8 @@ plotHeatmap <- function(cn,
     annotations <- annotations[annotation_idx, , drop = FALSE]
   }
   copynumber_hm <- make_copynumber_heatmap(copynumber,
-    clones_formatted,
+    meaniqr_copynumber = meaniqr_copynumber,
+    clones = clones_formatted,
     annotations = annotations,
     annotation_continuous_threshold = annotation_continuous_threshold,
     annotation_colours = annotation_colours,
@@ -2214,6 +2292,7 @@ plotHeatmap <- function(cn,
     plotmean = plotmean,
     plotdiversity = plotdiversity,
     plotmeaniqr = plotmeaniqr,
+    meaniqr_plotcol = meaniqr_plotcol,
     mean_height = mean_height,
     diversity_height = diversity_height,
     meaniqr_height = meaniqr_height,
