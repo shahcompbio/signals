@@ -16,9 +16,12 @@ RUN Rscript -e "BiocManager::install('QDNAseq')"
 
 RUN Rscript -e "library(devtools)"
 
+COPY . /usr/src/signals
+WORKDIR /usr/src/signals
+
 RUN --mount=type=secret,id=github_token \
     GITHUB_PAT=$(cat /run/secrets/github_token) \
-    Rscript -e "devtools::install_github('shahcompbio/signals', dependencies = TRUE)"
+    Rscript -e "pak::pak('.')"
 
 ADD policy.xml /etc/ImageMagick-6/policy.xml
 

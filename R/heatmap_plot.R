@@ -225,6 +225,12 @@ make_discrete_palette <- function(pal_name, levels) {
   return(pal)
 }
 
+make_continuous_palette <- function(level_index, low = "#F5F4F0", n = 100) {
+  high_cols <- c("#C95D63", "#5B84B1", "#8C6BB1", "#D99A4E")
+  high_col <- high_cols[((level_index - 1) %% length(high_cols)) + 1]
+  grDevices::colorRampPalette(c(low, high_col))(n)
+}
+
 format_copynumber_values <- function(copynumber, plotcol = "state") {
   # copynumber[copynumber > 11] <- 11
 
@@ -304,6 +310,38 @@ format_copynumber <- function(copynumber,
   copynumber <- space_copynumber_columns(copynumber, spacer_cols)
 
   return(copynumber)
+}
+
+prepare_heatmap_matrix <- function(CNbins,
+                                   ordered_cell_ids,
+                                   plotcol = "state",
+                                   spacer_cols = 20,
+                                   fillna = TRUE,
+                                   plotallbins = FALSE,
+                                   genome = "hg19",
+                                   normalize_ploidy = FALSE) {
+  if (plotallbins) {
+    copynumber <- createCNmatrix(
+      CNbins,
+      field = plotcol,
+      plotallbins = TRUE,
+      genome = genome
+    )
+  } else {
+    copynumber <- createCNmatrix(CNbins, field = plotcol, fillnaplot = fillna)
+  }
+
+  if (normalize_ploidy) {
+    message("Normalizing ploidy for each cell to 2")
+    copynumber <- normalize_cell_ploidy(copynumber)
+  }
+
+  format_copynumber(
+    copynumber,
+    ordered_cell_ids,
+    spacer_cols = spacer_cols,
+    plotcol = plotcol
+  )
 }
 
 format_clones <- function(clones, ordered_cell_ids) {
@@ -408,9 +446,11 @@ get_library_labels <- function(cell_ids, idx = 1, str_to_remove = NULL) {
 
 make_left_annot_generic <- function(dfanno,
                                    palettes = NULL,
+                                   annotation_colours = NULL,
                                    show_legend = TRUE,
                                    annofontsize = 14,
-                                   anno_width = 0.4) {
+                                   anno_width = 0.4,
+                                   continuous_threshold = 10) {
   # Convert to data.frame if needed
   if (inherits(dfanno, c("data.table", "tbl_df", "tbl"))) {
     message("Converting dfanno from ", class(dfanno)[1], " to data.frame")
@@ -419,6 +459,12 @@ make_left_annot_generic <- function(dfanno,
   if (!is.data.frame(dfanno)) {
     warning("dfanno was converted to data.frame from ", class(dfanno)[1])
     dfanno <- as.data.frame(dfanno)
+  }
+
+  if (!is.numeric(continuous_threshold) || length(continuous_threshold) != 1 ||
+      is.na(continuous_threshold) || !is.finite(continuous_threshold) ||
+      continuous_threshold < 0) {
+    stop("continuous_threshold must be a single non-negative number")
   }
   
   # Check if cell_id column exists
@@ -439,6 +485,23 @@ make_left_annot_generic <- function(dfanno,
   if (length(anno_cols) == 0) {
     stop("dfanno must contain at least one annotation column besides cell_id")
   }
+
+  if (!is.null(annotation_colours)) {
+    if (!is.list(annotation_colours) || is.null(names(annotation_colours))) {
+      stop("annotation_colours must be a named list")
+    }
+    if (any(is.na(names(annotation_colours))) || any(names(annotation_colours) == "")) {
+      stop("annotation_colours must use non-empty names that match annotation columns")
+    }
+
+    unknown_annotation_cols <- setdiff(names(annotation_colours), anno_cols)
+    if (length(unknown_annotation_cols) > 0) {
+      warning(
+        "annotation_colours contains unknown annotation column(s): ",
+        paste(unknown_annotation_cols, collapse = ", ")
+      )
+    }
+  }
   
   # Detect continuous vs discrete columns
   continuous_cols <- character(0)
@@ -449,8 +512,51 @@ make_left_annot_generic <- function(dfanno,
     col_data <- dfanno[[col]]
     is_numeric <- is.numeric(col_data) || is.integer(col_data)
     n_unique <- length(unique(col_data))
-    
-    if (is_numeric && n_unique > 10) {
+
+    has_override <- !is.null(annotation_colours) && col %in% names(annotation_colours)
+    if (has_override) {
+      override <- annotation_colours[[col]]
+      if (is.null(override)) {
+        stop("annotation_colours[['", col, "']] cannot be NULL")
+      }
+
+      if (is.function(override)) {
+        if (!is_numeric) {
+          stop(
+            "annotation_colours[['", col,
+            "']] is a function (continuous mapping) but column '", col,
+            "' is not numeric"
+          )
+        }
+        continuous_cols <- c(continuous_cols, col)
+        col_types[[col]] <- "continuous"
+      } else if (is.character(override)) {
+        if (is.null(names(override)) || any(is.na(names(override))) || any(names(override) == "")) {
+          stop(
+            "annotation_colours[['", col,
+            "']] must be a named character vector when used for discrete annotations"
+          )
+        }
+
+        col_levels <- unique(as.character(col_data))
+        missing_levels <- setdiff(col_levels, names(override))
+        if (length(missing_levels) > 0) {
+          stop(
+            "annotation_colours[['", col,
+            "']] does not cover all values in the data: ",
+            paste(shQuote(missing_levels), collapse = ", ")
+          )
+        }
+
+        discrete_cols <- c(discrete_cols, col)
+        col_types[[col]] <- "discrete"
+      } else {
+        stop(
+          "annotation_colours[['", col,
+          "']] must be either a named character vector or a color-mapping function"
+        )
+      }
+    } else if (is_numeric && n_unique > continuous_threshold) {
       continuous_cols <- c(continuous_cols, col)
       col_types[[col]] <- "continuous"
     } else {
@@ -473,34 +579,44 @@ make_left_annot_generic <- function(dfanno,
     # Cycle through palettes
     palette_idx <- ((i-1) %% length(default_palettes)) + 1
     current_palette <- default_palettes[palette_idx]
-    
-    # Get unique values for this column
-    levels <- gtools::mixedsort(unique(dfanno[[col]]))
-    # Create palette for this annotation
-    annot_colours[[col]] <- make_discrete_palette(current_palette, levels)
+
+    has_override <- !is.null(annotation_colours) && col %in% names(annotation_colours)
+    if (has_override) {
+      levels <- names(annotation_colours[[col]])
+      levels <- levels[levels %in% unique(as.character(dfanno[[col]]))]
+      dfanno[[col]] <- factor(as.character(dfanno[[col]]), levels = levels)
+      annot_colours[[col]] <- annotation_colours[[col]][levels]
+    } else {
+      # Get unique values for this column
+      levels <- gtools::mixedsort(unique(dfanno[[col]]))
+      if (is.numeric(dfanno[[col]]) || is.integer(dfanno[[col]])) {
+        dfanno[[col]] <- factor(as.character(dfanno[[col]]), levels = as.character(levels))
+      }
+      # Create palette for this annotation
+      annot_colours[[col]] <- make_discrete_palette(current_palette, levels)
+    }
   }
   
   # Create color mappings for continuous columns
   continuous_col_funs <- list()
   if (length(continuous_cols) > 0) {
-    # Check if viridis is available, otherwise use a fallback
-    if (requireNamespace("viridis", quietly = TRUE)) {
-      viridis_colors <- viridis::viridis(100)
-    } else {
-      # Fallback: use viridis-like gradient via colorRampPalette
-      viridis_colors <- grDevices::colorRampPalette(c("#440154", "#31688E", "#35B779", "#FDE725"))(100)
-    }
-    
-    for (col in continuous_cols) {
-      col_data <- dfanno[[col]]
-      col_range <- range(col_data, na.rm = TRUE)
-      
-      # Create color mapping function and store it
-      continuous_col_funs[[col]] <- circlize::colorRamp2(
-        seq(col_range[1], col_range[2], length.out = 100),
-        viridis_colors
-      )
-      
+    for (i in seq_along(continuous_cols)) {
+      col <- continuous_cols[i]
+      has_override <- !is.null(annotation_colours) && col %in% names(annotation_colours)
+      if (has_override) {
+        continuous_col_funs[[col]] <- annotation_colours[[col]]
+      } else {
+        col_data <- dfanno[[col]]
+        col_range <- range(col_data, na.rm = TRUE)
+        continuous_palette <- make_continuous_palette(i)
+
+        # Create color mapping function and store it
+        continuous_col_funs[[col]] <- circlize::colorRamp2(
+          seq(col_range[1], col_range[2], length.out = 100),
+          continuous_palette
+        )
+      }
+
       # Add to annot_colours for use with df parameter
       annot_colours[[col]] <- continuous_col_funs[[col]]
     }
@@ -1228,77 +1344,231 @@ make_top_annotation_gain <- function(copynumber,
   return(ha2)
 }
 
-make_summary_annotations <- function(copynumber,
-                                     plotcol = "state",
-                                     plotmean = FALSE,
-                                     plotdiversity = FALSE,
-                                     mean_height = 0.7,
-                                     diversity_height = 0.7,
-                                     annofontsize = 10) {
-  if (!plotmean && !plotdiversity) {
+split_contiguous_runs <- function(idx) {
+  if (length(idx) == 0) {
+    return(list())
+  }
+
+  split(idx, cumsum(c(1, diff(idx) != 1)))
+}
+
+summarize_heatmap_columns <- function(mat) {
+  summaries <- vapply(seq_len(ncol(mat)), function(i) {
+    x <- mat[, i]
+    x <- x[is.finite(x)]
+
+    if (length(x) == 0) {
+      return(c(mean = NA_real_, q25 = NA_real_, q75 = NA_real_, sd = NA_real_))
+    }
+
+    c(
+      mean = mean(x),
+      q25 = stats::quantile(x, probs = 0.25, names = FALSE),
+      q75 = stats::quantile(x, probs = 0.75, names = FALSE),
+      sd = stats::sd(x)
+    )
+  }, numeric(4))
+
+  as.data.frame(t(summaries))
+}
+
+make_mean_iqr_annotation <- function(mean_vals,
+                                     q25_vals,
+                                     q75_vals,
+                                     annofontsize = 10,
+                                     ribbon_fill = grDevices::adjustcolor("#9E9E9E", alpha.f = 0.45),
+                                     line_col = "black") {
+  valid <- is.finite(mean_vals) & is.finite(q25_vals) & is.finite(q75_vals)
+  if (!any(valid)) {
     return(NULL)
   }
 
-  # Convert matrix to numeric
-  mat <- copynumber
-  mat[mat == "11+"] <- "11"
-  mat <- suppressWarnings(apply(mat, 2, as.numeric))
+  yrange <- range(c(mean_vals[valid], q25_vals[valid], q75_vals[valid]), na.rm = TRUE)
+  if (yrange[1] == yrange[2]) {
+    pad <- max(abs(yrange[1]) * 0.05, 0.5)
+    yrange <- yrange + c(-pad, pad)
+  }
 
-  # Exclude centromere sentinel values (plotallbins sets these to -999)
-  mat[mat == CENTROMERE_SENTINEL] <- NA
+  ComplexHeatmap::AnnotationFunction(
+    fun = function(index) {
+      valid_idx <- index[valid[index]]
+      if (length(valid_idx) == 0) {
+        return(invisible(NULL))
+      }
 
-  # Check if conversion produced mostly NAs (non-numeric plotcol)
-  na_frac <- sum(is.na(mat)) / length(mat)
-  orig_na_frac <- sum(is.na(copynumber)) / length(copynumber)
-  if ((na_frac - orig_na_frac) > 0.5) {
-    warning(
-      "Column '", plotcol,
-      "' is not numeric. Skipping mean/diversity tracks."
-    )
+      xscale <- c(min(index), max(index))
+      if (xscale[1] == xscale[2]) {
+        xscale <- xscale + c(-0.5, 0.5)
+      }
+
+      grid::pushViewport(grid::viewport(
+        xscale = xscale,
+        yscale = yrange,
+        clip = "off"
+      ))
+
+      for (run in split_contiguous_runs(valid_idx)) {
+        run <- as.integer(run)
+
+        if (length(run) >= 2) {
+          grid::grid.polygon(
+            x = grid::unit(c(run, rev(run)), "native"),
+            y = grid::unit(c(q25_vals[run], rev(q75_vals[run])), "native"),
+            gp = grid::gpar(fill = ribbon_fill, col = NA)
+          )
+          grid::grid.lines(
+            x = grid::unit(run, "native"),
+            y = grid::unit(mean_vals[run], "native"),
+            gp = grid::gpar(col = line_col, lwd = 1)
+          )
+        } else {
+          grid::grid.points(
+            x = grid::unit(run, "native"),
+            y = grid::unit(mean_vals[run], "native"),
+            pch = 16,
+            size = grid::unit(0.8, "mm"),
+            gp = grid::gpar(col = line_col)
+          )
+        }
+      }
+
+      grid::grid.yaxis(
+        main = TRUE,
+        gp = grid::gpar(fontsize = annofontsize - 2)
+      )
+      grid::popViewport()
+    },
+    var_import = list(
+      mean_vals = mean_vals,
+      q25_vals = q25_vals,
+      q75_vals = q75_vals,
+      valid = valid,
+      yrange = yrange,
+      annofontsize = annofontsize,
+      ribbon_fill = ribbon_fill,
+      line_col = line_col
+    ),
+    which = "column"
+  )
+}
+
+make_summary_annotations <- function(copynumber,
+                                     meaniqr_copynumber = NULL,
+                                     plotcol = "state",
+                                     meaniqr_plotcol = plotcol,
+                                     plotmean = FALSE,
+                                     plotdiversity = FALSE,
+                                     plotmeaniqr = FALSE,
+                                     mean_height = 0.7,
+                                     diversity_height = 0.7,
+                                     meaniqr_height = 0.9,
+                                     annofontsize = 10) {
+  if (!plotmean && !plotdiversity && !plotmeaniqr) {
     return(NULL)
   }
 
   anno_args <- list(show_annotation_name = FALSE)
   heights <- c()
 
-  if (plotmean) {
-    mean_vals <- colMeans(mat, na.rm = TRUE)
-    anno_args[["mean_cn"]] <- ComplexHeatmap::anno_lines(
-      mean_vals,
-      gp = grid::gpar(col = "black", lwd = 1),
-      add_points = FALSE,
-      axis_param = list(
-        side = "left",
-        gp = grid::gpar(fontsize = annofontsize - 2)
-      ),
-      border = FALSE
-    )
-    heights <- c(heights, mean_height)
+  if (plotmean || plotdiversity) {
+    # Convert matrix to numeric
+    mat <- copynumber
+    mat[mat == "11+"] <- "11"
+    mat <- suppressWarnings(apply(mat, 2, as.numeric))
+
+    # Exclude centromere sentinel values (plotallbins sets these to -999)
+    mat[mat == CENTROMERE_SENTINEL] <- NA
+
+    # Check if conversion produced mostly NAs (non-numeric plotcol)
+    na_frac <- sum(is.na(mat)) / length(mat)
+    orig_na_frac <- sum(is.na(copynumber)) / length(copynumber)
+    if ((na_frac - orig_na_frac) > 0.5) {
+      warning(
+        "Column '", plotcol,
+        "' is not numeric. Skipping mean/diversity tracks."
+      )
+    } else {
+      summary_stats <- summarize_heatmap_columns(mat)
+
+      if (plotmean) {
+        anno_args[["mean_cn"]] <- ComplexHeatmap::anno_lines(
+          summary_stats$mean,
+          gp = grid::gpar(col = "black", lwd = 1),
+          add_points = FALSE,
+          axis_param = list(
+            side = "left",
+            gp = grid::gpar(fontsize = annofontsize - 2)
+          ),
+          border = FALSE
+        )
+        heights <- c(heights, mean_height)
+      }
+
+      if (plotdiversity) {
+        anno_args[["diversity_cn"]] <- ComplexHeatmap::anno_lines(
+          summary_stats$sd,
+          gp = grid::gpar(col = "#666666", lwd = 1),
+          add_points = FALSE,
+          axis_param = list(
+            side = "left",
+            gp = grid::gpar(fontsize = annofontsize - 2)
+          ),
+          border = FALSE
+        )
+        heights <- c(heights, diversity_height)
+      }
+    }
   }
 
-  if (plotdiversity) {
-    sd_vals <- apply(mat, 2, sd, na.rm = TRUE)
-    anno_args[["diversity_cn"]] <- ComplexHeatmap::anno_lines(
-      sd_vals,
-      gp = grid::gpar(col = "#666666", lwd = 1),
-      add_points = FALSE,
-      axis_param = list(
-        side = "left",
-        gp = grid::gpar(fontsize = annofontsize - 2)
-      ),
-      border = FALSE
-    )
-    heights <- c(heights, diversity_height)
+  if (plotmeaniqr) {
+    if (is.null(meaniqr_copynumber)) {
+      meaniqr_copynumber <- copynumber
+    }
+
+    meaniqr_mat <- meaniqr_copynumber
+    meaniqr_mat[meaniqr_mat == "11+"] <- "11"
+    meaniqr_mat <- suppressWarnings(apply(meaniqr_mat, 2, as.numeric))
+    meaniqr_mat[meaniqr_mat == CENTROMERE_SENTINEL] <- NA
+
+    na_frac <- sum(is.na(meaniqr_mat)) / length(meaniqr_mat)
+    orig_na_frac <- sum(is.na(meaniqr_copynumber)) / length(meaniqr_copynumber)
+    if ((na_frac - orig_na_frac) > 0.5) {
+      warning(
+        "Column '", meaniqr_plotcol,
+        "' is not numeric. Skipping mean plus interquartile range track."
+      )
+    } else {
+      meaniqr_stats <- summarize_heatmap_columns(meaniqr_mat)
+
+      meaniqr_annot <- make_mean_iqr_annotation(
+        mean_vals = meaniqr_stats$mean,
+        q25_vals = meaniqr_stats$q25,
+        q75_vals = meaniqr_stats$q75,
+        annofontsize = annofontsize
+      )
+
+      if (!is.null(meaniqr_annot)) {
+        anno_args[["mean_iqr_cn"]] <- meaniqr_annot
+        heights <- c(heights, meaniqr_height)
+      }
+    }
   }
 
-  anno_args[["height"]] <- grid::unit(sum(heights), "cm")
+  if (length(heights) == 0) {
+    return(NULL)
+  }
+
+  anno_args[["annotation_height"]] <- grid::unit(heights, "cm")
 
   do.call(ComplexHeatmap::columnAnnotation, anno_args)
 }
 
 make_copynumber_heatmap <- function(copynumber,
+                                    meaniqr_copynumber = NULL,
                                     clones,
                                     annotations = NULL,
+                                    annotation_continuous_threshold = 10,
+                                    annotation_colours = NULL,
                                     colvals = cn_colours,
                                     legendname = "Copy Number",
                                     library_mapping = NULL,
@@ -1336,8 +1606,11 @@ make_copynumber_heatmap <- function(copynumber,
                                     gene_label_sep = "/",
                                     plotmean = FALSE,
                                     plotdiversity = FALSE,
+                                    plotmeaniqr = FALSE,
+                                    meaniqr_plotcol = plotcol,
                                     mean_height = 0.7,
                                     diversity_height = 0.7,
+                                    meaniqr_height = 0.9,
                                     annotation_gap = 2,
                                     ...) {
 
@@ -1362,9 +1635,11 @@ make_copynumber_heatmap <- function(copynumber,
   if (!is.null(annotations)) {
     left_annot <- make_left_annot_generic(
       annotations,
+      annotation_colours = annotation_colours,
       show_legend = show_legend,
       annofontsize = annofontsize,
-      anno_width = anno_width
+      anno_width = anno_width,
+      continuous_threshold = annotation_continuous_threshold
     )
   } else {
     left_annot <- make_left_annot(copynumber,
@@ -1446,11 +1721,15 @@ make_copynumber_heatmap <- function(copynumber,
   # Build summary annotations (mean CN / diversity)
   summary_annot <- make_summary_annotations(
     copynumber,
+    meaniqr_copynumber = meaniqr_copynumber,
     plotcol = plotcol,
+    meaniqr_plotcol = meaniqr_plotcol,
     plotmean = plotmean,
     plotdiversity = plotdiversity,
+    plotmeaniqr = plotmeaniqr,
     mean_height = mean_height,
     diversity_height = diversity_height,
+    meaniqr_height = meaniqr_height,
     annofontsize = annofontsize
   )
 
@@ -1505,6 +1784,12 @@ getSVlegend <- function(include = NULL) {
 #' @param tree Tree in newick format to plot alongside the heatmap, default = NULL
 #' @param clusters data.frame assigning cells to clusters, needs the following columns `cell_id`, `clone_id` default = NULL
 #' @param annotations Optional dataframe containing cell_id column and additional annotation columns
+#' @param annotation_continuous_threshold Numeric annotation columns with more than this many unique
+#'   values are treated as continuous in `annotations`. Default is 10.
+#' @param annotation_colours Optional named list of colour mappings for annotation columns.
+#'   Use a named character vector for discrete annotations or a colour function (for example
+#'   from `circlize::colorRamp2()`) for continuous annotations. Unspecified columns use the
+#'   default automatic palettes.
 #' @param normalize_ploidy Normalize ploidy of all cells to 2
 #' @param normalize_tree default = FALSE
 #' @param branch_length scales branch lengths to this size, default = 2
@@ -1558,11 +1843,17 @@ getSVlegend <- function(include = NULL) {
 #' @param gene_label_sep Separator used when multiple genes fall within the same genomic bin. Default is "/".
 #' @param plotmean Show a mean copy number line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.
 #' @param plotdiversity Show a copy number diversity (standard deviation) line track at the top of the heatmap. Only works with numeric plotcol values. Default is FALSE.
+#' @param plotmeaniqr Show a top summary track with a black mean line and a shaded interquartile range.
+#'   Only works with numeric plotcol values. Default is FALSE.
+#' @param meaniqr_plotcol Optional column to use for the mean plus interquartile range summary track.
+#'   Defaults to `plotcol`. This allows, for example, plotting `state` in the heatmap while
+#'   drawing the summary track from `copy`.
 #' @param mean_height Height of the mean copy number track in cm. Default is 0.7.
 #' @param diversity_height Height of the diversity track in cm. Default is 0.7.
+#' @param meaniqr_height Height of the mean plus interquartile range track in cm. Default is 0.9.
 #' @param annotation_gap Gap between top annotation tracks in mm. Default is 2.
 #'
-#' If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
+#' @details If clusters are set to NULL then the function will compute clusters using UMAP and HDBSCAN.
 #' 
 #' @examples
 #' \dontrun{
@@ -1578,6 +1869,8 @@ plotHeatmap <- function(cn,
                         tree = NULL,
                         clusters = NULL,
                         annotations = NULL,
+                        annotation_continuous_threshold = 10,
+                        annotation_colours = NULL,
                         normalize_ploidy = FALSE,
                         normalize_tree = FALSE,
                         branch_length = 1,
@@ -1630,8 +1923,11 @@ plotHeatmap <- function(cn,
                         gene_label_sep = "/",
                         plotmean = FALSE,
                         plotdiversity = FALSE,
+                        plotmeaniqr = FALSE,
+                        meaniqr_plotcol = plotcol,
                         mean_height = 0.7,
                         diversity_height = 0.7,
+                        meaniqr_height = 0.9,
                         annotation_gap = 2,
                         ...) {
   if (is.hscn(cn) | is.ascn(cn)) {
@@ -1670,6 +1966,10 @@ plotHeatmap <- function(cn,
 
   if (!plotcol %in% names(CNbins)) {
     stop(paste0("Column name - ", plotcol, " not in CNbins data frame..."))
+  }
+
+  if (!is.null(meaniqr_plotcol) && !meaniqr_plotcol %in% names(CNbins)) {
+    stop(paste0("Column name - ", meaniqr_plotcol, " not in CNbins data frame..."))
   }
 
   if (plotcol == "state") {
@@ -1751,6 +2051,49 @@ plotHeatmap <- function(cn,
 
   if (!is.null(newlegendname)){
     legendname <- newlegendname
+  }
+
+  if (!is.null(annotations)) {
+    if (!is.data.frame(annotations)) {
+      warning("annotations is not a data.frame. Attempting conversion to data.frame")
+      annotations <- as.data.frame(annotations)
+    }
+    if (!"cell_id" %in% names(annotations)) {
+      stop("annotations must contain a 'cell_id' column")
+    }
+  }
+
+  cell_sources <- list(copy_number = unique(CNbins$cell_id))
+  if (!is.null(clusters)) {
+    cell_sources$clusters <- unique(clusters$cell_id)
+  }
+  if (!is.null(tree)) {
+    cell_sources$tree <- unique(tree$tip.label)
+  }
+  if (!is.null(annotations)) {
+    cell_sources$annotations <- unique(annotations$cell_id)
+  }
+
+  cells_to_keep <- Reduce(intersect, cell_sources)
+  if (length(cells_to_keep) == 0) {
+    stop("No overlapping cells found across the copy number data and supplied metadata.")
+  }
+  if (any(lengths(cell_sources) != length(cells_to_keep))) {
+    warning("Copy number data and supplied metadata have different numbers of cells, removing non-overlapping cells.")
+    CNbins <- dplyr::filter(CNbins, cell_id %in% cells_to_keep)
+    if (!is.null(clusters)) {
+      clusters <- dplyr::filter(clusters, cell_id %in% cells_to_keep)
+    }
+    if (!is.null(annotations)) {
+      annotations <- dplyr::filter(annotations, cell_id %in% cells_to_keep)
+    }
+    if (!is.null(tree)) {
+      cells_to_remove <- setdiff(unique(tree$tip.label), cells_to_keep)
+      if (length(cells_to_remove) > 0) {
+        tree <- ape::drop.tip(tree, cells_to_remove, collapse.singles = FALSE, trim.internal = FALSE)
+        tree <- format_tree_labels(tree)
+      }
+    }
   }
 
   ncells <- length(unique(CNbins$cell_id))
@@ -1866,26 +2209,32 @@ plotHeatmap <- function(cn,
     stop("plotideogram = TRUE requires plotallbins = TRUE")
   }
 
-  # Create copy number matrix
-  # When plotallbins = TRUE, centromeres get sentinel value (colored by centromere_col in color scale)
-
-  # Spacers remain NA (colored white by na_col)
-  if (plotallbins) {
-    copynumber <- createCNmatrix(CNbins, field = plotcol,
-                                 plotallbins = TRUE, genome = genome)
-  } else {
-    copynumber <- createCNmatrix(CNbins, field = plotcol, fillnaplot = fillna)
-  }
-
-  if (normalize_ploidy == T) {
-    message("Normalizing ploidy for each cell to 2")
-    copynumber <- normalize_cell_ploidy(copynumber)
-  }
-  copynumber <- format_copynumber(copynumber,
+  # Create copy number matrix. When plotallbins = TRUE, centromeres get sentinel
+  # values in the matrix and spacers remain NA.
+  copynumber <- prepare_heatmap_matrix(
+    CNbins,
     ordered_cell_ids,
+    plotcol = plotcol,
     spacer_cols = spacer_cols,
-    plotcol = plotcol
+    fillna = fillna,
+    plotallbins = plotallbins,
+    genome = genome,
+    normalize_ploidy = normalize_ploidy
   )
+
+  meaniqr_copynumber <- NULL
+  if (plotmeaniqr && !identical(meaniqr_plotcol, plotcol)) {
+    meaniqr_copynumber <- prepare_heatmap_matrix(
+      CNbins,
+      ordered_cell_ids,
+      plotcol = meaniqr_plotcol,
+      spacer_cols = spacer_cols,
+      fillna = fillna,
+      plotallbins = plotallbins,
+      genome = genome,
+      normalize_ploidy = normalize_ploidy
+    )
+  }
   clones_formatted <- format_clones(as.data.frame(clusters), ordered_cell_ids)
   if (!is.null(clone_pal)) {
     clones_idx <- dplyr::distinct(clones_formatted, clone_id, clone_label)
@@ -1893,16 +2242,18 @@ plotHeatmap <- function(cn,
     names(clone_pal) <- clones_idx$clone_label
   }
   if (!is.null(annotations)) {
-    if (!is.data.frame(annotations)) {
-      warning("annotations is not a data.frame. Attempting conversion to data.frame")
-      annotations <- as.data.frame(annotations)
-    }
     annotation_idx <- match(ordered_cell_ids, annotations$cell_id)
+    if (anyNA(annotation_idx)) {
+      stop("annotations are missing rows for one or more plotted cells after cell matching")
+    }
     annotations <- annotations[annotation_idx, , drop = FALSE]
   }
   copynumber_hm <- make_copynumber_heatmap(copynumber,
-    clones_formatted,
+    meaniqr_copynumber = meaniqr_copynumber,
+    clones = clones_formatted,
     annotations = annotations,
+    annotation_continuous_threshold = annotation_continuous_threshold,
+    annotation_colours = annotation_colours,
     colvals = colvals,
     legendname = legendname,
     library_mapping = library_mapping,
@@ -1940,8 +2291,11 @@ plotHeatmap <- function(cn,
     gene_label_sep = gene_label_sep,
     plotmean = plotmean,
     plotdiversity = plotdiversity,
+    plotmeaniqr = plotmeaniqr,
+    meaniqr_plotcol = meaniqr_plotcol,
     mean_height = mean_height,
     diversity_height = diversity_height,
+    meaniqr_height = meaniqr_height,
     annotation_gap = annotation_gap,
     ...
   )
