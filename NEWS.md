@@ -1,3 +1,10 @@
+# signals 0.15.0
+
+* Add configurable annotation colour overrides for discrete and continuous annotation columns
+* Add configurable continuous/discrete threshold handling and robust cell matching for annotation metadata
+* Add a mean + IQR top summary track, with support for sourcing that track from a different column than the heatmap
+* Refine SV orientation colours and document the new plotHeatmap options
+
 # signals 0.14.1
 
 * Fix rephasebins stability to ensure stable results
