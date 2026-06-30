@@ -2196,6 +2196,24 @@ plotHeatmap <- function(cn,
 
   message("Creating copy number heatmap...")
 
+  # Ensure ordered_cell_ids is defined for all argument combinations
+  if (!exists("ordered_cell_ids") || is.null(ordered_cell_ids)) {
+    if (!is.null(clusters)) {
+      # Default to cluster-provided ordering when clusters are available
+      ordered_cell_ids <- paste0(clusters$cell_id)
+    } else if (!is.null(tree)) {
+      # Fall back to tree ordering when a tree is available
+      tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal, ladderize = ladderize)
+      tree_plot_dat <- tree_ggplot$data
+      message("Creating tree for ordering...")
+      tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
+      ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
+    } else {
+      # As a last resort, use the order present in the CNbins data
+      ordered_cell_ids <- paste0(unique(CNbins$cell_id))
+    }
+  }
+
   # Handle deprecated fillgenome parameter
   if (fillgenome) {
     warning("fillgenome is deprecated. Use plotallbins = TRUE instead.")
