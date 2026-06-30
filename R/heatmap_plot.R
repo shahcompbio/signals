@@ -2115,8 +2115,13 @@ plotHeatmap <- function(cn,
   } 
 
   if (is.null(clusters) & !is.null(tree)) {
-    ordered_cell_ids <- paste0(unique(CNbins$cell_id))
-    clusters <- data.frame(cell_id = unique(CNbins$cell_id), clone_id = "0")
+    # Use tree ordering even when plottree = FALSE and no clusters supplied
+    tree_ggplot <- make_tree_ggplot(tree, NULL, clone_pal = clone_pal, ladderize = ladderize)
+    tree_plot_dat <- tree_ggplot$data
+    message("Creating tree for ordering...")
+    tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
+    ordered_cell_ids <- get_ordered_cell_ids(tree_plot_dat)
+    clusters <- data.frame(cell_id = ordered_cell_ids, clone_id = "0")
   }
 
   if (is.null(tree) & is.null(clusters)) {
@@ -2203,7 +2208,8 @@ plotHeatmap <- function(cn,
       ordered_cell_ids <- paste0(clusters$cell_id)
     } else if (!is.null(tree)) {
       # Fall back to tree ordering when a tree is available
-      tree_ggplot <- make_tree_ggplot(tree, as.data.frame(clusters), clone_pal = clone_pal, ladderize = ladderize)
+      clones_for_tree <- if (!is.null(clusters)) as.data.frame(clusters) else NULL
+      tree_ggplot <- make_tree_ggplot(tree, clones_for_tree, clone_pal = clone_pal, ladderize = ladderize)
       tree_plot_dat <- tree_ggplot$data
       message("Creating tree for ordering...")
       tree_hm <- make_corrupt_tree_heatmap(tree_ggplot, tree_width = tree_width)
