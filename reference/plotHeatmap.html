@@ -130,6 +130,7 @@
 <span>  plotdiversity <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  plotmeaniqr <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  meaniqr_plotcol <span class="op">=</span> <span class="va">plotcol</span>,</span>
+<span>  meaniqr_y_axis_trans <span class="op">=</span> <span class="st">"identity"</span>,</span>
 <span>  mean_height <span class="op">=</span> <span class="fl">0.7</span>,</span>
 <span>  diversity_height <span class="op">=</span> <span class="fl">0.7</span>,</span>
 <span>  meaniqr_height <span class="op">=</span> <span class="fl">0.9</span>,</span>
@@ -388,6 +389,11 @@ Only works with numeric plotcol values. Default is FALSE.</p></dd>
 <dd><p>Optional column to use for the mean plus interquartile range summary track.
 Defaults to `plotcol`. This allows, for example, plotting `state` in the heatmap while
 drawing the summary track from `copy`.</p></dd>
+
+
+<dt id="arg-meaniqr-y-axis-trans">meaniqr_y_axis_trans<a class="anchor" aria-label="anchor" href="#arg-meaniqr-y-axis-trans"></a></dt>
+<dd><p>Y-axis transformation for the mean plus interquartile range summary track.
+One of `"identity"` (default) or `"squashy"` (tanh-based compression for high values).</p></dd>
 
 
 <dt id="arg-mean-height">mean_height<a class="anchor" aria-label="anchor" href="#arg-mean-height"></a></dt>
