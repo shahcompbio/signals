@@ -65,6 +65,7 @@ plotHeatmap(
   plotdiversity = FALSE,
   plotmeaniqr = FALSE,
   meaniqr_plotcol = plotcol,
+  meaniqr_y_axis_trans = "identity",
   mean_height = 0.7,
   diversity_height = 0.7,
   meaniqr_height = 0.9,
@@ -200,6 +201,9 @@ Only works with numeric plotcol values. Default is FALSE.}
 \item{meaniqr_plotcol}{Optional column to use for the mean plus interquartile range summary track.
 Defaults to `plotcol`. This allows, for example, plotting `state` in the heatmap while
 drawing the summary track from `copy`.}
+
+\item{meaniqr_y_axis_trans}{Y-axis transformation for the mean plus interquartile range summary track.
+One of `"identity"` (default) or `"squashy"` (tanh-based compression for high values).}
 
 \item{mean_height}{Height of the mean copy number track in cm. Default is 0.7.}
 

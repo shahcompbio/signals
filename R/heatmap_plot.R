@@ -1376,14 +1376,49 @@ make_mean_iqr_annotation <- function(mean_vals,
                                      q25_vals,
                                      q75_vals,
                                      annofontsize = 10,
+                                     y_axis_trans = "identity",
                                      ribbon_fill = grDevices::adjustcolor("#9E9E9E", alpha.f = 0.45),
                                      line_col = "black") {
+  if (!y_axis_trans %in% c("identity", "squashy")) {
+    warning("`y_axis_trans` must be one of: identity, squashy. Defaulting to identity.")
+    y_axis_trans <- "identity"
+  }
+
   valid <- is.finite(mean_vals) & is.finite(q25_vals) & is.finite(q75_vals)
   if (!any(valid)) {
     return(NULL)
   }
 
-  yrange <- range(c(mean_vals[valid], q25_vals[valid], q75_vals[valid]), na.rm = TRUE)
+  y_transform <- identity
+  axis_at <- NULL
+  axis_label <- NULL
+  raw_yrange <- range(c(0, mean_vals[valid], q25_vals[valid], q75_vals[valid]), na.rm = TRUE)
+
+  if (y_axis_trans == "squashy") {
+    y_transform <- squashy_trans()$transform
+    break_upper <- max(10, ceiling(raw_yrange[2]))
+    axis_breaks <- unique(c(0, 2, 5, 10, break_upper))
+    axis_breaks <- axis_breaks[axis_breaks >= raw_yrange[1] & axis_breaks <= raw_yrange[2]]
+    if (length(axis_breaks) == 0) {
+      axis_breaks <- raw_yrange
+    }
+
+    transformed_breaks <- y_transform(axis_breaks)
+    finite_breaks <- is.finite(transformed_breaks)
+    axis_at <- transformed_breaks[finite_breaks]
+    axis_label <- as.character(signif(axis_breaks[finite_breaks], 3))
+  }
+
+  mean_vals_plot <- y_transform(mean_vals)
+  q25_vals_plot <- y_transform(q25_vals)
+  q75_vals_plot <- y_transform(q75_vals)
+
+  yrange <- range(c(
+    y_transform(0),
+    mean_vals_plot[valid],
+    q25_vals_plot[valid],
+    q75_vals_plot[valid]
+  ), na.rm = TRUE)
   if (yrange[1] == yrange[2]) {
     pad <- max(abs(yrange[1]) * 0.05, 0.5)
     yrange <- yrange + c(-pad, pad)
@@ -1413,18 +1448,18 @@ make_mean_iqr_annotation <- function(mean_vals,
         if (length(run) >= 2) {
           grid::grid.polygon(
             x = grid::unit(c(run, rev(run)), "native"),
-            y = grid::unit(c(q25_vals[run], rev(q75_vals[run])), "native"),
+            y = grid::unit(c(q25_vals_plot[run], rev(q75_vals_plot[run])), "native"),
             gp = grid::gpar(fill = ribbon_fill, col = NA)
           )
           grid::grid.lines(
             x = grid::unit(run, "native"),
-            y = grid::unit(mean_vals[run], "native"),
-            gp = grid::gpar(col = line_col, lwd = 1)
+            y = grid::unit(mean_vals_plot[run], "native"),
+            gp = grid::gpar(col = line_col, lwd = 0.5)
           )
         } else {
           grid::grid.points(
             x = grid::unit(run, "native"),
-            y = grid::unit(mean_vals[run], "native"),
+            y = grid::unit(mean_vals_plot[run], "native"),
             pch = 16,
             size = grid::unit(0.8, "mm"),
             gp = grid::gpar(col = line_col)
@@ -1432,19 +1467,26 @@ make_mean_iqr_annotation <- function(mean_vals,
         }
       }
 
-      grid::grid.yaxis(
+      yaxis_args <- list(
         main = TRUE,
         gp = grid::gpar(fontsize = annofontsize - 2)
       )
+      if (!is.null(axis_at) && !is.null(axis_label)) {
+        yaxis_args$at <- axis_at
+        yaxis_args$label <- axis_label
+      }
+      do.call(grid::grid.yaxis, yaxis_args)
       grid::popViewport()
     },
     var_import = list(
-      mean_vals = mean_vals,
-      q25_vals = q25_vals,
-      q75_vals = q75_vals,
+      mean_vals_plot = mean_vals_plot,
+      q25_vals_plot = q25_vals_plot,
+      q75_vals_plot = q75_vals_plot,
       valid = valid,
       yrange = yrange,
       annofontsize = annofontsize,
+      axis_at = axis_at,
+      axis_label = axis_label,
       ribbon_fill = ribbon_fill,
       line_col = line_col
     ),
@@ -1459,6 +1501,7 @@ make_summary_annotations <- function(copynumber,
                                      plotmean = FALSE,
                                      plotdiversity = FALSE,
                                      plotmeaniqr = FALSE,
+                                     meaniqr_y_axis_trans = "identity",
                                      mean_height = 0.7,
                                      diversity_height = 0.7,
                                      meaniqr_height = 0.9,
@@ -1544,7 +1587,8 @@ make_summary_annotations <- function(copynumber,
         mean_vals = meaniqr_stats$mean,
         q25_vals = meaniqr_stats$q25,
         q75_vals = meaniqr_stats$q75,
-        annofontsize = annofontsize
+        annofontsize = annofontsize,
+        y_axis_trans = meaniqr_y_axis_trans
       )
 
       if (!is.null(meaniqr_annot)) {
@@ -1608,6 +1652,7 @@ make_copynumber_heatmap <- function(copynumber,
                                     plotdiversity = FALSE,
                                     plotmeaniqr = FALSE,
                                     meaniqr_plotcol = plotcol,
+                                    meaniqr_y_axis_trans = "identity",
                                     mean_height = 0.7,
                                     diversity_height = 0.7,
                                     meaniqr_height = 0.9,
@@ -1727,6 +1772,7 @@ make_copynumber_heatmap <- function(copynumber,
     plotmean = plotmean,
     plotdiversity = plotdiversity,
     plotmeaniqr = plotmeaniqr,
+    meaniqr_y_axis_trans = meaniqr_y_axis_trans,
     mean_height = mean_height,
     diversity_height = diversity_height,
     meaniqr_height = meaniqr_height,
@@ -1848,6 +1894,8 @@ getSVlegend <- function(include = NULL) {
 #' @param meaniqr_plotcol Optional column to use for the mean plus interquartile range summary track.
 #'   Defaults to `plotcol`. This allows, for example, plotting `state` in the heatmap while
 #'   drawing the summary track from `copy`.
+#' @param meaniqr_y_axis_trans Y-axis transformation for the mean plus interquartile range summary track.
+#'   One of `"identity"` (default) or `"squashy"` (tanh-based compression for high values).
 #' @param mean_height Height of the mean copy number track in cm. Default is 0.7.
 #' @param diversity_height Height of the diversity track in cm. Default is 0.7.
 #' @param meaniqr_height Height of the mean plus interquartile range track in cm. Default is 0.9.
@@ -1925,6 +1973,7 @@ plotHeatmap <- function(cn,
                         plotdiversity = FALSE,
                         plotmeaniqr = FALSE,
                         meaniqr_plotcol = plotcol,
+                        meaniqr_y_axis_trans = "identity",
                         mean_height = 0.7,
                         diversity_height = 0.7,
                         meaniqr_height = 0.9,
@@ -2317,6 +2366,7 @@ plotHeatmap <- function(cn,
     plotdiversity = plotdiversity,
     plotmeaniqr = plotmeaniqr,
     meaniqr_plotcol = meaniqr_plotcol,
+    meaniqr_y_axis_trans = meaniqr_y_axis_trans,
     mean_height = mean_height,
     diversity_height = diversity_height,
     meaniqr_height = meaniqr_height,
