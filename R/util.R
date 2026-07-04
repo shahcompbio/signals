@@ -202,7 +202,11 @@ createCNmatrix <- function(CNbins,
   rownames(cnmatrix) <- paste(cnmatrix$chr, as.integer(cnmatrix$start), as.integer(cnmatrix$end), sep = "_")
   cnmatrix <- subset(cnmatrix, select = -c(idx))
 
-  if (centromere == TRUE & fillna == TRUE){
+  # narowsdf (the identified centromere region) is only built by the fillnaplot
+  # branch, so the masking must be gated on fillnaplot, not fillna. Gating on
+  # fillna crashed for createCNmatrix(fillna = TRUE, centromere = TRUE) and never
+  # ran for the natural createCNmatrix(fillnaplot = TRUE, centromere = TRUE).
+  if (centromere == TRUE & fillnaplot == TRUE){
     cnmatrix[narowsdf$id,5:ncol(cnmatrix)] <- NA
   }
 

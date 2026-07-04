@@ -56,3 +56,15 @@ test_that("Test segments to bins", {
   expect_equal(median((bins$end - bins$start) + 1), 0.5e6)
   expect_true(all(!duplicated(bin_cell_id))) #no duplicates
 })
+
+test_that("createCNmatrix centromere masking runs and blanks the centromere", {
+  # Regression: createCNmatrix(fillna = TRUE, centromere = TRUE) previously
+  # crashed (narowsdf is only defined in the fillnaplot branch), and the natural
+  # createCNmatrix(fillnaplot = TRUE, centromere = TRUE) silently did nothing.
+  expect_error(createCNmatrix(sim_data_bb$ascn, fillna = TRUE, centromere = TRUE), NA)
+
+  m_off <- createCNmatrix(sim_data_bb$ascn, wholegenome = TRUE, fillnaplot = TRUE, centromere = FALSE)
+  m_on <- createCNmatrix(sim_data_bb$ascn, wholegenome = TRUE, fillnaplot = TRUE, centromere = TRUE)
+  cell_cols <- setdiff(names(m_on), c("chr", "start", "end", "width"))
+  expect_gt(sum(is.na(m_on[, cell_cols])), sum(is.na(m_off[, cell_cols])))
+})
