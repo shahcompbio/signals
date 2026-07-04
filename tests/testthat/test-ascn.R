@@ -51,3 +51,22 @@ test_that("Test allele specific copy number inference (beta-binomial)", {
   expect_equal(round(results_bb$loherror, 2), loherror)
   expect_gt(results_bb$likelihood$taronesZ, 5)
 })
+
+
+test_that("alleleHMM tolerates homozygous-deletion bins without corrupting the rest of the chromosome", {
+  # A homdel bin (total CN 0) must not produce all-(-Inf) emissions, which would
+  # propagate through the Viterbi recursion and force every downstream bin to 0.
+  # Bins 4-5 are identical to bins 1-2, so they must decode the same.
+  n         <- c(40, 40,  0, 40, 40)
+  x         <- c(20, 20,  0, 20, 20)
+  binstates <- c( 2,  2,  0,  2,  2)
+  minor_cn  <- 0:4
+
+  res <- alleleHMM(n, x, binstates, minor_cn, likelihood = "binomial")
+
+  # no bin should have all non-finite emissions
+  all_inf <- apply(res$l, 1, function(row) all(!is.finite(row)))
+  expect_false(any(all_inf))
+  # downstream bins keep their balanced call rather than collapsing to 0
+  expect_equal(res$minorcn, c(1, 1, 0, 1, 1))
+})
