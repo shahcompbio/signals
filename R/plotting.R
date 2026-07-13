@@ -8,13 +8,36 @@ removeyaxis <- ggplot2::theme(axis.line.y=ggplot2::element_blank(),
                      axis.text.y=ggplot2::element_blank(),
                      axis.ticks.y=ggplot2::element_blank())
 
+validate_regions <- function(regions) {
+  if (!is.data.frame(regions)) {
+    stop("regions must be a data.frame")
+  }
+  
+  required_cols <- c("chr", "start", "end")
+  if (!all(required_cols %in% names(regions))) {
+    stop(paste0("regions must contain columns: ", paste(required_cols, collapse = ", ")))
+  }
+  
+  if (nrow(regions) == 0) {
+    stop("regions cannot be empty")
+  }
+  
+  if (any(regions$start >= regions$end)) {
+    stop("All region start positions must be less than end positions")
+  }
+  
+  return(TRUE)
+}
+
 plottinglist <- function(CNbins, 
                          xaxis_order = "genome_position", 
                          maxCN = 20, 
                          tickwidth = 50, 
                          chrstart = NULL, 
                          positionticks = FALSE,
-                         chrend = NULL) {
+                         chrend = NULL,
+                         regions = NULL,
+                         region_gap = 5) {
   # arrange segments in order, generate segment index and reorder CN state factor
 
   if (!xaxis_order %in% c("bin", "genome_position")) {
@@ -28,7 +51,107 @@ plottinglist <- function(CNbins,
   binsize <- CNbins$end[1] - CNbins$start[1] + 1
   tickwidth <- (tickwidth * 1e6) / binsize
   
-  if (xaxis_order == "bin") {
+  # Handle multi-region plotting
+  multi_region_mode <- FALSE
+  if (!is.null(regions)) {
+    validate_regions(regions)
+    multi_region_mode <- TRUE
+    
+    # Filter CNbins for each region and combine, maintaining region order
+    region_list <- list()
+    
+    for (i in seq_len(nrow(regions))) {
+      region <- regions[i, ]
+      
+      # Convert Mb positions to bin coordinates
+      region_start_bp <- region$start * 1e6
+      region_end_bp <- region$end * 1e6
+      
+      # Filter CNbins for this region using overlap logic
+      # A bin overlaps if: bin.start < region.end AND bin.end > region.start
+      region_data <- CNbins %>%
+        dplyr::filter(chr == region$chr,
+                      start < region_end_bp,
+                      end > region_start_bp)
+      
+      if (nrow(region_data) > 0) {
+        region_data <- region_data %>%
+          dplyr::mutate(region_id = i)
+        region_list[[i]] <- region_data
+      }
+    }
+    
+    if (length(region_list) > 0) {
+      # Combine regions preserving order
+      CNbins <- dplyr::bind_rows(region_list) %>%
+        dplyr::arrange(region_id)
+      
+      # Re-index bins sequentially and add gap bins between regions
+      gap_bin_size <- round((region_gap * 1e6) / binsize)
+      final_bins <- list()
+      cumulative_idx <- 0
+      
+      for (i in unique(CNbins$region_id)) {
+        region_bins <- CNbins %>%
+          dplyr::filter(region_id == i) %>%
+          dplyr::arrange(chr, start) %>%
+          dplyr::select(chr, start, end) %>%
+          dplyr::distinct()
+        
+        if (i > 1) {
+          # Add gap bins between regions
+          cumulative_idx <- cumulative_idx + gap_bin_size
+        }
+        
+        final_bins[[i]] <- region_bins %>%
+          dplyr::mutate(idx = cumulative_idx + 1:dplyr::n())
+        
+        cumulative_idx <- max(final_bins[[i]]$idx)
+      }
+      
+      bins <- dplyr::bind_rows(final_bins)
+      
+      # Re-index CNbins with the new bin indices
+      CNbins <- CNbins %>%
+        dplyr::left_join(
+          bins %>% dplyr::select(chr, start, end, idx),
+          by = c("chr", "start", "end")
+        ) %>%
+        dplyr::group_by(cell_id) %>%
+        dplyr::mutate(idx = dplyr::row_number()) %>%
+        dplyr::ungroup()
+      
+    } else {
+      stop("No data found for the specified regions")
+    }
+    
+    # Set up plotting variables for multi-region mode
+    CNbins <- CNbins %>%
+      dplyr::filter(!is.na(copy)) %>%
+      dplyr::filter(!is.na(state)) %>%
+      dplyr::mutate(copy = ifelse(copy > maxCN, maxCN, copy)) %>%
+      dplyr::mutate(idxs = forcats::fct_reorder(factor(idx), idx)) %>%
+      dplyr::mutate(CNs = forcats::fct_reorder(ifelse(is.na(state), NA,
+        paste0("CN", state)
+      ), state))
+    
+    # Create chromosome breaks and ticks for multi-region
+    chrbreaks <- CNbins %>%
+      dplyr::group_by(chr) %>%
+      dplyr::filter(dplyr::row_number() == 1) %>%
+      dplyr::pull(idx)
+    
+    chrticks <- bins %>%
+      dplyr::group_by(chr) %>%
+      dplyr::summarise(idx = round(median(idx))) %>%
+      dplyr::pull(idx)
+    
+    chrlabels <- gtools::mixedsort(unique(CNbins$chr))
+    minidx <- min(CNbins$idx)
+    maxidx <- max(CNbins$idx)
+  }
+  
+  if (!multi_region_mode && xaxis_order == "bin") {
 
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
@@ -66,7 +189,7 @@ plottinglist <- function(CNbins,
 
     minidx <- min(CNbins$idx)
     maxidx <- max(CNbins$idx)
-  } else {
+  } else if (!multi_region_mode) {
 
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
@@ -914,6 +1037,8 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param show_sv_read_axis show secondary y-axis for SV read support when using lines_and_arcs style, default = TRUE. Works with both identity and squashy y-axis transformations.
 #' @param sv_read_axis_scale maximum value for SV read support axis (auto-scaled if NULL), default = NULL
 #' @param show_sv_legend show legend for SV orientations when using lines_and_arcs style, default = FALSE
+#' @param regions Optional data.frame with columns chr, start, end (in Mb) to plot multiple regions. If provided, takes precedence over chrfilt/chrstart/chrend.
+#' @param region_gap Gap size between regions in Mb, default = 5 Mb. Only used when regions is provided.
 #'
 #' @return ggplot2 plot
 #'
@@ -957,6 +1082,8 @@ plotCNprofile <- function(CNbins,
                           show_sv_read_axis = TRUE,
                           sv_read_axis_scale = NULL,
                           show_sv_legend = FALSE,
+                          regions = NULL,
+                          region_gap = 5,
                           ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -1012,10 +1139,18 @@ plotCNprofile <- function(CNbins,
     SV <- flip_sv_positions(SV)
   }
 
+  # Handle regions parameter
+  if (!is.null(regions)) {
+    validate_regions(regions)
+    # Auto-populate chrfilt from regions for SV filtering
+    chrfilt <- unique(regions$chr)
+  }
+
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
     plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, positionticks = positionticks,
-                 tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
+                 tickwidth = tickwidth, chrstart = chrstart, chrend = chrend,
+                 regions = regions, region_gap = region_gap)
   
   # Process SV data for lines_and_arcs mode (needed for secondary axis)
   sv_points_data <- NULL

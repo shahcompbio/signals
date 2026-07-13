@@ -40,6 +40,8 @@ plotCNprofile(
   show_sv_read_axis = TRUE,
   sv_read_axis_scale = NULL,
   show_sv_legend = FALSE,
+  regions = NULL,
+  region_gap = 5,
   ...
 )
 }
@@ -111,6 +113,10 @@ plotCNprofile(
 \item{sv_read_axis_scale}{maximum value for SV read support axis (auto-scaled if NULL), default = NULL}
 
 \item{show_sv_legend}{show legend for SV orientations when using lines_and_arcs style, default = FALSE}
+
+\item{regions}{Optional data.frame with columns \code{chr}, \code{start}, \code{end} (in Mb) to plot multiple regions. If provided, takes precedence over \code{chrfilt}/\code{chrstart}/\code{chrend}. The order of rows determines the order of regions in the plot.}
+
+\item{region_gap}{Gap size between regions in Mb, default = 5. Only used when \code{regions} is provided.}
 }
 \value{
 ggplot2 plot
@@ -121,4 +127,12 @@ Plot a single cell copy number profile
 \examples{
 
 plotCNprofile(CNbins)
+
+# Plot multiple regions:
+# regions <- data.frame(
+#   chr = c("2", "2", "1"),
+#   start = c(1, 100, 50),
+#   end = c(10, 120, 75)
+# )
+# plotCNprofile(CNbins, regions = regions, region_gap = 5)
 }
