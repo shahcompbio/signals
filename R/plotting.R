@@ -135,18 +135,24 @@ plottinglist <- function(CNbins,
         paste0("CN", state)
       ), state))
     
-    # Create chromosome breaks and ticks for multi-region
+    # Create chromosome breaks and ticks for multi-region. Order ticks/labels by
+    # axis position (idx), not by chr name: group_by(chr) returns groups in
+    # string order ("12" before "8") whereas the labels must follow the plotted
+    # left-to-right region order, otherwise labels get zipped to the wrong ticks
+    # (e.g. an 8 + 12 plot labelling the chr8 region "12").
+    chrtickdf <- bins %>%
+      dplyr::group_by(chr) %>%
+      dplyr::summarise(idx = round(median(idx)), .groups = "drop") %>%
+      dplyr::arrange(idx)
+    chrticks <- chrtickdf$idx
+    chrlabels <- chrtickdf$chr
+
     chrbreaks <- CNbins %>%
       dplyr::group_by(chr) %>%
-      dplyr::filter(dplyr::row_number() == 1) %>%
+      dplyr::summarise(idx = min(idx), .groups = "drop") %>%
+      dplyr::arrange(idx) %>%
       dplyr::pull(idx)
-    
-    chrticks <- bins %>%
-      dplyr::group_by(chr) %>%
-      dplyr::summarise(idx = round(median(idx))) %>%
-      dplyr::pull(idx)
-    
-    chrlabels <- gtools::mixedsort(unique(CNbins$chr))
+
     minidx <- min(CNbins$idx)
     maxidx <- max(CNbins$idx)
   }
