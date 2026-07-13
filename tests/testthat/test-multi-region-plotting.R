@@ -8,16 +8,16 @@ mock_CNbins_multi_region <- data.frame(
   cell_id = rep("test_cell", 300),
   chr = rep(c("1", "1", "2", "2"), c(100, 100, 50, 50)),
   start = c(
-    seq(1, 100e6, by = 1e6),  # Chr1: 1-100 Mb
-    seq(150e6, 250e6, by = 1e6),  # Chr1: 150-250 Mb
-    seq(1, 50e6, by = 1e6),  # Chr2: 1-50 Mb
-    seq(100e6, 150e6, by = 1e6)  # Chr2: 100-150 Mb
+    seq(1, 100e6, by = 1e6),  # Chr1: 1-100 Mb (100 bins)
+    seq(150e6, 249e6, by = 1e6),  # Chr1: 150-249 Mb (100 bins)
+    seq(1, 50e6, by = 1e6),  # Chr2: 1-50 Mb (50 bins)
+    seq(100e6, 149e6, by = 1e6)  # Chr2: 100-149 Mb (50 bins)
   ),
   end = c(
     seq(1e6, 100e6, by = 1e6),
-    seq(150e6, 250e6, by = 1e6),
+    seq(150e6, 249e6, by = 1e6),
     seq(1e6, 50e6, by = 1e6),
-    seq(100e6, 150e6, by = 1e6)
+    seq(100e6, 149e6, by = 1e6)
   ),
   state = sample(0:4, 300, replace = TRUE),
   copy = rnorm(300, mean = 2, sd = 0.5)
