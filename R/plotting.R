@@ -53,6 +53,7 @@ plottinglist <- function(CNbins,
   
   # Handle multi-region plotting
   multi_region_mode <- FALSE
+  region_labels <- NULL   # region-centre chr labels, only populated in multi-region mode
   if (!is.null(regions)) {
     validate_regions(regions)
     multi_region_mode <- TRUE
@@ -104,23 +105,25 @@ plottinglist <- function(CNbins,
         }
         
         final_bins[[i]] <- region_bins %>%
-          dplyr::mutate(idx = cumulative_idx + 1:dplyr::n())
-        
+          dplyr::mutate(idx = cumulative_idx + 1:dplyr::n(), region_id = i)
+
         cumulative_idx <- max(final_bins[[i]]$idx)
       }
       
       bins <- dplyr::bind_rows(final_bins)
       
-      # Re-index CNbins with the new bin indices
+      # Re-index CNbins onto the gapped bin index. Keep the gap (do NOT collapse
+      # to a contiguous row number): the empty idx range between regions renders
+      # as white space, and the SV arcs -- which map through `bins` -- stay
+      # aligned with the copy-number points.
       CNbins <- CNbins %>%
+        dplyr::select(-dplyr::any_of("idx")) %>%
         dplyr::left_join(
-          bins %>% dplyr::select(chr, start, end, idx),
+          bins %>% dplyr::select(chr, start, end, idx, region_id),
           by = c("chr", "start", "end")
         ) %>%
-        dplyr::group_by(cell_id) %>%
-        dplyr::mutate(idx = dplyr::row_number()) %>%
-        dplyr::ungroup()
-      
+        dplyr::arrange(cell_id, idx)
+
     } else {
       stop("No data found for the specified regions")
     }
@@ -135,20 +138,31 @@ plottinglist <- function(CNbins,
         paste0("CN", state)
       ), state))
     
-    # Create chromosome breaks and ticks for multi-region. Order ticks/labels by
-    # axis position (idx), not by chr name: group_by(chr) returns groups in
-    # string order ("12" before "8") whereas the labels must follow the plotted
-    # left-to-right region order, otherwise labels get zipped to the wrong ticks
-    # (e.g. an 8 + 12 plot labelling the chr8 region "12").
-    chrtickdf <- bins %>%
-      dplyr::group_by(chr) %>%
-      dplyr::summarise(idx = round(median(idx)), .groups = "drop") %>%
-      dplyr::arrange(idx)
-    chrticks <- chrtickdf$idx
-    chrlabels <- chrtickdf$chr
+    # Per-region Mb tick marks (like the single-chromosome case): pretty Mb breaks
+    # within each region, mapped to that region's bin indices. Ticks are ordered
+    # by axis position so multi-region plots read left-to-right regardless of how
+    # the chromosome names sort as strings.
+    region_ticks <- lapply(unique(bins$region_id), function(ri) {
+      rb <- bins %>% dplyr::filter(region_id == ri)
+      mb <- rb$start / 1e6
+      brks <- scales::breaks_pretty(3)(range(mb))
+      brks <- brks[brks >= min(mb) & brks <= max(mb)]
+      if (length(brks) == 0) brks <- stats::median(mb)
+      tick_idx <- vapply(brks, function(m) rb$idx[which.min(abs(mb - m))], numeric(1))
+      data.frame(idx = tick_idx, label = as.character(round(brks)))
+    })
+    region_ticks <- dplyr::bind_rows(region_ticks)
+    chrticks  <- region_ticks$idx
+    chrlabels <- region_ticks$label
 
-    chrbreaks <- CNbins %>%
-      dplyr::group_by(chr) %>%
+    # Per-region chromosome name + centre position (for optional chr labels), and
+    # region-start boundaries used for the subtle grey separator lines.
+    region_labels <- bins %>%
+      dplyr::group_by(region_id, chr) %>%
+      dplyr::summarise(idx = round(mean(idx)), .groups = "drop") %>%
+      dplyr::arrange(idx)
+    chrbreaks <- bins %>%
+      dplyr::group_by(region_id) %>%
       dplyr::summarise(idx = min(idx), .groups = "drop") %>%
       dplyr::arrange(idx) %>%
       dplyr::pull(idx)
@@ -274,7 +288,7 @@ plottinglist <- function(CNbins,
 
   }
 
-  return(list(CNbins = CNbins, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
+  return(list(CNbins = CNbins, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx, region_labels = region_labels))
 }
 
 plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL, chrstart = NULL, chrend = NULL) {
@@ -1045,6 +1059,7 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param show_sv_legend show legend for SV orientations when using lines_and_arcs style, default = FALSE
 #' @param regions Optional data.frame with columns chr, start, end (in Mb) to plot multiple regions. If provided, takes precedence over chrfilt/chrstart/chrend.
 #' @param region_gap Gap size between regions in Mb, default = 5 Mb. Only used when regions is provided.
+#' @param show_region_labels Annotate each region with its chromosome name at the top of the panel. Only used when regions is provided. Default = TRUE.
 #'
 #' @return ggplot2 plot
 #'
@@ -1090,6 +1105,7 @@ plotCNprofile <- function(CNbins,
                           show_sv_legend = FALSE,
                           regions = NULL,
                           region_gap = 5,
+                          show_region_labels = TRUE,
                           ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -1629,7 +1645,22 @@ plotCNprofile <- function(CNbins,
                              ymax = -0.15, fill = colval)) +
       ggplot2::scale_fill_manual(values = cyto_colors) +
       ggplot2::theme(legend.position = "none")
-      
+
+  }
+
+  # Multi-region: label each region with its chromosome at the top-centre of the
+  # region. Drawn LAST (on top of the arcs) with a white halo/background so it stays
+  # legible over dense SV arcs. y = maxCN sits on the scale's upper limit (so it is
+  # not censored/dropped); Mb tick marks stay on the bottom axis.
+  if (show_region_labels && !is.null(regions) && !is.null(pl$region_labels) && nrow(pl$region_labels) > 0) {
+    label_fs <- list(...)$font_size          # font_size is passed via ...
+    if (is.null(label_fs)) label_fs <- 11
+    gCN <- gCN +
+      ggplot2::geom_label(data = pl$region_labels,
+                          ggplot2::aes(x = idx, y = maxCN, label = paste0("chr", chr)),
+                          vjust = 1, size = label_fs / 2.8, inherit.aes = FALSE,
+                          fill = "white", colour = "black", label.size = 0,
+                          label.padding = grid::unit(0.5, "mm"), label.r = grid::unit(0, "mm"))
   }
 
   if (returnlist == TRUE) {
