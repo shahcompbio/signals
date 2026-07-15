@@ -434,6 +434,25 @@ classify_sv_orientation <- function(SV) {
   return(orientation)
 }
 
+map_bp_to_idx <- function(chrom, pos, bins, binsize, max_bins = 5) {
+  # Map each breakpoint (chrom[i], pos[i]) to the idx of the NEAREST bin on the
+  # same chromosome. More robust than an exact floor-to-bin match: a breakpoint
+  # can fall in a bin that was dropped upstream (e.g. by a mappability filter) or
+  # just outside a cropped region, which an exact match silently loses. Returns
+  # NA when the nearest bin is further than max_bins * binsize away (so genuinely
+  # out-of-region breakpoints are still dropped rather than snapped to an edge).
+  chrom <- as.character(chrom)
+  by_chr <- split(bins[, c("start", "idx")], as.character(bins$chr))
+  vapply(seq_along(pos), function(i) {
+    b <- by_chr[[chrom[i]]]
+    if (is.null(b) || nrow(b) == 0) return(NA_real_)
+    d <- abs(b$start - pos[i])
+    j <- which.min(d)
+    if (d[j] > max_bins * binsize) return(NA_real_)
+    b$idx[j]
+  }, numeric(1))
+}
+
 prepare_sv_points <- function(SV, bins, binsize) {
   # Prepare SV data for plotting as points
   # Input: SV dataframe with strand_1, strand_2, read_count, chromosome_1, chromosome_2, position_1, position_2
@@ -455,28 +474,14 @@ prepare_sv_points <- function(SV, bins, binsize) {
   SV <- SV %>%
     dplyr::mutate(orientation = classify_sv_orientation(.))
 
-  # Round positions to bin boundaries
+  # Map each breakpoint to the nearest bin on its chromosome (robust to bins that
+  # were dropped upstream, e.g. by a mappability filter, which an exact match
+  # would miss -- losing the breakpoint, and any inter-chromosomal arc, entirely).
   SV <- SV %>%
     dplyr::mutate(
-      position_1 = binsize * floor(position_1 / binsize) + 1,
-      position_2 = binsize * floor(position_2 / binsize) + 1
-    )
-
-  # Join with bin indices
-  SV <- SV %>%
-    dplyr::left_join(
-      bins %>% dplyr::select(chr, start, idx) %>%
-        dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx),
-      by = c("chromosome_1", "position_1")
+      idx_1 = map_bp_to_idx(chromosome_1, position_1, bins, binsize),
+      idx_2 = map_bp_to_idx(chromosome_2, position_2, bins, binsize)
     ) %>%
-    dplyr::left_join(
-      bins %>% dplyr::select(chr, start, idx) %>%
-        dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx),
-      by = c("chromosome_2", "position_2")
-    )
-
-  # Filter out SVs where we couldn't find bin indices
-  SV <- SV %>%
     dplyr::filter(!is.na(idx_1) & !is.na(idx_2))
 
   if (nrow(SV) == 0) {
@@ -1226,18 +1231,8 @@ plotCNprofile <- function(CNbins,
       SV_with_idx <- SV %>%
         dplyr::mutate(
           sv_id = paste0("sv_", 1:dplyr::n()),
-          position_1 = binsize * floor(position_1 / binsize) + 1,
-          position_2 = binsize * floor(position_2 / binsize) + 1
-        ) %>%
-        dplyr::left_join(
-          bins %>% dplyr::select(chr, start, idx) %>%
-            dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx),
-          by = c("chromosome_1", "position_1")
-        ) %>%
-        dplyr::left_join(
-          bins %>% dplyr::select(chr, start, idx) %>%
-            dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx),
-          by = c("chromosome_2", "position_2")
+          idx_1 = map_bp_to_idx(chromosome_1, position_1, bins, binsize),
+          idx_2 = map_bp_to_idx(chromosome_2, position_2, bins, binsize)
         ) %>%
         dplyr::filter(!is.na(idx_1) & !is.na(idx_2))
 
