@@ -654,7 +654,7 @@ sv_band_trans <- function(base = "identity", maxCN = 10, miny = 0,
 generate_sv_band_arcs <- function(idx_1, idx_2, orientation, side,
                                   baseline, half_height,
                                   arc_scale = "span", min_frac = 0.15,
-                                  n_points = 50) {
+                                  min_width = 0, n_points = 50) {
   # Arcs for the SV band above the CN panel. Both feet sit on `baseline`, so the
   # linear interpolation term in generate_sv_arcs() vanishes and all that is left
   # is the symmetric parabola 4 * h * t * (1 - t), with h signed by `side`.
@@ -664,7 +664,7 @@ generate_sv_band_arcs <- function(idx_1, idx_2, orientation, side,
   #                      local rearrangements stay low and long-range events arch
   #                      over them. sqrt (not linear) because a single translocation
   #                      would otherwise flatten everything else onto the baseline.
-  keep <- !is.na(idx_1) & !is.na(idx_2) & idx_1 != idx_2
+  keep <- !is.na(idx_1) & !is.na(idx_2)
   if (!any(keep)) {
     return(data.frame(idx = numeric(0), y = numeric(0),
                       arc_id = character(0), orientation = character(0)))
@@ -674,6 +674,17 @@ generate_sv_band_arcs <- function(idx_1, idx_2, orientation, side,
   orientation <- orientation[keep]; side <- side[keep]
 
   span <- abs(idx_2 - idx_1)
+
+  # Widen arcs that are narrower than min_width so they still render. Without this
+  # a foldback -- whose breakends are close enough to land in the same bin -- has
+  # idx_1 == idx_2 and collapses to nothing, silently dropping the BFB signal.
+  if (min_width > 0 && any(span < min_width)) {
+    narrow <- span < min_width
+    mid <- (idx_1 + idx_2) / 2
+    idx_1[narrow] <- mid[narrow] - min_width / 2
+    idx_2[narrow] <- mid[narrow] + min_width / 2
+  }
+
   if (identical(arc_scale, "span") && max(span) > 0) {
     rel <- sqrt(span / max(span))
     h <- half_height * (min_frac + (1 - min_frac) * rel)
@@ -1184,6 +1195,9 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param sv_arc_scale how the apex of each arc is chosen when sv_arcs_above = TRUE: "span" (default, apex scales with the sqrt of the arc's width so nested SVs nest visually) or "fixed" (every arc reaches the same height).
 #' @param sv_arc_side split arcs onto both sides of a baseline inside the SV band. NULL (default) draws all arcs upwards. One of the built-in rules "cn_effect" (gain-associated junctions up, loss-associated and CN-neutral down), "translocation" or "foldback", or the name of a column in SV holding "up"/"down".
 #' @param sv_foldback_dist maximum breakpoint distance (bp) for a "++"/"--" inversion to count as a foldback in the sv_arc_side rules, default = 30000
+#' @param sv_arc_min_height minimum apex of an arc as a fraction of the available band half-height, default = 0.15. Only used when sv_arc_scale = "span". Raise it so short-range SVs such as foldbacks stay visible.
+#' @param sv_arc_min_width minimum width of an arc as a fraction of the plotted x range, default = 0.004. An SV whose two breakends fall in the same bin (a foldback at 10kb bins, say) would otherwise have zero width and not render at all.
+#' @param ybreaks y axis breaks. Default NULL uses c(0, 2, 5, 10, maxCN) for the squashy transform and seq(0, maxCN, 2) otherwise. Useful for short panels, where the default breaks collide: the squashy transform packs 0/2/5 into the lower part of the axis, so their labels overlap once the panel drops below roughly 7 mm.
 #' @param sv_show_lines draw the vertical line at each breakpoint, default = TRUE. Set to FALSE for arcs only. In band mode the lines run from 0 up to the arc baseline; in read count mode they run from the bottom of the panel to a height set by read_count.
 #' @param sv_line_alpha transparency of the vertical breakpoint lines. Default NULL uses sv_arc_alpha. Because the lines are drawn behind the copy number points they can be made stronger than the arcs without obscuring the data.
 #' @param regions Optional data.frame with columns chr, start, end (in Mb) to plot multiple regions. If provided, takes precedence over chrfilt/chrstart/chrend.
@@ -1237,6 +1251,9 @@ plotCNprofile <- function(CNbins,
                           sv_arc_scale = "span",
                           sv_arc_side = NULL,
                           sv_foldback_dist = 30000,
+                          sv_arc_min_height = 0.15,
+                          sv_arc_min_width = 0.004,
+                          ybreaks = NULL,
                           sv_show_lines = TRUE,
                           sv_line_alpha = NULL,
                           regions = NULL,
@@ -1266,12 +1283,14 @@ plotCNprofile <- function(CNbins,
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
   }
 
-  if (y_axis_trans == "squashy") {
-    ybreaks <- c(0, 2, 5, 10, maxCN)
-  } else {
-    ybreaks <- seq(0, maxCN, 2)
+  if (is.null(ybreaks)) {
+    if (y_axis_trans == "squashy") {
+      ybreaks <- c(0, 2, 5, 10, maxCN)
+    } else {
+      ybreaks <- seq(0, maxCN, 2)
+    }
   }
-  
+
   if (length(chrfilt) == 1){
     xlab <- paste0('Chr. ', chrfilt, " (Mb)")
   } else{
@@ -1342,8 +1361,24 @@ plotCNprofile <- function(CNbins,
   sv_band_width <- 1                       # data-space width; the trans rescales it
   sv_band_top <- maxCN + sv_band_width
   sv_baseline <- maxCN
+  sv_half <- sv_band_width * 0.85
 
-  if (!is.null(SV) && nrow(SV) > 0 && sv_style %in% c("lines_and_arcs", "both") && sv_arcs_above) {
+  # Reserve the band whenever it is asked for, even when this panel has no SVs.
+  # Otherwise a cell with no breakpoints gets the full panel for its CN track and
+  # no longer shares a y geometry with the panels stacked above it.
+  if (sv_arcs_above) {
+    sv_band_active <- TRUE
+    if (is.null(sv_arc_side)) {
+      sv_baseline <- maxCN
+      sv_half <- sv_band_width * 0.85
+    } else {
+      # split band: the baseline sits mid-band and each side gets half the room
+      sv_baseline <- maxCN + sv_band_width / 2
+      sv_half <- sv_band_width / 2 * 0.85
+    }
+  }
+
+  if (sv_band_active && !is.null(SV) && nrow(SV) > 0 && sv_style %in% c("lines_and_arcs", "both")) {
     binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
     bins <- pl$bins
 
@@ -1365,20 +1400,12 @@ plotCNprofile <- function(CNbins,
                                          foldback_dist = sv_foldback_dist)
       }
 
-      # With a split the baseline sits mid-band and each side gets half the room;
-      # otherwise arcs rise from the divider and get the whole band.
-      if (is.null(sv_arc_side)) {
-        sv_baseline <- maxCN
-        sv_half <- sv_band_width * 0.85
-      } else {
-        sv_baseline <- maxCN + sv_band_width / 2
-        sv_half <- sv_band_width / 2 * 0.85
-      }
-
       sv_arcs_data <- generate_sv_band_arcs(
         SV_band$idx_1, SV_band$idx_2, SV_band$orientation, SV_band$side,
         baseline = sv_baseline, half_height = sv_half,
-        arc_scale = sv_arc_scale
+        arc_scale = sv_arc_scale,
+        min_frac = sv_arc_min_height,
+        min_width = sv_arc_min_width * (pl$maxidx - pl$minidx)
       )
 
       # Breakpoint rules run the full height of the CN panel and continue up to the
@@ -1390,8 +1417,6 @@ plotCNprofile <- function(CNbins,
         SV_band %>% dplyr::select(idx = idx_2, orientation)
       ) %>%
         dplyr::mutate(y_scaled = sv_baseline)
-
-      sv_band_active <- TRUE
     }
   }
 

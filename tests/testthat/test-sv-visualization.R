@@ -450,3 +450,155 @@ test_that("plotCNprofile caps read_count when exceeding sv_read_axis_scale", {
   # Plot should still be created successfully
   expect_true(inherits(p, "ggplot"))
 })
+
+# ---------------------------------------------------------------------------
+# SV band above the CN panel (sv_arcs_above = TRUE)
+# ---------------------------------------------------------------------------
+
+test_that("classify_sv_side assigns sides by copy number effect", {
+  sv <- data.frame(
+    chromosome_1 = c("11", "11", "11", "11", "11"),
+    chromosome_2 = c("11", "11", "11", "11", "6"),
+    position_1   = c(10e6, 20e6, 30e6, 40e6, 50e6),
+    position_2   = c(15e6, 25e6, 30e6 + 5e3, 45e6, 10e6),
+    strand_1     = c("-", "+", "+", "+", "+"),
+    strand_2     = c("+", "-", "+", "+", "-")
+  )
+
+  side <- classify_sv_side(sv, rule = "cn_effect", foldback_dist = 30000)
+  # -+ duplication = up, +- deletion = down, short ++ foldback = up,
+  # long-range ++ inversion = down, translocation = up
+  expect_equal(side, c("up", "down", "up", "down", "up"))
+
+  # a foldback is only a foldback within foldback_dist
+  expect_equal(classify_sv_side(sv, "cn_effect", foldback_dist = 1000)[3], "down")
+
+  # the other rules
+  expect_equal(classify_sv_side(sv, rule = "translocation"),
+               c("down", "down", "down", "down", "up"))
+  expect_equal(classify_sv_side(sv, rule = "foldback"),
+               c("down", "down", "up", "down", "down"))
+  expect_error(classify_sv_side(sv, rule = "nonsense"), "sv_arc_side rule must be")
+})
+
+test_that("sv_band_trans is monotonic and gives the band a fixed share of the panel", {
+  for (base in c("identity", "squashy")) {
+    tr <- sv_band_trans(base = base, maxCN = 20, miny = 0,
+                        band_frac = 0.3, band_width = 1)
+    x <- c(0, 5, 10, 20, 20.5, 21)
+    y <- tr$transform(x)
+
+    expect_false(any(is.na(y)))
+    expect_true(all(diff(y) > 0))                       # monotonic
+    expect_equal(tr$inverse(y), x, tolerance = 1e-6)    # round trips
+
+    # the band is exactly band_frac of the total transformed height
+    total <- tr$transform(21) - tr$transform(0)
+    band  <- tr$transform(21) - tr$transform(20)
+    expect_equal(band / total, 0.3, tolerance = 1e-6)
+  }
+})
+
+test_that("generate_sv_band_arcs keeps same-bin SVs when min_width is set", {
+  # a foldback whose breakends land in one bin has idx_1 == idx_2
+  idx1 <- c(10, 30); idx2 <- c(10, 50)
+
+  # without a minimum width the zero-span arc collapses to a single point
+  no_min <- generate_sv_band_arcs(idx1, idx2, c("++", "-+"), c("up", "up"),
+                                  baseline = 20, half_height = 1, min_width = 0)
+  expect_equal(length(unique(no_min$arc_id)), 2)
+  expect_equal(diff(range(no_min$idx[no_min$arc_id == "arc_1"])), 0)
+
+  # with one it becomes a narrow but real arc, centred on the breakpoint
+  with_min <- generate_sv_band_arcs(idx1, idx2, c("++", "-+"), c("up", "up"),
+                                    baseline = 20, half_height = 1, min_width = 4)
+  a1 <- with_min[with_min$arc_id == "arc_1", ]
+  expect_equal(diff(range(a1$idx)), 4)
+  expect_equal(mean(range(a1$idx)), 10)
+  expect_gt(max(a1$y), 20)
+})
+
+test_that("generate_sv_band_arcs respects side, baseline and the height floor", {
+  arcs <- generate_sv_band_arcs(c(10, 10), c(50, 50), c("-+", "+-"),
+                                side = c("up", "down"),
+                                baseline = 20, half_height = 2, min_frac = 0.15)
+  up   <- arcs[arcs$arc_id == "arc_1", ]
+  down <- arcs[arcs$arc_id == "arc_2", ]
+
+  expect_true(all(up$y >= 20))     # up arcs stay above the baseline
+  expect_true(all(down$y <= 20))   # down arcs stay below it
+  # sampled at n_points = 50, which does not land exactly on the t = 0.5 apex
+  expect_equal(max(up$y), 22, tolerance = 1e-2)   # longest arc reaches full half height
+  expect_equal(min(down$y), 18, tolerance = 1e-2)
+
+  # min_frac sets the floor for the shortest arc
+  mixed <- generate_sv_band_arcs(c(10, 10), c(11, 100), c("-+", "-+"),
+                                 side = c("up", "up"), baseline = 0,
+                                 half_height = 1, min_frac = 0.5)
+  short <- max(mixed$y[mixed$arc_id == "arc_1"])
+  expect_gte(short, 0.5)
+})
+
+test_that("sv_arcs_above reserves the band even when a panel has no SVs", {
+  build_y_range <- function(p) {
+    b <- ggplot2::ggplot_build(p)
+    b$layout$panel_params[[1]]$y.range
+  }
+
+  with_sv <- plotCNprofile(mock_CNbins, cellid = "test_cell", SV = mock_SV,
+                           sv_style = "lines_and_arcs", sv_arcs_above = TRUE,
+                           sv_arc_side = "cn_effect", chrfilt = c("11", "6"))
+  no_sv   <- plotCNprofile(mock_CNbins, cellid = "test_cell",
+                           sv_arcs_above = TRUE, sv_arc_side = "cn_effect",
+                           chrfilt = c("11", "6"))
+
+  expect_true(inherits(with_sv, "ggplot"))
+  expect_true(inherits(no_sv, "ggplot"))
+  # both panels must share a y geometry, otherwise stacked panels do not align
+  expect_equal(build_y_range(with_sv), build_y_range(no_sv), tolerance = 1e-6)
+})
+
+test_that("sv_arcs_above drops the SV read support axis and honours sv_show_lines", {
+  p_band <- plotCNprofile(mock_CNbins, cellid = "test_cell", SV = mock_SV,
+                          sv_style = "lines_and_arcs", sv_arcs_above = TRUE,
+                          chrfilt = c("11", "6"))
+  expect_false(inherits(p_band$scales$get_scales("y")$secondary.axis, "AxisSecondary"))
+
+  # the read count path still builds its secondary axis
+  p_reads <- plotCNprofile(mock_CNbins, cellid = "test_cell", SV = mock_SV,
+                           sv_style = "lines_and_arcs", chrfilt = c("11", "6"))
+  expect_true(inherits(p_reads$scales$get_scales("y")$secondary.axis, "AxisSecondary"))
+
+  # turning the lines off removes a layer but keeps the arcs
+  p_lines   <- plotCNprofile(mock_CNbins, cellid = "test_cell", SV = mock_SV,
+                             sv_style = "lines_and_arcs", sv_arcs_above = TRUE,
+                             sv_show_lines = TRUE, chrfilt = c("11", "6"))
+  p_nolines <- plotCNprofile(mock_CNbins, cellid = "test_cell", SV = mock_SV,
+                             sv_style = "lines_and_arcs", sv_arcs_above = TRUE,
+                             sv_show_lines = FALSE, chrfilt = c("11", "6"))
+  expect_lt(length(p_nolines$layers), length(p_lines$layers))
+})
+
+test_that("sv_arcs_above validates its arguments", {
+  expect_error(
+    plotCNprofile(mock_CNbins, cellid = "test_cell", SV = mock_SV,
+                  sv_style = "lines_and_arcs", sv_arcs_above = TRUE,
+                  sv_arc_scale = "nonsense", chrfilt = c("11", "6")),
+    "sv_arc_scale must be one of"
+  )
+  expect_error(
+    plotCNprofile(mock_CNbins, cellid = "test_cell", SV = mock_SV,
+                  sv_style = "lines_and_arcs", sv_arcs_above = TRUE,
+                  sv_band_frac = 1.5, chrfilt = c("11", "6")),
+    "sv_band_frac must be a number strictly between 0 and 1"
+  )
+})
+
+test_that("ybreaks overrides the default y axis breaks", {
+  p <- plotCNprofile(mock_CNbins, cellid = "test_cell", chrfilt = c("11", "6"),
+                     maxCN = 20, y_axis_trans = "squashy",
+                     ybreaks = c(0, 5, 10, 20))
+  b <- ggplot2::ggplot_build(p)
+  labels <- b$layout$panel_params[[1]]$y$get_labels()
+  expect_equal(sort(as.numeric(labels[!is.na(labels)])), c(0, 5, 10, 20))
+})
