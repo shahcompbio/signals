@@ -8,13 +8,36 @@ removeyaxis <- ggplot2::theme(axis.line.y=ggplot2::element_blank(),
                      axis.text.y=ggplot2::element_blank(),
                      axis.ticks.y=ggplot2::element_blank())
 
+validate_regions <- function(regions) {
+  if (!is.data.frame(regions)) {
+    stop("regions must be a data.frame")
+  }
+  
+  required_cols <- c("chr", "start", "end")
+  if (!all(required_cols %in% names(regions))) {
+    stop(paste0("regions must contain columns: ", paste(required_cols, collapse = ", ")))
+  }
+  
+  if (nrow(regions) == 0) {
+    stop("regions cannot be empty")
+  }
+  
+  if (any(regions$start >= regions$end)) {
+    stop("All region start positions must be less than end positions")
+  }
+  
+  return(TRUE)
+}
+
 plottinglist <- function(CNbins, 
                          xaxis_order = "genome_position", 
                          maxCN = 20, 
                          tickwidth = 50, 
                          chrstart = NULL, 
                          positionticks = FALSE,
-                         chrend = NULL) {
+                         chrend = NULL,
+                         regions = NULL,
+                         region_gap = 5) {
   # arrange segments in order, generate segment index and reorder CN state factor
 
   if (!xaxis_order %in% c("bin", "genome_position")) {
@@ -28,7 +51,127 @@ plottinglist <- function(CNbins,
   binsize <- CNbins$end[1] - CNbins$start[1] + 1
   tickwidth <- (tickwidth * 1e6) / binsize
   
-  if (xaxis_order == "bin") {
+  # Handle multi-region plotting
+  multi_region_mode <- FALSE
+  region_labels <- NULL   # region-centre chr labels, only populated in multi-region mode
+  if (!is.null(regions)) {
+    validate_regions(regions)
+    multi_region_mode <- TRUE
+    
+    # Filter CNbins for each region and combine, maintaining region order
+    region_list <- list()
+    
+    for (i in seq_len(nrow(regions))) {
+      region <- regions[i, ]
+      
+      # Convert Mb positions to bin coordinates
+      region_start_bp <- region$start * 1e6
+      region_end_bp <- region$end * 1e6
+      
+      # Filter CNbins for this region using overlap logic
+      # A bin overlaps if: bin.start < region.end AND bin.end > region.start
+      region_data <- CNbins %>%
+        dplyr::filter(chr == region$chr,
+                      start < region_end_bp,
+                      end > region_start_bp)
+      
+      if (nrow(region_data) > 0) {
+        region_data <- region_data %>%
+          dplyr::mutate(region_id = i)
+        region_list[[i]] <- region_data
+      }
+    }
+    
+    if (length(region_list) > 0) {
+      # Combine regions preserving order
+      CNbins <- dplyr::bind_rows(region_list) %>%
+        dplyr::arrange(region_id)
+      
+      # Re-index bins sequentially and add gap bins between regions
+      gap_bin_size <- round((region_gap * 1e6) / binsize)
+      final_bins <- list()
+      cumulative_idx <- 0
+      
+      for (i in unique(CNbins$region_id)) {
+        region_bins <- CNbins %>%
+          dplyr::filter(region_id == i) %>%
+          dplyr::arrange(chr, start) %>%
+          dplyr::select(chr, start, end) %>%
+          dplyr::distinct()
+        
+        if (i > 1) {
+          # Add gap bins between regions
+          cumulative_idx <- cumulative_idx + gap_bin_size
+        }
+        
+        final_bins[[i]] <- region_bins %>%
+          dplyr::mutate(idx = cumulative_idx + 1:dplyr::n(), region_id = i)
+
+        cumulative_idx <- max(final_bins[[i]]$idx)
+      }
+      
+      bins <- dplyr::bind_rows(final_bins)
+      
+      # Re-index CNbins onto the gapped bin index. Keep the gap (do NOT collapse
+      # to a contiguous row number): the empty idx range between regions renders
+      # as white space, and the SV arcs -- which map through `bins` -- stay
+      # aligned with the copy-number points.
+      CNbins <- CNbins %>%
+        dplyr::select(-dplyr::any_of("idx")) %>%
+        dplyr::left_join(
+          bins %>% dplyr::select(chr, start, end, idx, region_id),
+          by = c("chr", "start", "end")
+        ) %>%
+        dplyr::arrange(cell_id, idx)
+
+    } else {
+      stop("No data found for the specified regions")
+    }
+    
+    # Set up plotting variables for multi-region mode
+    CNbins <- CNbins %>%
+      dplyr::filter(!is.na(copy)) %>%
+      dplyr::filter(!is.na(state)) %>%
+      dplyr::mutate(copy = ifelse(copy > maxCN, maxCN, copy)) %>%
+      dplyr::mutate(idxs = forcats::fct_reorder(factor(idx), idx)) %>%
+      dplyr::mutate(CNs = forcats::fct_reorder(ifelse(is.na(state), NA,
+        paste0("CN", state)
+      ), state))
+    
+    # Per-region Mb tick marks (like the single-chromosome case): pretty Mb breaks
+    # within each region, mapped to that region's bin indices. Ticks are ordered
+    # by axis position so multi-region plots read left-to-right regardless of how
+    # the chromosome names sort as strings.
+    region_ticks <- lapply(unique(bins$region_id), function(ri) {
+      rb <- bins %>% dplyr::filter(region_id == ri)
+      mb <- rb$start / 1e6
+      brks <- scales::breaks_pretty(3)(range(mb))
+      brks <- brks[brks >= min(mb) & brks <= max(mb)]
+      if (length(brks) == 0) brks <- stats::median(mb)
+      tick_idx <- vapply(brks, function(m) rb$idx[which.min(abs(mb - m))], numeric(1))
+      data.frame(idx = tick_idx, label = as.character(round(brks)))
+    })
+    region_ticks <- dplyr::bind_rows(region_ticks)
+    chrticks  <- region_ticks$idx
+    chrlabels <- region_ticks$label
+
+    # Per-region chromosome name + centre position (for optional chr labels), and
+    # region-start boundaries used for the subtle grey separator lines.
+    region_labels <- bins %>%
+      dplyr::group_by(region_id, chr) %>%
+      dplyr::summarise(idx = round(mean(idx)), .groups = "drop") %>%
+      dplyr::arrange(idx)
+    chrbreaks <- bins %>%
+      dplyr::group_by(region_id) %>%
+      dplyr::summarise(idx = min(idx), .groups = "drop") %>%
+      dplyr::arrange(idx) %>%
+      dplyr::pull(idx)
+
+    minidx <- min(CNbins$idx)
+    maxidx <- max(CNbins$idx)
+  }
+  
+  if (!multi_region_mode && xaxis_order == "bin") {
 
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
@@ -66,7 +209,7 @@ plottinglist <- function(CNbins,
 
     minidx <- min(CNbins$idx)
     maxidx <- max(CNbins$idx)
-  } else {
+  } else if (!multi_region_mode) {
 
     bins <- getBins(binsize = binsize) %>%
       dplyr::filter(chr %in% unique(CNbins$chr)) %>%
@@ -145,7 +288,7 @@ plottinglist <- function(CNbins,
 
   }
 
-  return(list(CNbins = CNbins, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx))
+  return(list(CNbins = CNbins, bins = bins, chrbreaks = chrbreaks, chrticks = chrticks, chrlabels = chrlabels, minidx = minidx, maxidx = maxidx, region_labels = region_labels))
 }
 
 plottinglistSV <- function(breakpoints, binsize = 0.5e6, chrfilt = NULL, chrstart = NULL, chrend = NULL) {
@@ -291,6 +434,25 @@ classify_sv_orientation <- function(SV) {
   return(orientation)
 }
 
+map_bp_to_idx <- function(chrom, pos, bins, binsize, max_bins = 5) {
+  # Map each breakpoint (chrom[i], pos[i]) to the idx of the NEAREST bin on the
+  # same chromosome. More robust than an exact floor-to-bin match: a breakpoint
+  # can fall in a bin that was dropped upstream (e.g. by a mappability filter) or
+  # just outside a cropped region, which an exact match silently loses. Returns
+  # NA when the nearest bin is further than max_bins * binsize away (so genuinely
+  # out-of-region breakpoints are still dropped rather than snapped to an edge).
+  chrom <- as.character(chrom)
+  by_chr <- split(bins[, c("start", "idx")], as.character(bins$chr))
+  vapply(seq_along(pos), function(i) {
+    b <- by_chr[[chrom[i]]]
+    if (is.null(b) || nrow(b) == 0) return(NA_real_)
+    d <- abs(b$start - pos[i])
+    j <- which.min(d)
+    if (d[j] > max_bins * binsize) return(NA_real_)
+    b$idx[j]
+  }, numeric(1))
+}
+
 prepare_sv_points <- function(SV, bins, binsize) {
   # Prepare SV data for plotting as points
   # Input: SV dataframe with strand_1, strand_2, read_count, chromosome_1, chromosome_2, position_1, position_2
@@ -312,28 +474,14 @@ prepare_sv_points <- function(SV, bins, binsize) {
   SV <- SV %>%
     dplyr::mutate(orientation = classify_sv_orientation(.))
 
-  # Round positions to bin boundaries
+  # Map each breakpoint to the nearest bin on its chromosome (robust to bins that
+  # were dropped upstream, e.g. by a mappability filter, which an exact match
+  # would miss -- losing the breakpoint, and any inter-chromosomal arc, entirely).
   SV <- SV %>%
     dplyr::mutate(
-      position_1 = binsize * floor(position_1 / binsize) + 1,
-      position_2 = binsize * floor(position_2 / binsize) + 1
-    )
-
-  # Join with bin indices
-  SV <- SV %>%
-    dplyr::left_join(
-      bins %>% dplyr::select(chr, start, idx) %>%
-        dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx),
-      by = c("chromosome_1", "position_1")
+      idx_1 = map_bp_to_idx(chromosome_1, position_1, bins, binsize),
+      idx_2 = map_bp_to_idx(chromosome_2, position_2, bins, binsize)
     ) %>%
-    dplyr::left_join(
-      bins %>% dplyr::select(chr, start, idx) %>%
-        dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx),
-      by = c("chromosome_2", "position_2")
-    )
-
-  # Filter out SVs where we couldn't find bin indices
-  SV <- SV %>%
     dplyr::filter(!is.na(idx_1) & !is.na(idx_2))
 
   if (nrow(SV) == 0) {
@@ -914,6 +1062,9 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param show_sv_read_axis show secondary y-axis for SV read support when using lines_and_arcs style, default = TRUE. Works with both identity and squashy y-axis transformations.
 #' @param sv_read_axis_scale maximum value for SV read support axis (auto-scaled if NULL), default = NULL
 #' @param show_sv_legend show legend for SV orientations when using lines_and_arcs style, default = FALSE
+#' @param regions Optional data.frame with columns chr, start, end (in Mb) to plot multiple regions. If provided, takes precedence over chrfilt/chrstart/chrend.
+#' @param region_gap Gap size between regions in Mb, default = 5 Mb. Only used when regions is provided.
+#' @param show_region_labels Annotate each region with its chromosome name at the top of the panel. Only used when regions is provided. Default = TRUE.
 #'
 #' @return ggplot2 plot
 #'
@@ -957,6 +1108,9 @@ plotCNprofile <- function(CNbins,
                           show_sv_read_axis = TRUE,
                           sv_read_axis_scale = NULL,
                           show_sv_legend = FALSE,
+                          regions = NULL,
+                          region_gap = 5,
+                          show_region_labels = TRUE,
                           ...) {
   if (!xaxis_order %in% c("bin", "genome_position")) {
     stop("xaxis_order must be either 'bin' or 'genome_position'")
@@ -1012,10 +1166,18 @@ plotCNprofile <- function(CNbins,
     SV <- flip_sv_positions(SV)
   }
 
+  # Handle regions parameter
+  if (!is.null(regions)) {
+    validate_regions(regions)
+    # Auto-populate chrfilt from regions for SV filtering
+    chrfilt <- unique(regions$chr)
+  }
+
   pl <- CNbins %>%
     dplyr::filter(cell_id == cellid) %>%
     plottinglist(., xaxis_order = xaxis_order, maxCN = maxCN, positionticks = positionticks,
-                 tickwidth = tickwidth, chrstart = chrstart, chrend = chrend)
+                 tickwidth = tickwidth, chrstart = chrstart, chrend = chrend,
+                 regions = regions, region_gap = region_gap)
   
   # Process SV data for lines_and_arcs mode (needed for secondary axis)
   sv_points_data <- NULL
@@ -1069,18 +1231,8 @@ plotCNprofile <- function(CNbins,
       SV_with_idx <- SV %>%
         dplyr::mutate(
           sv_id = paste0("sv_", 1:dplyr::n()),
-          position_1 = binsize * floor(position_1 / binsize) + 1,
-          position_2 = binsize * floor(position_2 / binsize) + 1
-        ) %>%
-        dplyr::left_join(
-          bins %>% dplyr::select(chr, start, idx) %>%
-            dplyr::rename(chromosome_1 = chr, position_1 = start, idx_1 = idx),
-          by = c("chromosome_1", "position_1")
-        ) %>%
-        dplyr::left_join(
-          bins %>% dplyr::select(chr, start, idx) %>%
-            dplyr::rename(chromosome_2 = chr, position_2 = start, idx_2 = idx),
-          by = c("chromosome_2", "position_2")
+          idx_1 = map_bp_to_idx(chromosome_1, position_1, bins, binsize),
+          idx_2 = map_bp_to_idx(chromosome_2, position_2, bins, binsize)
         ) %>%
         dplyr::filter(!is.na(idx_1) & !is.na(idx_2))
 
@@ -1488,7 +1640,22 @@ plotCNprofile <- function(CNbins,
                              ymax = -0.15, fill = colval)) +
       ggplot2::scale_fill_manual(values = cyto_colors) +
       ggplot2::theme(legend.position = "none")
-      
+
+  }
+
+  # Multi-region: label each region with its chromosome at the top-centre of the
+  # region. Drawn LAST (on top of the arcs) with a white halo/background so it stays
+  # legible over dense SV arcs. y = maxCN sits on the scale's upper limit (so it is
+  # not censored/dropped); Mb tick marks stay on the bottom axis.
+  if (show_region_labels && !is.null(regions) && !is.null(pl$region_labels) && nrow(pl$region_labels) > 0) {
+    label_fs <- list(...)$font_size          # font_size is passed via ...
+    if (is.null(label_fs)) label_fs <- 11
+    gCN <- gCN +
+      ggplot2::geom_label(data = pl$region_labels,
+                          ggplot2::aes(x = idx, y = maxCN, label = paste0("chr", chr)),
+                          vjust = 1, size = label_fs / 2.8, inherit.aes = FALSE,
+                          fill = "white", colour = "black", label.size = 0,
+                          label.padding = grid::unit(0.5, "mm"), label.r = grid::unit(0, "mm"))
   }
 
   if (returnlist == TRUE) {
