@@ -47,6 +47,7 @@ plotCNprofile(
   sv_foldback_dist = 30000,
   sv_arc_min_height = 0.15,
   sv_arc_min_width = 0.004,
+  show_chrbreaks = TRUE,
   ybreaks = NULL,
   sv_show_lines = TRUE,
   sv_line_alpha = NULL,
@@ -138,6 +139,8 @@ plotCNprofile(
 \item{sv_arc_min_height}{minimum apex of an arc as a fraction of the available band half-height, default = 0.15. Only used when sv_arc_scale = "span". Raise it so short-range SVs such as foldbacks stay visible.}
 
 \item{sv_arc_min_width}{minimum width of an arc as a fraction of the plotted x range, default = 0.004. An SV whose two breakends fall in the same bin (a foldback at 10kb bins, say) would otherwise have zero width and not render at all.}
+
+\item{show_chrbreaks}{draw the light grey vertical lines separating chromosomes, or regions when \code{regions} is supplied. Default = TRUE.}
 
 \item{ybreaks}{y axis breaks. Default NULL uses c(0, 2, 5, 10, maxCN) for the squashy transform and seq(0, maxCN, 2) otherwise. Useful for short panels, where the default breaks collide: the squashy transform packs 0/2/5 into the lower part of the axis, so their labels overlap once the panel drops below roughly 7 mm.}
 

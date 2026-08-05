@@ -145,8 +145,17 @@ plottinglist <- function(CNbins,
     region_ticks <- lapply(unique(bins$region_id), function(ri) {
       rb <- bins %>% dplyr::filter(region_id == ri)
       mb <- rb$start / 1e6
-      brks <- scales::breaks_pretty(3)(range(mb))
-      brks <- brks[brks >= min(mb) & brks <= max(mb)]
+      lo <- min(mb); hi <- max(mb); span <- hi - lo
+      brks <- scales::breaks_pretty(3)(c(lo, hi))
+      # tolerance: bin starts are region_start * 1e6 + 1 bp, so the first bin sits a
+      # hair above the region start and an exact `>= min(mb)` test would drop the
+      # break that lands on it.
+      tol <- max(span * 1e-6, 1e-6)
+      brks <- brks[brks >= lo - tol & brks <= hi + tol]
+      # always mark where the region starts, then drop any pretty break sitting
+      # almost on top of it so the two labels do not collide
+      brks <- sort(unique(c(lo, brks)))
+      if (length(brks) > 1) brks <- brks[c(TRUE, diff(brks) > span * 0.08)]
       if (length(brks) == 0) brks <- stats::median(mb)
       tick_idx <- vapply(brks, function(m) rb$idx[which.min(abs(mb - m))], numeric(1))
       data.frame(idx = tick_idx, label = as.character(round(brks)))
@@ -1197,6 +1206,7 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param sv_foldback_dist maximum breakpoint distance (bp) for a "++"/"--" inversion to count as a foldback in the sv_arc_side rules, default = 30000
 #' @param sv_arc_min_height minimum apex of an arc as a fraction of the available band half-height, default = 0.15. Only used when sv_arc_scale = "span". Raise it so short-range SVs such as foldbacks stay visible.
 #' @param sv_arc_min_width minimum width of an arc as a fraction of the plotted x range, default = 0.004. An SV whose two breakends fall in the same bin (a foldback at 10kb bins, say) would otherwise have zero width and not render at all.
+#' @param show_chrbreaks draw the light grey vertical lines separating chromosomes, or regions when `regions` is supplied. Default = TRUE.
 #' @param ybreaks y axis breaks. Default NULL uses c(0, 2, 5, 10, maxCN) for the squashy transform and seq(0, maxCN, 2) otherwise. Useful for short panels, where the default breaks collide: the squashy transform packs 0/2/5 into the lower part of the axis, so their labels overlap once the panel drops below roughly 7 mm.
 #' @param sv_show_lines draw the vertical line at each breakpoint, default = TRUE. Set to FALSE for arcs only. In band mode the lines run from 0 up to the arc baseline; in read count mode they run from the bottom of the panel to a height set by read_count.
 #' @param sv_line_alpha transparency of the vertical breakpoint lines. Default NULL uses sv_arc_alpha. Because the lines are drawn behind the copy number points they can be made stronger than the arcs without obscuring the data.
@@ -1253,6 +1263,7 @@ plotCNprofile <- function(CNbins,
                           sv_foldback_dist = 30000,
                           sv_arc_min_height = 0.15,
                           sv_arc_min_width = 0.004,
+                          show_chrbreaks = TRUE,
                           ybreaks = NULL,
                           sv_show_lines = TRUE,
                           sv_line_alpha = NULL,
@@ -1554,9 +1565,12 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+")))
 
-    # Create base plot with chromosome breaks
-    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy)) +
-      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+    # Create base plot, optionally with the chromosome/region divider lines
+    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy))
+    if (show_chrbreaks) {
+      gCN <- gCN +
+        ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+    }
 
     # Add SV lines_and_arcs visualization BEFORE CN points (so it appears behind)
     if (!is.null(sv_points_data) && nrow(sv_points_data) > 0 && requireNamespace("ggnewscale", quietly = TRUE)) {
@@ -1665,9 +1679,12 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+")))
 
-    # Create base plot with chromosome breaks
-    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy)) +
-      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+    # Create base plot, optionally with the chromosome/region divider lines
+    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy))
+    if (show_chrbreaks) {
+      gCN <- gCN +
+        ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+    }
 
     # Add SV lines_and_arcs visualization BEFORE CN points (so it appears behind)
     if (!is.null(sv_points_data) && nrow(sv_points_data) > 0 && requireNamespace("ggnewscale", quietly = TRUE)) {
