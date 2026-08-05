@@ -240,3 +240,19 @@ test_that("show_chrbreaks toggles the region divider lines", {
   expect_true(has_vline(p_on))
   expect_false(has_vline(p_off))
 })
+
+test_that("chrbreaks bracket each region at both edges", {
+  regions <- data.frame(chr = c("8", "12", "19"),
+                        start = c(118, 80, 28), end = c(147, 136, 48))
+  pl <- signals:::plottinglist(
+    CNbins %>% dplyr::filter(cell_id == unique(CNbins$cell_id)[1]),
+    regions = regions, region_gap = 5)
+
+  edges <- pl$bins %>%
+    dplyr::group_by(region_id) %>%
+    dplyr::summarise(s = min(idx), e = max(idx), .groups = "drop")
+
+  # one line at the start AND one at the end of every region
+  expect_equal(length(pl$chrbreaks), 2 * nrow(edges))
+  expect_equal(pl$chrbreaks, sort(unique(c(edges$s, edges$e))))
+})

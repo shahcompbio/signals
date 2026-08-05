@@ -170,11 +170,16 @@ plottinglist <- function(CNbins,
       dplyr::group_by(region_id, chr) %>%
       dplyr::summarise(idx = round(mean(idx)), .groups = "drop") %>%
       dplyr::arrange(idx)
+    # Both edges of every region, so a region is bracketed rather than only having
+    # a line where it begins. Regions are separated by a gap in idx, so the end of
+    # one and the start of the next are distinct positions.
     chrbreaks <- bins %>%
       dplyr::group_by(region_id) %>%
-      dplyr::summarise(idx = min(idx), .groups = "drop") %>%
-      dplyr::arrange(idx) %>%
-      dplyr::pull(idx)
+      dplyr::summarise(start = min(idx), end = max(idx), .groups = "drop") %>%
+      dplyr::select(start, end) %>%
+      unlist(use.names = FALSE) %>%
+      unique() %>%
+      sort()
 
     minidx <- min(CNbins$idx)
     maxidx <- max(CNbins$idx)
