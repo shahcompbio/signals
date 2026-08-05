@@ -145,8 +145,17 @@ plottinglist <- function(CNbins,
     region_ticks <- lapply(unique(bins$region_id), function(ri) {
       rb <- bins %>% dplyr::filter(region_id == ri)
       mb <- rb$start / 1e6
-      brks <- scales::breaks_pretty(3)(range(mb))
-      brks <- brks[brks >= min(mb) & brks <= max(mb)]
+      lo <- min(mb); hi <- max(mb); span <- hi - lo
+      brks <- scales::breaks_pretty(3)(c(lo, hi))
+      # tolerance: bin starts are region_start * 1e6 + 1 bp, so the first bin sits a
+      # hair above the region start and an exact `>= min(mb)` test would drop the
+      # break that lands on it.
+      tol <- max(span * 1e-6, 1e-6)
+      brks <- brks[brks >= lo - tol & brks <= hi + tol]
+      # always mark where the region starts, then drop any pretty break sitting
+      # almost on top of it so the two labels do not collide
+      brks <- sort(unique(c(lo, brks)))
+      if (length(brks) > 1) brks <- brks[c(TRUE, diff(brks) > span * 0.08)]
       if (length(brks) == 0) brks <- stats::median(mb)
       tick_idx <- vapply(brks, function(m) rb$idx[which.min(abs(mb - m))], numeric(1))
       data.frame(idx = tick_idx, label = as.character(round(brks)))
@@ -161,11 +170,16 @@ plottinglist <- function(CNbins,
       dplyr::group_by(region_id, chr) %>%
       dplyr::summarise(idx = round(mean(idx)), .groups = "drop") %>%
       dplyr::arrange(idx)
+    # Both edges of every region, so a region is bracketed rather than only having
+    # a line where it begins. Regions are separated by a gap in idx, so the end of
+    # one and the start of the next are distinct positions.
     chrbreaks <- bins %>%
       dplyr::group_by(region_id) %>%
-      dplyr::summarise(idx = min(idx), .groups = "drop") %>%
-      dplyr::arrange(idx) %>%
-      dplyr::pull(idx)
+      dplyr::summarise(start = min(idx), end = max(idx), .groups = "drop") %>%
+      dplyr::select(start, end) %>%
+      unlist(use.names = FALSE) %>%
+      unique() %>%
+      sort()
 
     minidx <- min(CNbins$idx)
     maxidx <- max(CNbins$idx)
@@ -578,6 +592,134 @@ generate_sv_arcs <- function(SV, y_start, y_end, arc_height_factor = 0.2, n_poin
   
   arcs_df <- dplyr::bind_rows(arc_list)
   return(arcs_df)
+}
+
+classify_sv_side <- function(SV, rule = "cn_effect", foldback_dist = 30000) {
+  # Assign each SV to the "up" or "down" half of the SV band when arcs are drawn
+  # above the CN panel (sv_arcs_above = TRUE). Returns a character vector of
+  # "up"/"down", one per row of SV.
+  #
+  # Note the classification is NOT a pure function of strand_1/strand_2: "++"/"--"
+  # is the same orientation for a foldback and for a 30 Mb inversion, so the
+  # breakpoint distance is needed to tell them apart.
+  if (is.null(SV) || nrow(SV) == 0) {
+    return(character(0))
+  }
+
+  orientation <- classify_sv_orientation(SV)
+  is_trans <- orientation == "Translocation"
+  span <- abs(SV$position_2 - SV$position_1)
+  is_foldback <- !is_trans & orientation %in% c("++", "--") & span < foldback_dist
+
+  side <- switch(rule,
+    # Copy-number effect: gain-associated junctions up, loss-associated and
+    # CN-neutral junctions down. Translocations count as gain (in an amplicon
+    # context they import sequence).
+    "cn_effect" = ifelse(orientation == "-+" | is_foldback | is_trans, "up", "down"),
+    # Inter- vs intra-chromosomal
+    "translocation" = ifelse(is_trans, "up", "down"),
+    # BFB hallmark vs everything else
+    "foldback" = ifelse(is_foldback, "up", "down"),
+    stop("sv_arc_side rule must be one of: 'cn_effect', 'translocation', 'foldback', or a column name in SV")
+  )
+
+  return(side)
+}
+
+sv_band_trans <- function(base = "identity", maxCN = 10, miny = 0,
+                          band_frac = 0.25, band_width = 1) {
+  # Piecewise y transform used when sv_arcs_above = TRUE: the base transform
+  # (identity or squashy) below maxCN, linear above it. The linear slope is
+  # chosen so the SV band always occupies `band_frac` of the total panel height
+  # in *visual* space, whatever the base transform does.
+  #
+  # This is needed because squashy is tanh(0.075 * x), which saturates at 1: for
+  # maxCN = 20 the CN region already uses tanh(1.5) = 0.905 of the transformed
+  # range, so simply raising the upper limit would leave < 10% of the panel for
+  # the band.
+  base_trans <- if (identical(base, "squashy")) squashy_trans() else scales::as.trans(base)
+
+  b_min <- base_trans$transform(miny)
+  b_max <- base_trans$transform(maxCN)
+  band_height <- (b_max - b_min) * band_frac / (1 - band_frac)
+  slope <- band_height / band_width
+
+  scales::trans_new(
+    paste0("sv_band_", if (is.character(base)) base else "custom"),
+    transform = function(x) {
+      y <- rep(NA_real_, length(x))
+      lo <- !is.na(x) & x <= maxCN
+      hi <- !is.na(x) & x > maxCN
+      if (any(lo)) y[lo] <- base_trans$transform(x[lo])
+      if (any(hi)) y[hi] <- b_max + (x[hi] - maxCN) * slope
+      y
+    },
+    inverse = function(y) {
+      x <- rep(NA_real_, length(y))
+      lo <- !is.na(y) & y <= b_max
+      hi <- !is.na(y) & y > b_max
+      if (any(lo)) x[lo] <- base_trans$inverse(y[lo])
+      if (any(hi)) x[hi] <- maxCN + (y[hi] - b_max) / slope
+      x
+    }
+  )
+}
+
+generate_sv_band_arcs <- function(idx_1, idx_2, orientation, side,
+                                  baseline, half_height,
+                                  arc_scale = "span", min_frac = 0.15,
+                                  min_width = 0, n_points = 50) {
+  # Arcs for the SV band above the CN panel. Both feet sit on `baseline`, so the
+  # linear interpolation term in generate_sv_arcs() vanishes and all that is left
+  # is the symmetric parabola 4 * h * t * (1 - t), with h signed by `side`.
+  #
+  # arc_scale = "fixed": every arc reaches half_height.
+  # arc_scale = "span":  apex scales with sqrt of the arc's width in idx space, so
+  #                      local rearrangements stay low and long-range events arch
+  #                      over them. sqrt (not linear) because a single translocation
+  #                      would otherwise flatten everything else onto the baseline.
+  keep <- !is.na(idx_1) & !is.na(idx_2)
+  if (!any(keep)) {
+    return(data.frame(idx = numeric(0), y = numeric(0),
+                      arc_id = character(0), orientation = character(0)))
+  }
+
+  idx_1 <- idx_1[keep]; idx_2 <- idx_2[keep]
+  orientation <- orientation[keep]; side <- side[keep]
+
+  span <- abs(idx_2 - idx_1)
+
+  # Widen arcs that are narrower than min_width so they still render. Without this
+  # a foldback -- whose breakends are close enough to land in the same bin -- has
+  # idx_1 == idx_2 and collapses to nothing, silently dropping the BFB signal.
+  if (min_width > 0 && any(span < min_width)) {
+    narrow <- span < min_width
+    mid <- (idx_1 + idx_2) / 2
+    idx_1[narrow] <- mid[narrow] - min_width / 2
+    idx_2[narrow] <- mid[narrow] + min_width / 2
+  }
+
+  if (identical(arc_scale, "span") && max(span) > 0) {
+    rel <- sqrt(span / max(span))
+    h <- half_height * (min_frac + (1 - min_frac) * rel)
+  } else {
+    h <- rep(half_height, length(span))
+  }
+  h <- h * ifelse(side == "up", 1, -1)
+
+  t <- seq(0, 1, length.out = n_points)
+  bump <- 4 * t * (1 - t)
+
+  arc_list <- lapply(seq_along(idx_1), function(i) {
+    data.frame(
+      idx = idx_1[i] + t * (idx_2[i] - idx_1[i]),
+      y = baseline + h[i] * bump,
+      arc_id = paste0("arc_", i),
+      orientation = orientation[i]
+    )
+  })
+
+  return(dplyr::bind_rows(arc_list))
 }
 
 #' Get SV Orientation Legend for lines_and_arcs Style
@@ -1062,6 +1204,17 @@ get_bezier_df <- function(sv, cn, maxCN, homolog = FALSE) {
 #' @param show_sv_read_axis show secondary y-axis for SV read support when using lines_and_arcs style, default = TRUE. Works with both identity and squashy y-axis transformations.
 #' @param sv_read_axis_scale maximum value for SV read support axis (auto-scaled if NULL), default = NULL
 #' @param show_sv_legend show legend for SV orientations when using lines_and_arcs style, default = FALSE
+#' @param sv_arcs_above draw SV arcs in a dedicated band above the copy number panel rather than on top of it, default = FALSE. Read count is no longer encoded as arc height and the SV read support secondary axis is switched off.
+#' @param sv_band_frac height of the SV band as a fraction of the total panel height when sv_arcs_above = TRUE, default = 0.25. Consider ~0.35 when sv_arc_side is set, since each side then gets half the band.
+#' @param sv_arc_scale how the apex of each arc is chosen when sv_arcs_above = TRUE: "span" (default, apex scales with the sqrt of the arc's width so nested SVs nest visually) or "fixed" (every arc reaches the same height).
+#' @param sv_arc_side split arcs onto both sides of a baseline inside the SV band. NULL (default) draws all arcs upwards. One of the built-in rules "cn_effect" (gain-associated junctions up, loss-associated and CN-neutral down), "translocation" or "foldback", or the name of a column in SV holding "up"/"down".
+#' @param sv_foldback_dist maximum breakpoint distance (bp) for a "++"/"--" inversion to count as a foldback in the sv_arc_side rules, default = 30000
+#' @param sv_arc_min_height minimum apex of an arc as a fraction of the available band half-height, default = 0.15. Only used when sv_arc_scale = "span". Raise it so short-range SVs such as foldbacks stay visible.
+#' @param sv_arc_min_width minimum width of an arc as a fraction of the plotted x range, default = 0.004. An SV whose two breakends fall in the same bin (a foldback at 10kb bins, say) would otherwise have zero width and not render at all.
+#' @param show_chrbreaks draw the light grey vertical lines separating chromosomes, or regions when `regions` is supplied. Default = TRUE.
+#' @param ybreaks y axis breaks. Default NULL uses c(0, 2, 5, 10, maxCN) for the squashy transform and seq(0, maxCN, 2) otherwise. Useful for short panels, where the default breaks collide: the squashy transform packs 0/2/5 into the lower part of the axis, so their labels overlap once the panel drops below roughly 7 mm.
+#' @param sv_show_lines draw the vertical line at each breakpoint, default = TRUE. Set to FALSE for arcs only. In band mode the lines run from 0 up to the arc baseline; in read count mode they run from the bottom of the panel to a height set by read_count.
+#' @param sv_line_alpha transparency of the vertical breakpoint lines. Default NULL uses sv_arc_alpha. Because the lines are drawn behind the copy number points they can be made stronger than the arcs without obscuring the data.
 #' @param regions Optional data.frame with columns chr, start, end (in Mb) to plot multiple regions. If provided, takes precedence over chrfilt/chrstart/chrend.
 #' @param region_gap Gap size between regions in Mb, default = 5 Mb. Only used when regions is provided.
 #' @param show_region_labels Annotate each region with its chromosome name at the top of the panel. Only used when regions is provided. Default = TRUE.
@@ -1108,6 +1261,17 @@ plotCNprofile <- function(CNbins,
                           show_sv_read_axis = TRUE,
                           sv_read_axis_scale = NULL,
                           show_sv_legend = FALSE,
+                          sv_arcs_above = FALSE,
+                          sv_band_frac = 0.25,
+                          sv_arc_scale = "span",
+                          sv_arc_side = NULL,
+                          sv_foldback_dist = 30000,
+                          sv_arc_min_height = 0.15,
+                          sv_arc_min_width = 0.004,
+                          show_chrbreaks = TRUE,
+                          ybreaks = NULL,
+                          sv_show_lines = TRUE,
+                          sv_line_alpha = NULL,
                           regions = NULL,
                           region_gap = 5,
                           show_region_labels = TRUE,
@@ -1135,12 +1299,14 @@ plotCNprofile <- function(CNbins,
     cellid <- unique(CNbins$cell_id)[min(cellidx, length(unique(CNbins$cell_id)))]
   }
 
-  if (y_axis_trans == "squashy") {
-    ybreaks <- c(0, 2, 5, 10, maxCN)
-  } else {
-    ybreaks <- seq(0, maxCN, 2)
+  if (is.null(ybreaks)) {
+    if (y_axis_trans == "squashy") {
+      ybreaks <- c(0, 2, 5, 10, maxCN)
+    } else {
+      ybreaks <- seq(0, maxCN, 2)
+    }
   }
-  
+
   if (length(chrfilt) == 1){
     xlab <- paste0('Chr. ', chrfilt, " (Mb)")
   } else{
@@ -1179,13 +1345,98 @@ plotCNprofile <- function(CNbins,
                  tickwidth = tickwidth, chrstart = chrstart, chrend = chrend,
                  regions = regions, region_gap = region_gap)
   
+  if (ideogram == TRUE){
+    miny <- -0.5
+  } else{
+    miny <- 0
+  }
+
+  if (is.null(sv_line_alpha)) {
+    sv_line_alpha <- sv_arc_alpha
+  }
+
+  if (sv_arcs_above) {
+    if (!sv_arc_scale %in% c("span", "fixed")) {
+      stop("sv_arc_scale must be one of: 'span', 'fixed'")
+    }
+    if (!is.numeric(sv_band_frac) || sv_band_frac <= 0 || sv_band_frac >= 1) {
+      stop("sv_band_frac must be a number strictly between 0 and 1")
+    }
+  }
+
   # Process SV data for lines_and_arcs mode (needed for secondary axis)
   sv_points_data <- NULL
   sv_arcs_data <- NULL
   max_read_count <- NULL
   use_secondary_axis <- FALSE
 
-  if (!is.null(SV) && nrow(SV) > 0 && sv_style %in% c("lines_and_arcs", "both")) {
+  # SV band above the CN panel (sv_arcs_above = TRUE). Populates the same
+  # sv_points_data / sv_arcs_data used by the read-count path, so the rendering
+  # block below is shared; only the geometry differs.
+  sv_band_active <- FALSE
+  sv_band_width <- 1                       # data-space width; the trans rescales it
+  sv_band_top <- maxCN + sv_band_width
+  sv_baseline <- maxCN
+  sv_half <- sv_band_width * 0.85
+
+  # Reserve the band whenever it is asked for, even when this panel has no SVs.
+  # Otherwise a cell with no breakpoints gets the full panel for its CN track and
+  # no longer shares a y geometry with the panels stacked above it.
+  if (sv_arcs_above) {
+    sv_band_active <- TRUE
+    if (is.null(sv_arc_side)) {
+      sv_baseline <- maxCN
+      sv_half <- sv_band_width * 0.85
+    } else {
+      # split band: the baseline sits mid-band and each side gets half the room
+      sv_baseline <- maxCN + sv_band_width / 2
+      sv_half <- sv_band_width / 2 * 0.85
+    }
+  }
+
+  if (sv_band_active && !is.null(SV) && nrow(SV) > 0 && sv_style %in% c("lines_and_arcs", "both")) {
+    binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
+    bins <- pl$bins
+
+    SV_band <- SV %>%
+      dplyr::mutate(
+        orientation = classify_sv_orientation(.),
+        idx_1 = map_bp_to_idx(chromosome_1, position_1, bins, binsize),
+        idx_2 = map_bp_to_idx(chromosome_2, position_2, bins, binsize)
+      ) %>%
+      dplyr::filter(!is.na(idx_1) & !is.na(idx_2))
+
+    if (nrow(SV_band) > 0) {
+      if (is.null(sv_arc_side)) {
+        SV_band$side <- "up"
+      } else if (length(sv_arc_side) == 1 && sv_arc_side %in% names(SV_band)) {
+        SV_band$side <- as.character(SV_band[[sv_arc_side]])
+      } else {
+        SV_band$side <- classify_sv_side(SV_band, rule = sv_arc_side,
+                                         foldback_dist = sv_foldback_dist)
+      }
+
+      sv_arcs_data <- generate_sv_band_arcs(
+        SV_band$idx_1, SV_band$idx_2, SV_band$orientation, SV_band$side,
+        baseline = sv_baseline, half_height = sv_half,
+        arc_scale = sv_arc_scale,
+        min_frac = sv_arc_min_height,
+        min_width = sv_arc_min_width * (pl$maxidx - pl$minidx)
+      )
+
+      # Breakpoint rules run the full height of the CN panel and continue up to the
+      # arc baseline, so each rule physically joins the arcs it belongs to. Reuses
+      # the same long-format structure the read-count path builds, with a constant
+      # height instead of a scaled one, so the rendering block below draws both modes.
+      sv_points_data <- dplyr::bind_rows(
+        SV_band %>% dplyr::select(idx = idx_1, orientation),
+        SV_band %>% dplyr::select(idx = idx_2, orientation)
+      ) %>%
+        dplyr::mutate(y_scaled = sv_baseline)
+    }
+  }
+
+  if (!is.null(SV) && nrow(SV) > 0 && sv_style %in% c("lines_and_arcs", "both") && !sv_arcs_above) {
     binsize <- pl$CNbins$end[1] - pl$CNbins$start[1] + 1
     bins <- pl$bins
     
@@ -1274,13 +1525,40 @@ plotCNprofile <- function(CNbins,
       use_secondary_axis <- show_sv_read_axis && max_read_count > 0
     }
   }
-  
-  if (ideogram == TRUE){
-    miny <- -0.5
-  } else{
-    miny <- 0
+
+  # Y scale, shared by the raster and non-raster branches below. In band mode the
+  # panel is extended to sv_band_top with a piecewise transform, and the breaks
+  # still stop at maxCN so the axis reads as a pure copy number axis.
+  y_scale <- if (sv_band_active) {
+    ggplot2::scale_y_continuous(
+      breaks = ybreaks,
+      limits = c(miny, sv_band_top),
+      trans = sv_band_trans(base = y_axis_trans, maxCN = maxCN, miny = miny,
+                            band_frac = sv_band_frac, band_width = sv_band_width)
+    )
+  } else if (use_secondary_axis && !is.null(max_read_count)) {
+    # Secondary axis maps primary CN values to read counts
+    ggplot2::scale_y_continuous(
+      breaks = ybreaks,
+      limits = c(miny, maxCN),
+      trans = y_axis_trans,
+      sec.axis = ggplot2::sec_axis(
+        transform = ~ . * (max_read_count / maxCN),
+        name = "SV Read Support"
+      )
+    )
+  } else {
+    ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans)
   }
-  
+
+  # Top of the plotting area: gene labels and region labels sit here, which is the
+  # top of the SV band in band mode rather than maxCN.
+  ytop <- if (sv_band_active) sv_band_top else maxCN
+
+  # Where the breakpoint verticals start. In band mode they run the full CN panel
+  # from 0; the read-count path keeps starting them at miny (under the ideogram).
+  sv_line_base <- if (sv_band_active) 0 else miny
+
   if (raster == TRUE) {
     if (!requireNamespace("ggrastr", quietly = TRUE)) {
       stop("Package \"ggrastr\" needed for this function to work. Please install it.",
@@ -1292,21 +1570,26 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+")))
 
-    # Create base plot with chromosome breaks
-    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy)) +
-      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+    # Create base plot, optionally with the chromosome/region divider lines
+    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy))
+    if (show_chrbreaks) {
+      gCN <- gCN +
+        ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+    }
 
     # Add SV lines_and_arcs visualization BEFORE CN points (so it appears behind)
     if (!is.null(sv_points_data) && nrow(sv_points_data) > 0 && requireNamespace("ggnewscale", quietly = TRUE)) {
       # Add vertical lines using aesthetic mapping for legend support
-      gCN <- gCN +
-        ggplot2::geom_segment(
-          data = sv_points_data,
-          ggplot2::aes(x = idx, xend = idx, y = miny, yend = y_scaled, color = orientation),
-          alpha = sv_arc_alpha,
-          size = svwidth * 0.5,
-          show.legend = show_sv_legend
-        )
+      if (sv_show_lines) {
+        gCN <- gCN +
+          ggplot2::geom_segment(
+            data = sv_points_data,
+            ggplot2::aes(x = idx, xend = idx, y = sv_line_base, yend = y_scaled, color = orientation),
+            alpha = sv_line_alpha,
+            size = svwidth * 0.5,
+            show.legend = show_sv_legend
+          )
+      }
 
       # Add arcs if available
       if (!is.null(sv_arcs_data) && nrow(sv_arcs_data) > 0) {
@@ -1331,18 +1614,20 @@ plotCNprofile <- function(CNbins,
         ggnewscale::new_scale_color()
     } else if (!is.null(sv_points_data) && nrow(sv_points_data) > 0) {
       # Fallback: ggnewscale not available, use manual colors without legend
-      orientation_levels <- unique(sv_points_data$orientation)
-      for (orient in orientation_levels) {
-        orient_data <- sv_points_data %>% dplyr::filter(orientation == orient)
-        if (nrow(orient_data) > 0) {
-          gCN <- gCN +
-            ggplot2::geom_segment(
-              data = orient_data,
-              ggplot2::aes(x = idx, xend = idx, y = miny, yend = y_scaled),
-              color = as.vector(SV_orientation_colors[orient]),
-              alpha = sv_arc_alpha,
-              size = svwidth * 0.5
-            )
+      if (sv_show_lines) {
+        orientation_levels <- unique(sv_points_data$orientation)
+        for (orient in orientation_levels) {
+          orient_data <- sv_points_data %>% dplyr::filter(orientation == orient)
+          if (nrow(orient_data) > 0) {
+            gCN <- gCN +
+              ggplot2::geom_segment(
+                data = orient_data,
+                ggplot2::aes(x = idx, xend = idx, y = sv_line_base, yend = y_scaled),
+                color = as.vector(SV_orientation_colors[orient]),
+                alpha = sv_line_alpha,
+                size = svwidth * 0.5
+              )
+          }
         }
       }
 
@@ -1384,24 +1669,7 @@ plotCNprofile <- function(CNbins,
         axis.ticks.y = ggplot2::element_blank()
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      {
-        if (use_secondary_axis && !is.null(max_read_count)) {
-          # Secondary axis maps primary CN values to read counts
-          sec_trans <- ~ . * (max_read_count / maxCN)
-
-          ggplot2::scale_y_continuous(
-            breaks = ybreaks,
-            limits = c(miny, maxCN),
-            trans = y_axis_trans,
-            sec.axis = ggplot2::sec_axis(
-              transform = sec_trans,
-              name = "SV Read Support"
-            )
-          )
-        } else {
-          ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans)
-        }
-      } +
+      y_scale +
       ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -1416,21 +1684,26 @@ plotCNprofile <- function(CNbins,
       dplyr::mutate(state = ifelse(state >= 11, "11+", paste0(state))) %>%
       dplyr::mutate(state = factor(paste0(state), levels = c(paste0(seq(0, 10, 1)), "11+")))
 
-    # Create base plot with chromosome breaks
-    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy)) +
-      ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+    # Create base plot, optionally with the chromosome/region divider lines
+    gCN <- ggplot2::ggplot(plot_data, ggplot2::aes(x = idx, y = copy))
+    if (show_chrbreaks) {
+      gCN <- gCN +
+        ggplot2::geom_vline(xintercept = pl$chrbreaks, col = "grey90", alpha = 0.75)
+    }
 
     # Add SV lines_and_arcs visualization BEFORE CN points (so it appears behind)
     if (!is.null(sv_points_data) && nrow(sv_points_data) > 0 && requireNamespace("ggnewscale", quietly = TRUE)) {
       # Add vertical lines using aesthetic mapping for legend support
-      gCN <- gCN +
-        ggplot2::geom_segment(
-          data = sv_points_data,
-          ggplot2::aes(x = idx, xend = idx, y = miny, yend = y_scaled, color = orientation),
-          alpha = sv_arc_alpha,
-          size = svwidth * 0.5,
-          show.legend = show_sv_legend
-        )
+      if (sv_show_lines) {
+        gCN <- gCN +
+          ggplot2::geom_segment(
+            data = sv_points_data,
+            ggplot2::aes(x = idx, xend = idx, y = sv_line_base, yend = y_scaled, color = orientation),
+            alpha = sv_line_alpha,
+            size = svwidth * 0.5,
+            show.legend = show_sv_legend
+          )
+      }
 
       # Add arcs if available
       if (!is.null(sv_arcs_data) && nrow(sv_arcs_data) > 0) {
@@ -1455,18 +1728,20 @@ plotCNprofile <- function(CNbins,
         ggnewscale::new_scale_color()
     } else if (!is.null(sv_points_data) && nrow(sv_points_data) > 0) {
       # Fallback: ggnewscale not available, use manual colors without legend
-      orientation_levels <- unique(sv_points_data$orientation)
-      for (orient in orientation_levels) {
-        orient_data <- sv_points_data %>% dplyr::filter(orientation == orient)
-        if (nrow(orient_data) > 0) {
-          gCN <- gCN +
-            ggplot2::geom_segment(
-              data = orient_data,
-              ggplot2::aes(x = idx, xend = idx, y = miny, yend = y_scaled),
-              color = as.vector(SV_orientation_colors[orient]),
-              alpha = sv_arc_alpha,
-              size = svwidth * 0.5
-            )
+      if (sv_show_lines) {
+        orientation_levels <- unique(sv_points_data$orientation)
+        for (orient in orientation_levels) {
+          orient_data <- sv_points_data %>% dplyr::filter(orientation == orient)
+          if (nrow(orient_data) > 0) {
+            gCN <- gCN +
+              ggplot2::geom_segment(
+                data = orient_data,
+                ggplot2::aes(x = idx, xend = idx, y = sv_line_base, yend = y_scaled),
+                color = as.vector(SV_orientation_colors[orient]),
+                alpha = sv_line_alpha,
+                size = svwidth * 0.5
+              )
+          }
         }
       }
 
@@ -1508,24 +1783,7 @@ plotCNprofile <- function(CNbins,
         axis.ticks.y = ggplot2::element_blank()
       ) +
       ggplot2::scale_x_continuous(breaks = pl$chrticks, labels = pl$chrlabels, expand = c(0, 0), limits = c(pl$minidx, pl$maxidx), guide = ggplot2::guide_axis(check.overlap = TRUE)) +
-      {
-        if (use_secondary_axis && !is.null(max_read_count)) {
-          # Secondary axis maps primary CN values to read counts
-          sec_trans <- ~ . * (max_read_count / maxCN)
-
-          ggplot2::scale_y_continuous(
-            breaks = ybreaks,
-            limits = c(miny, maxCN),
-            trans = y_axis_trans,
-            sec.axis = ggplot2::sec_axis(
-              transform = sec_trans,
-              name = "SV Read Support"
-            )
-          )
-        } else {
-          ggplot2::scale_y_continuous(breaks = ybreaks, limits = c(miny, maxCN), trans = y_axis_trans)
-        }
-      } +
+      y_scale +
       ggplot2::xlab(xlab) +
       ggplot2::ylab("Copy Number") +
       cowplot::theme_cowplot(...) +
@@ -1536,8 +1794,27 @@ plotCNprofile <- function(CNbins,
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = legend.position)
   }
 
+  if (sv_band_active) {
+    # Baseline the arcs spring from. No line is drawn at maxCN: the boundary
+    # between the CN panel and the SV band is left implicit.
+    if (!is.null(sv_arc_side)) {
+      gCN <- gCN +
+        ggplot2::geom_hline(yintercept = sv_baseline, col = "grey85", size = 0.2)
+    }
+
+    # Stop the y axis line at maxCN so it does not run up through the SV band.
+    # The ticks already stop there (every ybreak is <= maxCN), so only the line
+    # itself needs replacing, with a segment drawn at the panel edge instead.
+    axis_lwd <- list(...)$line_size
+    if (is.null(axis_lwd)) axis_lwd <- 0.5
+    gCN <- gCN +
+      ggplot2::annotate("segment", x = pl$minidx, xend = pl$minidx,
+                        y = miny, yend = maxCN, size = axis_lwd) +
+      ggplot2::theme(axis.line.y.left = ggplot2::element_blank())
+  }
+
   if (!is.null(genes)) {
-    yplace <- maxCN
+    yplace <- ytop
     if (ideogram == TRUE){
       yplace <- yplace - 2
     }
@@ -1546,7 +1823,7 @@ plotCNprofile <- function(CNbins,
     npoints <- dim(pl$CNbins)[1]
     gCN <- gCN +
       ggplot2::geom_vline(data = gene_idx, ggplot2::aes(xintercept = idx), lty = 2, size = 0.3) +
-      ggrepel::geom_text_repel(data = gene_idx, ggplot2::aes(x = idx - npoints * adj, y = maxCN, label = ensembl_gene_symbol), col = "black", alpha = 0.75)
+      ggrepel::geom_text_repel(data = gene_idx, ggplot2::aes(x = idx - npoints * adj, y = ytop, label = ensembl_gene_symbol), col = "black", alpha = 0.75)
   }
 
   if (!is.null(annotateregions)) {
@@ -1652,7 +1929,7 @@ plotCNprofile <- function(CNbins,
     if (is.null(label_fs)) label_fs <- 11
     gCN <- gCN +
       ggplot2::geom_label(data = pl$region_labels,
-                          ggplot2::aes(x = idx, y = maxCN, label = paste0("chr", chr)),
+                          ggplot2::aes(x = idx, y = ytop, label = paste0("chr", chr)),
                           vjust = 1, size = label_fs / 2.8, inherit.aes = FALSE,
                           fill = "white", colour = "black", label.size = 0,
                           label.padding = grid::unit(0.5, "mm"), label.r = grid::unit(0, "mm"))
