@@ -9,6 +9,7 @@
 * Add y-axis transform option for the mean/IQR heatmap track
 * Fix ordered_cell_ids initialisation in plotHeatmap
 * Add SVs example data (destruct breakpoints for SA921, the sample CNbins comes from) and a structural variant visualization vignette
+* Document all bundled datasets, which had no help pages
 
 # signals 0.15.0
 
