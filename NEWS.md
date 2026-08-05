@@ -1,3 +1,14 @@
+# signals 0.16.0
+
+* Add sv_arcs_above to plotCNprofile: draw SV arcs in a band above the copy number panel rather than on top of it, split by copy number effect with apex scaled by genomic span
+* Fix SVs with both breakends in the same bin being silently dropped, which lost every foldback at 10kb resolution
+* Fix panels with no SVs not reserving the SV band, so stacked panels stay aligned
+* Add show_chrbreaks and ybreaks options to plotCNprofile
+* Fix multi-region tick marks so each region gets a tick at its start, and dividers bracket both region edges
+* Add multi-region plotting support to plotCNprofile
+* Add y-axis transform option for the mean/IQR heatmap track
+* Fix ordered_cell_ids initialisation in plotHeatmap
+
 # signals 0.15.0
 
 * Add configurable annotation colour overrides for discrete and continuous annotation columns
