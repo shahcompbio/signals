@@ -18,7 +18,8 @@ callAlleleSpecificCN(
   minbinschr = 10,
   maxloherror = 0.03,
   filterhaplotypes = 0.1,
-  fillmissing = TRUE
+  fillmissing = TRUE,
+  seed = NULL
 )
 }
 \arguments{
@@ -49,6 +50,8 @@ callAlleleSpecificCN(
 \item{filterhaplotypes}{filter out haplotypes present in less than X fraction, default is 0.1}
 
 \item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
+
+\item{seed}{Random seed for the subsampling in the beta-binomial fit, which determines the binomial vs beta-binomial choice when \code{likelihood = "auto"}. Default \code{NULL} (unseeded).}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include
