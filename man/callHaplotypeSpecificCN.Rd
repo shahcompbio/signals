@@ -33,7 +33,8 @@ callHaplotypeSpecificCN(
   global_phasing_for_balanced = FALSE,
   chr_cell_list = NULL,
   chrs_for_global_phasing = NULL,
-  female = TRUE
+  female = TRUE,
+  seed = NULL
 )
 }
 \arguments{
@@ -91,9 +92,11 @@ callHaplotypeSpecificCN(
 
 \item{female}{Default is \code{TRUE}, if set to \code{FALSE} and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state}
 
-\item{viterbver}{Version of viterbi algorithm to use (cpp or R)}
+\item{seed}{Random seed for the stochastic steps of phasing: the subsampling in \code{min_cells} that sets the cluster size, the UMAP embedding used to pick phasing cells per chromosome, and the subsampling in the beta-binomial fit. Default \code{NULL}, which leaves these unseeded and means repeated runs on identical input can select different cells to phase a chromosome with, and so can return different haplotype-specific states. Set it to make a run reproducible.}
 
-\item{global_phasing_for_diploid}{When using cluster_per_chr, use all cells for phasing diploid regions within the cluster}
+\item{viterbiver}{Version of viterbi algorithm to use (cpp or R)}
+
+\item{global_phasing_for_balanced}{When using cluster_per_chr, use all cells for phasing diploid regions within the cluster}
 }
 \value{
 Haplotype specific copy number object

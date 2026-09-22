@@ -1,3 +1,9 @@
+# signals 0.18.0
+
+* Add a `seed` argument to `callHaplotypeSpecificCN` and `callAlleleSpecificCN`. Phasing has three stochastic steps — the subsampling in `min_cells` that sets the cluster size, the UMAP embedding used to choose which cells phase each chromosome, and the subsampling in the beta-binomial fit. Left unseeded, repeated runs on identical input can select different cells to phase a chromosome with and so return different haplotype-specific states. `seed` is threaded through `proportion_imbalance`, `get_cells_per_chr_local`, `get_cells_per_chr_global`, `min_cells` and `fitBB`; the default remains `NULL` (unseeded), so existing behaviour is unchanged.
+* Pass `n_sgd_threads = 0` to `uwot::umap` in `umap_clustering` and `umap_clustering_breakpoints`. uwot's SGD is only reproducible single-threaded, so a seed alone does not pin the embedding if that default ever changes.
+* Fix two `@param` names that did not match their arguments (`viterbver` -> `viterbiver`, `global_phasing_for_diploid` -> `global_phasing_for_balanced`), which left both arguments undocumented.
+
 # signals 0.17.0
 
 * **Breaking:** fix the Viterbi backtrace in `viterbi()` (C++) and `viterbiR()`. It seeded the final bin with the predecessor of the best final state and then backtracked from the per-column argmax instead of following the stored backpointers, so it did not return the most likely path and emitted spurious single-bin state changes. Single-bin sequences also decoded to state 0 (C++) or errored (R). This changes haplotype- and allele-specific copy number calls: on a 725-cell DLP+ sample (chr6, analysis from #79) 194 cells changed path, 0.30% of bins changed, and mean A/B segments per cell fell from 1.71 to 0.26. Use signals 0.16.0 to reproduce earlier results.
