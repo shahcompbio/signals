@@ -212,3 +212,47 @@ test_that("plotCNprofile with no data in regions returns error", {
     plotCNprofile(mock_CNbins_multi_region, regions = regions)
   )
 })
+
+test_that("each region gets a tick at its start position", {
+  regions <- data.frame(chr = c("8", "12", "19"),
+                        start = c(118, 80, 28), end = c(147, 136, 48))
+  p <- plotCNprofile(CNbins, cellid = unique(CNbins$cell_id)[1], regions = regions)
+  labs <- as.numeric(ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x$get_labels())
+
+  # bin starts are region_start * 1e6 + 1 bp, so an exact >= test used to drop the
+  # break landing on the region start
+  expect_true(118 %in% labs)
+  expect_true(80 %in% labs)
+  expect_true(28 %in% labs)
+
+  # ticks stay within their region and remain ordered by axis position
+  expect_true(all(labs >= 28))
+  expect_false(is.unsorted(ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x$breaks))
+})
+
+test_that("show_chrbreaks toggles the region divider lines", {
+  regions <- data.frame(chr = c("8", "12"), start = c(118, 80), end = c(147, 136))
+  has_vline <- function(p) any(vapply(p$layers,
+                                      function(l) inherits(l$geom, "GeomVline"), logical(1)))
+  p_on  <- plotCNprofile(CNbins, cellid = unique(CNbins$cell_id)[1], regions = regions)
+  p_off <- plotCNprofile(CNbins, cellid = unique(CNbins$cell_id)[1], regions = regions,
+                         show_chrbreaks = FALSE)
+  expect_true(has_vline(p_on))
+  expect_false(has_vline(p_off))
+})
+
+test_that("chrbreaks bracket each region at both edges", {
+  regions <- data.frame(chr = c("8", "12", "19"),
+                        start = c(118, 80, 28), end = c(147, 136, 48))
+  pl <- signals:::plottinglist(
+    CNbins %>% dplyr::filter(cell_id == unique(CNbins$cell_id)[1]),
+    regions = regions, region_gap = 5)
+
+  edges <- pl$bins %>%
+    dplyr::group_by(region_id) %>%
+    dplyr::summarise(s = min(idx), e = max(idx), .groups = "drop")
+
+  # one line at the start AND one at the end of every region
+  expect_equal(length(pl$chrbreaks), 2 * nrow(edges))
+  expect_equal(pl$chrbreaks, sort(unique(c(edges$s, edges$e))))
+})

@@ -40,8 +40,20 @@ plotCNprofile(
   show_sv_read_axis = TRUE,
   sv_read_axis_scale = NULL,
   show_sv_legend = FALSE,
+  sv_arcs_above = FALSE,
+  sv_band_frac = 0.25,
+  sv_arc_scale = "span",
+  sv_arc_side = NULL,
+  sv_foldback_dist = 30000,
+  sv_arc_min_height = 0.15,
+  sv_arc_min_width = 0.004,
+  show_chrbreaks = TRUE,
+  ybreaks = NULL,
+  sv_show_lines = TRUE,
+  sv_line_alpha = NULL,
   regions = NULL,
   region_gap = 5,
+  show_region_labels = TRUE,
   ...
 )
 }
@@ -114,9 +126,33 @@ plotCNprofile(
 
 \item{show_sv_legend}{show legend for SV orientations when using lines_and_arcs style, default = FALSE}
 
-\item{regions}{Optional data.frame with columns \code{chr}, \code{start}, \code{end} (in Mb) to plot multiple regions. If provided, takes precedence over \code{chrfilt}/\code{chrstart}/\code{chrend}. The order of rows determines the order of regions in the plot.}
+\item{sv_arcs_above}{draw SV arcs in a dedicated band above the copy number panel rather than on top of it, default = FALSE. Read count is no longer encoded as arc height and the SV read support secondary axis is switched off.}
 
-\item{region_gap}{Gap size between regions in Mb, default = 5. Only used when \code{regions} is provided.}
+\item{sv_band_frac}{height of the SV band as a fraction of the total panel height when sv_arcs_above = TRUE, default = 0.25. Consider ~0.35 when sv_arc_side is set, since each side then gets half the band.}
+
+\item{sv_arc_scale}{how the apex of each arc is chosen when sv_arcs_above = TRUE: "span" (default, apex scales with the sqrt of the arc's width so nested SVs nest visually) or "fixed" (every arc reaches the same height).}
+
+\item{sv_arc_side}{split arcs onto both sides of a baseline inside the SV band. NULL (default) draws all arcs upwards. One of the built-in rules "cn_effect" (gain-associated junctions up, loss-associated and CN-neutral down), "translocation" or "foldback", or the name of a column in SV holding "up"/"down".}
+
+\item{sv_foldback_dist}{maximum breakpoint distance (bp) for a "++"/"--" inversion to count as a foldback in the sv_arc_side rules, default = 30000}
+
+\item{sv_arc_min_height}{minimum apex of an arc as a fraction of the available band half-height, default = 0.15. Only used when sv_arc_scale = "span". Raise it so short-range SVs such as foldbacks stay visible.}
+
+\item{sv_arc_min_width}{minimum width of an arc as a fraction of the plotted x range, default = 0.004. An SV whose two breakends fall in the same bin (a foldback at 10kb bins, say) would otherwise have zero width and not render at all.}
+
+\item{show_chrbreaks}{draw the light grey vertical lines separating chromosomes, or regions when \code{regions} is supplied. Default = TRUE.}
+
+\item{ybreaks}{y axis breaks. Default NULL uses c(0, 2, 5, 10, maxCN) for the squashy transform and seq(0, maxCN, 2) otherwise. Useful for short panels, where the default breaks collide: the squashy transform packs 0/2/5 into the lower part of the axis, so their labels overlap once the panel drops below roughly 7 mm.}
+
+\item{sv_show_lines}{draw the vertical line at each breakpoint, default = TRUE. Set to FALSE for arcs only. In band mode the lines run from 0 up to the arc baseline; in read count mode they run from the bottom of the panel to a height set by read_count.}
+
+\item{sv_line_alpha}{transparency of the vertical breakpoint lines. Default NULL uses sv_arc_alpha. Because the lines are drawn behind the copy number points they can be made stronger than the arcs without obscuring the data.}
+
+\item{regions}{Optional data.frame with columns chr, start, end (in Mb) to plot multiple regions. If provided, takes precedence over chrfilt/chrstart/chrend.}
+
+\item{region_gap}{Gap size between regions in Mb, default = 5 Mb. Only used when regions is provided.}
+
+\item{show_region_labels}{Annotate each region with its chromosome name at the top of the panel. Only used when regions is provided. Default = TRUE.}
 }
 \value{
 ggplot2 plot
@@ -127,12 +163,4 @@ Plot a single cell copy number profile
 \examples{
 
 plotCNprofile(CNbins)
-
-# Plot multiple regions:
-# regions <- data.frame(
-#   chr = c("2", "2", "1"),
-#   start = c(1, 100, 50),
-#   end = c(10, 120, 75)
-# )
-# plotCNprofile(CNbins, regions = regions, region_gap = 5)
 }
