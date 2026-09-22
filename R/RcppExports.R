@@ -5,7 +5,7 @@ logspace_addcpp <- function(logx, logy) {
     .Call('_signals_logspace_addcpp', PACKAGE = 'signals', logx, logy)
 }
 
-viterbi <- function(emission, transition, observations) {
-    .Call('_signals_viterbi', PACKAGE = 'signals', emission, transition, observations)
+viterbi <- function(emission, transition, observations, legacy = FALSE) {
+    .Call('_signals_viterbi', PACKAGE = 'signals', emission, transition, observations, legacy)
 }
 

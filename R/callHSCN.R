@@ -17,8 +17,10 @@
 #' @param rho Overdispersion parameter for beta-binomial model. Only used when
 #'   likelihood = "betabinomial". Default 0.0.
 #' @param Abias Bias towards A-allele states (for debugging). Default 0.0.
-#' @param viterbiver Viterbi implementation to use. "cpp" (default) for C++
-#'   implementation, "R" for pure R (slower, for debugging).
+#' @param viterbiver Viterbi implementation to use. "cpp" (default) for C++,
+#'   "R" for pure R (slower, for debugging). Append `_legacy` ("cpp_legacy",
+#'   "R_legacy") to reproduce the incorrect backtrace used up to signals 0.16.0,
+#'   which did not return the MAP path.
 #'
 #' @return A list with two elements:
 #'   * `minorcn`: Integer vector of inferred minor allele copy number states
@@ -94,16 +96,15 @@ HaplotypeHMM <- function(n,
     row.names(transition_prob) <- paste0(minor_cn)
   }
   
-  res <- viterbi(l, log(transition_prob),
-                 observations = seq_len(length(binstates))
-  )
-  
-  if (viterbiver == "R") {
-    res <- viterbiR(l, log(transition_prob),
-                    observations = seq_len(length(binstates))
-    )
+  legacy <- grepl("legacy", viterbiver, fixed = TRUE)
+  obs <- seq_len(length(binstates))
+
+  if (grepl("^R", viterbiver)) {
+    res <- viterbiR(l, log(transition_prob), observations = obs, legacy = legacy)
+  } else {
+    res <- viterbi(l, log(transition_prob), observations = obs, legacy = legacy)
   }
-  
+
   return(list(minorcn = res, l = l))
 }
 
@@ -122,7 +123,8 @@ HaplotypeHMM <- function(n,
 #' @param likelihood Likelihood model: "binomial" (default) or "betabinomial".
 #' @param rho Overdispersion parameter for beta-binomial. Default 0.0.
 #' @param Abias Bias towards A-allele states. Default 0.0.
-#' @param viterbiver Viterbi implementation: "cpp" (default) or "R".
+#' @param viterbiver Viterbi implementation: "cpp" (default), "R", or the
+#'   corresponding `_legacy` variants (see [HaplotypeHMM()]).
 #'
 #' @return A data.frame with the input columns plus:
 #'   * `state_min`: Inferred minor allele copy number
@@ -709,7 +711,7 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param chr_cell_list Cells to use for phasing for each chromosome, this should be a named list with a vector of cell_ids for each chromosome eg list("1" = c("cell_id1", "cell_id2)) etc. Default is null. If provided overrides internal phasing.
 #' @param mincells Minimum cluster size used for phasing, default = 7
 #' @param overwritemincells Force the number of cells to use for clustering/phasing rather than use the output of the clustering
-#' @param viterbiver Version of viterbi algorithm to use (cpp or R)
+#' @param viterbiver Version of viterbi algorithm to use: `cpp` (default) or `R`. Append `_legacy` (`cpp_legacy`, `R_legacy`) to reproduce the incorrect Viterbi backtrace used up to signals 0.16.0, which did not return the maximum a posteriori path and emitted spurious single-bin state changes.
 #' @param cluster_per_chr Whether to cluster per chromosome to rephase alleles or not
 #' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
 #' @param firstpassfiltering Filter out cells with large discrepancy after first pass state assignment
