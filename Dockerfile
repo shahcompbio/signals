@@ -12,9 +12,17 @@ RUN Rscript -e "install.packages('magick')"
 RUN Rscript -e "install.packages('devtools')"
 RUN Rscript -e "install.packages('phytools')"
 RUN Rscript -e "install.packages('tidyverse')"
+RUN Rscript -e "install.packages('VGAM')"
 RUN Rscript -e "BiocManager::install('QDNAseq')"
-
 RUN Rscript -e "library(devtools)"
+
+#Samtools
+RUN wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2 && \
+        tar jxf samtools-1.9.tar.bz2 && \
+        rm samtools-1.9.tar.bz2 && \
+        cd samtools-1.9 && \
+        ./configure --prefix $(pwd) && \
+        make
 
 COPY . /usr/src/signals
 WORKDIR /usr/src/signals
@@ -24,14 +32,6 @@ RUN --mount=type=secret,id=github_token \
     Rscript -e "pak::pak('.')"
 
 ADD policy.xml /etc/ImageMagick-6/policy.xml
-
-#Samtools
-RUN wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2 && \
-        tar jxf samtools-1.9.tar.bz2 && \
-        rm samtools-1.9.tar.bz2 && \
-        cd samtools-1.9 && \
-        ./configure --prefix $(pwd) && \
-        make
 
 ENV PATH=${PATH}:/usr/src/samtools-1.9
 
