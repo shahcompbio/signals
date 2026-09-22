@@ -17,8 +17,10 @@
 #' @param rho Overdispersion parameter for beta-binomial model. Only used when
 #'   likelihood = "betabinomial". Default 0.0.
 #' @param Abias Bias towards A-allele states (for debugging). Default 0.0.
-#' @param viterbiver Viterbi implementation to use. "cpp" (default) for C++
-#'   implementation, "R" for pure R (slower, for debugging).
+#' @param viterbiver Viterbi implementation to use. "cpp" (default) for C++,
+#'   "R" for pure R (slower, for debugging). Append `_legacy` ("cpp_legacy",
+#'   "R_legacy") to reproduce the incorrect backtrace used up to signals 0.16.0,
+#'   which did not return the MAP path.
 #'
 #' @return A list with two elements:
 #'   * `minorcn`: Integer vector of inferred minor allele copy number states
@@ -94,16 +96,15 @@ HaplotypeHMM <- function(n,
     row.names(transition_prob) <- paste0(minor_cn)
   }
   
-  res <- viterbi(l, log(transition_prob),
-                 observations = seq_len(length(binstates))
-  )
-  
-  if (viterbiver == "R") {
-    res <- viterbiR(l, log(transition_prob),
-                    observations = seq_len(length(binstates))
-    )
+  legacy <- grepl("legacy", viterbiver, fixed = TRUE)
+  obs <- seq_len(length(binstates))
+
+  if (grepl("^R", viterbiver)) {
+    res <- viterbiR(l, log(transition_prob), observations = obs, legacy = legacy)
+  } else {
+    res <- viterbi(l, log(transition_prob), observations = obs, legacy = legacy)
   }
-  
+
   return(list(minorcn = res, l = l))
 }
 
@@ -122,7 +123,8 @@ HaplotypeHMM <- function(n,
 #' @param likelihood Likelihood model: "binomial" (default) or "betabinomial".
 #' @param rho Overdispersion parameter for beta-binomial. Default 0.0.
 #' @param Abias Bias towards A-allele states. Default 0.0.
-#' @param viterbiver Viterbi implementation: "cpp" (default) or "R".
+#' @param viterbiver Viterbi implementation: "cpp" (default), "R", or the
+#'   corresponding `_legacy` variants (see [HaplotypeHMM()]).
 #'
 #' @return A data.frame with the input columns plus:
 #'   * `state_min`: Inferred minor allele copy number
@@ -295,8 +297,14 @@ callalleleHMMcell <- function(CNBAF,
 }
 
 
-min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = 4, samplen = 5) {
+min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = 4, samplen = 5,
+                      seed = NULL) {
   chr <- hap_label <- NULL
+  # the haplotype-retention curve below is built by random subsampling, so the
+  # returned cluster size (and hence minPts) varies between runs unless seeded
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
   nhaps_vec <- c()
   prop_vec <- c()
   prop <- c(0.005, 0.01, 0.02, 0.03, 0.04, 0.05, seq(0.1, 1.0, 0.1))
@@ -388,17 +396,20 @@ get_cells_per_chr_global <- function(ascn,
                                      ncells_for_clustering,
                                      field = "copy",
                                      clustering_method = "copy",
-                                     phasebyarm = FALSE) {
-  
+                                     phasebyarm = FALSE,
+                                     seed = NULL) {
+
   # cluster cells using umap and the "copy" corrected read count value
   if (clustering_method == "copy") {
     cl <- umap_clustering(ascn,
                           minPts = ncells_for_clustering,
-                          field = field
+                          field = field,
+                          seed = seed
     )
   } else {
     cl <- umap_clustering_breakpoints(ascn,
-                                      minPts = ncells_for_clustering
+                                      minPts = ncells_for_clustering,
+                                      seed = seed
     )
   }
   ascn <- as.data.table(dplyr::left_join(ascn, cl$clustering))
@@ -439,21 +450,27 @@ get_cells_per_chr_local <- function(ascn,
                                     haplotypes,
                                     ncells_for_clustering,
                                     field = "state_BAF",
-                                    phasebyarm = FALSE) {
-  
+                                    phasebyarm = FALSE,
+                                    seed = NULL) {
+
   # cluster cells per chromosome
-  
+
   chrlist <- list()
-  for (mychr in unique(ascn$chr)) {
+  chrs <- unique(ascn$chr)
+  for (mychr in chrs) {
     message(paste0("Clustering chromosome ", mychr))
     ascn_chr <- as.data.table(ascn)[chr == mychr]
+    # offset the seed per chromosome so each clustering is reproducible without
+    # every chromosome sharing an identical RNG state
+    chrseed <- if (is.null(seed)) NULL else seed + match(mychr, chrs)
     if (ncells_for_clustering > 1){
       cl <- umap_clustering(ascn_chr,
                             n_neighbors = 20,
                             min_dist = 0.001,
                             minPts = ncells_for_clustering,
                             field = "state_BAF",
-                            umapmetric = "euclidean")
+                            umapmetric = "euclidean",
+                            seed = chrseed)
     } else{
       cl <- list(clustering = data.frame(cell_id = unique(ascn_chr$cell_id)) %>% 
                    dplyr::mutate(clone_id = paste0(1:dplyr::n())))
@@ -493,12 +510,14 @@ proportion_imbalance <- function(ascn,
                                  minfrachaplotypes = 0.95,
                                  mincells = 5,
                                  overwritemincells = NULL,
-                                 cluster_per_chr = TRUE) {
+                                 cluster_per_chr = TRUE,
+                                 seed = NULL) {
   ncells <- length(unique(ascn$cell_id))
   if (is.null(overwritemincells)) {
     ncells_for_clustering <- min_cells(haplotypes,
                                        mincells = mincells,
-                                       minfrachaplotypes = minfrachaplotypes
+                                       minfrachaplotypes = minfrachaplotypes,
+                                       seed = seed
     )
     propdf <- ncells_for_clustering$prop
     ncells_for_clustering <- ncells_for_clustering$ncells_forclustering
@@ -512,14 +531,16 @@ proportion_imbalance <- function(ascn,
     chrlist <- get_cells_per_chr_local(ascn,
                                        haplotypes,
                                        ncells_for_clustering,
-                                       field = field
+                                       field = field,
+                                       seed = seed
     )
   } else {
     chrlist <- get_cells_per_chr_global(ascn,
                                         haplotypes,
                                         ncells_for_clustering,
                                         field = field,
-                                        clustering_method = clustering_method
+                                        clustering_method = clustering_method,
+                                        seed = seed
     )
   }
   return(list(chrlist = chrlist, propdf = propdf))
@@ -616,11 +637,16 @@ tarones_Z <- function(alleleA, totalcounts) {
   return(Z_score)
 }
 
-fitBB <- function(ascn) {
+fitBB <- function(ascn, seed = NULL) {
   modal_state <- which.max(table(dplyr::filter(ascn, B > 0)$state_AS_phased))
   bdata <- dplyr::filter(ascn, state_AS_phased == names(modal_state))
   nsample <- min(length(bdata$state), 10^5)
   if (nsample == 10^5) {
+    # subsampled, so the fitted overdispersion - and therefore the binomial vs
+    # beta-binomial choice made from it - varies between runs unless seeded
+    if (!is.null(seed)) {
+      set.seed(seed)
+    }
     bdata <- dplyr::sample_n(bdata, 10^5)
   }
   expBAF <- bdata %>%
@@ -685,16 +711,17 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param chr_cell_list Cells to use for phasing for each chromosome, this should be a named list with a vector of cell_ids for each chromosome eg list("1" = c("cell_id1", "cell_id2)) etc. Default is null. If provided overrides internal phasing.
 #' @param mincells Minimum cluster size used for phasing, default = 7
 #' @param overwritemincells Force the number of cells to use for clustering/phasing rather than use the output of the clustering
-#' @param viterbver Version of viterbi algorithm to use (cpp or R)
+#' @param viterbiver Version of viterbi algorithm to use: `cpp` (default) or `R`. Append `_legacy` (`cpp_legacy`, `R_legacy`) to reproduce the incorrect Viterbi backtrace used up to signals 0.16.0, which did not return the maximum a posteriori path and emitted spurious single-bin state changes.
 #' @param cluster_per_chr Whether to cluster per chromosome to rephase alleles or not
 #' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
 #' @param firstpassfiltering Filter out cells with large discrepancy after first pass state assignment
 #' @param smoothsingletons Remove singleton bins by smoothing over based on states in adjacent bins
 #' @param fillmissing For bins with missing counts fill in values based on neighbouring bins, this ensures that the returned object is the same size as input CNbins
-#' @param global_phasing_for_diploid When using cluster_per_chr, use all cells for phasing diploid regions within the cluster
+#' @param global_phasing_for_balanced When using cluster_per_chr, use all cells for phasing diploid regions within the cluster
 #' @param chrs_for_global_phasing Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes
 #' @param female Default is `TRUE`, if set to `FALSE` and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state
-#' 
+#' @param seed Random seed for the stochastic steps of phasing: the subsampling in `min_cells` that sets the cluster size, the UMAP embedding used to pick phasing cells per chromosome, and the subsampling in the beta-binomial fit. Default `NULL`, which leaves these unseeded and means repeated runs on identical input can select different cells to phase a chromosome with, and so can return different haplotype-specific states. Set it to make a run reproducible.
+#'
 #' @return Haplotype specific copy number object 
 #' 
 #' @details The haplotype specific copy number object include the following additional columns
@@ -753,7 +780,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     global_phasing_for_balanced = FALSE,
                                     chr_cell_list = NULL,
                                     chrs_for_global_phasing = NULL,
-                                    female = TRUE) {
+                                    female = TRUE,
+                                    seed = NULL) {
   # Validate input data.frames
 
   validate_cnbins(CNbins)
@@ -902,7 +930,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   infloherror <- min(infloherror, maxloherror) # ensure loh error rate is < maxloherror
   
   if (likelihood == "betabinomial" | likelihood == "auto") {
-    bbfit <- fitBB(ascn_filt)
+    bbfit <- fitBB(ascn_filt, seed = seed)
     if (bbfit$taronesZ > 5) {
       likelihood <- "betabinomial"
       message(paste0("Tarones Z-score: ", round(bbfit$taronesZ, 3), ", using ", likelihood, " model for inference."))
@@ -931,7 +959,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     mincells = mincells,
                                     clustering_method = clustering_method,
                                     overwritemincells = overwritemincells,
-                                    cluster_per_chr = cluster_per_chr
+                                    cluster_per_chr = cluster_per_chr,
+                                    seed = seed
     )
     propdf <- chrlist$propdf
     chrlist <- chrlist$chrlist

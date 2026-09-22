@@ -23,22 +23,23 @@ BEGIN_RCPP
 END_RCPP
 }
 // viterbi
-NumericVector viterbi(NumericMatrix emission, NumericMatrix transition, NumericVector observations);
-RcppExport SEXP _signals_viterbi(SEXP emissionSEXP, SEXP transitionSEXP, SEXP observationsSEXP) {
+NumericVector viterbi(NumericMatrix emission, NumericMatrix transition, NumericVector observations, bool legacy);
+RcppExport SEXP _signals_viterbi(SEXP emissionSEXP, SEXP transitionSEXP, SEXP observationsSEXP, SEXP legacySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type emission(emissionSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type transition(transitionSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type observations(observationsSEXP);
-    rcpp_result_gen = Rcpp::wrap(viterbi(emission, transition, observations));
+    Rcpp::traits::input_parameter< bool >::type legacy(legacySEXP);
+    rcpp_result_gen = Rcpp::wrap(viterbi(emission, transition, observations, legacy));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_signals_logspace_addcpp", (DL_FUNC) &_signals_logspace_addcpp, 2},
-    {"_signals_viterbi", (DL_FUNC) &_signals_viterbi, 3},
+    {"_signals_viterbi", (DL_FUNC) &_signals_viterbi, 4},
     {NULL, NULL, 0}
 };
 

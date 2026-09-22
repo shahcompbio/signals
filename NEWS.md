@@ -1,3 +1,23 @@
+# signals 0.17.0
+
+## Breaking: Viterbi decoding was not returning the most likely path
+
+The backtrace in both `viterbi()` (C++) and `viterbiR()` was not a Viterbi backtrace. It seeded the final position with the *predecessor* of the best final state, and then took the per-column argmax of the forward matrix at each step instead of following the stored backpointers. Because it ignored the backpointers it also largely ignored the transition penalty, so it emitted isolated single-bin state changes that are absent from the maximum a posteriori path.
+
+Both implementations are now correct — verified against exhaustive enumeration of all state paths on small problems, not against each other. On random HMMs the old decode scored strictly lower than the MAP path in roughly 85% of cases and never higher.
+
+**This changes haplotype-specific copy number calls.** On a 725-cell DLP+ sample, chromosome 6: 194 of 725 cells received a different path, 0.30% of bins changed, and the mean number of A/B segments per cell fell from 1.71 to 0.26 — the extra segments in the old output were decoding artefacts. 194 cells lost segments and none gained any. Cells with spurious `3|0` calls inside a `2|1` segment lost them entirely.
+
+Pass `viterbiver = "cpp_legacy"` (or `"R_legacy"`) to `callHaplotypeSpecificCN` to reproduce results from 0.16.0 and earlier.
+
+Note that `fix_assignments()` exists to smooth away singleton bins, which were largely a symptom of this bug; it may now be doing little and is worth re-evaluating.
+
+# signals 0.16.0
+
+* Add a `seed` argument to `callHaplotypeSpecificCN` and `callAlleleSpecificCN`. Phasing has three stochastic steps — the subsampling in `min_cells` that sets the cluster size, the UMAP embedding used to choose which cells phase each chromosome, and the subsampling in the beta-binomial fit. Left unseeded, repeated runs on identical input can select different cells to phase a chromosome with and so return different haplotype-specific states. `seed` is threaded through `proportion_imbalance`, `get_cells_per_chr_local`, `get_cells_per_chr_global`, `min_cells` and `fitBB`; the default remains `NULL` (unseeded), so existing behaviour is unchanged.
+* Pass `n_sgd_threads = 0` to `uwot::umap` in `umap_clustering` and `umap_clustering_breakpoints`. uwot's SGD is only reproducible single-threaded, so a seed alone does not pin the embedding if that default ever changes.
+* Fix two `@param` names that did not match their arguments (`viterbver` -> `viterbiver`, `global_phasing_for_diploid` -> `global_phasing_for_balanced`), which left both arguments undocumented.
+
 # signals 0.15.0
 
 * Add configurable annotation colour overrides for discrete and continuous annotation columns
