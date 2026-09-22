@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.15.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.16.0</span>
       </span>
     </div>
 
@@ -45,6 +45,9 @@
     </li>
     <li>
       <a href="../articles/heatmap_visualization.html">Advanced Heatmap Visualization</a>
+    </li>
+    <li>
+      <a href="../articles/SV_visualization.html">Structural variant visualization</a>
     </li>
   </ul></li>
 <li>
@@ -105,8 +108,20 @@
 <span>  show_sv_read_axis <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  sv_read_axis_scale <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  show_sv_legend <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  sv_arcs_above <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  sv_band_frac <span class="op">=</span> <span class="fl">0.25</span>,</span>
+<span>  sv_arc_scale <span class="op">=</span> <span class="st">"span"</span>,</span>
+<span>  sv_arc_side <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  sv_foldback_dist <span class="op">=</span> <span class="fl">30000</span>,</span>
+<span>  sv_arc_min_height <span class="op">=</span> <span class="fl">0.15</span>,</span>
+<span>  sv_arc_min_width <span class="op">=</span> <span class="fl">0.004</span>,</span>
+<span>  show_chrbreaks <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  ybreaks <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  sv_show_lines <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  sv_line_alpha <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  regions <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  region_gap <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  show_region_labels <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -251,12 +266,60 @@
 <dd><p>show legend for SV orientations when using lines_and_arcs style, default = FALSE</p></dd>
 
 
+<dt id="arg-sv-arcs-above">sv_arcs_above<a class="anchor" aria-label="anchor" href="#arg-sv-arcs-above"></a></dt>
+<dd><p>draw SV arcs in a dedicated band above the copy number panel rather than on top of it, default = FALSE. Read count is no longer encoded as arc height and the SV read support secondary axis is switched off.</p></dd>
+
+
+<dt id="arg-sv-band-frac">sv_band_frac<a class="anchor" aria-label="anchor" href="#arg-sv-band-frac"></a></dt>
+<dd><p>height of the SV band as a fraction of the total panel height when sv_arcs_above = TRUE, default = 0.25. Consider ~0.35 when sv_arc_side is set, since each side then gets half the band.</p></dd>
+
+
+<dt id="arg-sv-arc-scale">sv_arc_scale<a class="anchor" aria-label="anchor" href="#arg-sv-arc-scale"></a></dt>
+<dd><p>how the apex of each arc is chosen when sv_arcs_above = TRUE: "span" (default, apex scales with the sqrt of the arc's width so nested SVs nest visually) or "fixed" (every arc reaches the same height).</p></dd>
+
+
+<dt id="arg-sv-arc-side">sv_arc_side<a class="anchor" aria-label="anchor" href="#arg-sv-arc-side"></a></dt>
+<dd><p>split arcs onto both sides of a baseline inside the SV band. NULL (default) draws all arcs upwards. One of the built-in rules "cn_effect" (gain-associated junctions up, loss-associated and CN-neutral down), "translocation" or "foldback", or the name of a column in SV holding "up"/"down".</p></dd>
+
+
+<dt id="arg-sv-foldback-dist">sv_foldback_dist<a class="anchor" aria-label="anchor" href="#arg-sv-foldback-dist"></a></dt>
+<dd><p>maximum breakpoint distance (bp) for a "++"/"–" inversion to count as a foldback in the sv_arc_side rules, default = 30000</p></dd>
+
+
+<dt id="arg-sv-arc-min-height">sv_arc_min_height<a class="anchor" aria-label="anchor" href="#arg-sv-arc-min-height"></a></dt>
+<dd><p>minimum apex of an arc as a fraction of the available band half-height, default = 0.15. Only used when sv_arc_scale = "span". Raise it so short-range SVs such as foldbacks stay visible.</p></dd>
+
+
+<dt id="arg-sv-arc-min-width">sv_arc_min_width<a class="anchor" aria-label="anchor" href="#arg-sv-arc-min-width"></a></dt>
+<dd><p>minimum width of an arc as a fraction of the plotted x range, default = 0.004. An SV whose two breakends fall in the same bin (a foldback at 10kb bins, say) would otherwise have zero width and not render at all.</p></dd>
+
+
+<dt id="arg-show-chrbreaks">show_chrbreaks<a class="anchor" aria-label="anchor" href="#arg-show-chrbreaks"></a></dt>
+<dd><p>draw the light grey vertical lines separating chromosomes, or regions when <code>regions</code> is supplied. Default = TRUE.</p></dd>
+
+
+<dt id="arg-ybreaks">ybreaks<a class="anchor" aria-label="anchor" href="#arg-ybreaks"></a></dt>
+<dd><p>y axis breaks. Default NULL uses c(0, 2, 5, 10, maxCN) for the squashy transform and seq(0, maxCN, 2) otherwise. Useful for short panels, where the default breaks collide: the squashy transform packs 0/2/5 into the lower part of the axis, so their labels overlap once the panel drops below roughly 7 mm.</p></dd>
+
+
+<dt id="arg-sv-show-lines">sv_show_lines<a class="anchor" aria-label="anchor" href="#arg-sv-show-lines"></a></dt>
+<dd><p>draw the vertical line at each breakpoint, default = TRUE. Set to FALSE for arcs only. In band mode the lines run from 0 up to the arc baseline; in read count mode they run from the bottom of the panel to a height set by read_count.</p></dd>
+
+
+<dt id="arg-sv-line-alpha">sv_line_alpha<a class="anchor" aria-label="anchor" href="#arg-sv-line-alpha"></a></dt>
+<dd><p>transparency of the vertical breakpoint lines. Default NULL uses sv_arc_alpha. Because the lines are drawn behind the copy number points they can be made stronger than the arcs without obscuring the data.</p></dd>
+
+
 <dt id="arg-regions">regions<a class="anchor" aria-label="anchor" href="#arg-regions"></a></dt>
-<dd><p>Optional data.frame with columns <code>chr</code>, <code>start</code>, <code>end</code> (in Mb) to plot multiple regions. If provided, takes precedence over <code>chrfilt</code>/<code>chrstart</code>/<code>chrend</code>. The order of rows determines the order of regions in the plot.</p></dd>
+<dd><p>Optional data.frame with columns chr, start, end (in Mb) to plot multiple regions. If provided, takes precedence over chrfilt/chrstart/chrend.</p></dd>
 
 
 <dt id="arg-region-gap">region_gap<a class="anchor" aria-label="anchor" href="#arg-region-gap"></a></dt>
-<dd><p>Gap size between regions in Mb, default = 5. Only used when <code>regions</code> is provided.</p></dd>
+<dd><p>Gap size between regions in Mb, default = 5 Mb. Only used when regions is provided.</p></dd>
+
+
+<dt id="arg-show-region-labels">show_region_labels<a class="anchor" aria-label="anchor" href="#arg-show-region-labels"></a></dt>
+<dd><p>Annotate each region with its chromosome name at the top of the panel. Only used when regions is provided. Default = TRUE.</p></dd>
 
 </dl></div>
     <div id="value">
@@ -271,14 +334,6 @@
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Making CN profile and BAF plot for cell - SA921-A90554A-R03-C44</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Making fixed-width bins for bin size 500000 ...</span>
 <span class="r-plt img"><img src="plotCNprofile-1.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Plot multiple regions:</span></span></span>
-<span class="r-in"><span><span class="co"># regions &lt;- data.frame(</span></span></span>
-<span class="r-in"><span><span class="co">#   chr = c("2", "2", "1"),</span></span></span>
-<span class="r-in"><span><span class="co">#   start = c(1, 100, 50),</span></span></span>
-<span class="r-in"><span><span class="co">#   end = c(10, 120, 75)</span></span></span>
-<span class="r-in"><span><span class="co"># )</span></span></span>
-<span class="r-in"><span><span class="co"># plotCNprofile(CNbins, regions = regions, region_gap = 5)</span></span></span>
 </code></pre></div>
     </div>
   </div>

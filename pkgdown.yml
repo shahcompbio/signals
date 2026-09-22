@@ -7,4 +7,5 @@ articles:
   basic_scdnaseq: basic_scdnaseq.html
   BetaBinom: BetaBinom.html
   heatmap_visualization: heatmap_visualization.html
-last_built: 2026-08-04T16:03Z
+  SV_visualization: SV_visualization.html
+last_built: 2026-09-22T13:25Z
