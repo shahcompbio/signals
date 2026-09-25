@@ -12,6 +12,19 @@ Pass `viterbiver = "cpp_legacy"` (or `"R_legacy"`) to `callHaplotypeSpecificCN` 
 
 Note that `fix_assignments()` exists to smooth away singleton bins, which were largely a symptom of this bug; it may now be doing little and is worth re-evaluating.
 
+## Fix: `phasebyarm = TRUE` produced an empty phasing table
+
+`phase_haplotypes_bychr()` filters haplotypes on `chrarm == names(chrlist)[i]` when `phasebyarm = TRUE`, so the per-unit cell list has to be keyed by chromosome arm. Two things prevented that:
+
+* `proportion_imbalance()` accepted `phasebyarm` and did not forward it to either `get_cells_per_chr_local()` or `get_cells_per_chr_global()`, so neither selection path ever saw it.
+* `get_cells_per_chr_local()` — the default, since `cluster_per_chr = TRUE` — accepted `phasebyarm` and ignored it, looping over chromosomes and keying the list by chromosome name.
+
+`"4p" == "4"` is never true, so `phasebyarm = TRUE` yielded zero phased blocks, and `format_haplotypes()` then dropped every haplotype block. Arm-level phasing was unusable on either path.
+
+`get_cells_per_chr_local()` now clusters and keys by the phasing unit (chromosome, or chromosome arm when `phasebyarm = TRUE`), and `proportion_imbalance()` forwards the argument. `plot_clusters_used_for_phasing()` strips the arm suffix before filtering on `chr`, so the QC plot still works when phasing by arm.
+
+This matters where imbalance is confined to one arm. On the test sample, chromosome 4 has 17 cells with p-arm LOH that phase the p arm correctly; those cells are balanced on the q arm, so q-arm blocks were phased off noise, and the one cell with a whole-chromosome gain (total CN 3, hence necessarily imbalanced) read `2|1` over 94 of 100 p-arm bins but alternated `1|2`/`2|1` across 12 runs on the q arm.
+
 # signals 0.16.0
 
 * Add a `seed` argument to `callHaplotypeSpecificCN` and `callAlleleSpecificCN`. Phasing has three stochastic steps — the subsampling in `min_cells` that sets the cluster size, the UMAP embedding used to choose which cells phase each chromosome, and the subsampling in the beta-binomial fit. Left unseeded, repeated runs on identical input can select different cells to phase a chromosome with and so return different haplotype-specific states. `seed` is threaded through `proportion_imbalance`, `get_cells_per_chr_local`, `get_cells_per_chr_global`, `min_cells` and `fitBB`; the default remains `NULL` (unseeded), so existing behaviour is unchanged.

@@ -453,16 +453,30 @@ get_cells_per_chr_local <- function(ascn,
                                     phasebyarm = FALSE,
                                     seed = NULL) {
 
-  # cluster cells per chromosome
+  # Cluster cells within each phasing unit. The unit is the whole chromosome by
+  # default, or the chromosome arm when phasebyarm = TRUE.
+  #
+  # The returned list MUST be keyed by the same unit that
+  # phase_haplotypes_bychr() filters on: it matches names(chrlist) against
+  # `chrarm` when phasebyarm = TRUE and against `chr` otherwise. Keying by
+  # chromosome while phasing by arm matches nothing ("6p" != "6") and silently
+  # yields an empty phasing table.
+
+  ascn <- as.data.table(ascn)
+  if (phasebyarm) {
+    ascn$unit <- paste0(ascn$chr, coord_to_arm(ascn$chr, ascn$start))
+  } else {
+    ascn$unit <- ascn$chr
+  }
 
   chrlist <- list()
-  chrs <- unique(ascn$chr)
-  for (mychr in chrs) {
-    message(paste0("Clustering chromosome ", mychr))
-    ascn_chr <- as.data.table(ascn)[chr == mychr]
-    # offset the seed per chromosome so each clustering is reproducible without
-    # every chromosome sharing an identical RNG state
-    chrseed <- if (is.null(seed)) NULL else seed + match(mychr, chrs)
+  units <- unique(ascn$unit)
+  for (myunit in units) {
+    message(paste0("Clustering ", ifelse(phasebyarm, "chromosome arm ", "chromosome "), myunit))
+    ascn_chr <- ascn[unit == myunit]
+    # offset the seed per unit so each clustering is reproducible without every
+    # unit sharing an identical RNG state
+    chrseed <- if (is.null(seed)) NULL else seed + match(myunit, units)
     if (ncells_for_clustering > 1){
       cl <- umap_clustering(ascn_chr,
                             n_neighbors = 20,
@@ -472,10 +486,10 @@ get_cells_per_chr_local <- function(ascn,
                             umapmetric = "euclidean",
                             seed = chrseed)
     } else{
-      cl <- list(clustering = data.frame(cell_id = unique(ascn_chr$cell_id)) %>% 
+      cl <- list(clustering = data.frame(cell_id = unique(ascn_chr$cell_id)) %>%
                    dplyr::mutate(clone_id = paste0(1:dplyr::n())))
     }
-    
+
     prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
       .[, list(
         propA = round(sum(balance) / .N, 2),
@@ -483,21 +497,21 @@ get_cells_per_chr_local <- function(ascn,
         propModestate = sum(state == Mode(state)) / .N,
         propLOH = sum(LOH == "LOH") / .N,
         ncells = length(unique(cell_id))
-      ), by = .(chr, cell_id, clone_id)] %>%
+      ), by = .(unit, cell_id, clone_id)] %>%
       .[, list(
         propA = median(propA),
         n = median(n),
         propModestate = median(propModestate),
         propLOH = median(propLOH),
         ncells = median(ncells)
-      ), by = .(chr, clone_id)]
+      ), by = .(unit, clone_id)]
     prop <- prop[order(propA, propModestate, ncells, propLOH, n, decreasing = TRUE)]
-    prop <- prop[prop[, .I[which.max(propA)], by = chr]$V1]
+    prop <- prop[prop[, .I[which.max(propA)], by = unit]$V1]
     cells <- dplyr::filter(cl$clustering, clone_id == prop$clone_id[1]) %>%
       dplyr::pull(cell_id)
-    chrlist[[mychr]] <- cells
+    chrlist[[myunit]] <- cells
   }
-  
+
   return(chrlist)
 }
 
@@ -532,6 +546,7 @@ proportion_imbalance <- function(ascn,
                                        haplotypes,
                                        ncells_for_clustering,
                                        field = field,
+                                       phasebyarm = phasebyarm,
                                        seed = seed
     )
   } else {
@@ -540,6 +555,7 @@ proportion_imbalance <- function(ascn,
                                         ncells_for_clustering,
                                         field = field,
                                         clustering_method = clustering_method,
+                                        phasebyarm = phasebyarm,
                                         seed = seed
     )
   }

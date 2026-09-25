@@ -240,7 +240,7 @@ plottinglist <- function(CNbins,
     # get ticks - median bin of each chromosome
     if (length(unique(CNbins$chr)) == 1){
       chrticks <- seq(tickwidth, dim(bins)[1], tickwidth)
-      chrlabels <- paste0((chrticks * binsize) / 1e6)
+      chrlabels <- paste0(round((chrticks * binsize) / 1e6, 3))
     } else {
       chrticks <- bins %>%
         dplyr::filter(chr %in% unique(CNbins$chr)) %>%
@@ -256,7 +256,7 @@ plottinglist <- function(CNbins,
       CNbins <- CNbins %>% dplyr::filter(idx >= idxstart)
       CNbins <- CNbins %>% dplyr::filter(idx <= idxend)
       chrticks <- seq(idxstart, idxend, tickwidth)
-      chrlabels <- paste0((chrticks * binsize) / 1e6)
+      chrlabels <- paste0(round((chrticks * binsize) / 1e6, 3))
       minidx <- ifelse(is.null(chrstart), min(bins$idx), idxstart)
       maxidx <- ifelse(is.null(chrend), max(bins$idx), idxend)
     } else{
@@ -270,7 +270,7 @@ plottinglist <- function(CNbins,
       idxstart <- min(CNbins_filt$idx)
       idxend <- max(CNbins_filt$idx)
       chrticks <- seq(tickwidth + bins_filt$idx[1], tail(bins_filt$idx,1), tickwidth)
-      chrlabels <- paste0(((chrticks - bins_filt$idx[1]) * binsize) / 1e6)
+      chrlabels <- paste0(round(((chrticks - bins_filt$idx[1]) * binsize) / 1e6, 3))
       return(list(chrlabels = chrlabels, chrticks = chrticks))
     }
     
@@ -2702,17 +2702,50 @@ plot_variance_state <- function(hscn, by_allele_specific_state = FALSE) {
 #'
 #'
 #' @export
-plot_clusters_used_for_phasing <- function(hscn){
+plot_clusters_used_for_phasing <- function(hscn, ncol = 6){
+  units <- gtools::mixedsort(names(hscn$phasing))
+  if (length(units) == 0) stop("hscn$phasing is empty, nothing to plot")
+
+  # names(hscn$phasing) are the units the phasing cells were chosen for:
+  # chromosomes ("6"), or chromosome arms ("6p") when phasing by arm.
+  by_arm <- any(grepl("[pq]$", units))
+  d <- hscn$data
+  d$unit <- if (by_arm) paste0(d$chr, coord_to_arm(d$chr, d$start)) else d$chr
+
   myplots <- list()
-  for (mychr in gtools::mixedsort(names(hscn$phasing))){
-    cells <- hscn$phasing[[mychr]]
-    myplots[[mychr]] <- hscn$data %>% 
-      dplyr::filter(cell_id %in% cells) %>% 
-      consensuscopynumber(.) %>% 
-      dplyr::mutate(cell_id = paste0("chr ", mychr)) %>% 
-      plotCNprofileBAF(., chrfilt = mychr, legend.position = "none")
+  for (myunit in units){
+    cells <- hscn$phasing[[myunit]]
+    # plotCNprofileBAF filters `chr %in% chrfilt`, and chr is never "6p", so the
+    # arm has to be stripped before it selects the chromosome...
+    chrfilt <- sub("[pq]$", "", myunit)
+    # ...and the arm's own span passed separately. Otherwise a panel labelled
+    # "chr 19p" spans all of chr19 and also shows those cells on 19q, where they
+    # may carry the other parent - so the panel appears to switch phase at the
+    # centromere. chrstart/chrend are Mb within the chromosome, which works
+    # because chrfilt is applied before the bin index is built.
+    cs <- ce <- NULL
+    if (by_arm){
+      rng <- d[d$unit == myunit, c("start", "end")]
+      if (nrow(rng) > 0){
+        # bin starts are 1-based, so subtract 1 before converting to Mb:
+        # min(start)/1e6 leaves a 1bp residue that the tick labels inherit,
+        # turning "100" into "100.000001".
+        cs <- (min(rng$start) - 1) / 1e6
+        ce <- max(rng$end) / 1e6
+      }
+    }
+    myplots[[myunit]] <- hscn$data %>%
+      dplyr::filter(cell_id %in% cells) %>%
+      consensuscopynumber(.) %>%
+      dplyr::mutate(cell_id = paste0("chr ", myunit)) %>%
+      plotCNprofileBAF(., chrfilt = chrfilt, chrstart = cs, chrend = ce,
+                       legend.position = "none")
   }
-  
-  g <- cowplot::plot_grid(plotlist = myplots, ncol = 6)
+
+  g <- cowplot::plot_grid(plotlist = myplots, ncol = ncol)
+  # carry the grid shape so the caller can size the device per row, rather than
+  # squeezing twice as many panels into a fixed height when phasing by arm
+  attr(g, "phasing_panels") <- length(myplots)
+  attr(g, "phasing_rows") <- ceiling(length(myplots) / ncol)
   return(g)
 }
