@@ -1,4 +1,4 @@
-# signals (development version)
+# signals 0.17.0
 
 * **Breaking:** fix the Viterbi backtrace in `viterbi()` (C++) and `viterbiR()`. It seeded the final bin with the predecessor of the best final state and then backtracked from the per-column argmax instead of following the stored backpointers, so it did not return the most likely path and emitted spurious single-bin state changes. Single-bin sequences also decoded to state 0 (C++) or errored (R). This changes haplotype- and allele-specific copy number calls: on a 725-cell DLP+ sample (chr6, analysis from #79) 194 cells changed path, 0.30% of bins changed, and mean A/B segments per cell fell from 1.71 to 0.26. Use signals 0.16.0 to reproduce earlier results.
 * Fix `alleleHMM` producing all `-Inf` emissions for homozygous-deletion bins (total CN 0), which forced the rest of the chromosome to minor CN 0.
