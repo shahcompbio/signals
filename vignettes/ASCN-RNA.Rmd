@@ -174,7 +174,7 @@ DimPlot(x, group.by = "DP_cloneid")
 
 ```{r}
 rownames(x@assays$segBAF)
-FeaturePlot(x, "BAF-3-75500001-192300000") + scale_color_gradientn(colors = scBAFstate_cols())
+FeaturePlot(x, "BAF-3-75500001-181000000") + scale_color_gradientn(colors = scBAFstate_cols())
 ```
 
 ```{r}
