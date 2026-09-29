@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">signals</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.16.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.17.0</span>
       </span>
     </div>
 
@@ -138,13 +138,13 @@ but in general it will be less accurate.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"CNbins"</span><span class="op">)</span></span>
 <span><span class="va">haplotypes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/format_haplotypes_dlp.html">format_haplotypes_dlp</a></span><span class="op">(</span><span class="va">haplotypes</span>, <span class="va">CNbins</span><span class="op">)</span></span>
 <span><span class="va">hscn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callHaplotypeSpecificCN.html">callHaplotypeSpecificCN</a></span><span class="op">(</span><span class="va">CNbins</span>, <span class="va">haplotypes</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Iteration 1: loglikelihood = -313387.1605</span></span>
-<span><span class="co">#&gt; Iteration 2: loglikelihood = -309515.5822</span></span>
-<span><span class="co">#&gt; Iteration 3: loglikelihood = -308986.7749</span></span>
-<span><span class="co">#&gt; Iteration 4: loglikelihood = -308962.6387</span></span>
-<span><span class="co">#&gt; Iteration 5: loglikelihood = -308962.287</span></span>
-<span><span class="co">#&gt; Iteration 6: loglikelihood = -308962.2838</span></span>
-<span><span class="co">#&gt; Iteration 7: loglikelihood = -308962.2838</span></span></code></pre></div>
+<span><span class="co">#&gt; Iteration 1: loglikelihood = -313226.3103</span></span>
+<span><span class="co">#&gt; Iteration 2: loglikelihood = -309492.9038</span></span>
+<span><span class="co">#&gt; Iteration 3: loglikelihood = -308981.1802</span></span>
+<span><span class="co">#&gt; Iteration 4: loglikelihood = -308956.7905</span></span>
+<span><span class="co">#&gt; Iteration 5: loglikelihood = -308956.3862</span></span>
+<span><span class="co">#&gt; Iteration 6: loglikelihood = -308956.3819</span></span>
+<span><span class="co">#&gt; Iteration 7: loglikelihood = -308956.3819</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="ascn-inference">ASCN inference<a class="anchor" aria-label="anchor" href="#ascn-inference"></a>
@@ -218,7 +218,7 @@ compute BAF frequencies across each segment in each cell.</p>
 <span><span class="co">#&gt; Haplotype specific copy number object (RNA) </span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Number of cells: 814</span></span>
-<span><span class="co">#&gt; Number of clusters: 2</span></span>
+<span><span class="co">#&gt; Number of clusters: 3</span></span>
 <span><span class="co">#&gt; Chromosomes used for clustering:</span></span></code></pre></div>
 <p>Here, we found 2 clusters. We can visualize the separation of
 clusters using a similar plot to before. Setting
@@ -309,6 +309,9 @@ shown below.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">x</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-17-1.png" class="r-plt" alt="" width="700"></p>
+<p>Segment boundaries come from the scDNA consensus above, so rather
+than hardcode feature names we pick the largest segment on each
+chromosome of interest.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">x</span><span class="op">@</span><span class="va">assays</span><span class="op">$</span><span class="va">segBAF</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "BAF-1-1-47000000"           "BAF-1-225500001-243700000" </span></span>
@@ -322,30 +325,38 @@ shown below.</p>
 <span><span class="co">#&gt; [17] "BAF-16-1-88700000"          "BAF-17-1-75300000"         </span></span>
 <span><span class="co">#&gt; [19] "BAF-18-1-73100000"          "BAF-19-1-28000000"         </span></span>
 <span><span class="co">#&gt; [21] "BAF-19-28000001-56300000"   "BAF-2-1-88500000"          </span></span>
-<span><span class="co">#&gt; [23] "BAF-2-225000001-237300000"  "BAF-2-88500001-99000000"   </span></span>
-<span><span class="co">#&gt; [25] "BAF-2-99000001-225000000"   "BAF-20-13000001-58400000"  </span></span>
-<span><span class="co">#&gt; [27] "BAF-20-1-13000000"          "BAF-21-1-42600000"         </span></span>
-<span><span class="co">#&gt; [29] "BAF-22-1-49400000"          "BAF-3-1-75500000"          </span></span>
-<span><span class="co">#&gt; [31] "BAF-3-75500001-192300000"   "BAF-4-108500001-138500000" </span></span>
+<span><span class="co">#&gt; [23] "BAF-2-88500001-99000000"    "BAF-2-99000001-237300000"  </span></span>
+<span><span class="co">#&gt; [25] "BAF-20-13000001-58400000"   "BAF-20-1-13000000"         </span></span>
+<span><span class="co">#&gt; [27] "BAF-21-1-42600000"          "BAF-22-1-49400000"         </span></span>
+<span><span class="co">#&gt; [29] "BAF-3-181000001-192300000"  "BAF-3-1-75500000"          </span></span>
+<span><span class="co">#&gt; [31] "BAF-3-75500001-181000000"   "BAF-4-108500001-138500000" </span></span>
 <span><span class="co">#&gt; [33] "BAF-4-138500001-176000000"  "BAF-4-176000001-187100000" </span></span>
 <span><span class="co">#&gt; [35] "BAF-4-1-47500000"           "BAF-4-47500001-108500000"  </span></span>
 <span><span class="co">#&gt; [37] "BAF-5-1-51000000"           "BAF-5-51000001-176600000"  </span></span>
 <span><span class="co">#&gt; [39] "BAF-6-154000001-164500000"  "BAF-6-1-24000000"          </span></span>
 <span><span class="co">#&gt; [41] "BAF-6-24000001-65500000"    "BAF-6-65500001-154000000"  </span></span>
 <span><span class="co">#&gt; [43] "BAF-7-1-26000000"           "BAF-7-26000001-62000000"   </span></span>
-<span><span class="co">#&gt; [45] "BAF-7-62000001-81500000"    "BAF-7-81500001-155100000"  </span></span>
-<span><span class="co">#&gt; [47] "BAF-8-1-75000000"           "BAF-8-75000001-139900000"  </span></span>
-<span><span class="co">#&gt; [49] "BAF-9-1-137400000"          "BAF-X-1-147100000"</span></span>
-<span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-3-75500001-192300000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">#&gt; [45] "BAF-7-62000001-155100000"   "BAF-8-1-75000000"          </span></span>
+<span><span class="co">#&gt; [47] "BAF-8-75000001-139900000"   "BAF-9-1-137400000"         </span></span>
+<span><span class="co">#&gt; [49] "BAF-X-1-147100000"</span></span>
+<span><span class="va">largest_segment</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">chr</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">segs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"^BAF-"</span>, <span class="va">chr</span>, <span class="st">"-"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">x</span><span class="op">@</span><span class="va">assays</span><span class="op">$</span><span class="va">segBAF</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="va">pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">segs</span>, <span class="st">"-"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">segs</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">pos</span><span class="op">[</span>, <span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">pos</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">seg3</span> <span class="op">&lt;-</span> <span class="fu">largest_segment</span><span class="op">(</span><span class="st">"3"</span><span class="op">)</span></span>
+<span><span class="va">seg10</span> <span class="op">&lt;-</span> <span class="fu">largest_segment</span><span class="op">(</span><span class="st">"10"</span><span class="op">)</span></span>
+<span><span class="va">seg2</span> <span class="op">&lt;-</span> <span class="fu">largest_segment</span><span class="op">(</span><span class="st">"2"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">seg3</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-10-1-97000000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">seg10</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-2-99000001-225000000"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">seg2</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="fu">scBAFstate_cols</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-20-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/VlnPlot.html" class="external-link">VlnPlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="st">"BAF-2-99000001-225000000"</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ylab</a></span><span class="op">(</span><span class="st">"BAF"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/VlnPlot.html" class="external-link">VlnPlot</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">seg2</span>, group.by <span class="op">=</span> <span class="st">"DP_cloneid"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ylab</a></span><span class="op">(</span><span class="st">"BAF"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ASCN-RNA_files/figure-html/unnamed-chunk-21-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can also pull out the allelic imbalance in individual genes. Let’s
 look at some genes on 4p, where one group of cells is homozygous. Most
