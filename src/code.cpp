@@ -34,11 +34,12 @@ NumericVector viterbi(NumericMatrix emission, NumericMatrix transition, NumericV
 
   NumericVector MLP (numObs);
 
-  MLP (numObs - 1) = T2 (which_max(T1 (_ , numObs - 1)) , numObs - 1);
+  // Take the best final state, then follow the backpointer chain (T2) from each
+  // decoded state. For numObs == 1 this returns argmax(T1(_,0)) without touching T2.
+  MLP (numObs - 1) = which_max(T1 (_ , numObs - 1));
 
   for(int i = numObs - 1; i > 0; i--){
-    int zm = which_max( T1 ( _, i));
-    MLP (i - 1) = T2 (zm, i);
+    MLP (i - 1) = T2 ((int) MLP (i), i);
   }
 
   return(MLP);

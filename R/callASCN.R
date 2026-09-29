@@ -47,6 +47,11 @@ alleleHMM <- function(n,
                       eps = 1e-12,
                       rho = 0.0,
                       likelihood = "binomial") {
+
+  # hack to avoid 0/0 numerical errors (mirrors HaplotypeHMM): a homozygous
+  # deletion bin (total CN 0) would otherwise give minor_cn/0 -> NaN emissions
+  # for every state, which propagate -Inf through the rest of the chromosome.
+  binstates[binstates == 0] <- 1
   minor_cn_mat <- t(replicate(length(binstates), minor_cn))
   total_cn_mat <- replicate(length(minor_cn), binstates)
 
