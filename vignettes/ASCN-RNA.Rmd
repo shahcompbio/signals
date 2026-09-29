@@ -172,21 +172,31 @@ This means all the Seurat functionality is available to analyse the allele speci
 DimPlot(x, group.by = "DP_cloneid")
 ```
 
+Segment boundaries come from the scDNA consensus above, so rather than hardcode feature names we pick the largest segment on each chromosome of interest.
+
 ```{r}
 rownames(x@assays$segBAF)
-FeaturePlot(x, "BAF-3-75500001-181000000") + scale_color_gradientn(colors = scBAFstate_cols())
+largest_segment <- function(chr) {
+  segs <- grep(paste0("^BAF-", chr, "-"), rownames(x@assays$segBAF), value = TRUE)
+  pos <- do.call(rbind, strsplit(segs, "-"))
+  segs[which.max(as.numeric(pos[, 4]) - as.numeric(pos[, 3]))]
+}
+seg3 <- largest_segment("3")
+seg10 <- largest_segment("10")
+seg2 <- largest_segment("2")
+FeaturePlot(x, seg3) + scale_color_gradientn(colors = scBAFstate_cols())
 ```
 
 ```{r}
-FeaturePlot(x, "BAF-10-1-97000000") + scale_color_gradientn(colors = scBAFstate_cols())
+FeaturePlot(x, seg10) + scale_color_gradientn(colors = scBAFstate_cols())
 ```
 
 ```{r}
-FeaturePlot(x, "BAF-2-99000001-225000000") + scale_color_gradientn(colors = scBAFstate_cols())
+FeaturePlot(x, seg2) + scale_color_gradientn(colors = scBAFstate_cols())
 ```
 
 ```{r}
-VlnPlot(x, "BAF-2-99000001-225000000", group.by = "DP_cloneid") + ylab("BAF")
+VlnPlot(x, seg2, group.by = "DP_cloneid") + ylab("BAF")
 
 ```
 
