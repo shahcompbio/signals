@@ -184,14 +184,14 @@ dataframes. We find for this data that the results are very similar.</p>
 <span><span class="co">#&gt;  [3] "Component \"totalcounts\": 'is.NA' value mismatch: 14554 in current 14537 in target"</span></span>
 <span><span class="co">#&gt;  [4] "Component \"BAF\": 'is.NA' value mismatch: 14554 in current 14537 in target"        </span></span>
 <span><span class="co">#&gt;  [5] "Component \"state_min\": Mean relative difference: 0.6283041"                       </span></span>
-<span><span class="co">#&gt;  [6] "Component \"A\": Mean relative difference: 0.3741811"                               </span></span>
-<span><span class="co">#&gt;  [7] "Component \"B\": Mean relative difference: 0.5468369"                               </span></span>
-<span><span class="co">#&gt;  [8] "Component \"state_AS_phased\": 7893 string mismatches"                              </span></span>
+<span><span class="co">#&gt;  [6] "Component \"A\": Mean relative difference: 0.3738565"                               </span></span>
+<span><span class="co">#&gt;  [7] "Component \"B\": Mean relative difference: 0.5462495"                               </span></span>
+<span><span class="co">#&gt;  [8] "Component \"state_AS_phased\": 7902 string mismatches"                              </span></span>
 <span><span class="co">#&gt;  [9] "Component \"state_AS\": 2423 string mismatches"                                     </span></span>
 <span><span class="co">#&gt; [10] "Component \"LOH\": 1978 string mismatches"                                          </span></span>
-<span><span class="co">#&gt; [11] "Component \"phase\": 5341 string mismatches"                                        </span></span>
-<span><span class="co">#&gt; [12] "Component \"state_phase\": 6326 string mismatches"                                  </span></span>
-<span><span class="co">#&gt; [13] "Component \"state_BAF\": Mean relative difference: 0.7576512"</span></span></code></pre></div>
+<span><span class="co">#&gt; [11] "Component \"phase\": 5350 string mismatches"                                        </span></span>
+<span><span class="co">#&gt; [12] "Component \"state_phase\": 6335 string mismatches"                                  </span></span>
+<span><span class="co">#&gt; [13] "Component \"state_BAF\": Mean relative difference: 0.7569649"</span></span></code></pre></div>
 <p>Another thing we can check is the total number of segments identified
 by the HMM. Using the beta-binomial model should reduce the influence of
 any noisy regions and thus we might expect fewer segments. We do observe
@@ -204,7 +204,7 @@ fewer segments in the beta-binomial model.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">segs</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 36082     5</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">segs_bb</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 32641     5</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 32642     5</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
