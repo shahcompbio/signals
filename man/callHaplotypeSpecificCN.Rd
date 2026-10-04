@@ -34,7 +34,8 @@ callHaplotypeSpecificCN(
   chr_cell_list = NULL,
   chrs_for_global_phasing = NULL,
   female = TRUE,
-  seed = NULL
+  seed = NULL,
+  min_propA = 0
 )
 }
 \arguments{
@@ -93,6 +94,8 @@ callHaplotypeSpecificCN(
 \item{female}{Default is \code{TRUE}, if set to \code{FALSE} and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state}
 
 \item{seed}{Random seed for the stochastic steps of phasing: the subsampling in \code{min_cells} that sets the cluster size, the UMAP embedding used to pick phasing cells per chromosome, and the subsampling in the beta-binomial fit. Default \code{NULL}, which leaves these unseeded and means repeated runs on identical input can select different cells to phase a chromosome with, and so can return different haplotype-specific states. Set it to make a run reproducible.}
+
+\item{min_propA}{Minimum proportion of imbalanced bins a cluster must have before it is used to phase a unit, default \code{0} (no floor, the previous behaviour). The per-unit cell selection takes the most imbalanced cluster however weak it is, so a chromosome where nothing is imbalanced still gets a phasing driven by noise in one small cluster. Raising this makes such units fall back to pooling every cell. The best proportion seen per unit is reported either way.}
 
 \item{viterbiver}{Version of viterbi algorithm to use (cpp or R)}
 

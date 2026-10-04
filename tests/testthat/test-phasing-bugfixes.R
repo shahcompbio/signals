@@ -32,3 +32,19 @@ test_that("total copy number is not changed to repair the alleles", {
   expect_equal(fixed$A + fixed$B, fixed$state)    # and now consistent
   expect_true(all(fixed$A >= 0) && all(fixed$B >= 0))
 })
+
+test_that("min_propA defaults to off so existing results are unchanged", {
+  expect_equal(formals(callHaplotypeSpecificCN)$min_propA, 0)
+  expect_equal(formals(signals:::get_cells_per_chr_local)$min_propA, 0)
+  expect_equal(formals(signals:::proportion_imbalance)$min_propA, 0)
+})
+
+test_that("min_propA gates on the best cluster's propA", {
+  # the floor replaces which.max(propA) with a fallback to every cell
+  gate <- function(propA, min_propA) !is.na(propA) && propA < min_propA
+  expect_false(gate(0.40, 0))      # off by default, nothing is ever gated
+  expect_false(gate(0.00, 0))
+  expect_true(gate(0.03, 0.05))    # weak unit is gated once a floor is set
+  expect_false(gate(0.40, 0.05))   # a genuinely imbalanced unit is not
+  expect_false(gate(NA, 0.05))     # no clusters at all is not "unphaseable"
+})

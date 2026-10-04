@@ -449,7 +449,8 @@ get_cells_per_chr_local <- function(ascn,
                                     ncells_for_clustering,
                                     field = "state_BAF",
                                     phasebyarm = FALSE,
-                                    seed = NULL) {
+                                    seed = NULL,
+                                    min_propA = 0) {
 
   # Cluster cells within each phasing unit. The unit is the whole chromosome by
   # default, or the chromosome arm when phasebyarm = TRUE.
@@ -468,6 +469,8 @@ get_cells_per_chr_local <- function(ascn,
   }
 
   chrlist <- list()
+  bestpropA <- list()
+  unphaseable <- character(0)
   units <- unique(ascn$unit)
   for (myunit in units) {
     message(paste0("Clustering ", ifelse(phasebyarm, "chromosome arm ", "chromosome "), myunit))
@@ -512,11 +515,28 @@ get_cells_per_chr_local <- function(ascn,
       ), by = .(unit, clone_id)]
     prop <- prop[order(propA, propModestate, ncells, propLOH, n, decreasing = TRUE)]
     prop <- prop[prop[, .I[which.max(propA)], by = unit]$V1]
+    bestpropA[[myunit]] <- prop$propA[1]
+
+    if (!is.na(prop$propA[1]) && prop$propA[1] < min_propA){
+      # Nothing here is measurably imbalanced, so there is no information to
+      # phase on. Taking which.max(propA) regardless would emit a confident but
+      # arbitrary phasing derived from one small cluster; pooling every cell
+      # instead is the honest default and keeps all blocks covered.
+      message(paste0("  ", myunit, ": best cluster has propA ", prop$propA[1],
+                     " < ", min_propA, ", using all cells (unphaseable)"))
+      unphaseable <- c(unphaseable, myunit)
+      chrlist[[myunit]] <- unique(ascn_chr$cell_id)
+      next
+    }
     cells <- dplyr::filter(clust, clone_id == prop$clone_id[1]) %>%
       dplyr::pull(cell_id)
     chrlist[[myunit]] <- cells
   }
 
+  # attach the diagnostic regardless of whether min_propA was active, so an
+  # unphaseable unit is identifiable rather than silently indistinguishable
+  attr(chrlist, "propA") <- unlist(bestpropA)
+  attr(chrlist, "unphaseable") <- unphaseable
   return(chrlist)
 }
 
@@ -530,7 +550,8 @@ proportion_imbalance <- function(ascn,
                                  mincells = 5,
                                  overwritemincells = NULL,
                                  cluster_per_chr = TRUE,
-                                 seed = NULL) {
+                                 seed = NULL,
+                                 min_propA = 0) {
   ncells <- length(unique(ascn$cell_id))
   if (is.null(overwritemincells)) {
     ncells_for_clustering <- min_cells(haplotypes,
@@ -552,7 +573,8 @@ proportion_imbalance <- function(ascn,
                                        ncells_for_clustering,
                                        field = field,
                                        phasebyarm = phasebyarm,
-                                       seed = seed
+                                       seed = seed,
+                                       min_propA = min_propA
     )
   } else {
     chrlist <- get_cells_per_chr_global(ascn,
@@ -564,7 +586,9 @@ proportion_imbalance <- function(ascn,
                                         seed = seed
     )
   }
-  return(list(chrlist = chrlist, propdf = propdf))
+  return(list(chrlist = chrlist, propdf = propdf,
+              propA = attr(chrlist, "propA"),
+              unphaseable = attr(chrlist, "unphaseable")))
 }
 
 prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE) {
@@ -743,6 +767,14 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param female Default is `TRUE`, if set to `FALSE` and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state
 #' @param seed Random seed for the stochastic steps of phasing: the subsampling in `min_cells` that sets the cluster size, the UMAP embedding used to pick phasing cells per chromosome, and the subsampling in the beta-binomial fit. Default `NULL`, which leaves these unseeded and means repeated runs on identical input can select different cells to phase a chromosome with, and so can return different haplotype-specific states. Set it to make a run reproducible.
 #'
+#' @param min_propA Minimum proportion of imbalanced bins a cluster must have
+#' before it is used to phase a unit, default `0` (no floor, the previous
+#' behaviour). The per-unit cell selection takes the most imbalanced cluster
+#' however weak it is, so a chromosome where nothing is imbalanced still gets a
+#' phasing driven by noise in one small cluster. Raising this makes such units
+#' fall back to pooling every cell. The best proportion seen per unit is
+#' reported either way.
+#'
 #' @return Haplotype specific copy number object 
 #' 
 #' @details The haplotype specific copy number object include the following additional columns
@@ -802,7 +834,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     chr_cell_list = NULL,
                                     chrs_for_global_phasing = NULL,
                                     female = TRUE,
-                                    seed = NULL) {
+                                    seed = NULL,
+                                    min_propA = 0) {
   # Validate input data.frames
 
   validate_cnbins(CNbins)
@@ -981,15 +1014,20 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     clustering_method = clustering_method,
                                     overwritemincells = overwritemincells,
                                     cluster_per_chr = cluster_per_chr,
-                                    seed = seed
+                                    seed = seed,
+                                    min_propA = min_propA
     )
     propdf <- chrlist$propdf
+    phasing_propA <- chrlist$propA
+    unphaseable <- chrlist$unphaseable
     chrlist <- chrlist$chrlist
   } else{
     message("Using user provided cell list for phasing chromosomes")
     #use the user provided list of cells to use for phasing
     chrlist <- chr_cell_list
     propdf <- NULL
+    phasing_propA <- NULL
+    unphaseable <- character(0)
     
     #check user provided chrcellist contains info for all chromosomes
     check_chr <- all(names(chr_cell_list) %in% unique(ascn_filt$chr))
