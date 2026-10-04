@@ -48,3 +48,51 @@ test_that("min_propA gates on the best cluster's propA", {
   expect_false(gate(0.40, 0.05))   # a genuinely imbalanced unit is not
   expect_false(gate(NA, 0.05))     # no clusters at all is not "unphaseable"
 })
+
+make_haplotypes <- function(nblocks = 6, cells = c("A", "B"), chr = "1",
+                            bin = 5e5, blocks_per_bin = 3) {
+  data.table::rbindlist(lapply(cells, function(cid) {
+    data.table::data.table(
+      cell_id = cid, chr = chr,
+      hap_label = seq_len(nblocks) - 1L,
+      start = (floor((seq_len(nblocks) - 1L) / blocks_per_bin) * bin) + 1,
+      allele0 = 5L, allele1 = 1L)
+  }))[, end := start + bin - 1][]
+}
+
+test_that("blocks with no counts in the selected cells are still phased", {
+  h <- make_haplotypes(nblocks = 6, cells = c("A", "B"))
+  # the selected cell has no coverage of blocks 4 and 5
+  h <- h[!(cell_id == "A" & hap_label %in% c(4L, 5L))]
+  ph <- signals:::phase_with_fallback(h, cells = "A")
+  expect_equal(nrow(ph), 6L)
+  expect_false(any(is.na(ph$phase)))
+  expect_setequal(ph$hap_label, 0:5)
+})
+
+test_that("uncovered blocks take the all-cell majority", {
+  h <- make_haplotypes(nblocks = 2, cells = c("A", "B"))
+  h <- h[!(cell_id == "A" & hap_label == 1L)]
+  # flip cell B's uncovered block so the fallback is distinguishable
+  h[cell_id == "B" & hap_label == 1L, `:=`(allele0 = 1L, allele1 = 5L)]
+  ph <- signals:::phase_with_fallback(h, cells = "A")
+  expect_equal(ph[hap_label == 0L]$phase, "allele1")  # allele0 5 > allele1 1
+  expect_equal(ph[hap_label == 1L]$phase, "allele0")  # from cell B
+})
+
+test_that("phase_haplotypes_bychr keeps every block in every branch", {
+  h <- make_haplotypes(nblocks = 6, cells = c("A", "B"), chr = "1")
+  h <- h[!(cell_id == "A" & hap_label %in% c(4L, 5L))]
+  nblocks_in <- nrow(unique(h[, c("chr", "start", "end", "hap_label"), with = FALSE]))
+
+  ph_plain <- phase_haplotypes_bychr(ascn = NULL, haplotypes = h,
+                                     chrlist = list("1" = "A"),
+                                     global_phasing_for_balanced = FALSE)
+  expect_equal(nrow(ph_plain), nblocks_in)
+  expect_false(any(is.na(ph_plain$phase)))
+
+  ph_arm <- phase_haplotypes_bychr(ascn = NULL, haplotypes = h,
+                                   chrlist = list("1p" = "A"), phasebyarm = TRUE)
+  expect_gt(nrow(ph_arm), 0)
+  expect_false(any(is.na(ph_arm$phase)))
+})

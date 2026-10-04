@@ -606,6 +606,40 @@ prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE) {
   return(chrlist)
 }
 
+#' Phase the blocks of one unit, falling back to all cells where needed
+#'
+#' Pools counts over `cells` only, then fills in any block with no counts in
+#' that subset from every cell instead. Such blocks used to be absent from the
+#' phasing table entirely, and the right join in [format_haplotypes()] then
+#' dropped those bins from every cell in the sample, not just from the cells
+#' used to phase.
+#'
+#' @param h Haplotype rows for one phasing unit, all cells.
+#' @param cells Cell ids selected to phase this unit.
+#' @param bins Optional bin/block table to emit; defaults to every
+#'   `chr`/`start`/`end`/`hap_label` seen in `h`.
+#' @return `chr`, `start`, `end`, `hap_label`, `phase`.
+#' @keywords internal
+phase_with_fallback <- function(h, cells, bins = NULL) {
+  allele0 <- allele1 <- a0 <- a1 <- cell_id <- phase <- phase_all <- NULL
+  key <- c("chr", "start", "end", "hap_label")
+  if (is.null(bins)) bins <- unique(h[, key, with = FALSE])
+  if (nrow(bins) == 0) return(cbind(bins, phase = character(0)))
+  pool <- function(x) {
+    out <- x[, list(a0 = sum(allele0), a1 = sum(allele1)), by = key]
+    out[, phase := ifelse(a0 < a1, "allele0", "allele1")]
+    out[, c(key, "phase"), with = FALSE]
+  }
+  out <- pool(h[cell_id %in% cells])[bins, on = key]
+  if (anyNA(out$phase)) {
+    allp <- pool(h)
+    data.table::setnames(allp, "phase", "phase_all")
+    out <- allp[out, on = key]
+    out[is.na(phase), phase := phase_all]
+  }
+  out[, c(key, "phase"), with = FALSE]
+}
+
 #' @export
 phase_haplotypes_bychr <- function(ascn, 
                                    haplotypes, 
@@ -614,6 +648,7 @@ phase_haplotypes_bychr <- function(ascn,
                                    global_phasing_for_balanced = TRUE,
                                    chrs_for_global_phasing = NULL) {
   
+  chrarm <- NULL
   haplotypes <- as.data.table(haplotypes)
   
   #use all chromosomes if null
@@ -625,10 +660,8 @@ phase_haplotypes_bychr <- function(ascn,
     haplotypes$chrarm <- paste0(haplotypes$chr, coord_to_arm(haplotypes$chr, haplotypes$start))
     phased_haplotypes <- data.table()
     for (i in names(chrlist)) {
-      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chrarm == i] %>%
-        .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-        .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-        .[, c("allele1", "allele0") := NULL]
+      phased_haplotypes_temp <- phase_with_fallback(haplotypes[chrarm == i],
+                                                    chrlist[[i]])
       phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
     }
   } else if (global_phasing_for_balanced == TRUE) {
@@ -640,32 +673,26 @@ phase_haplotypes_bychr <- function(ascn,
         dplyr::filter(state_phase == "Balanced")
       if (i %in% chrs_for_global_phasing){ 
         #phase haplotypes in diploid region using cells in cluster
-        phased_haplotypes_temp1 <- haplotypes[cell_id %in% chrlist[[i]] & chr == i & !(start %in% consensus_cn$start)] %>%
-          .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-          .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-          .[, c("allele1", "allele0") := NULL]
+        hi <- haplotypes[chr == i]
+        bins_i <- unique(hi[, c("chr", "start", "end", "hap_label"), with = FALSE])
+        phased_haplotypes_temp1 <- phase_with_fallback(
+          hi, chrlist[[i]], bins = bins_i[!(start %in% consensus_cn$start)])
         #phase haplotypes in diploid region using all cells
-        phased_haplotypes_temp2 <- haplotypes[chr == i & (start %in% consensus_cn$start)] %>%
-          .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-          .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-          .[, c("allele1", "allele0") := NULL]
+        phased_haplotypes_temp2 <- phase_with_fallback(
+          hi, unique(hi$cell_id), bins = bins_i[start %in% consensus_cn$start])
         phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp1)
         phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp2)
       } else{
-        phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chr == i] %>%
-          .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-          .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-          .[, c("allele1", "allele0") := NULL]
+        phased_haplotypes_temp <- phase_with_fallback(haplotypes[chr == i],
+                                                      chrlist[[i]])
         phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
       }
     } 
   } else {
     phased_haplotypes <- data.table()
     for (i in names(chrlist)) {
-      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chr == i] %>%
-        .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-        .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-        .[, c("allele1", "allele0") := NULL]
+      phased_haplotypes_temp <- phase_with_fallback(haplotypes[chr == i],
+                                                    chrlist[[i]])
       phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
     } 
   }
