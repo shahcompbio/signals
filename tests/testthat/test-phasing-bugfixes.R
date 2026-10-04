@@ -96,3 +96,63 @@ test_that("phase_haplotypes_bychr keeps every block in every branch", {
   expect_gt(nrow(ph_arm), 0)
   expect_false(any(is.na(ph_arm$phase)))
 })
+
+test_that("a block spanning two bins gets a single phase", {
+  h <- data.table::data.table(
+    cell_id = "A", chr = "1", hap_label = 0L,
+    start = c(1, 500001), end = c(500000, 1000000),
+    # counts disagree bin by bin, so per-bin phasing would give two answers
+    allele0 = c(1L, 9L), allele1 = c(8L, 1L))
+  ph <- phase_haplotypes(h)
+  expect_equal(nrow(ph), 2L)                    # both bins still reported
+  expect_equal(length(unique(ph$phase)), 1L)    # with the same phase
+  # pooled counts are allele0 = 10 > allele1 = 9, so the phase is allele1
+  expect_true(all(ph$phase == "allele1"))
+})
+
+test_that("per-bin phasing really would have disagreed", {
+  h <- data.table::data.table(
+    cell_id = "A", chr = "1", hap_label = 0L,
+    start = c(1, 500001), end = c(500000, 1000000),
+    allele0 = c(1L, 9L), allele1 = c(8L, 1L))
+  perbin <- h[, list(a0 = sum(allele0), a1 = sum(allele1)),
+              by = c("chr", "start", "end", "hap_label")]
+  perbin[, phase := ifelse(a0 < a1, "allele0", "allele1")]
+  expect_equal(length(unique(perbin$phase)), 2L)
+})
+
+test_that("the global_phasing_for_balanced branch keeps one phase per block", {
+  BIN <- 5e5; nbins <- 6; bpb <- 2; nblocks <- nbins * bpb
+  cells <- c("pA", "pB", "o1", "o2")
+  h <- data.table::rbindlist(lapply(cells, function(cid) data.table::data.table(
+    cell_id = cid, chr = "1", hap_label = seq_len(nblocks) - 1L,
+    start = (floor((seq_len(nblocks) - 1L) / bpb) * BIN) + 1,
+    allele0 = 4L, allele1 = 1L)))
+  h[, end := start + BIN - 1]
+  # block 3 straddles a bin boundary, so it appears in two bins
+  h <- rbind(h, data.table::copy(h[hap_label == 3L])[, `:=`(start = start + BIN,
+                                                            end = end + BIN)])
+  # blocks 10 and 11 have no coverage in the cells used to phase
+  h <- h[!(cell_id %in% c("pA", "pB") & hap_label %in% c(10L, 11L))]
+
+  ascn <- data.table::rbindlist(lapply(cells, function(cid) data.table::data.table(
+    cell_id = cid, chr = "1", start = (seq_len(nbins) - 1) * BIN + 1,
+    end = seq_len(nbins) * BIN, state = c(2, 2, 2, 3, 3, 3),
+    A = c(1, 1, 1, 2, 2, 2), B = 1, copy = c(2, 2, 2, 3, 3, 3))))
+  ascn[, `:=`(state_AS_phased = paste0(A, "|", B), state_min = pmin(A, B),
+              state_phase = ifelse(A == B, "Balanced", "A-Gained"),
+              state_AS = paste0(A, "|", B), LOH = ifelse(B == 0, "LOH", "NO"),
+              BAF = B / state, alleleA = 10L, alleleB = 5L, totalcounts = 15L)]
+
+  bins_in <- unique(h[, c("chr", "start", "end", "hap_label"), with = FALSE])
+  ph <- phase_haplotypes_bychr(ascn = ascn, haplotypes = data.table::copy(h),
+                               chrlist = list("1" = c("pA", "pB")),
+                               global_phasing_for_balanced = TRUE,
+                               chrs_for_global_phasing = "1")
+
+  expect_equal(nrow(ph), nrow(bins_in))   # nothing dropped, nothing duplicated
+  expect_equal(sum(duplicated(ph[, c("chr", "start", "end", "hap_label"), with = FALSE])), 0L)
+  expect_false(any(is.na(ph$phase)))
+  expect_equal(length(unique(ph[hap_label == 3L]$phase)), 1L)
+  expect_true(all(c(10L, 11L) %in% ph$hap_label))
+})

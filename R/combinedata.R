@@ -152,10 +152,12 @@ format_haplotypes <- function(haplotypes,
 #' @seealso [computehaplotypecounts()] for alternative phasing using top imbalanced cells
 #' @export
 phase_haplotypes <- function(haplotypes) {
-  phased_haplotypes <- data.table::as.data.table(haplotypes) %>%
-    .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-    .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-    .[, c("allele1", "allele0") := NULL]
+  # A haplotype block is (chr, hap_label); grouping by bin as well gave a block
+  # split across two bins two independent phases. Pool the block's counts, decide
+  # once, then map the phase back onto each bin it spans.
+  h <- data.table::as.data.table(haplotypes)
+  bins <- unique(h[, c("chr", "start", "end", "hap_label"), with = FALSE])
+  phased_haplotypes <- phase_with_fallback(h, unique(h$cell_id), bins = bins)
 
   return(phased_haplotypes)
 }

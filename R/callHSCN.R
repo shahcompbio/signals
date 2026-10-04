@@ -621,23 +621,36 @@ prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE) {
 #' @return `chr`, `start`, `end`, `hap_label`, `phase`.
 #' @keywords internal
 phase_with_fallback <- function(h, cells, bins = NULL) {
-  allele0 <- allele1 <- a0 <- a1 <- cell_id <- phase <- phase_all <- NULL
+  cell_id <- phase <- phase_all <- NULL
   key <- c("chr", "start", "end", "hap_label")
   if (is.null(bins)) bins <- unique(h[, key, with = FALSE])
   if (nrow(bins) == 0) return(cbind(bins, phase = character(0)))
-  pool <- function(x) {
-    out <- x[, list(a0 = sum(allele0), a1 = sum(allele1)), by = key]
-    out[, phase := ifelse(a0 < a1, "allele0", "allele1")]
-    out[, c(key, "phase"), with = FALSE]
-  }
-  out <- pool(h[cell_id %in% cells])[bins, on = key]
+  out <- phase_one_per_block(h[cell_id %in% cells])[bins, on = c("chr", "hap_label")]
   if (anyNA(out$phase)) {
-    allp <- pool(h)
+    allp <- phase_one_per_block(h)
     data.table::setnames(allp, "phase", "phase_all")
-    out <- allp[out, on = key]
+    out <- allp[out, on = c("chr", "hap_label")]
     out[is.na(phase), phase := phase_all]
   }
   out[, c(key, "phase"), with = FALSE]
+}
+
+#' Decide one phase per haplotype block
+#'
+#' A haplotype block is identified by `chr` + `hap_label`. The 500kb binning
+#' splits a block across two bins whenever it straddles a boundary, and deciding
+#' a phase per (block, bin) then gives one block two phases - 84 of 6477 blocks
+#' on one test chromosome. Pool the block's counts across its bins and decide
+#' once; the caller maps the answer back onto the bins it spans.
+#'
+#' @param h Haplotype rows with `chr`, `hap_label`, `allele0`, `allele1`.
+#' @return `chr`, `hap_label`, `phase` - one row per block.
+#' @keywords internal
+phase_one_per_block <- function(h) {
+  allele0 <- allele1 <- a0 <- a1 <- phase <- NULL
+  perblock <- h[, list(a0 = sum(allele0), a1 = sum(allele1)), by = c("chr", "hap_label")]
+  perblock[, phase := ifelse(a0 < a1, "allele0", "allele1")]
+  perblock[, c("chr", "hap_label", "phase"), with = FALSE]
 }
 
 #' @export
@@ -648,7 +661,7 @@ phase_haplotypes_bychr <- function(ascn,
                                    global_phasing_for_balanced = TRUE,
                                    chrs_for_global_phasing = NULL) {
   
-  chrarm <- NULL
+  bal <- bal_bin <- chrarm <- NULL
   haplotypes <- as.data.table(haplotypes)
   
   #use all chromosomes if null
@@ -674,12 +687,20 @@ phase_haplotypes_bychr <- function(ascn,
       if (i %in% chrs_for_global_phasing){ 
         #phase haplotypes in diploid region using cells in cluster
         hi <- haplotypes[chr == i]
+        # Assign each block to the balanced or imbalanced side by a majority of
+        # its bins. Splitting bin by bin gave a block spanning the boundary one
+        # phase from the cluster and another from all cells.
         bins_i <- unique(hi[, c("chr", "start", "end", "hap_label"), with = FALSE])
+        bins_i[, bal_bin := start %in% consensus_cn$start]
+        blockbal <- bins_i[, list(bal = mean(bal_bin) > 0.5), by = c("chr", "hap_label")]
+        bins_i <- blockbal[bins_i, on = c("chr", "hap_label")]
         phased_haplotypes_temp1 <- phase_with_fallback(
-          hi, chrlist[[i]], bins = bins_i[!(start %in% consensus_cn$start)])
+          hi, chrlist[[i]],
+          bins = bins_i[bal == FALSE, c("chr", "start", "end", "hap_label"), with = FALSE])
         #phase haplotypes in diploid region using all cells
         phased_haplotypes_temp2 <- phase_with_fallback(
-          hi, unique(hi$cell_id), bins = bins_i[start %in% consensus_cn$start])
+          hi, unique(hi$cell_id),
+          bins = bins_i[bal == TRUE, c("chr", "start", "end", "hap_label"), with = FALSE])
         phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp1)
         phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp2)
       } else{
