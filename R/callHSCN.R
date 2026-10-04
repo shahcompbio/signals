@@ -488,7 +488,14 @@ get_cells_per_chr_local <- function(ascn,
                    dplyr::mutate(clone_id = paste0(1:dplyr::n())))
     }
 
-    prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
+    # Drop the hdbscan noise cluster before ranking, as get_cells_per_chr_global
+    # already does. Without this the default path can select the outlier
+    # grab-bag as the set that phases a unit. If every cell landed in it, keep
+    # them all rather than returning nothing.
+    clust <- as.data.table(cl$clustering)
+    if (any(clust$clone_id != "0")) clust <- clust[clone_id != "0"]
+
+    prop <- ascn_chr[clust, on = "cell_id", nomatch = 0] %>%
       .[, list(
         propA = round(sum(balance) / .N, 2),
         n = sum(balance),
@@ -505,7 +512,7 @@ get_cells_per_chr_local <- function(ascn,
       ), by = .(unit, clone_id)]
     prop <- prop[order(propA, propModestate, ncells, propLOH, n, decreasing = TRUE)]
     prop <- prop[prop[, .I[which.max(propA)], by = unit]$V1]
-    cells <- dplyr::filter(cl$clustering, clone_id == prop$clone_id[1]) %>%
+    cells <- dplyr::filter(clust, clone_id == prop$clone_id[1]) %>%
       dplyr::pull(cell_id)
     chrlist[[myunit]] <- cells
   }
