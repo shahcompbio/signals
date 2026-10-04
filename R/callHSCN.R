@@ -1091,12 +1091,14 @@ callHaplotypeSpecificCN <- function(CNbins,
       dplyr::group_by(chr, cell_id) %>% 
       tidyr::fill( c("A", "B"), .direction = "up")  %>% 
       dplyr::ungroup() %>% 
-      #sometimes if there is a singleton bin with a different state even the above doesn't catch
-      #all A + B >state, in this case change the state. This isn't ideal, very hacky
-      dplyr::mutate(state = ifelse(A + B > state, NA, state),
-                    A = ifelse(is.na(state), NA, A),
-                    B = ifelse(is.na(A), NA, B)) %>% 
-      tidyr::fill( c("state", "A", "B"), .direction = "up")
+      # Any A + B > state still left after filling is an allele-specific
+      # inconsistency, so fix the alleles rather than the total. Previously this
+      # set `state` to NA and filled it from a neighbour, which meant total copy
+      # number in the output was not always the HMMcopy input - it silently
+      # became a function of the phasing.
+      dplyr::mutate(B = ifelse(!is.na(A) & !is.na(B) & !is.na(state) & (A + B) > state,
+                               pmax(pmin(B, state), 0), B)) %>%
+      dplyr::mutate(A = ifelse(!is.na(B) & !is.na(state), state - B, A))
     #add 0|0 states for  hom deletions
     out[["data"]] <- out[["data"]] %>% 
       dplyr::mutate(A = ifelse(state == 0, 0, A)) %>% 

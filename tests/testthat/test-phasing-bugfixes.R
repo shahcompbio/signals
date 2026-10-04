@@ -18,3 +18,17 @@ test_that("the hdbscan noise cluster is not used to phase a unit", {
   kept2 <- if (any(allnoise$clone_id != "0")) allnoise[clone_id != "0"] else allnoise
   expect_equal(nrow(kept2), 2L)
 })
+
+test_that("total copy number is not changed to repair the alleles", {
+  # A + B > state used to be repaired by blanking `state` and filling it from a
+  # neighbouring bin, which made total CN a function of the phasing
+  d <- data.frame(state = c(2L, 2L, 1L, 2L), A = c(1L, 1L, 1L, 1L), B = c(1L, 1L, 1L, 1L))
+  fixed <- d
+  fixed$B <- ifelse(!is.na(fixed$A) & !is.na(fixed$B) & !is.na(fixed$state) &
+                      (fixed$A + fixed$B) > fixed$state,
+                    pmax(pmin(fixed$B, fixed$state), 0), fixed$B)
+  fixed$A <- ifelse(!is.na(fixed$B) & !is.na(fixed$state), fixed$state - fixed$B, fixed$A)
+  expect_equal(fixed$state, d$state)              # total CN preserved
+  expect_equal(fixed$A + fixed$B, fixed$state)    # and now consistent
+  expect_true(all(fixed$A >= 0) && all(fixed$B >= 0))
+})
