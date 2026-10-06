@@ -51,7 +51,7 @@ callAlleleSpecificCN(
 
 \item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins}
 
-\item{seed}{Random seed for the subsampling in the beta-binomial fit, which determines the binomial vs beta-binomial choice when \code{likelihood = "auto"}. Default \code{NULL} (unseeded).}
+\item{seed}{Random seed for the subsampling in the beta-binomial fit, which determines the binomial vs beta-binomial choice when `likelihood = "auto"`. Default `NULL` (unseeded).}
 }
 \value{
 allele specific copy number object which includes dataframe similar to input with additional columns which include

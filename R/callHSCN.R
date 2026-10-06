@@ -1,4 +1,62 @@
 #' Run Viterbi HMM for haplotype-specific copy number inference
+#' Build allele-aware transition matrices
+#'
+#' The HMM state is the B allele copy number, with `A = total - B`, so the flat
+#' transition matrix over B makes "B unchanged" the cheap self-transition and
+#' gives "A unchanged" no standing at all. `1|1 -> 2|1` is therefore cheap while
+#' `1|1 -> 1|2` is expensive, purely because of how the state space is
+#' parameterised rather than for any biological reason.
+#'
+#' This replaces that with a cost counting how many alleles change,
+#' `1[dA != 0] + 1[dB != 0]`, which is symmetric in A and B. The cost depends on
+#' the change in total copy number between the two bins, so it is
+#' position-dependent: within a stretch of constant total CN, `dA = -dB` and the
+#' cost is 0 or 2, reproducing the existing matrix exactly. Only transitions
+#' across a total copy number change behave differently, where a one-allele
+#' change (cost 1) is preferred over a two-allele change (cost 2) - so
+#' `2|1 -> 0|1` is favoured over `2|1 -> 1|0`.
+#'
+#' Weights interpolate the existing two in log space, `w(0) = p`,
+#' `w(2) = (1 - p) / (K - 1)` and `w(1)` their geometric mean, so
+#' `selftransitionprob` remains the only parameter. Rows are normalised.
+#'
+#' @param binstates Total copy number per bin.
+#' @param minor_cn The B allele values indexing the state space.
+#' @param selftransitionprob Probability of staying in the same state; `0` gives
+#'   a uniform matrix, matching the existing IID behaviour.
+#' @return `transition`, a `K x K x M` array of log probabilities, and `tidx`,
+#'   the slice to use for each of the `length(binstates) - 1` transitions.
+#' @keywords internal
+allele_aware_transitions <- function(binstates, minor_cn, selftransitionprob) {
+  K <- length(minor_cn)
+  nt <- max(length(binstates) - 1L, 0L)
+
+  uniform <- function() {
+    a <- array(log(1 / K), dim = c(K, K, 1))
+    list(transition = a, tidx = rep(1L, nt))
+  }
+  if (K < 2 || selftransitionprob == 0.0) return(uniform())
+
+  # change in total copy number across each transition; the cost depends only on
+  # this, and it takes few distinct values, so one slice per distinct value
+  ds <- if (nt > 0) diff(binstates) else 0
+  uds <- sort(unique(ds))
+  tidx <- if (nt > 0) match(ds, uds) else integer(0)
+
+  lself <- log(selftransitionprob)
+  lother <- log((1 - selftransitionprob) / (K - 1))
+  dB <- outer(minor_cn, minor_cn, function(i, j) j - i)   # rows from, cols to
+
+  slices <- lapply(uds, function(d) {
+    cost <- (d - dB != 0) + (dB != 0)
+    lw <- (1 - cost / 2) * lself + (cost / 2) * lother
+    # normalise each row to sum to 1 in probability space
+    lw - apply(lw, 1, function(r) Reduce(logspace_addcpp, r))
+  })
+  list(transition = array(unlist(slices), dim = c(K, K, length(uds))),
+       tidx = tidx)
+}
+
 #'
 #' Applies a Hidden Markov Model with Viterbi decoding to infer the most likely
 #' sequence of minor allele copy number states given observed B-allele frequencies.
@@ -43,7 +101,8 @@ HaplotypeHMM <- function(n,
                          likelihood = "binomial",
                          rho = 0.0,
                          Abias = 0.0,
-                         viterbiver = "cpp") {
+                         viterbiver = "cpp",
+                         allele_aware = FALSE) {
   
   #hack to avoid 0/0 numerical errors
   binstates[binstates == 0] <- 1
@@ -94,14 +153,21 @@ HaplotypeHMM <- function(n,
     row.names(transition_prob) <- paste0(minor_cn)
   }
   
-  res <- viterbi(l, log(transition_prob),
-                 observations = seq_len(length(binstates))
-  )
-  
-  if (viterbiver == "R") {
-    res <- viterbiR(l, log(transition_prob),
-                    observations = seq_len(length(binstates))
-    )
+  obs <- seq_len(length(binstates))
+  if (allele_aware) {
+    # position-dependent: the cost of a transition depends on how total copy
+    # number changes between the two bins, so the matrix varies along the
+    # chromosome. Identical to the flat matrix wherever total CN is constant.
+    tr <- allele_aware_transitions(binstates, minor_cn, selftransitionprob)
+    if (viterbiver == "R") {
+      res <- viterbiR_pd(l, tr$transition, tr$tidx, observations = obs)
+    } else {
+      res <- viterbi_pd(l, tr$transition, tr$tidx, observations = obs)
+    }
+  } else if (viterbiver == "R") {
+    res <- viterbiR(l, log(transition_prob), observations = obs)
+  } else {
+    res <- viterbi(l, log(transition_prob), observations = obs)
   }
   
   return(list(minorcn = res, l = l))
@@ -141,7 +207,8 @@ assignHaplotypeHMM <- function(CNBAF,
                                likelihood = "binomial",
                                rho = 0.0,
                                Abias = 0.0,
-                               viterbiver = "cpp") {
+                               viterbiver = "cpp",
+                               allele_aware = FALSE) {
   if (!is.null(pb)) {
     pb$tick()$print()
   }
@@ -159,7 +226,8 @@ assignHaplotypeHMM <- function(CNBAF,
       rho = rho,
       likelihood = likelihood,
       Abias = Abias,
-      viterbiver = viterbiver
+      viterbiver = viterbiver,
+      allele_aware = allele_aware
     )
     minorcn_res <- c(minorcn_res, hmmresults$minorcn)
   }
@@ -224,7 +292,8 @@ callalleleHMMcell <- function(CNBAF,
                                       likelihood = "binomial",
                                       rho = 0.0,
                                       Abias = 0.0,
-                                      viterbiver = "cpp") {
+                                      viterbiver = "cpp",
+                                      allele_aware = FALSE) {
   
   chr <- start <- cell_id <- state_min <- A <- B <- state <- state_AS <- NULL
   state_AS_phased <- LOH <- phase <- state_BAF <- state_phase <- NULL
@@ -253,7 +322,8 @@ callalleleHMMcell <- function(CNBAF,
                                                                               rho = rho,
                                                                               Abias = Abias,
                                                                               pb = pb,
-                                                                              viterbiver = viterbiver
+                                                                              viterbiver = viterbiver,
+                                                                              allele_aware = allele_aware
                                                            )
                                                          },
                                                          mc.cores = ncores
@@ -272,7 +342,8 @@ callalleleHMMcell <- function(CNBAF,
                            Abias = Abias,
                            selftransitionprob = selftransitionprob,
                            pb = pb,
-                           viterbiver = viterbiver
+                           viterbiver = viterbiver,
+                           allele_aware = allele_aware
         )
       }
     )) %>%
@@ -823,6 +894,17 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' fall back to pooling every cell. The best proportion seen per unit is
 #' reported either way.
 #'
+#' @param allele_aware Use an allele-aware transition cost in the HMM,
+#' default `FALSE` (the existing flat matrix). The HMM state is the B allele
+#' copy number with `A = state - B`, so a flat matrix over B makes "B
+#' unchanged" the cheap self-transition and gives "A unchanged" no standing:
+#' `1|1 -> 2|1` is cheap while `1|1 -> 1|2` is expensive, for no reason beyond
+#' how the state space is parameterised. Setting this scores a transition by
+#' how many alleles change, `1[dA != 0] + 1[dB != 0]`, which is symmetric in A
+#' and B. Wherever total copy number is constant the two are identical, so only
+#' transitions across a copy number change are affected, where a one-allele
+#' change is preferred - `2|1 -> 0|1` over `2|1 -> 1|0`.
+#'
 #' @return Haplotype specific copy number object 
 #' 
 #' @details The haplotype specific copy number object include the following additional columns
@@ -883,7 +965,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     chrs_for_global_phasing = NULL,
                                     female = TRUE,
                                     seed = NULL,
-                                    min_propA = 0) {
+                                    min_propA = 0,
+                                    allele_aware = FALSE) {
   # Validate input data.frames
 
   validate_cnbins(CNbins)
@@ -1007,7 +1090,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     selftransitionprob = selftransitionprob,
                                     progressbar = progressbar,
                                     ncores = ncores,
-                                    viterbiver = viterbiver
+                                    viterbiver = viterbiver,
+                                    allele_aware = allele_aware
   )
   
   if (firstpassfiltering & is.null(phased_haplotypes)){
@@ -1139,7 +1223,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                          ncores = ncores,
                                          likelihood = likelihood,
                                          rho = bbfit$rho,
-                                         viterbiver = viterbiver
+                                         viterbiver = viterbiver,
+                                         allele_aware = allele_aware
   )
   
   # Output
