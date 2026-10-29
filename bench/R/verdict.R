@@ -5,10 +5,10 @@
 #
 #   Rscript bench/R/verdict.R <allele_counts.csv.gz> <cn_source> <out.rds>
 #
-# <cn_source> is any file with cell_id, chr, start, state. Use the HMMcopy reads
-# file, so the verdict depends only on raw inputs and is identical for every
-# method being scored. (A signals output works too, and is how the verdict
-# cached during the original analysis was built.)
+# <cn_source> is any file with cell_id, chr, start, state. Use the output of a
+# signals run that passes both hard gates (bench/R/score.R): its cells are the
+# QC-passing set and its state equals the HMMcopy input, so it is the same for
+# every method. Do NOT use the raw HMMcopy reads - see the warning below.
 #
 # The statistic marginalises the unknown block phase, so it uses no phasing at
 # all and its answer cannot move when the phasing changes:
@@ -27,7 +27,16 @@
 #     event, and saturates once a method gets every determined pair right
 #   - assumes one orientation per cell per arm; a genuine mid-arm switch dilutes
 #     z toward 0 (a strong |z| is trustworthy, a weak one is not evidence)
-#   - takes the first 30 candidate cells per arm, in file order
+#   - takes the first 30 candidate cells per arm, IN FILE ORDER. This makes the
+#     set of pairs tested an accident of row order, and it is the weakest part
+#     of the apparatus. Measured on S1: building from the raw HMMcopy reads
+#     instead of a signals output (920 cells vs 726 QC-passing, interleaved)
+#     changed the determined pairs from 1751 to 1167, with only 1087 in common,
+#     and the opposite-parent pairs from 78 to 4. Not one of the five arms where
+#     relabelling was shown to fail (1p 2q 5q 9q 18p) kept a determined pair -
+#     so that defect would have been invisible. The statistic itself is stable:
+#     zero verdicts flip among pairs both versions determine. See PLAN.md for
+#     the fix (evidence-ranked, QC-restricted selection).
 
 local({
   f <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE))

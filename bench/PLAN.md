@@ -124,6 +124,22 @@ saturated. Truth has to come from simulation.
 - **validation:** the consolidated scorer must reproduce every number already
   reported for S1 runs 13, 14, 17, 18, 19, 20 and S2 runs 3, 4
 
+### Step 1b — fix pair selection in the verdict
+
+Found while validating step 1: `verdict.R` takes the first 30 candidate cells
+per arm in file order, so the set of pairs tested is an accident of row order.
+Rebuilding the S1 verdict from the raw HMMcopy reads rather than a signals
+output dropped the opposite-parent pairs from 78 to 4, and left no determined
+pair on any of the five arms where relabelling had been shown to fail. The
+statistic itself is stable (zero flips among shared pairs); the selection is
+not.
+
+Fix: restrict candidates to QC-passing cells, then rank by phase-free imbalance
+evidence (`lr` from the symmetric mixture) rather than file order, and report
+how many opposite-parent pairs the panel contains - a panel with few cannot
+detect the failure mode that matters most. Changing this changes every
+historical number, so re-score history and report old and new side by side.
+
 ### Step 2 — semi-synthetic generator
 
 `bench/R/simulate.R`: template a real dataset's geometry and depth, inject a

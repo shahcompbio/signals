@@ -14,8 +14,9 @@ needs the signals container image.
 # one-off: say where the data is
 cp bench/datasets.example.tsv bench/datasets.tsv      # then edit
 
-# one-off per dataset: the phase-free verdict (minutes; cached)
-Rscript bench/R/verdict.R <allelecounts> <hmmcopy_reads> bench/cache/S1.verdict.rds
+# one-off per dataset: the phase-free verdict (minutes; cached). Build it from a
+# signals output that passes both gates - NOT the raw HMMcopy reads; see below
+Rscript bench/R/verdict.R <allelecounts> test_data/hscn_19.csv.gz bench/cache/S1.verdict.rds
 
 # run a configuration on a dataset (needs an image: dev/build-dev-image.sh)
 bench/run.sh c2 S1 --dry-run        # show the command and provenance
@@ -76,6 +77,29 @@ most 1.7% elsewhere. 14p is an acrocentric arm with almost no haplotype data, so
 its calls there come almost entirely from the transition prior. A change that
 moves calls mainly where there is no data to be right about is not evidence of
 being more right.
+
+## Known flaw: which pairs get tested is fragile
+
+`verdict.R` tests the first 30 candidate cells per arm **in file order**. The
+statistic is stable - among pairs two versions both determine, zero verdicts
+flip - but *which* pairs are tested is an accident of row order.
+
+Measured on S1, building the verdict from the raw HMMcopy reads instead of a
+signals output (920 cells including 194 that fail QC, versus 726) changed:
+
+| | from signals output | from HMMcopy reads |
+|---|---|---|
+| determined pairs | 1751 | 1167 (1087 shared) |
+| opposite-parent pairs | 78 | 4 |
+| arms of the relabelling failures with any determined pair | 5 of 5 | **0 of 5** |
+
+So the measurement that showed relabelling collapses opposite-parent pairs
+would have shown nothing. The finding stands - those pairs are genuinely
+determined - but the panel's power to detect it depended on the cut.
+
+Until selection is fixed, build verdicts from a gated signals output and treat
+the opposite-parent pair count as part of the result: a panel with few
+opposite-parent pairs cannot detect that failure mode.
 
 ## Provenance
 
