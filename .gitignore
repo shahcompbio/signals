@@ -19,3 +19,8 @@ docs
 CLAUDE.md
 articles/
 sandbox/
+
+# benchmark: local data paths (sample names), cached verdicts, run outputs
+bench/datasets.tsv
+bench/cache/
+bench/results/

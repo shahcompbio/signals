@@ -1,0 +1,16 @@
+# Runs made before this harness existed, so they can be scored alongside new
+# ones. Flags are taken from the command*.sh files, not from memory. "fixes"
+# records which package/script fixes the run had - the same flags meant
+# different things at different times.
+dataset	label	path	config	fixes	notes
+S1	r5	test_data/hscn_5.csv.gz	rephase_relabel	none	first end-to-end run of the rephasing path
+S1	r13	test_data/hscn_13.csv.gz	arm_rephase_relabel	none	best result before joint phasing
+S1	r14	test_data/hscn_14.csv.gz	c2	none	command file also passes --relabel_unsupported_phase, but at this script version relabelling only ran under --rephase_by_imbalance, so it was inert here. Confirmed by the data: 0 bins with A+B > state, the signature of relabel_core
+S1	r17	test_data/hscn_17.csv.gz	c2_relabel	none	relabelling now applies under joint phasing
+S1	r18	test_data/hscn_18.csv.gz	c2_relabel	B3 B4 B5 B7 B8	package fixes in; relabel_core still had its copy-values bug, so A+B != state in 2484 bins
+S1	r19	test_data/hscn_19.csv.gz	c2	B3 B4 B5 B7 B8	recommended configuration
+S1	r20	test_data/hscn_20.csv.gz	c2_allele_aware	B3 B4 B5 B7 B8 B2	allele-aware transitions; signals:dev image
+S2	r1	test_data2/hscn_1.csv.gz	arm_rephase_relabel	none	
+S2	c2	test_data2/hscn_c2.csv.gz	c2	none	run without --phase_llr_min / --phase_min_frac
+S2	r3	test_data2/hscn_3.csv.gz	c2	B3 B4 B5 B7 B8	run without --phase_llr_min / --phase_min_frac
+S2	r4	test_data2/hscn_4.csv.gz	c2_allele_aware	B3 B4 B5 B7 B8 B2	run without --phase_llr_min / --phase_min_frac
