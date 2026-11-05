@@ -112,7 +112,7 @@ saturated. Truth has to come from simulation.
 
 ## Steps
 
-### Step 1 — commit the apparatus and the real-data panel *(in progress)*
+### Step 1 — commit the apparatus and the real-data panel *(done)*
 
 - `bench/R/common.R` — readers, arm assignment from signals' own cytoband map
 - `bench/R/verdict.R` — phase-free pairwise verdict, cached per dataset
@@ -124,21 +124,25 @@ saturated. Truth has to come from simulation.
 - **validation:** the consolidated scorer must reproduce every number already
   reported for S1 runs 13, 14, 17, 18, 19, 20 and S2 runs 3, 4
 
-### Step 1b — fix pair selection in the verdict
+### Step 1b — fix pair selection in the verdict *(done)*
 
-Found while validating step 1: `verdict.R` takes the first 30 candidate cells
-per arm in file order, so the set of pairs tested is an accident of row order.
-Rebuilding the S1 verdict from the raw HMMcopy reads rather than a signals
-output dropped the opposite-parent pairs from 78 to 4, and left no determined
-pair on any of the five arms where relabelling had been shown to fail. The
-statistic itself is stable (zero flips among shared pairs); the selection is
-not.
+Validating step 1 showed the set of pairs the verdict tests was an accident of
+input. Rebuilt from the raw HMMcopy reads rather than a signals output, the S1
+panel lost its determined pairs on all five arms where relabelling was known to
+fail.
 
-Fix: restrict candidates to QC-passing cells, then rank by phase-free imbalance
-evidence (`lr` from the symmetric mixture) rather than file order, and report
-how many opposite-parent pairs the panel contains - a panel with few cannot
-detect the failure mode that matters most. Changing this changes every
-historical number, so re-score history and report old and new side by side.
+The cause was mainly QC-failed cells, not the file-order cut alone: they look
+non-diploid and strongly imbalanced on every arm, flooding those arms with
+114-120 candidates instead of 10-11, so evidence ranking could not have screened
+them out. Fixed by restricting candidates to QC-passing cells and sampling
+across bands of `q` on arms over the cap (`strat`). Chosen on the one defect
+known on real data: `strat` catches all 8 known relabelling failures on S1, as
+every rule does, and 48 on S2 against 2-3 for the alternatives.
+
+Re-scoring history reverses no conclusion, but S2's relabelled run turns out to
+get 48 of 52 opposite-parent pairs wrong where the old panel showed 2 of 5. The
+old panel had too few opposite-parent pairs to see it; `score.R` now warns when a
+panel has fewer than 20.
 
 ### Step 2 — semi-synthetic generator
 

@@ -14,8 +14,9 @@ needs the signals container image.
 # one-off: say where the data is
 cp bench/datasets.example.tsv bench/datasets.tsv      # then edit
 
-# one-off per dataset: the phase-free verdict (minutes; cached). Build it from a
-# signals output that passes both gates - NOT the raw HMMcopy reads; see below
+# one-off per dataset: the phase-free verdict (minutes; cached). Candidates are
+# drawn from the copy number source's cells, so it must be QC-filtered: a signals
+# output that passes both gates, or the HMMcopy reads plus --cells
 Rscript bench/R/verdict.R <allelecounts> test_data/hscn_19.csv.gz bench/cache/S1.verdict.rds
 
 # run a configuration on a dataset (needs an image: dev/build-dev-image.sh)
@@ -78,30 +79,66 @@ its calls there come almost entirely from the transition prior. A change that
 moves calls mainly where there is no data to be right about is not evidence of
 being more right.
 
-## Known flaw: which pairs get tested is fragile
+## How the verdict chooses pairs
 
-`verdict.R` tests the first 30 candidate cells per arm **in file order**. The
-statistic is stable - among pairs two versions both determine, zero verdicts
-flip - but *which* pairs are tested is an accident of row order.
+The verdict can only test pairs among the cells it selects, so selection
+decides what the panel can detect. Two rules matter.
 
-Measured on S1, building the verdict from the raw HMMcopy reads instead of a
-signals output (920 cells including 194 that fail QC, versus 726) changed:
+**Candidates must be QC-passing cells.** QC-failed cells look non-diploid on
+every arm, so they pass the candidate filter everywhere, and they also look
+strongly imbalanced (on S1: median `q` 0.21 at a tenth of the depth of real
+candidates, against 0.36). Built from the raw HMMcopy reads, the S1 arms where
+relabelling fails had 114-120 candidates instead of 10-11; the original
+first-30-in-file-order cut kept almost none of the real ones and no determined
+pair survived on any of those arms. Ranking by evidence does not screen them out
+either. `verdict.R` warns when a source looks unfiltered: 0% of candidates lack
+allele counts for a QC-passing source, 27% for the raw reads.
 
-| | from signals output | from HMMcopy reads |
+**On arms with more than 30 candidates, sample across imbalance states.** The
+default, `strat`, takes cells round-robin across bands of `q`, which picks up
+different subclones - and that is where opposite-parent pairs, the ones
+relabelling collapses, come from. Judged by the one defect known on real data
+(runs that differ only by relabelling), on how many known failures each rule
+catches:
+
+| rule | S1 | S2 |
 |---|---|---|
-| determined pairs | 1751 | 1167 (1087 shared) |
-| opposite-parent pairs | 78 | 4 |
-| arms of the relabelling failures with any determined pair | 5 of 5 | **0 of 5** |
+| first 30 in file order (original) | 8 | 2 |
+| `hash` (stable pseudo-random) | 8 | 3 |
+| `lr` (strongest imbalance first) | 8 | 3 |
+| **`strat`** (default) | **8** | **48** |
 
-So the measurement that showed relabelling collapses opposite-parent pairs
-would have shown nothing. The finding stands - those pairs are genuinely
-determined - but the panel's power to detect it depended on the cut.
+The count of opposite-parent pairs is not the criterion: `lr` had the most on
+S1 but the weakest separation, since many of its extra pairs are ones
+relabelling does not break.
 
-Until selection is fixed, build verdicts from a gated signals output and treat
-the opposite-parent pair count as part of the result: a panel with few
-opposite-parent pairs cannot detect that failure mode.
+**Effect on history.** Re-scoring all ten historical runs against the new panel
+reverses no conclusion - the order of configurations is unchanged on both
+samples - but it shows relabelling did far more damage on S2 than the old panel
+could see:
+
+| | old panel | new panel |
+|---|---|---|
+| S1 r17/r18 (relabelled), opposite-parent pairs wrong | 8 of 78 | 8 of 103 |
+| S1 r14/r19/r20 | 0 | 0 |
+| **S2 r1 (relabelled), opposite-parent pairs wrong** | **2 of 5** | **48 of 52** |
+| S2 c2/r3/r4 | 0 | 0 |
+
+The old caches are kept as `cache/S*.verdict.v0.rds`.
+
+**Permutation noise.** 40 permutations estimate the null's spread noisily:
+reseeding flips 1.4% of verdicts on S1, all with `|z| < 6`. Each pair is now
+seeded from its own identity, so a panel is exactly reproducible and every
+method is scored against the same pairs - but which borderline pairs are in the
+panel is partly chance.
 
 ## Provenance
+
+Never edit a script while it is running. R reads a script lazily, one expression
+at a time from a byte offset, so an edit mid-run makes it resume at the wrong
+place - this happened twice while building this panel. `run.sh` therefore runs a
+snapshot of `run_signals.R` taken at launch and keeps it beside the results.
+
 
 `run.sh` keys each output by the signals commit (`-dirty` if `R/`, `src/`,
 `DESCRIPTION` or `NAMESPACE` have uncommitted changes) **and** a hash of the
@@ -125,6 +162,8 @@ The repository is public, so nothing identifying is committed:
 The scorer and verdict were checked against every number previously reported for
 S1 runs 13, 14, 17, 18, 19, 20 and S2 runs r1, c2, r3, r4: pairwise and
 opposite-parent agreement, `A + B != state`, segments, isolated bins and
-breakpoint moves all reproduce exactly. `verdict.R` reproduces the original S2
-verdict exactly (2,626 pairs, maximum `|z|` difference 0). Arm assignment agrees
-with `signals::coord_to_arm()` on all 4,375 DLP bins.
+breakpoint moves all reproduce exactly. `verdict.R --select file` reproduces both
+original verdicts exactly (S1 4,039 and S2 2,626 pairs, maximum `|z|` difference
+0). The `strat` panels are exactly reproducible across runs, and with `--cells`
+are identical whether built from a signals output or the raw HMMcopy reads. Arm
+assignment agrees with `signals::coord_to_arm()` on all 4,375 DLP bins.

@@ -52,7 +52,12 @@ lab <- ifelse(grepl("=", runs), sub("=.*", "", runs), sub("\\.csv(\\.gz)?$", "",
 paths <- sub("^[^=]*=", "", runs)
 
 V <- readRDS(opt$verdict)[verdict != "undetermined"]
-message(sprintf("verdict: %d determined pairs across %d arms", nrow(V), uniqueN(V$unit)))
+nopp <- sum(V$verdict == "opposite parents")
+message(sprintf("verdict: %d determined pairs across %d arms, %d opposite-parent",
+                nrow(V), uniqueN(V$unit), nopp))
+if (nopp < 20)
+  message(sprintf(paste("NOTE: only %d opposite-parent pairs. Relabelling-type failures collapse",
+                        "exactly these, so this panel has little power to detect them."), nopp))
 inp <- if (!is.null(opt$input)) {
   message("reading input states: ", opt$input)
   fread(opt$input, select = c("cell_id", "chr", "start", "state"),

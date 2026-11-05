@@ -10,7 +10,7 @@ S1	r17	test_data/hscn_17.csv.gz	c2_relabel	none	relabelling now applies under jo
 S1	r18	test_data/hscn_18.csv.gz	c2_relabel	B3 B4 B5 B7 B8	package fixes in; relabel_core still had its copy-values bug, so A+B != state in 2484 bins
 S1	r19	test_data/hscn_19.csv.gz	c2	B3 B4 B5 B7 B8	recommended configuration
 S1	r20	test_data/hscn_20.csv.gz	c2_allele_aware	B3 B4 B5 B7 B8 B2	allele-aware transitions; signals:dev image
-S2	r1	test_data2/hscn_1.csv.gz	arm_rephase_relabel	none	
+S2	r1	test_data2/hscn_1.csv.gz	arm_rephase_relabel	none	48 of 52 opposite-parent pairs wrong on the current panel; the original panel had only 5 such pairs and showed 2
 S2	c2	test_data2/hscn_c2.csv.gz	c2	none	run without --phase_llr_min / --phase_min_frac
 S2	r3	test_data2/hscn_3.csv.gz	c2	B3 B4 B5 B7 B8	run without --phase_llr_min / --phase_min_frac
 S2	r4	test_data2/hscn_4.csv.gz	c2_allele_aware	B3 B4 B5 B7 B8 B2	run without --phase_llr_min / --phase_min_frac

@@ -12,6 +12,7 @@
 #
 # Output: bench/results/<dataset>/<config>/<signals-sha>_<script-sha>/
 #   hscn.csv.gz, qc.csv, confidence.csv, heatmap.png, ...   the run
+#   run_signals.R the exact script that ran (a snapshot taken at launch)
 #   meta.tsv      flags, image, both shas, wall time, exit code
 #   metrics.csv   bench/R/score.R on this run
 #   run.log       stdout/stderr
@@ -64,8 +65,12 @@ IMAGE_ID="${IMAGE_ID:7:12}"; IMAGE_ID="${IMAGE_ID:-missing}"
 OUT="$B/results/$DATASET/$CONFIG/${SIG_SHA}_${SCRIPT_SHA}"
 
 SHARED="--seed 42 --viterbiver cpp --mincells 2 --ncores 5 --sex $SEX"
+# R reads a script lazily, one expression at a time, so editing it during an
+# hour-long run corrupts the run. Execute a snapshot taken at launch instead -
+# which also leaves the exact script beside its results.
+SNAP="$OUT/run_signals.R"
 CMD=(docker run --rm --platform linux/x86_64 -w "$OUT" -v "$REPO:$REPO" "$IMAGE"
-     Rscript "$SCRIPT" $SHARED $FLAGS
+     Rscript "$SNAP" $SHARED $FLAGS
      --hmmcopyqc "$DDIR/$QC" --hmmcopyreads "$DDIR/$READS" --allelecounts "$DDIR/$COUNTS"
      --rephase_report "$OUT/confidence.csv"
      --qcplot "$OUT/qcplot.png" --heatmap "$OUT/heatmap.png" --heatmapraw "$OUT/heatmapraw.png"
@@ -83,6 +88,7 @@ if [ -f "$OUT/hscn.csv.gz" ]; then
   echo "already run for this code version - delete $OUT to rerun" >&2; exit 0
 fi
 mkdir -p "$OUT"
+cp "$SCRIPT" "$SNAP"
 
 # --- run ------------------------------------------------------------------------
 T0=$(date +%s); set +e

@@ -6,10 +6,30 @@ setDTthreads(0)
 
 BIN <- 5e5
 
-# Directory of the bench/ tree, from wherever the calling script lives.
+# Where this file lives, found from source()'s own frame. Locating bench/ from
+# the *calling* script instead only worked when the caller sat in bench/R/.
+.common_path <- local({
+  p <- NULL
+  for (i in rev(seq_len(sys.nframe()))) {
+    of <- tryCatch(get("ofile", envir = sys.frame(i), inherits = FALSE),
+                   error = function(e) NULL)
+    if (is.character(of) && basename(of) == "common.R") { p <- normalizePath(of); break }
+  }
+  p
+})
+
+# The bench/ tree: SIGNALS_BENCH if set, else beside this file, else the
+# calling script's tree, else bench/ under the working directory.
 bench_dir <- function() {
-  f <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE))
-  if (length(f)) normalizePath(file.path(dirname(f[1]), "..")) else normalizePath("bench")
+  arg <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE))
+  cands <- c(Sys.getenv("SIGNALS_BENCH"),
+             if (!is.null(.common_path)) dirname(dirname(.common_path)),
+             if (length(arg)) file.path(dirname(arg[1]), ".."),
+             "bench")
+  for (d in cands[nzchar(cands)]) {
+    if (file.exists(file.path(d, "data", "arm_boundaries_hg19.csv"))) return(normalizePath(d))
+  }
+  stop("cannot find bench/data/arm_boundaries_hg19.csv; set SIGNALS_BENCH")
 }
 
 # Chromosome arm, using the same rule as signals::coord_to_arm(): a position is
