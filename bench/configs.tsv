@@ -1,0 +1,14 @@
+# Named method configurations for run_signals.R. One per line: name<TAB>flags.
+# Shared flags (--seed 42 --viterbiver cpp --mincells 2 --ncores 5) are added by
+# run.sh, so a configuration lists only what distinguishes it.
+#
+# Several of these are kept to reproduce history, not because they are
+# recommended - see the notes column of history.tsv.
+name	flags
+baseline	
+rephase	--rephase_by_imbalance
+rephase_relabel	--rephase_by_imbalance --relabel_unsupported_phase
+arm_rephase_relabel	--rephase_unit arm --rephase_by_imbalance --relabel_unsupported_phase
+c2	--rephase_unit arm --joint_phasing --joint_iters 4 --phase_llr_min 5 --phase_min_frac 0.5
+c2_relabel	--rephase_unit arm --joint_phasing --joint_iters 4 --phase_llr_min 5 --phase_min_frac 0.5 --relabel_unsupported_phase
+c2_allele_aware	--rephase_unit arm --joint_phasing --joint_iters 4 --phase_llr_min 5 --phase_min_frac 0.5 --allele_aware

@@ -1,0 +1,9 @@
+# Copy to datasets.tsv (gitignored) and fill in. Real sample identifiers are kept
+# out of this public repository.
+#
+# dir        directory holding the inputs, relative to the repository root
+# hmmcopyqc / hmmcopyreads / allelecounts   file names within dir
+# sex        FEMALE or MALE
+# verdict    cached phase-free verdict (bench/R/verdict.R), relative to repo root
+name	dir	hmmcopyqc	hmmcopyreads	allelecounts	sex	verdict
+S1	test_data	<SAMPLE>_hmmcopy_metrics.csv.gz	<SAMPLE>_hmmcopy_reads.csv.gz	haplotype_calling_count.csv.gz	FEMALE	bench/cache/S1.verdict.rds

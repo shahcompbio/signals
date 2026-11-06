@@ -49,9 +49,13 @@ test_that("Test filtering segments", {
   expect_true(segs_filt %>% dplyr::mutate(w = end - start) %>% dplyr::pull(w) %>% min() > 10e6)
 })
 
-bins <- segments_to_bins(segs_cn, binsize = 0.5e6)
-bin_cell_id <- paste(bins$cell_id, bins$chr, bins$start, bins$end, sep = "_")
 test_that("Test segments to bins", {
+  # segments_to_bins() goes through plyranges, which is only in Suggests. Called
+  # at the top level of the file this errored out the whole suite wherever
+  # plyranges was absent, rather than skipping the one test that needs it.
+  skip_if_not_installed("plyranges")
+  bins <- segments_to_bins(segs_cn, binsize = 0.5e6)
+  bin_cell_id <- paste(bins$cell_id, bins$chr, bins$start, bins$end, sep = "_")
   expect_lt(dim(segs_cn)[1], dim(bins)[1])
   expect_equal(median((bins$end - bins$start) + 1), 0.5e6)
   expect_true(all(!duplicated(bin_cell_id))) #no duplicates

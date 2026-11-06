@@ -1,0 +1,19 @@
+# Rebuild only the signals package on top of an existing image.
+#
+# The main Dockerfile installs ~20 dependencies and needs a GitHub token for
+# pak. When only the package source has changed, deriving from an image that
+# already has those dependencies is far cheaper and needs no secret - it just
+# recompiles src/ and reinstalls.
+#
+#   dev/build-dev-image.sh [tag]      # default signals:dev
+FROM signals:latest
+COPY DESCRIPTION NAMESPACE /usr/src/signals-dev/
+COPY R /usr/src/signals-dev/R
+COPY src /usr/src/signals-dev/src
+COPY man /usr/src/signals-dev/man
+COPY data /usr/src/signals-dev/data
+RUN rm -f /usr/src/signals-dev/src/*.o /usr/src/signals-dev/src/*.so && \
+    R CMD INSTALL --no-multiarch /usr/src/signals-dev && \
+    Rscript -e 'stopifnot(exists("viterbi_pd", where = asNamespace("signals")))' && \
+    Rscript -e 'stopifnot("allele_aware" %in% names(formals(signals::callHaplotypeSpecificCN)))'
+WORKDIR /usr/src

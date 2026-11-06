@@ -1,0 +1,14 @@
+# keep the multi-GB test datasets and build cruft out of the docker build
+# context; without this `COPY .` in Dockerfile pulls in ~6GB
+test_data/
+test_data2/
+signals_isabl/
+bench/results/
+bench/cache/
+docs/
+.git/
+*.Rdata
+*.csv.gz
+*.png
+src/*.o
+src/*.so
