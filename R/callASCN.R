@@ -259,6 +259,8 @@ switch_alleles <- function(cn) {
 #' @details
 #' In the allele specific copy number inference A is always > B and state_AS_phased == state_AS
 #'
+#' @param seed Random seed for the subsampling in the beta-binomial fit, which determines the binomial vs beta-binomial choice when `likelihood = "auto"`. Default `NULL` (unseeded).
+#'
 #' @export
 callAlleleSpecificCN <- function(CNbins,
                                  haplotypes,
@@ -273,7 +275,8 @@ callAlleleSpecificCN <- function(CNbins,
                                  minbinschr = 10,
                                  maxloherror = 0.03,
                                  filterhaplotypes = 0.1,
-                                 fillmissing = TRUE) {
+                                 fillmissing = TRUE,
+                                 seed = NULL) {
   # Validate input data.frames
   validate_cnbins(CNbins)
   validate_haplotypes(haplotypes, formatted = TRUE)
@@ -348,7 +351,7 @@ callAlleleSpecificCN <- function(CNbins,
   infloherror <- min(infloherror, maxloherror) # ensure loh error rate is < maxloherror
 
   if (likelihood == "betabinomial" | likelihood == "auto") {
-    bbfit <- fitBB(hscn)
+    bbfit <- fitBB(hscn, seed = seed)
     if (bbfit$taronesZ > 5) {
       likelihood <- "betabinomial"
       message(paste0(

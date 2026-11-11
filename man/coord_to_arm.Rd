@@ -22,8 +22,6 @@ to determine chromosome arms. Allowed options are "hg38", hg19", "hg18", "hg17"
 and "hg16" (corresponding to the five latest human genome annotations in the
 UCSC genome browser).}
 
-\item{full}{}
-
 \item{mergesmallarms}{for very small acrocentric arms just use chromosome}
 }
 \value{

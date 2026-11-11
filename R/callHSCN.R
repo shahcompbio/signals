@@ -1,4 +1,62 @@
 #' Run Viterbi HMM for haplotype-specific copy number inference
+#' Build allele-aware transition matrices
+#'
+#' The HMM state is the B allele copy number, with `A = total - B`, so the flat
+#' transition matrix over B makes "B unchanged" the cheap self-transition and
+#' gives "A unchanged" no standing at all. `1|1 -> 2|1` is therefore cheap while
+#' `1|1 -> 1|2` is expensive, purely because of how the state space is
+#' parameterised rather than for any biological reason.
+#'
+#' This replaces that with a cost counting how many alleles change,
+#' `1[dA != 0] + 1[dB != 0]`, which is symmetric in A and B. The cost depends on
+#' the change in total copy number between the two bins, so it is
+#' position-dependent: within a stretch of constant total CN, `dA = -dB` and the
+#' cost is 0 or 2, reproducing the existing matrix exactly. Only transitions
+#' across a total copy number change behave differently, where a one-allele
+#' change (cost 1) is preferred over a two-allele change (cost 2) - so
+#' `2|1 -> 0|1` is favoured over `2|1 -> 1|0`.
+#'
+#' Weights interpolate the existing two in log space, `w(0) = p`,
+#' `w(2) = (1 - p) / (K - 1)` and `w(1)` their geometric mean, so
+#' `selftransitionprob` remains the only parameter. Rows are normalised.
+#'
+#' @param binstates Total copy number per bin.
+#' @param minor_cn The B allele values indexing the state space.
+#' @param selftransitionprob Probability of staying in the same state; `0` gives
+#'   a uniform matrix, matching the existing IID behaviour.
+#' @return `transition`, a `K x K x M` array of log probabilities, and `tidx`,
+#'   the slice to use for each of the `length(binstates) - 1` transitions.
+#' @keywords internal
+allele_aware_transitions <- function(binstates, minor_cn, selftransitionprob) {
+  K <- length(minor_cn)
+  nt <- max(length(binstates) - 1L, 0L)
+
+  uniform <- function() {
+    a <- array(log(1 / K), dim = c(K, K, 1))
+    list(transition = a, tidx = rep(1L, nt))
+  }
+  if (K < 2 || selftransitionprob == 0.0) return(uniform())
+
+  # change in total copy number across each transition; the cost depends only on
+  # this, and it takes few distinct values, so one slice per distinct value
+  ds <- if (nt > 0) diff(binstates) else 0
+  uds <- sort(unique(ds))
+  tidx <- if (nt > 0) match(ds, uds) else integer(0)
+
+  lself <- log(selftransitionprob)
+  lother <- log((1 - selftransitionprob) / (K - 1))
+  dB <- outer(minor_cn, minor_cn, function(i, j) j - i)   # rows from, cols to
+
+  slices <- lapply(uds, function(d) {
+    cost <- (d - dB != 0) + (dB != 0)
+    lw <- (1 - cost / 2) * lself + (cost / 2) * lother
+    # normalise each row to sum to 1 in probability space
+    lw - apply(lw, 1, function(r) Reduce(logspace_addcpp, r))
+  })
+  list(transition = array(unlist(slices), dim = c(K, K, length(uds))),
+       tidx = tidx)
+}
+
 #'
 #' Applies a Hidden Markov Model with Viterbi decoding to infer the most likely
 #' sequence of minor allele copy number states given observed B-allele frequencies.
@@ -43,7 +101,8 @@ HaplotypeHMM <- function(n,
                          likelihood = "binomial",
                          rho = 0.0,
                          Abias = 0.0,
-                         viterbiver = "cpp") {
+                         viterbiver = "cpp",
+                         allele_aware = FALSE) {
   
   #hack to avoid 0/0 numerical errors
   binstates[binstates == 0] <- 1
@@ -94,14 +153,21 @@ HaplotypeHMM <- function(n,
     row.names(transition_prob) <- paste0(minor_cn)
   }
   
-  res <- viterbi(l, log(transition_prob),
-                 observations = seq_len(length(binstates))
-  )
-  
-  if (viterbiver == "R") {
-    res <- viterbiR(l, log(transition_prob),
-                    observations = seq_len(length(binstates))
-    )
+  obs <- seq_len(length(binstates))
+  if (allele_aware) {
+    # position-dependent: the cost of a transition depends on how total copy
+    # number changes between the two bins, so the matrix varies along the
+    # chromosome. Identical to the flat matrix wherever total CN is constant.
+    tr <- allele_aware_transitions(binstates, minor_cn, selftransitionprob)
+    if (viterbiver == "R") {
+      res <- viterbiR_pd(l, tr$transition, tr$tidx, observations = obs)
+    } else {
+      res <- viterbi_pd(l, tr$transition, tr$tidx, observations = obs)
+    }
+  } else if (viterbiver == "R") {
+    res <- viterbiR(l, log(transition_prob), observations = obs)
+  } else {
+    res <- viterbi(l, log(transition_prob), observations = obs)
   }
   
   return(list(minorcn = res, l = l))
@@ -141,7 +207,8 @@ assignHaplotypeHMM <- function(CNBAF,
                                likelihood = "binomial",
                                rho = 0.0,
                                Abias = 0.0,
-                               viterbiver = "cpp") {
+                               viterbiver = "cpp",
+                               allele_aware = FALSE) {
   if (!is.null(pb)) {
     pb$tick()$print()
   }
@@ -159,7 +226,8 @@ assignHaplotypeHMM <- function(CNBAF,
       rho = rho,
       likelihood = likelihood,
       Abias = Abias,
-      viterbiver = viterbiver
+      viterbiver = viterbiver,
+      allele_aware = allele_aware
     )
     minorcn_res <- c(minorcn_res, hmmresults$minorcn)
   }
@@ -224,7 +292,8 @@ callalleleHMMcell <- function(CNBAF,
                                       likelihood = "binomial",
                                       rho = 0.0,
                                       Abias = 0.0,
-                                      viterbiver = "cpp") {
+                                      viterbiver = "cpp",
+                                      allele_aware = FALSE) {
   
   chr <- start <- cell_id <- state_min <- A <- B <- state <- state_AS <- NULL
   state_AS_phased <- LOH <- phase <- state_BAF <- state_phase <- NULL
@@ -253,7 +322,8 @@ callalleleHMMcell <- function(CNBAF,
                                                                               rho = rho,
                                                                               Abias = Abias,
                                                                               pb = pb,
-                                                                              viterbiver = viterbiver
+                                                                              viterbiver = viterbiver,
+                                                                              allele_aware = allele_aware
                                                            )
                                                          },
                                                          mc.cores = ncores
@@ -272,7 +342,8 @@ callalleleHMMcell <- function(CNBAF,
                            Abias = Abias,
                            selftransitionprob = selftransitionprob,
                            pb = pb,
-                           viterbiver = viterbiver
+                           viterbiver = viterbiver,
+                           allele_aware = allele_aware
         )
       }
     )) %>%
@@ -295,8 +366,14 @@ callalleleHMMcell <- function(CNBAF,
 }
 
 
-min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = 4, samplen = 5) {
+min_cells <- function(haplotypes, minfrachaplotypes = 0.95, mincells = 4, samplen = 5,
+                      seed = NULL) {
   chr <- hap_label <- NULL
+  # the haplotype-retention curve below is built by random subsampling, so the
+  # returned cluster size (and hence minPts) varies between runs unless seeded
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
   nhaps_vec <- c()
   prop_vec <- c()
   prop <- c(0.005, 0.01, 0.02, 0.03, 0.04, 0.05, seq(0.1, 1.0, 0.1))
@@ -388,17 +465,20 @@ get_cells_per_chr_global <- function(ascn,
                                      ncells_for_clustering,
                                      field = "copy",
                                      clustering_method = "copy",
-                                     phasebyarm = FALSE) {
-  
+                                     phasebyarm = FALSE,
+                                     seed = NULL) {
+
   # cluster cells using umap and the "copy" corrected read count value
   if (clustering_method == "copy") {
     cl <- umap_clustering(ascn,
                           minPts = ncells_for_clustering,
-                          field = field
+                          field = field,
+                          seed = seed
     )
   } else {
     cl <- umap_clustering_breakpoints(ascn,
-                                      minPts = ncells_for_clustering
+                                      minPts = ncells_for_clustering,
+                                      seed = seed
     )
   }
   ascn <- as.data.table(dplyr::left_join(ascn, cl$clustering))
@@ -439,48 +519,95 @@ get_cells_per_chr_local <- function(ascn,
                                     haplotypes,
                                     ncells_for_clustering,
                                     field = "state_BAF",
-                                    phasebyarm = FALSE) {
-  
-  # cluster cells per chromosome
-  
+                                    phasebyarm = FALSE,
+                                    seed = NULL,
+                                    min_propA = 0) {
+
+  # Cluster cells within each phasing unit. The unit is the whole chromosome by
+  # default, or the chromosome arm when phasebyarm = TRUE.
+  #
+  # The returned list MUST be keyed by the same unit that
+  # phase_haplotypes_bychr() filters on: it matches names(chrlist) against
+  # `chrarm` when phasebyarm = TRUE and against `chr` otherwise. Keying by
+  # chromosome while phasing by arm matches nothing ("6p" != "6") and silently
+  # yields an empty phasing table.
+
+  ascn <- as.data.table(ascn)
+  if (phasebyarm) {
+    ascn$unit <- paste0(ascn$chr, coord_to_arm(ascn$chr, ascn$start))
+  } else {
+    ascn$unit <- ascn$chr
+  }
+
   chrlist <- list()
-  for (mychr in unique(ascn$chr)) {
-    message(paste0("Clustering chromosome ", mychr))
-    ascn_chr <- as.data.table(ascn)[chr == mychr]
+  bestpropA <- list()
+  unphaseable <- character(0)
+  units <- unique(ascn$unit)
+  for (myunit in units) {
+    message(paste0("Clustering ", ifelse(phasebyarm, "chromosome arm ", "chromosome "), myunit))
+    ascn_chr <- ascn[unit == myunit]
+    # offset the seed per unit so each clustering is reproducible without every
+    # unit sharing an identical RNG state
+    chrseed <- if (is.null(seed)) NULL else seed + match(myunit, units)
     if (ncells_for_clustering > 1){
       cl <- umap_clustering(ascn_chr,
                             n_neighbors = 20,
                             min_dist = 0.001,
                             minPts = ncells_for_clustering,
                             field = "state_BAF",
-                            umapmetric = "euclidean")
+                            umapmetric = "euclidean",
+                            seed = chrseed)
     } else{
-      cl <- list(clustering = data.frame(cell_id = unique(ascn_chr$cell_id)) %>% 
+      cl <- list(clustering = data.frame(cell_id = unique(ascn_chr$cell_id)) %>%
                    dplyr::mutate(clone_id = paste0(1:dplyr::n())))
     }
-    
-    prop <- ascn_chr[as.data.table(cl$clustering), on = "cell_id"] %>%
+
+    # Drop the hdbscan noise cluster before ranking, as get_cells_per_chr_global
+    # already does. Without this the default path can select the outlier
+    # grab-bag as the set that phases a unit. If every cell landed in it, keep
+    # them all rather than returning nothing.
+    clust <- as.data.table(cl$clustering)
+    if (any(clust$clone_id != "0")) clust <- clust[clone_id != "0"]
+
+    prop <- ascn_chr[clust, on = "cell_id", nomatch = 0] %>%
       .[, list(
         propA = round(sum(balance) / .N, 2),
         n = sum(balance),
         propModestate = sum(state == Mode(state)) / .N,
         propLOH = sum(LOH == "LOH") / .N,
         ncells = length(unique(cell_id))
-      ), by = .(chr, cell_id, clone_id)] %>%
+      ), by = .(unit, cell_id, clone_id)] %>%
       .[, list(
         propA = median(propA),
         n = median(n),
         propModestate = median(propModestate),
         propLOH = median(propLOH),
         ncells = median(ncells)
-      ), by = .(chr, clone_id)]
+      ), by = .(unit, clone_id)]
     prop <- prop[order(propA, propModestate, ncells, propLOH, n, decreasing = TRUE)]
-    prop <- prop[prop[, .I[which.max(propA)], by = chr]$V1]
-    cells <- dplyr::filter(cl$clustering, clone_id == prop$clone_id[1]) %>%
+    prop <- prop[prop[, .I[which.max(propA)], by = unit]$V1]
+    bestpropA[[myunit]] <- prop$propA[1]
+
+    if (!is.na(prop$propA[1]) && prop$propA[1] < min_propA){
+      # Nothing here is measurably imbalanced, so there is no information to
+      # phase on. Taking which.max(propA) regardless would emit a confident but
+      # arbitrary phasing derived from one small cluster; pooling every cell
+      # instead is the honest default and keeps all blocks covered.
+      message(paste0("  ", myunit, ": best cluster has propA ", prop$propA[1],
+                     " < ", min_propA, ", using all cells (unphaseable)"))
+      unphaseable <- c(unphaseable, myunit)
+      chrlist[[myunit]] <- unique(ascn_chr$cell_id)
+      next
+    }
+    cells <- dplyr::filter(clust, clone_id == prop$clone_id[1]) %>%
       dplyr::pull(cell_id)
-    chrlist[[mychr]] <- cells
+    chrlist[[myunit]] <- cells
   }
-  
+
+  # attach the diagnostic regardless of whether min_propA was active, so an
+  # unphaseable unit is identifiable rather than silently indistinguishable
+  attr(chrlist, "propA") <- unlist(bestpropA)
+  attr(chrlist, "unphaseable") <- unphaseable
   return(chrlist)
 }
 
@@ -493,12 +620,15 @@ proportion_imbalance <- function(ascn,
                                  minfrachaplotypes = 0.95,
                                  mincells = 5,
                                  overwritemincells = NULL,
-                                 cluster_per_chr = TRUE) {
+                                 cluster_per_chr = TRUE,
+                                 seed = NULL,
+                                 min_propA = 0) {
   ncells <- length(unique(ascn$cell_id))
   if (is.null(overwritemincells)) {
     ncells_for_clustering <- min_cells(haplotypes,
                                        mincells = mincells,
-                                       minfrachaplotypes = minfrachaplotypes
+                                       minfrachaplotypes = minfrachaplotypes,
+                                       seed = seed
     )
     propdf <- ncells_for_clustering$prop
     ncells_for_clustering <- ncells_for_clustering$ncells_forclustering
@@ -512,17 +642,24 @@ proportion_imbalance <- function(ascn,
     chrlist <- get_cells_per_chr_local(ascn,
                                        haplotypes,
                                        ncells_for_clustering,
-                                       field = field
+                                       field = field,
+                                       phasebyarm = phasebyarm,
+                                       seed = seed,
+                                       min_propA = min_propA
     )
   } else {
     chrlist <- get_cells_per_chr_global(ascn,
                                         haplotypes,
                                         ncells_for_clustering,
                                         field = field,
-                                        clustering_method = clustering_method
+                                        clustering_method = clustering_method,
+                                        phasebyarm = phasebyarm,
+                                        seed = seed
     )
   }
-  return(list(chrlist = chrlist, propdf = propdf))
+  return(list(chrlist = chrlist, propdf = propdf,
+              propA = attr(chrlist, "propA"),
+              unphaseable = attr(chrlist, "unphaseable")))
 }
 
 prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE) {
@@ -540,6 +677,53 @@ prop_to_list <- function(haplotypes, prop, phasebyarm = FALSE) {
   return(chrlist)
 }
 
+#' Phase the blocks of one unit, falling back to all cells where needed
+#'
+#' Pools counts over `cells` only, then fills in any block with no counts in
+#' that subset from every cell instead. Such blocks used to be absent from the
+#' phasing table entirely, and the right join in [format_haplotypes()] then
+#' dropped those bins from every cell in the sample, not just from the cells
+#' used to phase.
+#'
+#' @param h Haplotype rows for one phasing unit, all cells.
+#' @param cells Cell ids selected to phase this unit.
+#' @param bins Optional bin/block table to emit; defaults to every
+#'   `chr`/`start`/`end`/`hap_label` seen in `h`.
+#' @return `chr`, `start`, `end`, `hap_label`, `phase`.
+#' @keywords internal
+phase_with_fallback <- function(h, cells, bins = NULL) {
+  cell_id <- phase <- phase_all <- NULL
+  key <- c("chr", "start", "end", "hap_label")
+  if (is.null(bins)) bins <- unique(h[, key, with = FALSE])
+  if (nrow(bins) == 0) return(cbind(bins, phase = character(0)))
+  out <- phase_one_per_block(h[cell_id %in% cells])[bins, on = c("chr", "hap_label")]
+  if (anyNA(out$phase)) {
+    allp <- phase_one_per_block(h)
+    data.table::setnames(allp, "phase", "phase_all")
+    out <- allp[out, on = c("chr", "hap_label")]
+    out[is.na(phase), phase := phase_all]
+  }
+  out[, c(key, "phase"), with = FALSE]
+}
+
+#' Decide one phase per haplotype block
+#'
+#' A haplotype block is identified by `chr` + `hap_label`. The 500kb binning
+#' splits a block across two bins whenever it straddles a boundary, and deciding
+#' a phase per (block, bin) then gives one block two phases - 84 of 6477 blocks
+#' on one test chromosome. Pool the block's counts across its bins and decide
+#' once; the caller maps the answer back onto the bins it spans.
+#'
+#' @param h Haplotype rows with `chr`, `hap_label`, `allele0`, `allele1`.
+#' @return `chr`, `hap_label`, `phase` - one row per block.
+#' @keywords internal
+phase_one_per_block <- function(h) {
+  allele0 <- allele1 <- a0 <- a1 <- phase <- NULL
+  perblock <- h[, list(a0 = sum(allele0), a1 = sum(allele1)), by = c("chr", "hap_label")]
+  perblock[, phase := ifelse(a0 < a1, "allele0", "allele1")]
+  perblock[, c("chr", "hap_label", "phase"), with = FALSE]
+}
+
 #' @export
 phase_haplotypes_bychr <- function(ascn, 
                                    haplotypes, 
@@ -548,6 +732,7 @@ phase_haplotypes_bychr <- function(ascn,
                                    global_phasing_for_balanced = TRUE,
                                    chrs_for_global_phasing = NULL) {
   
+  bal <- bal_bin <- chrarm <- NULL
   haplotypes <- as.data.table(haplotypes)
   
   #use all chromosomes if null
@@ -559,10 +744,8 @@ phase_haplotypes_bychr <- function(ascn,
     haplotypes$chrarm <- paste0(haplotypes$chr, coord_to_arm(haplotypes$chr, haplotypes$start))
     phased_haplotypes <- data.table()
     for (i in names(chrlist)) {
-      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chrarm == i] %>%
-        .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-        .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-        .[, c("allele1", "allele0") := NULL]
+      phased_haplotypes_temp <- phase_with_fallback(haplotypes[chrarm == i],
+                                                    chrlist[[i]])
       phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
     }
   } else if (global_phasing_for_balanced == TRUE) {
@@ -574,32 +757,34 @@ phase_haplotypes_bychr <- function(ascn,
         dplyr::filter(state_phase == "Balanced")
       if (i %in% chrs_for_global_phasing){ 
         #phase haplotypes in diploid region using cells in cluster
-        phased_haplotypes_temp1 <- haplotypes[cell_id %in% chrlist[[i]] & chr == i & !(start %in% consensus_cn$start)] %>%
-          .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-          .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-          .[, c("allele1", "allele0") := NULL]
+        hi <- haplotypes[chr == i]
+        # Assign each block to the balanced or imbalanced side by a majority of
+        # its bins. Splitting bin by bin gave a block spanning the boundary one
+        # phase from the cluster and another from all cells.
+        bins_i <- unique(hi[, c("chr", "start", "end", "hap_label"), with = FALSE])
+        bins_i[, bal_bin := start %in% consensus_cn$start]
+        blockbal <- bins_i[, list(bal = mean(bal_bin) > 0.5), by = c("chr", "hap_label")]
+        bins_i <- blockbal[bins_i, on = c("chr", "hap_label")]
+        phased_haplotypes_temp1 <- phase_with_fallback(
+          hi, chrlist[[i]],
+          bins = bins_i[bal == FALSE, c("chr", "start", "end", "hap_label"), with = FALSE])
         #phase haplotypes in diploid region using all cells
-        phased_haplotypes_temp2 <- haplotypes[chr == i & (start %in% consensus_cn$start)] %>%
-          .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-          .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-          .[, c("allele1", "allele0") := NULL]
+        phased_haplotypes_temp2 <- phase_with_fallback(
+          hi, unique(hi$cell_id),
+          bins = bins_i[bal == TRUE, c("chr", "start", "end", "hap_label"), with = FALSE])
         phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp1)
         phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp2)
       } else{
-        phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chr == i] %>%
-          .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-          .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-          .[, c("allele1", "allele0") := NULL]
+        phased_haplotypes_temp <- phase_with_fallback(haplotypes[chr == i],
+                                                      chrlist[[i]])
         phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
       }
     } 
   } else {
     phased_haplotypes <- data.table()
     for (i in names(chrlist)) {
-      phased_haplotypes_temp <- haplotypes[cell_id %in% chrlist[[i]] & chr == i] %>%
-        .[, lapply(.SD, sum), by = .(chr, start, end, hap_label), .SDcols = c("allele1", "allele0")] %>%
-        .[, phase := ifelse(allele0 < allele1, "allele0", "allele1")] %>%
-        .[, c("allele1", "allele0") := NULL]
+      phased_haplotypes_temp <- phase_with_fallback(haplotypes[chr == i],
+                                                    chrlist[[i]])
       phased_haplotypes <- rbind(phased_haplotypes, phased_haplotypes_temp)
     } 
   }
@@ -616,11 +801,16 @@ tarones_Z <- function(alleleA, totalcounts) {
   return(Z_score)
 }
 
-fitBB <- function(ascn) {
+fitBB <- function(ascn, seed = NULL) {
   modal_state <- which.max(table(dplyr::filter(ascn, B > 0)$state_AS_phased))
   bdata <- dplyr::filter(ascn, state_AS_phased == names(modal_state))
   nsample <- min(length(bdata$state), 10^5)
   if (nsample == 10^5) {
+    # subsampled, so the fitted overdispersion - and therefore the binomial vs
+    # beta-binomial choice made from it - varies between runs unless seeded
+    if (!is.null(seed)) {
+      set.seed(seed)
+    }
     bdata <- dplyr::sample_n(bdata, 10^5)
   }
   expBAF <- bdata %>%
@@ -685,16 +875,36 @@ filter_haplotypes <- function(haplotypes, fraction){
 #' @param chr_cell_list Cells to use for phasing for each chromosome, this should be a named list with a vector of cell_ids for each chromosome eg list("1" = c("cell_id1", "cell_id2)) etc. Default is null. If provided overrides internal phasing.
 #' @param mincells Minimum cluster size used for phasing, default = 7
 #' @param overwritemincells Force the number of cells to use for clustering/phasing rather than use the output of the clustering
-#' @param viterbver Version of viterbi algorithm to use (cpp or R)
+#' @param viterbiver Version of viterbi algorithm to use (cpp or R)
 #' @param cluster_per_chr Whether to cluster per chromosome to rephase alleles or not
 #' @param filterhaplotypes filter out haplotypes present in less than X fraction, default is 0.1
 #' @param firstpassfiltering Filter out cells with large discrepancy after first pass state assignment
 #' @param smoothsingletons Remove singleton bins by smoothing over based on states in adjacent bins
 #' @param fillmissing For bins with missing counts fill in values based on neighbouring bins, this ensures that the returned object is the same size as input CNbins
-#' @param global_phasing_for_diploid When using cluster_per_chr, use all cells for phasing diploid regions within the cluster
+#' @param global_phasing_for_balanced When using cluster_per_chr, use all cells for phasing diploid regions within the cluster
 #' @param chrs_for_global_phasing Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes
 #' @param female Default is `TRUE`, if set to `FALSE` and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state
-#' 
+#' @param seed Random seed for the stochastic steps of phasing: the subsampling in `min_cells` that sets the cluster size, the UMAP embedding used to pick phasing cells per chromosome, and the subsampling in the beta-binomial fit. Default `NULL`, which leaves these unseeded and means repeated runs on identical input can select different cells to phase a chromosome with, and so can return different haplotype-specific states. Set it to make a run reproducible.
+#'
+#' @param min_propA Minimum proportion of imbalanced bins a cluster must have
+#' before it is used to phase a unit, default `0` (no floor, the previous
+#' behaviour). The per-unit cell selection takes the most imbalanced cluster
+#' however weak it is, so a chromosome where nothing is imbalanced still gets a
+#' phasing driven by noise in one small cluster. Raising this makes such units
+#' fall back to pooling every cell. The best proportion seen per unit is
+#' reported either way.
+#'
+#' @param allele_aware Use an allele-aware transition cost in the HMM,
+#' default `FALSE` (the existing flat matrix). The HMM state is the B allele
+#' copy number with `A = state - B`, so a flat matrix over B makes "B
+#' unchanged" the cheap self-transition and gives "A unchanged" no standing:
+#' `1|1 -> 2|1` is cheap while `1|1 -> 1|2` is expensive, for no reason beyond
+#' how the state space is parameterised. Setting this scores a transition by
+#' how many alleles change, `1[dA != 0] + 1[dB != 0]`, which is symmetric in A
+#' and B. Wherever total copy number is constant the two are identical, so only
+#' transitions across a copy number change are affected, where a one-allele
+#' change is preferred - `2|1 -> 0|1` over `2|1 -> 1|0`.
+#'
 #' @return Haplotype specific copy number object 
 #' 
 #' @details The haplotype specific copy number object include the following additional columns
@@ -753,7 +963,10 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     global_phasing_for_balanced = FALSE,
                                     chr_cell_list = NULL,
                                     chrs_for_global_phasing = NULL,
-                                    female = TRUE) {
+                                    female = TRUE,
+                                    seed = NULL,
+                                    min_propA = 0,
+                                    allele_aware = FALSE) {
   # Validate input data.frames
 
   validate_cnbins(CNbins)
@@ -877,7 +1090,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     selftransitionprob = selftransitionprob,
                                     progressbar = progressbar,
                                     ncores = ncores,
-                                    viterbiver = viterbiver
+                                    viterbiver = viterbiver,
+                                    allele_aware = allele_aware
   )
   
   if (firstpassfiltering & is.null(phased_haplotypes)){
@@ -902,7 +1116,7 @@ callHaplotypeSpecificCN <- function(CNbins,
   infloherror <- min(infloherror, maxloherror) # ensure loh error rate is < maxloherror
   
   if (likelihood == "betabinomial" | likelihood == "auto") {
-    bbfit <- fitBB(ascn_filt)
+    bbfit <- fitBB(ascn_filt, seed = seed)
     if (bbfit$taronesZ > 5) {
       likelihood <- "betabinomial"
       message(paste0("Tarones Z-score: ", round(bbfit$taronesZ, 3), ", using ", likelihood, " model for inference."))
@@ -931,15 +1145,21 @@ callHaplotypeSpecificCN <- function(CNbins,
                                     mincells = mincells,
                                     clustering_method = clustering_method,
                                     overwritemincells = overwritemincells,
-                                    cluster_per_chr = cluster_per_chr
+                                    cluster_per_chr = cluster_per_chr,
+                                    seed = seed,
+                                    min_propA = min_propA
     )
     propdf <- chrlist$propdf
+    phasing_propA <- chrlist$propA
+    unphaseable <- chrlist$unphaseable
     chrlist <- chrlist$chrlist
   } else{
     message("Using user provided cell list for phasing chromosomes")
     #use the user provided list of cells to use for phasing
     chrlist <- chr_cell_list
     propdf <- NULL
+    phasing_propA <- NULL
+    unphaseable <- character(0)
     
     #check user provided chrcellist contains info for all chromosomes
     check_chr <- all(names(chr_cell_list) %in% unique(ascn_filt$chr))
@@ -1003,7 +1223,8 @@ callHaplotypeSpecificCN <- function(CNbins,
                                          ncores = ncores,
                                          likelihood = likelihood,
                                          rho = bbfit$rho,
-                                         viterbiver = viterbiver
+                                         viterbiver = viterbiver,
+                                         allele_aware = allele_aware
   )
   
   # Output
@@ -1041,12 +1262,14 @@ callHaplotypeSpecificCN <- function(CNbins,
       dplyr::group_by(chr, cell_id) %>% 
       tidyr::fill( c("A", "B"), .direction = "up")  %>% 
       dplyr::ungroup() %>% 
-      #sometimes if there is a singleton bin with a different state even the above doesn't catch
-      #all A + B >state, in this case change the state. This isn't ideal, very hacky
-      dplyr::mutate(state = ifelse(A + B > state, NA, state),
-                    A = ifelse(is.na(state), NA, A),
-                    B = ifelse(is.na(A), NA, B)) %>% 
-      tidyr::fill( c("state", "A", "B"), .direction = "up")
+      # Any A + B > state still left after filling is an allele-specific
+      # inconsistency, so fix the alleles rather than the total. Previously this
+      # set `state` to NA and filled it from a neighbour, which meant total copy
+      # number in the output was not always the HMMcopy input - it silently
+      # became a function of the phasing.
+      dplyr::mutate(B = ifelse(!is.na(A) & !is.na(B) & !is.na(state) & (A + B) > state,
+                               pmax(pmin(B, state), 0), B)) %>%
+      dplyr::mutate(A = ifelse(!is.na(B) & !is.na(state), state - B, A))
     #add 0|0 states for  hom deletions
     out[["data"]] <- out[["data"]] %>% 
       dplyr::mutate(A = ifelse(state == 0, 0, A)) %>% 

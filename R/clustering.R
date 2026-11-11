@@ -90,6 +90,11 @@ umap_clustering <- function(CNbins,
     pca <- NULL
     fast_sgd <- FALSE
   }
+  # uwot's SGD is only reproducible single-threaded: with n_sgd_threads > 1 the
+  # updates race and set.seed does not pin the result. 0 is uwot's current
+  # default, but state it explicitly so a seeded run cannot silently stop being
+  # reproducible if that default changes.
+  n_sgd_threads <- 0L
   # umapresults <- uwot::umap(cnmatrix,
   #   metric = umapmetric,
   #   n_neighbors = n_neighbors,
@@ -113,6 +118,7 @@ umap_clustering <- function(CNbins,
                                 ret_nn = TRUE,
                                 pca = pca,
                                 fast_sgd = fast_sgd,
+                                n_sgd_threads = n_sgd_threads,
                                 pca_method = "svdr")
     },
     error = function(e) {
@@ -134,6 +140,7 @@ umap_clustering <- function(CNbins,
                                 ret_nn = TRUE,
                                 pca = pca,
                                 fast_sgd = fast_sgd,
+                                n_sgd_threads = n_sgd_threads,
                                 pca_method = "svdr")
     }
   )
@@ -247,7 +254,10 @@ umap_clustering_breakpoints <- function(CNbins,
     min_dist = min_dist,
     ret_model = TRUE,
     ret_nn = TRUE,
-    fast_sgd = fast_sgd
+    fast_sgd = fast_sgd,
+    # see umap_clustering(): single-threaded SGD is required for set.seed to pin
+    # the embedding
+    n_sgd_threads = 0L
   )
 
   dfumap <- data.frame(

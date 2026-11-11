@@ -9,3 +9,7 @@ viterbi <- function(emission, transition, observations) {
     .Call('_signals_viterbi', PACKAGE = 'signals', emission, transition, observations)
 }
 
+viterbi_pd <- function(emission, transition, tidx, observations) {
+    .Call('_signals_viterbi_pd', PACKAGE = 'signals', emission, transition, tidx, observations)
+}
+

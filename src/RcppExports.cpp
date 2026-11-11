@@ -35,10 +35,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// viterbi_pd
+NumericVector viterbi_pd(NumericMatrix emission, NumericVector transition, IntegerVector tidx, NumericVector observations);
+RcppExport SEXP _signals_viterbi_pd(SEXP emissionSEXP, SEXP transitionSEXP, SEXP tidxSEXP, SEXP observationsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type emission(emissionSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type transition(transitionSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type tidx(tidxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type observations(observationsSEXP);
+    rcpp_result_gen = Rcpp::wrap(viterbi_pd(emission, transition, tidx, observations));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_signals_logspace_addcpp", (DL_FUNC) &_signals_logspace_addcpp, 2},
     {"_signals_viterbi", (DL_FUNC) &_signals_viterbi, 3},
+    {"_signals_viterbi_pd", (DL_FUNC) &_signals_viterbi_pd, 4},
     {NULL, NULL, 0}
 };
 
