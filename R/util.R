@@ -702,10 +702,14 @@ qc_per_cell <- function(cn){
                                      list(ploidy = Mode(state), totalhapcounts = sum(totalcounts)), 
                                      by = "cell_id"]
   
+  # segments beyond one per autosome. Subtract the autosomes actually present
+  # rather than a hardcoded 22: on a chromosome subset, n() - 22 is negative for
+  # every cell, and filtercn()'s nsegments >= 0 then removes them all. Identical
+  # to the old value on whole-genome data.
   nsegs <- create_segments(cn) %>% 
     dplyr::filter(!chr %in% c("X", "Y")) %>% 
     dplyr::group_by(cell_id) %>% 
-    dplyr::summarize(nsegments = dplyr::n() - 22)
+    dplyr::summarize(nsegments = dplyr::n() - dplyr::n_distinct(chr))
   
   qc <- dplyr::left_join(qc, pl, by = "cell_id") %>% 
     dplyr::left_join(., nsegs, by = "cell_id") %>% 

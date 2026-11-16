@@ -33,7 +33,10 @@ callHaplotypeSpecificCN(
   global_phasing_for_balanced = FALSE,
   chr_cell_list = NULL,
   chrs_for_global_phasing = NULL,
-  female = TRUE
+  female = TRUE,
+  seed = NULL,
+  min_propA = 0,
+  allele_aware = FALSE
 )
 }
 \arguments{
@@ -77,6 +80,8 @@ callHaplotypeSpecificCN(
 
 \item{cluster_per_chr}{Whether to cluster per chromosome to rephase alleles or not}
 
+\item{viterbiver}{Version of viterbi algorithm to use (cpp or R)}
+
 \item{filterhaplotypes}{filter out haplotypes present in less than X fraction, default is 0.1}
 
 \item{firstpassfiltering}{Filter out cells with large discrepancy after first pass state assignment}
@@ -85,15 +90,34 @@ callHaplotypeSpecificCN(
 
 \item{fillmissing}{For bins with missing counts fill in values based on neighbouring bins, this ensures that the returned object is the same size as input CNbins}
 
+\item{global_phasing_for_balanced}{When using cluster_per_chr, use all cells for phasing diploid regions within the cluster}
+
 \item{chr_cell_list}{Cells to use for phasing for each chromosome, this should be a named list with a vector of cell_ids for each chromosome eg list("1" = c("cell_id1", "cell_id2)) etc. Default is null. If provided overrides internal phasing.}
 
 \item{chrs_for_global_phasing}{Which chromosomes to phase using all cells for diploid regions, default is NULL which uses all chromosomes}
 
 \item{female}{Default is \code{TRUE}, if set to \code{FALSE} and patient is "XY", X chromosome states are set to A|0 where A=Hmmcopy state}
 
-\item{viterbver}{Version of viterbi algorithm to use (cpp or R)}
+\item{seed}{Random seed for the stochastic steps of phasing: the subsampling in \code{min_cells} that sets the cluster size, the UMAP embedding used to pick phasing cells per chromosome, and the subsampling in the beta-binomial fit. Default \code{NULL}, which leaves these unseeded and means repeated runs on identical input can select different cells to phase a chromosome with, and so can return different haplotype-specific states. Set it to make a run reproducible.}
 
-\item{global_phasing_for_diploid}{When using cluster_per_chr, use all cells for phasing diploid regions within the cluster}
+\item{min_propA}{Minimum proportion of imbalanced bins a cluster must have
+before it is used to phase a unit, default \code{0} (no floor, the previous
+behaviour). The per-unit cell selection takes the most imbalanced cluster
+however weak it is, so a chromosome where nothing is imbalanced still gets a
+phasing driven by noise in one small cluster. Raising this makes such units
+fall back to pooling every cell. The best proportion seen per unit is
+reported either way.}
+
+\item{allele_aware}{Use an allele-aware transition cost in the HMM,
+default \code{FALSE} (the existing flat matrix). The HMM state is the B allele
+copy number with \code{A = state - B}, so a flat matrix over B makes "B
+unchanged" the cheap self-transition and gives "A unchanged" no standing:
+\code{1|1 -> 2|1} is cheap while \code{1|1 -> 1|2} is expensive, for no reason beyond
+how the state space is parameterised. Setting this scores a transition by
+how many alleles change, \code{1[dA != 0] + 1[dB != 0]}, which is symmetric in A
+and B. Wherever total copy number is constant the two are identical, so only
+transitions across a copy number change are affected, where a one-allele
+change is preferred - \code{2|1 -> 0|1} over \code{2|1 -> 1|0}.}
 }
 \value{
 Haplotype specific copy number object

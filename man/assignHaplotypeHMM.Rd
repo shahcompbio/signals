@@ -14,7 +14,8 @@ assignHaplotypeHMM(
   likelihood = "binomial",
   rho = 0,
   Abias = 0,
-  viterbiver = "cpp"
+  viterbiver = "cpp",
+  allele_aware = FALSE
 )
 }
 \arguments{

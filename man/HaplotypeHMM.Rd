@@ -2,7 +2,8 @@
 % Please edit documentation in R/callHSCN.R
 \name{HaplotypeHMM}
 \alias{HaplotypeHMM}
-\title{Run Viterbi HMM for haplotype-specific copy number inference}
+\title{Applies a Hidden Markov Model with Viterbi decoding to infer the most likely
+sequence of minor allele copy number states given observed B-allele frequencies.}
 \usage{
 HaplotypeHMM(
   n,
@@ -15,7 +16,8 @@ HaplotypeHMM(
   likelihood = "binomial",
   rho = 0,
   Abias = 0,
-  viterbiver = "cpp"
+  viterbiver = "cpp",
+  allele_aware = FALSE
 )
 }
 \arguments{
